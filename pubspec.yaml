@@ -24,7 +24,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^4.0.0
+  flutter_lints: ^6.0.0
 
 # record 5.2.1이 record_linux를 '<1.0.0'으로 제한하지만, 0.7.2는
 # record_platform_interface 1.6.0(startStream/hasPermission 변경)과 호환되지 않아
