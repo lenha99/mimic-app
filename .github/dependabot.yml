@@ -11,11 +11,19 @@ updates:
         patterns: ["*"]
         update-types: [minor, patch]
     commit-message: { prefix: "chore" }
+    ignore:
+      # intl 은 반드시 'any' 로 둔다. flutter_localizations 가 Flutter SDK
+      # 버전마다 특정 intl 을 요구해서, 고정하면 SDK 버전이 다른 사람의
+      # 로컬에서 pub get 이 아예 실패한다. (실제로 한 번 터졌음)
+      - dependency-name: intl
 
   - package-ecosystem: pip          # 채점 서버 (requirements.txt)
     directory: /
     schedule: { interval: monthly }
     open-pull-requests-limit: 3
+    # requirements.txt 가 '>=' 하한선이라, 이게 없으면 실제로 뭐가
+    # 바뀌지도 않는데 하한선만 올리는 PR이 매달 쌓인다.
+    versioning-strategy: increase-if-necessary
     groups:
       python-deps:
         patterns: ["*"]
