@@ -30,14 +30,14 @@ class OnboardingScreen extends StatelessWidget {
                     children: [
                       TextSpan(text: context.s('onboard_title')),
                       TextSpan(text: context.s('onboard_title_accent'),
-                        style: const TextStyle(color: AppTheme.volt)),
+                        style: const TextStyle(color: AppTheme.volt),),
                     ],
                   ),
                 ),
                 const SizedBox(height: 14),
                 Text(context.s('onboard_sub'),
                   textAlign: TextAlign.center,
-                  style: AppTheme.label.copyWith(fontSize: 14, height: 1.5)),
+                  style: AppTheme.label.copyWith(fontSize: 14, height: 1.5),),
                 const SizedBox(height: 40),
                 SizedBox(
                   width: double.infinity,
@@ -46,33 +46,33 @@ class OnboardingScreen extends StatelessWidget {
                     label: context.s('onboard_cta'),
                     child: ElevatedButton(
                       onPressed: () => Navigator.pushReplacement(context,
-                        MaterialPageRoute(builder: (_) => HomeScreen(game: game))),
+                        MaterialPageRoute(builder: (_) => HomeScreen(game: game)),),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.volt,
                         padding: const EdgeInsets.symmetric(vertical: 18),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30))),
+                          borderRadius: BorderRadius.circular(30),),),
                       child: Text(context.s('onboard_cta'),
                         style: const TextStyle(color: Colors.black,
-                          fontWeight: FontWeight.w800, fontSize: 17)),
+                          fontWeight: FontWeight.w800, fontSize: 17,),),
                     ),
                   ),
                 ),
                 const SizedBox(height: 12),
                 Text(context.s('onboard_time'),
-                  style: AppTheme.label.copyWith(fontSize: 12)),
+                  style: AppTheme.label.copyWith(fontSize: 12),),
               ],
             ),
           ),
         ),
-      ]),
+      ],),
     );
   }
 
   Widget _blob(Color c, double size) => Container(
     width: size, height: size,
     decoration: BoxDecoration(shape: BoxShape.circle, boxShadow: [
-      BoxShadow(color: c.withOpacity(0.35), blurRadius: 70, spreadRadius: 20)]),
+      BoxShadow(color: c.withValues(alpha: 0.35), blurRadius: 70, spreadRadius: 20),],),
   );
 }
 
@@ -89,7 +89,7 @@ class _FloatingMicState extends State<_FloatingMic>
   void initState() {
     super.initState();
     _c = AnimationController(
-      vsync: this, duration: const Duration(seconds: 3))..repeat(reverse: true);
+      vsync: this, duration: const Duration(seconds: 3),)..repeat(reverse: true);
   }
   @override
   void dispose() { _c.dispose(); super.dispose(); }
@@ -97,7 +97,7 @@ class _FloatingMicState extends State<_FloatingMic>
   Widget build(BuildContext context) => AnimatedBuilder(
     animation: _c,
     builder: (_, child) => Transform.translate(
-      offset: Offset(0, -10 * _c.value), child: child),
+      offset: Offset(0, -10 * _c.value), child: child,),
     child: const Text('🎙', style: TextStyle(fontSize: 72)),
   );
 }

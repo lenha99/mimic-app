@@ -29,7 +29,7 @@ class ScoreResult {
   final List<double> refWave, userWave; // 원본/내 음성 파형 막대(0..1)
   ScoreResult({required this.score, required this.grade,
     required this.pitch, required this.tone, required this.timing,
-    this.refWave = const [], this.userWave = const []});
+    this.refWave = const [], this.userWave = const [],});
   factory ScoreResult.fromJson(Map<String, dynamic> j) {
     final b = j['breakdown'] ?? {};
     final w = j['waveform'] ?? {};
@@ -38,7 +38,7 @@ class ScoreResult {
     return ScoreResult(
       score: j['score'] ?? 0, grade: j['grade'] ?? 'C',
       pitch: b['pitch'] ?? 0, tone: b['tone'] ?? 0, timing: b['timing'] ?? 0,
-      refWave: bars(w['ref']), userWave: bars(w['user']));
+      refWave: bars(w['ref']), userWave: bars(w['user']),);
   }
 }
 
@@ -67,11 +67,11 @@ class Api {
   static Future<ScoreResult> score(String memeId, File rec) async {
     try {
       final req = http.MultipartRequest(
-        'POST', Uri.parse('${Config.scoreUrl}?meme_id=$memeId'));
+        'POST', Uri.parse('${Config.scoreUrl}?meme_id=$memeId'),);
       req.files.add(await http.MultipartFile.fromPath('file', rec.path,
-          contentType: MediaType('audio', 'wav')));
+          contentType: MediaType('audio', 'wav'),),);
       final res = await http.Response.fromStream(
-          await req.send().timeout(_timeout));
+          await req.send().timeout(_timeout),);
       if (res.statusCode != 200) {
         throw ApiException('채점 서버 오류 (${res.statusCode})');
       }
@@ -86,7 +86,7 @@ class Api {
 
   static Future<File> makeVideo({
     required String memeId, required String title, required String source,
-    required int score, required String grade, required File rec}) async {
+    required int score, required String grade, required File rec,}) async {
     try {
       final uri = Uri.parse('${Config.videoUrl}'
           '?meme_id=$memeId&title=${Uri.encodeComponent(title)}'
@@ -94,9 +94,9 @@ class Api {
           '&score=$score&grade=$grade');
       final req = http.MultipartRequest('POST', uri);
       req.files.add(await http.MultipartFile.fromPath('file', rec.path,
-          contentType: MediaType('audio', 'wav')));
+          contentType: MediaType('audio', 'wav'),),);
       final res = await http.Response.fromStream(
-          await req.send().timeout(_timeout));
+          await req.send().timeout(_timeout),);
       if (res.statusCode != 200) {
         throw ApiException('영상 생성 실패 (${res.statusCode})');
       }
@@ -129,15 +129,15 @@ class Api {
 
 const demoMemes = [
   Meme(id: 'rooster', title: '꼬끼오', source: '수탉',
-      emoji: '🐓', plays: 128400, refUrl: ''),
+      emoji: '🐓', plays: 128400, refUrl: '',),
   Meme(id: 'cat', title: '야오옹', source: '고양이',
-      emoji: '🐱', plays: 96300, refUrl: ''),
+      emoji: '🐱', plays: 96300, refUrl: '',),
   Meme(id: 'goat', title: '메에에', source: '염소',
-      emoji: '🐐', plays: 81200, refUrl: ''),
+      emoji: '🐐', plays: 81200, refUrl: '',),
   Meme(id: 'wolf', title: '아우우', source: '늑대',
-      emoji: '🐺', plays: 67400, refUrl: ''),
+      emoji: '🐺', plays: 67400, refUrl: '',),
   Meme(id: 'cow', title: '음메에', source: '소',
-      emoji: '🐄', plays: 54100, refUrl: ''),
+      emoji: '🐄', plays: 54100, refUrl: '',),
   Meme(id: 'dolphin', title: '이이익', source: '돌고래',
-      emoji: '🐬', plays: 41900, refUrl: ''),
+      emoji: '🐬', plays: 41900, refUrl: '',),
 ];

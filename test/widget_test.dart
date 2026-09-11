@@ -16,14 +16,14 @@ void main() {
     test('colorIndex는 항상 0~3 범위', () {
       for (final id in ['a', 'ronaldo_siu', 'zzz', '123', '한글']) {
         final m = Meme(id: id, title: '', source: '', emoji: '',
-            plays: 0, refUrl: '');
+            plays: 0, refUrl: '',);
         expect(m.colorIndex, inInclusiveRange(0, 3));
       }
     });
 
     test('같은 id는 항상 같은 색 (재현성)', () {
-      final a = Meme(id: 'siu', title: '', source: '', emoji: '', plays: 0, refUrl: '');
-      final b = Meme(id: 'siu', title: '', source: '', emoji: '', plays: 0, refUrl: '');
+      const a = Meme(id: 'siu', title: '', source: '', emoji: '', plays: 0, refUrl: '');
+      const b = Meme(id: 'siu', title: '', source: '', emoji: '', plays: 0, refUrl: '');
       expect(a.colorIndex, b.colorIndex);
     });
   });
@@ -32,7 +32,7 @@ void main() {
     test('breakdown 정상 파싱', () {
       final r = ScoreResult.fromJson({
         'score': 97, 'grade': 'SS',
-        'breakdown': {'pitch': 99, 'tone': 95, 'timing': 95}});
+        'breakdown': {'pitch': 99, 'tone': 95, 'timing': 95},});
       expect(r.score, 97);
       expect(r.grade, 'SS');
       expect(r.tone, 95);
@@ -51,7 +51,7 @@ void main() {
       final ko = Strings.of(const Locale('ko'));
       final ja = Strings.of(const Locale('ja'));
       for (final k in ['onboard_cta', 'home_sub', 'result_share',
-                       'rec_hint', 'err_network', 'stat_pitch']) {
+                       'rec_hint', 'err_network', 'stat_pitch',]) {
         expect(en.get(k), isNot(k), reason: 'en 누락: $k');
         expect(ko.get(k), isNot(k), reason: 'ko 누락: $k');
         expect(ja.get(k), isNot(k), reason: 'ja 누락: $k');

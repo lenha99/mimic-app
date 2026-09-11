@@ -50,14 +50,14 @@ class _RecordScreenState extends State<RecordScreen> {
       if (!await _recorder.hasPermission()) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(context.s('rec_mic_denied'))));
+          content: Text(context.s('rec_mic_denied')),),);
         return;
       }
       Analytics.recordStarted(widget.meme.id);
       final dir = await getTemporaryDirectory();
       final p = '${dir.path}/take_${DateTime.now().millisecondsSinceEpoch}.wav';
       await _recorder.start(
-        const RecordConfig(encoder: AudioEncoder.wav), path: p);
+        const RecordConfig(encoder: AudioEncoder.wav), path: p,);
       setState(() => _recording = true);
     }
   }
@@ -70,12 +70,12 @@ class _RecordScreenState extends State<RecordScreen> {
       if (!mounted) return;
       Navigator.pushReplacement(context, MaterialPageRoute(
         builder: (_) => ResultScreen(
-          meme: widget.meme, result: result, recording: f, game: widget.game)));
+          meme: widget.meme, result: result, recording: f, game: widget.game,),),);
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _scoring = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)));
+        SnackBar(content: Text(e.message)),);
     }
   }
 
@@ -108,13 +108,13 @@ class _RecordScreenState extends State<RecordScreen> {
                 onPressed: _playReference,
                 icon: const Icon(Icons.volume_up, color: AppTheme.cyan),
                 label: Text(context.s('rec_play_original'),
-                    style: AppTheme.label.copyWith(color: AppTheme.cyan)),
+                    style: AppTheme.label.copyWith(color: AppTheme.cyan),),
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: AppTheme.cyan),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30)),
+                    borderRadius: BorderRadius.circular(30),),
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 22, vertical: 12),
+                    horizontal: 22, vertical: 12,),
                 ),
               ),
               const Spacer(flex: 1),
@@ -123,13 +123,13 @@ class _RecordScreenState extends State<RecordScreen> {
               // 녹음 버튼 (주역)
               _RecordButton(
                 recording: _recording, scoring: _scoring,
-                onTap: _scoring ? null : _toggleRecord),
+                onTap: _scoring ? null : _toggleRecord,),
               const SizedBox(height: 14),
               Text(
                 _scoring ? context.s('rec_scoring')
                   : _recording ? context.s('rec_again_hint')
                   : context.s('rec_hint'),
-                style: AppTheme.label),
+                style: AppTheme.label,),
               const Spacer(flex: 2),
             ],
           ),
@@ -143,7 +143,7 @@ class _RecordButton extends StatelessWidget {
   final bool recording, scoring;
   final VoidCallback? onTap;
   const _RecordButton({
-    required this.recording, required this.scoring, required this.onTap});
+    required this.recording, required this.scoring, required this.onTap,});
 
   @override
   Widget build(BuildContext context) {
@@ -165,16 +165,16 @@ class _RecordButton extends StatelessWidget {
             boxShadow: [
               BoxShadow(
                 color: (recording ? AppTheme.hotPink : AppTheme.volt)
-                    .withOpacity(0.5),
-                blurRadius: 40, spreadRadius: 6),
+                    .withValues(alpha: 0.5),
+                blurRadius: 40, spreadRadius: 6,),
             ],
           ),
           child: scoring
               ? const Padding(padding: EdgeInsets.all(32),
                   child: CircularProgressIndicator(
-                    color: Colors.black, strokeWidth: 3))
+                    color: Colors.black, strokeWidth: 3,),)
               : Icon(recording ? Icons.stop : Icons.mic,
-                  size: 48, color: Colors.black),
+                  size: 48, color: Colors.black,),
         ),
       ),
     );

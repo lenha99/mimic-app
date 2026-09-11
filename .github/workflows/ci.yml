@@ -21,9 +21,9 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
-      # 에러/경고는 실패 처리, info(스타일 제안)는 통과.
-      # 스타일까지 잡고 싶어지면 --fatal-infos 를 붙인다.
-      - run: flutter analyze --no-fatal-infos
+      # analysis_options.yaml 의 규칙을 info까지 전부 강제.
+      # 대부분 `dart fix --apply` 로 자동 수정된다.
+      - run: flutter analyze --fatal-infos
       - run: flutter test
 
   scoring:
@@ -36,7 +36,7 @@ jobs:
         with:
           python-version: '3.12'
           cache: pip
-      - run: pip install librosa numpy scipy soundfile pytest
+      - run: pip install -r requirements.txt
       - run: pytest test/scoring_test.py -v
 
   build-apk:

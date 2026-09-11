@@ -38,7 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
             // 로딩 상태
             if (snap.connectionState == ConnectionState.waiting) {
               return const Center(
-                child: CircularProgressIndicator(color: AppTheme.volt));
+                child: CircularProgressIndicator(color: AppTheme.volt),);
             }
             // 에러 상태 (재시도 가능)
             if (snap.hasError) {
@@ -77,21 +77,21 @@ class _HomeContent extends StatelessWidget {
                   const SizedBox(width: 8),
                   ShaderMask(
                     shaderCallback: (b) => const LinearGradient(
-                      colors: [AppTheme.volt, AppTheme.cyan]).createShader(b),
+                      colors: [AppTheme.volt, AppTheme.cyan],).createShader(b),
                     child: Text('MIMIC', style: AppTheme.hero.copyWith(
-                      fontSize: 28, color: Colors.white)),
+                      fontSize: 28, color: Colors.white,),),
                   ),
-                ]),
+                ],),
                 const SizedBox(height: 14),
                 RichText(text: TextSpan(
                   style: AppTheme.hero,
                   children: [
                     TextSpan(text: context.s('home_hero')),
                     TextSpan(text: context.s('home_hero_accent'),
-                      style: const TextStyle(color: AppTheme.volt)),
+                      style: const TextStyle(color: AppTheme.volt),),
                     const TextSpan(text: ' '),
                   ],
-                )),
+                ),),
                 const SizedBox(height: 6),
                 Text(context.s('home_sub'), style: AppTheme.label),
               ],
@@ -104,10 +104,10 @@ class _HomeContent extends StatelessWidget {
           sliver: SliverGrid(
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2, mainAxisSpacing: 14,
-              crossAxisSpacing: 14, childAspectRatio: 0.82),
+              crossAxisSpacing: 14, childAspectRatio: 0.82,),
             delegate: SliverChildBuilderDelegate(
               (ctx, i) => _MemeCard(meme: memes[i], fmt: fmt, game: game),
-              childCount: memes.length),
+              childCount: memes.length,),
           ),
         ),
       ],
@@ -127,8 +127,8 @@ class _ErrorState extends StatelessWidget {
       const SizedBox(height: 16),
       OutlinedButton(onPressed: onRetry,
         child: Text(context.s('result_retry'),
-          style: const TextStyle(color: AppTheme.volt))),
-    ]),
+          style: const TextStyle(color: AppTheme.volt),),),
+    ],),
   );
 }
 
@@ -136,7 +136,7 @@ class _EmptyState extends StatelessWidget {
   const _EmptyState();
   @override
   Widget build(BuildContext context) => const Center(
-    child: Text('🎙', style: TextStyle(fontSize: 56)));
+    child: Text('🎙', style: TextStyle(fontSize: 56)),);
 }
 
 class _ChallengeBanner extends StatelessWidget {
@@ -150,11 +150,11 @@ class _ChallengeBanner extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [AppTheme.hotPink, Color(0xFFA855F7)],
-          begin: Alignment.topLeft, end: Alignment.bottomRight),
+          begin: Alignment.topLeft, end: Alignment.bottomRight,),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [BoxShadow(
-          color: AppTheme.hotPink.withOpacity(0.35),
-          blurRadius: 30, offset: const Offset(0, 10))],
+          color: AppTheme.hotPink.withValues(alpha: 0.35),
+          blurRadius: 30, offset: const Offset(0, 10),),],
       ),
       child: Row(children: [
         Expanded(child: Column(
@@ -163,20 +163,20 @@ class _ChallengeBanner extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
               decoration: BoxDecoration(color: Colors.white,
-                borderRadius: BorderRadius.circular(8)),
+                borderRadius: BorderRadius.circular(8),),
               child: const Text('● LIVE', style: TextStyle(
-                color: AppTheme.hotPink, fontSize: 9, fontWeight: FontWeight.w800)),
+                color: AppTheme.hotPink, fontSize: 9, fontWeight: FontWeight.w800,),),
             ),
             const SizedBox(height: 6),
             Text('${featured.title} ${featured.emoji}',
-              style: AppTheme.title.copyWith(fontSize: 19)),
+              style: AppTheme.title.copyWith(fontSize: 19),),
             const SizedBox(height: 2),
             Text(context.s('challenge_desc'),
-              style: AppTheme.label.copyWith(color: Colors.white70)),
+              style: AppTheme.label.copyWith(color: Colors.white70),),
           ],
-        )),
+        ),),
         const Text('🏆', style: TextStyle(fontSize: 38)),
-      ]),
+      ],),
     );
   }
 }
@@ -198,20 +198,20 @@ class _MemeCard extends StatelessWidget {
         onTap: () {
           Analytics.memeOpened(meme.id);
           Navigator.push(context, MaterialPageRoute(
-            builder: (_) => RecordScreen(meme: meme, game: game)));
+            builder: (_) => RecordScreen(meme: meme, game: game),),);
         },
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.04),
+            color: Colors.white.withValues(alpha: 0.04),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withOpacity(0.08))),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),),
           clipBehavior: Clip.antiAlias,
           child: Stack(children: [
             Positioned(top: -20, right: -20, child: Container(
               width: 80, height: 80,
               decoration: BoxDecoration(shape: BoxShape.circle, boxShadow: [
-                BoxShadow(color: glow.withOpacity(0.5),
-                  blurRadius: 30, spreadRadius: 10)]))),
+                BoxShadow(color: glow.withValues(alpha: 0.5),
+                  blurRadius: 30, spreadRadius: 10,),],),),),
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -230,12 +230,12 @@ class _MemeCard extends StatelessWidget {
                       '${fmt(meme.plays)}${context.s('plays_suffix')}',
                       overflow: TextOverflow.ellipsis,
                       style: AppTheme.label.copyWith(color: glow,
-                        fontSize: 11, fontWeight: FontWeight.w700))),
-                  ]),
+                        fontSize: 11, fontWeight: FontWeight.w700,),),),
+                  ],),
                 ],
               ),
             ),
-          ]),
+          ],),
         ),
       ),
     );
