@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# 같은 PR에 연달아 push하면 이전 실행은 취소 (무료 분 절약)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  flutter:
+    name: Flutter — 분석 + 테스트
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      # 에러/경고는 실패 처리, info(스타일 제안)는 통과.
+      # 스타일까지 잡고 싶어지면 --fatal-infos 를 붙인다.
+      - run: flutter analyze --no-fatal-infos
+      - run: flutter test
+
+  scoring:
+    name: 채점 엔진 (Python)
+    runs-on: ubuntu-latest
+    # 서버/채점 쪽을 건드린 PR에서만 의미가 있지만, 빨라서 항상 돌린다
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install librosa numpy scipy soundfile pytest
+      - run: pytest test/scoring_test.py -v
+
+  build-apk:
+    name: APK 빌드 (main 전용)
+    if: github.ref == 'refs/heads/main'
+    needs: flutter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter build apk --release
+      # main에 merge될 때마다 최신 APK를 여기서 받아 폰에 설치해볼 수 있다
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 14

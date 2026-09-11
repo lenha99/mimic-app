@@ -1,0 +1,11 @@
+{
+  "_comment": "밈을 추가하려면 이 배열에 항목만 넣으면 됨. 코드 수정 불필요. 서버 볼륨에 {id}.wav 기준음성도 함께 업로드. accent 색은 비우면 자동 배정. 현재는 동물 사운드팩(CC0).",
+  "memes": [
+    {"id": "rooster", "title": "꼬끼오", "source": "수탉", "emoji": "🐓", "plays": 128400},
+    {"id": "cat", "title": "야오옹", "source": "고양이", "emoji": "🐱", "plays": 96300},
+    {"id": "goat", "title": "메에에", "source": "염소", "emoji": "🐐", "plays": 81200},
+    {"id": "wolf", "title": "아우우", "source": "늑대", "emoji": "🐺", "plays": 67400},
+    {"id": "cow", "title": "음메에", "source": "소", "emoji": "🐄", "plays": 54100},
+    {"id": "dolphin", "title": "이이익", "source": "돌고래", "emoji": "🐬", "plays": 41900}
+  ]
+}

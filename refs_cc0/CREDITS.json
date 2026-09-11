@@ -1,0 +1,42 @@
+[
+  {
+    "meme": "ronaldo_siu",
+    "query": "siu",
+    "fs_id": 608135,
+    "name": "mhsunz.mp3",
+    "user": "joshey2x",
+    "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+    "downloads": 485,
+    "duration": 1.81
+  },
+  {
+    "meme": "oh_my_god",
+    "query": "oh my god",
+    "fs_id": 70937,
+    "name": "ohMyGod!.mp3",
+    "user": "yeahyeahyup",
+    "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+    "downloads": 4466,
+    "duration": 1.1
+  },
+  {
+    "meme": "wow",
+    "query": "wow",
+    "fs_id": 323438,
+    "name": "wow/whoa",
+    "user": "Alivvie",
+    "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+    "downloads": 13515,
+    "duration": 0.98
+  },
+  {
+    "meme": "nani",
+    "query": "nani",
+    "fs_id": 585070,
+    "name": "Nani(What)(Midtone).wav",
+    "user": "KeenanAXQuinn",
+    "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+    "downloads": 404,
+    "duration": 1.57
+  }
+]

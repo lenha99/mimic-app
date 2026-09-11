@@ -1,0 +1,62 @@
+[
+  {
+    "meme": "rooster",
+    "query": "rooster crow",
+    "fs_id": 43382,
+    "name": "Rooster chicken calls_2.wav",
+    "user": "AGFX",
+    "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+    "downloads": 10818,
+    "duration": 2.98
+  },
+  {
+    "meme": "cat",
+    "query": "cat meow",
+    "fs_id": 110011,
+    "name": "cat meow",
+    "user": "tuberatanka",
+    "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+    "downloads": 45780,
+    "duration": 1.54
+  },
+  {
+    "meme": "goat",
+    "query": "goat bleat",
+    "fs_id": 581240,
+    "name": "Single Goat Bleating 2x",
+    "user": "Kinoton",
+    "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+    "downloads": 961,
+    "duration": 4.02
+  },
+  {
+    "meme": "wolf",
+    "query": "wolf howl",
+    "fs_id": 429109,
+    "name": "15-WolfCrying.wav",
+    "user": "cazadordoblekatana",
+    "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+    "downloads": 2359,
+    "duration": 3.39
+  },
+  {
+    "meme": "cow",
+    "query": "cow moo",
+    "fs_id": 59245,
+    "name": "z-moo01.wav",
+    "user": "Zozzy",
+    "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+    "downloads": 6725,
+    "duration": 1.72
+  },
+  {
+    "meme": "dolphin",
+    "query": "dolphin",
+    "fs_id": 456151,
+    "name": "Dolphin Noise-.wav",
+    "user": "jfournier18",
+    "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+    "downloads": 5010,
+    "duration": 2.58
+  }
+]

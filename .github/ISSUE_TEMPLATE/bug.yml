@@ -1,0 +1,31 @@
+name: 🐛 버그
+description: 안 되는 것 / 이상한 것
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: 뭐가 안 되나
+      placeholder: 녹음 버튼 누르면 앱이 꺼짐
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: 재현 순서
+      placeholder: |
+        1. 홈에서 SIUUUU 선택
+        2. 녹음 버튼 탭
+        3. 앱 종료됨
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: 환경
+      placeholder: "갤럭시 S23 / Android 14 / 앱 0.1.0"
+  - type: textarea
+    id: log
+    attributes:
+      label: 로그 (있으면)
+      render: shell

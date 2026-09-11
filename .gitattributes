@@ -1,0 +1,23 @@
+# 윈도우/맥 섞여 있어도 줄바꿈 때문에 "전체 파일 변경"으로 뜨지 않게 정규화.
+# 저장소에는 LF로 저장, 체크아웃 시 각자 OS에 맞게.
+* text=auto eol=lf
+
+# 스크립트는 항상 LF (CRLF면 실행이 깨짐)
+*.sh   text eol=lf
+
+# 자동 생성물 — PR diff에서 접어두기
+pubspec.lock  linguist-generated=true -diff
+*.g.dart      linguist-generated=true
+
+# 바이너리 (diff 시도하지 않음)
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.wav  binary
+*.mp3  binary
+*.mp4  binary
+*.apk  binary
+*.aab  binary
+*.jks  binary
+*.keystore binary

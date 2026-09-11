@@ -1,0 +1,24 @@
+# Flutter 표준 — 빌드 시 자동 생성되는 파일 (로컬 절대경로가 박혀 있어 커밋 금지)
+**/dart_tool/
+**/.DS_Store
+.symlinks/
+Flutter/.last_build_id
+Flutter/App.framework
+Flutter/Flutter.framework
+Flutter/Flutter.podspec
+Flutter/Generated.xcconfig
+Flutter/ephemeral/
+Flutter/app.flx
+Flutter/app.zip
+Flutter/flutter_assets/
+Flutter/flutter_export_environment.sh
+ServiceDefinitions.json
+Runner/GeneratedPluginRegistrant.*
+Pods/
+.generated/
+*.mode1v3
+*.mode2v3
+*.moved-aside
+*.pbxuser
+*.perspectivev3
+xcuserdata/

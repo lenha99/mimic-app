@@ -1,0 +1,24 @@
+name: ✨ 하고 싶은 것
+description: 새 기능 / 개선 아이디어
+labels: ["feature"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: 뭘 만들고 싶나
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: 왜 필요한가
+      placeholder: 유저가 결과 화면에서 바로 재도전을 못 해서 이탈함
+  - type: dropdown
+    id: size
+    attributes:
+      label: 크기 감
+      options:
+        - S — 1시간 안
+        - M — 하루
+        - L — 며칠
+        - "? — 모르겠음"
