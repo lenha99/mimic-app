@@ -7,7 +7,7 @@ soundfile>=0.12
 matplotlib>=3.8      # video_maker.py 결과 카드 렌더링
 
 # 서버 배포 (Modal)
-modal>=0.64
+modal>=1.5.5
 
 # 테스트
 pytest>=8.0
