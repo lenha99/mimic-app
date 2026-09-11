@@ -100,7 +100,7 @@ class _WaveformState extends State<Waveform>
               width: 3,
               height: widget.height * amp.clamp(0.06, 1.0),
               decoration: BoxDecoration(
-                color: widget.color.withOpacity(widget.active ? 1 : 0.4),
+                color: widget.color.withValues(alpha: widget.active ? 1 : 0.4),
                 borderRadius: BorderRadius.circular(2),
               ),
             );

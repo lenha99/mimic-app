@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'theme.dart';
@@ -72,7 +71,7 @@ class _RootState extends State<_Root> {
   Widget build(BuildContext context) {
     if (_firstRun == null) {
       return const Scaffold(body: Center(
-        child: CircularProgressIndicator(color: AppTheme.volt)));
+        child: CircularProgressIndicator(color: AppTheme.volt),),);
     }
     return _firstRun!
         ? OnboardingScreen(game: _game)

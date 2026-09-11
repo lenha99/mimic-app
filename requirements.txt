@@ -1,0 +1,13 @@
+# 채점 엔진 / 서버 / 영상생성 (로컬 개발 + CI 공용)
+#   pip install -r requirements.txt
+librosa>=0.10
+numpy>=1.24
+scipy>=1.11
+soundfile>=0.12
+matplotlib>=3.8      # video_maker.py 결과 카드 렌더링
+
+# 서버 배포 (Modal)
+modal>=0.64
+
+# 테스트
+pytest>=8.0

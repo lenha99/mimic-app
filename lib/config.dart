@@ -41,11 +41,11 @@ class Config {
 
   // 운영 플래그
   static const bool analyticsEnabled = bool.fromEnvironment(
-    'ANALYTICS', defaultValue: false);
+    'ANALYTICS', defaultValue: false,);
   static const bool verboseLog = bool.fromEnvironment(
-    'VERBOSE', defaultValue: true);
+    'VERBOSE', defaultValue: true,);
 
   // 무료 사용 제한 (수익화 기반)
   static const int freeDailyPlays = int.fromEnvironment(
-    'FREE_PLAYS', defaultValue: 5);
+    'FREE_PLAYS', defaultValue: 5,);
 }

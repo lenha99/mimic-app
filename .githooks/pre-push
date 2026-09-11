@@ -1,0 +1,31 @@
+#!/bin/sh
+# main 브랜치로 직접 push하는 것을 막는다.
+# (무료 플랜 private 저장소는 서버측 브랜치 보호를 못 걸어서 로컬에서 막음)
+#
+# 설치: git config core.hooksPath .githooks
+# 정말 필요하면 우회: git push --no-verify
+
+protected="main"
+
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
+  branch="${remote_ref#refs/heads/}"
+  if [ "$branch" = "$protected" ]; then
+    cat >&2 <<'MSG'
+
+  ✋ main 에 직접 push 하려고 합니다.
+
+  대신 이렇게 하세요:
+
+      git checkout -b feat/작업이름
+      git push -u origin feat/작업이름
+      gh pr create --fill
+
+  자세한 규칙: CONTRIBUTING.md
+  (정말 예외가 필요하면: git push --no-verify)
+
+MSG
+    exit 1
+  fi
+done
+
+exit 0

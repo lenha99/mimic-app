@@ -16,7 +16,7 @@ class ResultScreen extends StatefulWidget {
   final File recording;
   final GameState game;
   const ResultScreen({super.key, required this.meme, required this.result,
-    required this.recording, required this.game});
+    required this.recording, required this.game,});
 
   @override
   State<ResultScreen> createState() => _ResultScreenState();
@@ -34,7 +34,7 @@ class _ResultScreenState extends State<ResultScreen>
   void initState() {
     super.initState();
     _c = AnimationController(
-      vsync: this, duration: const Duration(milliseconds: 700))..forward();
+      vsync: this, duration: const Duration(milliseconds: 700),)..forward();
     _pop = CurvedAnimation(parent: _c, curve: Curves.elasticOut);
     _applyReward();
   }
@@ -59,14 +59,14 @@ class _ResultScreenState extends State<ResultScreen>
         memeId: widget.meme.id, title: widget.meme.title,
         source: widget.meme.source,
         score: widget.result.score, grade: widget.result.grade,
-        rec: widget.recording);
+        rec: widget.recording,);
       await Share.shareXFiles([XFile(video.path)],
         text: '나 ${widget.meme.title} ${widget.result.grade} '
-              '${widget.result.score}점 🎙 너도 도전해봐!');
+              '${widget.result.score}점 🎙 너도 도전해봐!',);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.s('err_video'))));
+          SnackBar(content: Text(context.s('err_video'))),);
       }
     } finally {
       if (mounted) setState(() => _making = false);
@@ -113,7 +113,7 @@ class _ResultScreenState extends State<ResultScreen>
               ],
               // 닮음 % — 공유 욕구 핵심 카피
               _SimilarityDisplay(
-                score: r.score, source: widget.meme.source),
+                score: r.score, source: widget.meme.source,),
               const SizedBox(height: 14),
               // 등급
               ScaleTransition(scale: _pop, child: Column(children: [
@@ -122,21 +122,21 @@ class _ResultScreenState extends State<ResultScreen>
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(color: gc, width: 5),
-                    boxShadow: [BoxShadow(color: gc.withOpacity(0.4),
-                      blurRadius: 50, spreadRadius: 4)]),
+                    boxShadow: [BoxShadow(color: gc.withValues(alpha: 0.4),
+                      blurRadius: 50, spreadRadius: 4,),],),
                   alignment: Alignment.center,
                   child: Text(r.grade, style: TextStyle(fontSize: 76,
-                    fontWeight: FontWeight.w900, color: gc, height: 1)),
+                    fontWeight: FontWeight.w900, color: gc, height: 1,),),
                 ),
                 const SizedBox(height: 18),
                 Text('${r.score}점', style: AppTheme.hero.copyWith(
-                  fontSize: 50, color: AppTheme.white)),
-              ])),
+                  fontSize: 50, color: AppTheme.white,),),
+              ],),),
               const SizedBox(height: 14),
               // 콤보 끊김 안내(손실 회피)
               if (ev?.comboBroken == true)
                 Text(context.s('combo_broken'),
-                  style: AppTheme.label.copyWith(color: AppTheme.hotPink)),
+                  style: AppTheme.label.copyWith(color: AppTheme.hotPink),),
               const SizedBox(height: 18),
               Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                 _Stat(label: context.s('stat_pitch'), value: r.pitch, color: AppTheme.volt),
@@ -144,7 +144,7 @@ class _ResultScreenState extends State<ResultScreen>
                 _Stat(label: context.s('stat_tone'), value: r.tone, color: AppTheme.cyan),
                 const SizedBox(width: 14),
                 _Stat(label: context.s('stat_timing'), value: r.timing, color: AppTheme.hotPink),
-              ]),
+              ],),
               if (r.refWave.isNotEmpty || r.userWave.isNotEmpty) ...[
                 const SizedBox(height: 20),
                 _WaveCompare(result: r),
@@ -154,27 +154,27 @@ class _ResultScreenState extends State<ResultScreen>
                 onPressed: _making ? null : _share,
                 icon: _making
                   ? const SizedBox(width: 18, height: 18,
-                      child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
+                      child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2),)
                   : const Icon(Icons.ios_share, color: Colors.black),
                 label: Text(_making ? context.s('result_making') : context.s('result_share'),
                   style: const TextStyle(color: Colors.black,
-                    fontWeight: FontWeight.w800, fontSize: 16)),
+                    fontWeight: FontWeight.w800, fontSize: 16,),),
                 style: ElevatedButton.styleFrom(backgroundColor: AppTheme.volt,
                   padding: const EdgeInsets.symmetric(vertical: 18),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))),
-              )),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),),
+              ),),
               const SizedBox(height: 10),
               SizedBox(width: double.infinity, child: OutlinedButton.icon(
                 onPressed: _challengeFriend,
                 icon: const Icon(Icons.bolt, color: AppTheme.hotPink),
                 label: Text(context.s('result_challenge'),
                   style: const TextStyle(color: AppTheme.hotPink,
-                    fontWeight: FontWeight.w800, fontSize: 16)),
+                    fontWeight: FontWeight.w800, fontSize: 16,),),
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: AppTheme.hotPink, width: 1.5),
                   padding: const EdgeInsets.symmetric(vertical: 18),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))),
-              )),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),),
+              ),),
               const SizedBox(height: 12),
               TextButton(
                 onPressed: () { Analytics.retried(widget.meme.id); Navigator.pop(context); },
@@ -183,15 +183,15 @@ class _ResultScreenState extends State<ResultScreen>
                   (ev?.combo ?? 0) >= 1 ? context.s('retry_cta') : context.s('result_retry'),
                   style: AppTheme.label.copyWith(
                     color: (ev?.combo ?? 0) >= 1 ? AppTheme.volt : AppTheme.white,
-                    fontWeight: FontWeight.w700)),
+                    fontWeight: FontWeight.w700,),),
               ),
               const Spacer(flex: 1),
-            ]),
+            ],),
           ),
         ),
         // 컨페티는 최상단
         Positioned.fill(child: ConfettiBurst(active: _confetti)),
-      ]),
+      ],),
     );
   }
 }
@@ -207,16 +207,16 @@ class _SimilarityDisplay extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(children: [
       Text('${context.s('similarity_label')} $source',
-        style: AppTheme.label),
+        style: AppTheme.label,),
       const SizedBox(height: 4),
       ShaderMask(
         shaderCallback: (b) => const LinearGradient(
-          colors: [AppTheme.volt, AppTheme.cyan]).createShader(b),
+          colors: [AppTheme.volt, AppTheme.cyan],).createShader(b),
         child: Text('$_pct${context.s('similarity')}',
           style: const TextStyle(fontSize: 52, fontWeight: FontWeight.w900,
-            color: Colors.white, height: 1)),
+            color: Colors.white, height: 1,),),
       ),
-    ]);
+    ],);
   }
 }
 
@@ -228,10 +228,10 @@ class _WaveCompare extends StatelessWidget {
   Widget _row(String label, List<double> bars, Color color) {
     return Row(children: [
       SizedBox(width: 36, child: Text(label,
-        style: TextStyle(color: color, fontWeight: FontWeight.w800, fontSize: 13))),
+        style: TextStyle(color: color, fontWeight: FontWeight.w800, fontSize: 13),),),
       const SizedBox(width: 8),
       Expanded(child: WaveBars(bars: bars, color: color, height: 42)),
-    ]);
+    ],);
   }
 
   @override
@@ -239,15 +239,15 @@ class _WaveCompare extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.04),
+        color: Colors.white.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Column(children: [
         _row('원본', result.refWave, AppTheme.volt),
         const SizedBox(height: 12),
         _row('나', result.userWave, AppTheme.hotPink),
-      ]),
+      ],),
     );
   }
 }
@@ -262,15 +262,15 @@ class _Stat extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withOpacity(0.08))),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),),
       child: Column(children: [
         Text('$value', style: TextStyle(fontSize: 22,
-          fontWeight: FontWeight.w900, color: color)),
+          fontWeight: FontWeight.w900, color: color,),),
         const SizedBox(height: 2),
         Text(label, style: AppTheme.label.copyWith(fontSize: 11)),
-      ]),
+      ],),
     );
   }
 }

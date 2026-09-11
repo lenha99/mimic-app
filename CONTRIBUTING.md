@@ -9,9 +9,13 @@
 ```bash
 git clone https://github.com/lenha99/mimic-app.git
 cd mimic-app
-flutter pub get
+sh setup.sh          # 훅 등록 + pub get (Windows는 Git Bash에서)
 flutter run          # 폰 USB 연결 + 개발자옵션 USB 디버깅 ON
 ```
+
+`setup.sh`가 `main` 직접 push를 막는 훅을 깔아준다. **이걸 안 돌리면 실수로
+main에 밀어넣게 된다.** (무료 플랜 private 저장소라 GitHub 서버쪽 보호를
+못 걸어서 로컬에서 막는 방식)
 
 Flutter SDK 설치가 안 돼 있으면 `CLAUDE.md`의 "환경 세팅 순서" 참고.
 서버(Modal) 없이도 앱은 뜬다. 채점만 안 될 뿐.
@@ -21,6 +25,7 @@ Flutter SDK 설치가 안 돼 있으면 `CLAUDE.md`의 "환경 세팅 순서" �
 ## 1. 절대 규칙 (이것만 지키면 됨)
 
 1. **`main`에 직접 push 하지 않는다.** 항상 브랜치 → PR → merge.
+   (`setup.sh`를 돌렸으면 훅이 알아서 막아준다)
 2. **작업 시작 전에 `git pull`** 한다. 안 하면 충돌난다.
 3. **APK/키스토어/`.env`는 커밋하지 않는다.** (`.gitignore`에 이미 막아둠)
 4. **서로 같은 파일을 동시에 만지지 않는다.** 만질 거면 먼저 말한다.
