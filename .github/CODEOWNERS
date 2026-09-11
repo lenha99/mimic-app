@@ -1,8 +1,12 @@
 # 이 경로가 바뀌는 PR에는 자동으로 리뷰 요청이 간다.
-# 형을 초대한 뒤 아래에 @형아이디를 추가하면 영역별로 나눌 수 있다.
+# (PR 작성자 본인에게는 요청이 안 가므로, 2인 팀에서는
+#  "내가 PR 올리면 상대에게 자동으로 리뷰 요청"이 된다.)
 
-*                   @lenha99
+*                   @lenha99 @erickbj1208
 
-# 예시 — 협업자 추가 후 주석 해제
-# lib/*_screen.dart @친구아이디
-# modal_app.py      @lenha99
+# 영역을 나누고 싶어지면 아래처럼 구체적인 규칙을 추가한다.
+# 나중 줄이 앞 줄을 덮어쓴다.
+#
+# lib/*_screen.dart   @erickbj1208
+# modal_app.py        @lenha99
+# scoring_engine.py   @lenha99
