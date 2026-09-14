@@ -1,0 +1,102 @@
+/*
+ * 디자인 토큰 — Flutter 쪽 lib/theme.dart 의 "방송 송출" 컨셉을 그대로 옮겼다.
+ * 검정 무대 + 형광 옐로우 스포트라이트 + 음파.
+ * 의도적으로 단일(다크) 테마다. 제품 아이덴티티가 무대 조명이라 라이트 모드가 없다.
+ */
+:root {
+  color-scheme: dark;
+
+  --stage: #0a0a0b;
+  --panel: #161618;
+  --panel-hi: #1e1e22;
+  --rule: #26262a;
+
+  --volt: #e8ff3a;
+  --cyan: #00e5ff;
+  --pink: #ff2d78;
+  --lime: #7cff6b;
+
+  --white: #f5f5f7;
+  --ash: #8a8a92;
+  --ash-dim: #5d5d65;
+
+  --sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", "Malgun Gothic", sans-serif;
+  --mono: var(--font-mono), ui-monospace, SFMono-Regular, Consolas, monospace;
+
+  --gutter: 20px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--stage);
+  color: var(--white);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+a {
+  color: var(--cyan);
+  text-underline-offset: 3px;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--volt);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* 공통 레이아웃 ------------------------------------------------------- */
+
+.shell {
+  max-width: 720px;
+  margin: 0 auto;
+  padding-inline: var(--gutter);
+  padding-block: 0 72px;
+}
+
+.logo {
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  background: linear-gradient(90deg, var(--volt), var(--cyan));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ash);
+}
