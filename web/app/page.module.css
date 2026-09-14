@@ -84,6 +84,19 @@
   background: var(--panel);
   border: 1px solid var(--rule);
   border-radius: 14px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.card:active {
+  border-color: var(--volt);
+}
+
+.go {
+  margin-left: auto;
+  font-family: var(--mono);
+  color: var(--ash-dim);
+  flex: none;
 }
 
 .emoji {
