@@ -36,8 +36,10 @@ jobs:
         with:
           python-version: '3.12'
           cache: pip
+      # decode_test 는 ffmpeg 이 없으면 전부 skip 된다 — 러너에 없어서 명시 설치
+      - run: sudo apt-get install -y --no-install-recommends ffmpeg
       - run: pip install -r requirements.txt
-      - run: pytest test/scoring_test.py -v
+      - run: pytest test/ -v
 
   web:
     name: 웹앱 — 린트 + 빌드
