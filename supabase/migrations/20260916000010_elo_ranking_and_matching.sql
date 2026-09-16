@@ -39,15 +39,17 @@ create trigger votes_apply_elo
   for each row execute function apply_vote_elo();
 
 -- rankings 뷰에 elo_rating(해당 유저의 그 밈 최고 기록) 추가.
+-- CREATE OR REPLACE VIEW는 기존 컬럼 순서를 바꾸거나 중간에 끼워넣지 못하고
+-- 끝에 추가만 가능해서, elo_rating을 반드시 마지막에 둬야 한다.
 create or replace view rankings as
 select
   r.user_id,
   r.meme_id,
   count(*) filter (where v.winner_id = r.id) as wins,
   count(*) filter (where v.winner_id is not null and v.winner_id <> r.id) as losses,
-  max(r.elo_rating) as elo_rating,
   p.nickname,
-  p.avatar_emoji
+  p.avatar_emoji,
+  max(r.elo_rating) as elo_rating
 from recordings r
 join votes v on v.recording_a_id = r.id or v.recording_b_id = r.id
 join profiles p on p.id = r.user_id
