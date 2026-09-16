@@ -2,6 +2,30 @@
   padding-block: 44px 28px;
 }
 
+.topRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.nav {
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.nav a {
+  color: var(--ash);
+  text-decoration: none;
+}
+
+.nav a:hover {
+  color: var(--white);
+}
+
 .title {
   font-size: clamp(30px, 8vw, 42px);
   font-weight: 900;

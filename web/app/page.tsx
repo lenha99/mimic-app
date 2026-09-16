@@ -1,14 +1,26 @@
 import Link from "next/link";
 import { getMemes } from "@/lib/memes";
+import { createClient } from "@/lib/supabase/server";
 import styles from "./page.module.css";
 
 export default async function Home() {
   const { memes, stale } = await getMemes();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   return (
     <main className="shell">
       <header className={styles.head}>
-        <div className="logo">🎙 MIMIC</div>
+        <div className={styles.topRow}>
+          <div className="logo">🎙 MIMIC</div>
+          <nav className={styles.nav}>
+            <Link href="/rank">🏆 랭킹</Link>
+            <Link href="/vote">🗳️ 투표</Link>
+            <Link href={user ? "/profile" : "/login"}>{user ? "프로필" : "로그인"}</Link>
+          </nav>
+        </div>
         <h1 className={styles.title}>
           듣고, 따라하고,
           <br />
