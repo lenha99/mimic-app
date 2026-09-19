@@ -106,9 +106,13 @@ def _decode_upload(raw: bytes):
 # 콜드 스타트 최소화:
 #  - enable_memory_snapshot: librosa 임포트 + JIT 워밍이 끝난 상태를 스냅샷으로
 #    저장 → 콜드 복원이 수십 초 → 수 초로 단축
-#  - scaledown_window=300: 첫 호출 이후 5분간 컨테이너 유지 → 연속 채점 ~2s
+#  - scaledown_window=90: 첫 호출 이후 90초간 컨테이너 유지.
+#    300초는 Flutter 앱 패턴(한 사람이 연속으로 여러 밈 채점)에 맞춘 값이었다.
+#    웹은 링크 공유로 트래픽이 산발적이라 — 30분에 걸쳐 열 명이 띄엄띄엄 —
+#    실제 연산 30초에 컨테이너 30분치를 물게 된다. 메모리 스냅샷 덕에 콜드
+#    복원이 수 초라 낮춰도 체감 차이가 작다. (이슈 #20, 기획서 v0.2 L1)
 @app.function(image=image, volumes={REF_DIR: volume},
-              scaledown_window=300, enable_memory_snapshot=True)
+              scaledown_window=90, enable_memory_snapshot=True)
 @modal.fastapi_endpoint(method="POST", docs=True)
 async def score(meme_id: str, file: UploadFile):
     """
@@ -128,7 +132,8 @@ async def score(meme_id: str, file: UploadFile):
     return result
 
 
-@app.function(image=slim_image, volumes={REF_DIR: volume}, scaledown_window=300)
+# slim 이미지라 콜드 스타트가 짧다 → 유지 시간도 짧게. (이슈 #20, L1)
+@app.function(image=slim_image, volumes={REF_DIR: volume}, scaledown_window=90)
 @modal.fastapi_endpoint(method="GET")
 def reference(meme_id: str):
     """기준 음성(wav) 스트리밍 — 앱의 '원본 듣기'용. query: meme_id"""
