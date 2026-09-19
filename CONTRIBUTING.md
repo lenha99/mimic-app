@@ -22,6 +22,28 @@ Flutter SDK 설치가 안 돼 있으면 `CLAUDE.md`의 "환경 세팅 순서" �
 
 ---
 
+### GitHub / git 이 처음이라면
+
+이것부터 깔면 위 명령어가 다 돌아간다.
+
+1. **Git** — https://git-scm.com/download/win (윈도우) / 맥은 `xcode-select --install`
+2. **GitHub CLI** — https://cli.github.com → 설치 후 `gh auth login` (브라우저로 로그인)
+3. 초대 메일의 **Accept invitation** 을 먼저 눌러야 clone 이 된다.
+   (또는 https://github.com/lenha99/mimic-app/invitations)
+
+용어 세 개만 알면 된다:
+
+| 말 | 뜻 |
+|---|---|
+| **브랜치(branch)** | 내 작업용 복사본. 여기서 뭘 해도 `main`은 안 망가진다. |
+| **커밋(commit)** | 저장 지점. 여기까지 한 걸로 기록해둬. |
+| **PR (Pull Request)** | "내 브랜치를 main에 합쳐줘" 하는 요청 + 리뷰하는 자리. |
+
+겁낼 것 없다. **커밋하고 push한 것은 거의 다 되돌릴 수 있다.**
+되돌리기 어려운 건 `--force` 뿐인데, 그건 안 쓰면 된다.
+
+---
+
 ## 1. 절대 규칙 (이것만 지키면 됨)
 
 1. **`main`에 직접 push 하지 않는다.** 항상 브랜치 → PR → merge.

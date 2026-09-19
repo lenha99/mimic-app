@@ -1,0 +1,135 @@
+.head {
+  padding-block: 44px 28px;
+}
+
+.title {
+  font-size: clamp(30px, 8vw, 42px);
+  font-weight: 900;
+  letter-spacing: -1.4px;
+  line-height: 1.08;
+  margin: 18px 0 0;
+  text-wrap: balance;
+}
+
+.sub {
+  color: var(--ash);
+  margin: 12px 0 0;
+  max-width: 34ch;
+}
+
+.notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-top: 26px;
+  padding: 14px 16px;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--volt);
+  border-radius: 10px;
+}
+
+.noticeText {
+  flex: 1 1 200px;
+  font-size: 14px;
+  color: var(--ash);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.noticeLink {
+  flex: none;
+  background: var(--volt);
+  color: #0a0a0b;
+  font-weight: 800;
+  font-size: 14px;
+  text-decoration: none;
+  padding: 9px 16px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.listHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 40px 0 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.stale {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--pink);
+  letter-spacing: 0.06em;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.card:active {
+  border-color: var(--volt);
+}
+
+.go {
+  margin-left: auto;
+  font-family: var(--mono);
+  color: var(--ash-dim);
+  flex: none;
+}
+
+.emoji {
+  font-size: 30px;
+  line-height: 1;
+  flex: none;
+}
+
+.cardBody {
+  min-width: 0;
+}
+
+.cardTitle {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.cardMeta {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--ash-dim);
+  margin: 3px 0 0;
+}
+
+.foot {
+  margin-top: 48px;
+  padding-top: 20px;
+  border-top: 1px solid var(--rule);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--ash-dim);
+  line-height: 1.9;
+}
