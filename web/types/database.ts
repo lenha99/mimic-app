@@ -59,6 +59,8 @@ export interface Database {
           timing: number | null;
           elo_rating: number;
           is_public: boolean;
+          // service_role 전용 — anon/authenticated 키는 이 컬럼의 SELECT 권한이
+          // 없다(마이그레이션 …0011). 게스트 귀속은 claim_recording() RPC로 한다.
           claim_token: string | null;
           created_at: string;
         };
@@ -75,6 +77,8 @@ export interface Database {
           pitch?: number | null;
           tone?: number | null;
           timing?: number | null;
+          // elo_rating도 같은 이유로 클라이언트가 못 정한다 — 초안 insert는 1200만
+          // 허용되고, 이후 갱신은 투표 트리거(apply_vote_elo)만 할 수 있다.
           elo_rating?: number;
           is_public?: boolean;
           claim_token?: string;
@@ -144,6 +148,23 @@ export interface Database {
       get_vote_matchup: {
         Args: { p_exclude_user?: string | null };
         Returns: { meme_id: string; id: string; audio_url: string; user_id: string | null }[];
+      };
+      /** 게스트 녹음을 로그인 계정에 귀속. 토큰은 1회용이라 성공 시 소각된다. */
+      claim_recording: {
+        Args: { p_claim_token: string };
+        Returns: string;
+      };
+      /** 게스트는 user_id가 없어 자기 녹음을 select로 못 읽는다 — 토큰으로 조회. */
+      get_guest_recording: {
+        Args: { p_claim_token: string };
+        Returns: {
+          id: string;
+          meme_id: string;
+          audio_url: string;
+          score: number | null;
+          grade: string | null;
+          is_public: boolean;
+        }[];
       };
     };
     Enums: Record<string, never>;

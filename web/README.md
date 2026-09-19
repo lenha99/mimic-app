@@ -36,7 +36,10 @@ const res = await fetch(`/api/publish-recording?meme_id=${meme.id}`, {
 });
 const { recordingId, claimToken, score, grade, breakdown } = await res.json();
 // claimToken이 오면(비로그인 상태) localStorage에 저장해뒀다가
-// 로그인 후 recordings.claim_token으로 본인 계정에 귀속(update)시키면 됨.
+// 로그인 후 claim_recording() RPC로 본인 계정에 귀속시키면 됨.
+//   await supabase.rpc("claim_recording", { p_claim_token: claimToken });
+// 토큰은 1회용이라 성공하면 즉시 소각된다. 로그인 전에 결과를 다시 읽어야 하면
+// get_guest_recording() RPC를 쓴다 (게스트는 user_id가 없어 select로는 못 읽음).
 ```
 
 로그인 여부는 서버가 세션으로 알아서 판단한다(비로그인이면 게스트로 저장, 이슈 #19).

@@ -56,7 +56,12 @@ export default async function VotePage() {
         {meme?.emoji} {meme?.title} 배틀
       </h1>
       <p className={styles.sub}>둘 중 더 웃긴 건?</p>
-      <VoteMatch memeId={a.meme_id} recordingA={a} recordingB={b} />
+      {/*
+        key로 쌍을 묶어둬야 "다음 대결"이 동작한다 — router.refresh()는 서버 트리만
+        다시 그리고 VoteMatch는 마운트된 채라, key가 없으면 picked 상태가 남아서
+        새 쌍이 와도 "투표 완료" 화면에서 못 빠져나온다.
+      */}
+      <VoteMatch key={`${a.id}-${b.id}`} memeId={a.meme_id} recordingA={a} recordingB={b} />
     </main>
   );
 }
