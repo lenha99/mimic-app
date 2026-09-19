@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { config } from "@/lib/config";
 import { createClient } from "@/lib/supabase/server";
 
 /** OAuth 로그인(카카오/구글) 후 Supabase가 리다이렉트하는 콜백. */
@@ -7,11 +6,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
   const next = safeNext(searchParams.get("next"));
-
-  // request.url 의 origin 은 Vercel 프록시 뒤에서 내부 호스트로 잡힐 수 있다.
-  // 그러면 로그인 후 엉뚱한 도메인으로 떨어지고, 쿠키는 진짜 호스트에 설정돼
-  // 있으니 세션이 유실된 것처럼 보인다. config.siteUrl 이 이미 이걸 해결한다.
-  const origin = config.siteUrl;
+  const origin = resolveOrigin(request);
 
   if (code) {
     const supabase = await createClient();
@@ -23,6 +18,22 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.redirect(`${origin}/login?error=auth_failed`);
+}
+
+/**
+ * request.url 의 origin 은 Vercel 프록시 뒤에서 내부 호스트로 잡힐 수 있다.
+ * 그러면 로그인 후 엉뚱한 도메인으로 떨어지고, 쿠키는 진짜 호스트에 설정돼
+ * 있으니 세션이 유실된 것처럼 보인다.
+ *
+ * x-forwarded-host 는 사용자가 실제로 접속한 호스트라 프리뷰든 프로덕션이든
+ * 그 배포의 주소로 정확히 돌아간다. (config.siteUrl 은 프리뷰 배포에서도
+ * 프로덕션 주소로 해석되므로 여기 쓰면 안 된다 — 프리뷰 로그인이 깨진다.)
+ */
+function resolveOrigin(request: Request): string {
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  if (!forwardedHost) return new URL(request.url).origin;
+  const proto = request.headers.get("x-forwarded-proto") ?? "https";
+  return `${proto}://${forwardedHost}`;
 }
 
 /**
