@@ -11,6 +11,9 @@
 annotation 은 from __future__ 로 문자열화해 로컬 평가를 피한다.
 """
 from __future__ import annotations
+import os
+import subprocess
+import tempfile
 import modal
 
 # librosa 포함된 컨테이너 이미지 정의
@@ -39,9 +42,6 @@ DOWNLOAD_URL = "https://lenha99--meme-scoring-download.modal.run"
 
 # 컨테이너 안에서만 실행되는 import (로컬 deploy 시엔 건너뜀)
 with image.imports():
-    import os
-    import tempfile
-    import subprocess
     import numpy as np
     import librosa
     import matplotlib
@@ -67,6 +67,42 @@ with slim_image.imports():
     from fastapi import UploadFile, Response
 
 
+# ---- 업로드 오디오 디코딩 ----
+# 브라우저 MediaRecorder 는 컨테이너를 제 마음대로 고른다. 안드로이드 카톡 인앱
+# 웹뷰는 audio/webm;codecs=opus, iOS 는 audio/mp4 를 준다. libsndfile 은 둘 다
+# 못 읽고("Format not recognised"), librosa 1.0 부터 audioread 폴백마저 빠져서
+# 확장자만 .wav 로 붙여 넘기면 그대로 죽는다. 디코딩은 ffmpeg 에 맡긴다. (이슈 #15)
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024   # 2.5초 opus 녹음이 ~15KB. 상한은 넉넉하게.
+DECODE_SR = 16000                     # _score 가 어차피 16k 로 리샘플한다.
+
+
+def _decode_upload(raw: bytes):
+    """업로드 바이트를 16k mono wav 로 변환하고 임시 파일 경로를 돌려준다.
+
+    포맷을 추측하지 않는다 — ffmpeg 이 컨테이너를 스스로 판별한다.
+    읽을 수 없으면 None (호출부가 500 대신 에러 메시지를 돌려주도록).
+    """
+    if not raw or len(raw) > MAX_UPLOAD_BYTES:
+        return None
+
+    src = tempfile.NamedTemporaryFile(delete=False).name
+    dst = tempfile.NamedTemporaryFile(suffix=".wav", delete=False).name
+    try:
+        with open(src, "wb") as f:
+            f.write(raw)
+        subprocess.run(
+            ["ffmpeg", "-v", "error", "-y", "-i", src,
+             "-ac", "1", "-ar", str(DECODE_SR), "-c:a", "pcm_s16le", dst],
+            check=True, capture_output=True, timeout=30,
+        )
+        return dst
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError):
+        os.unlink(dst)
+        return None
+    finally:
+        os.unlink(src)
+
+
 # 콜드 스타트 최소화:
 #  - enable_memory_snapshot: librosa 임포트 + JIT 워밍이 끝난 상태를 스냅샷으로
 #    저장 → 콜드 복원이 수십 초 → 수 초로 단축
@@ -87,10 +123,9 @@ async def score(meme_id: str, file: UploadFile):
     if not os.path.exists(ref_path):
         return {"error": f"기준 음성 없음: {meme_id}"}
 
-    # 유저 파일 임시 저장
-    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
-        f.write(await file.read())
-        user_path = f.name
+    user_path = _decode_upload(await file.read())
+    if user_path is None:
+        return {"error": "녹음 파일을 디코딩할 수 없음"}
 
     result = _score(ref_path, user_path)
     os.unlink(user_path)
@@ -258,8 +293,9 @@ async def make_video(meme_id: str, title: str, score: int,
     if not os.path.exists(ref_path):
         return {"error": f"기준 음성 없음: {meme_id}"}
 
-    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
-        f.write(await file.read()); user_path = f.name
+    user_path = _decode_upload(await file.read())
+    if user_path is None:
+        return {"error": "녹음 파일을 디코딩할 수 없음"}
     out_mp4 = tempfile.NamedTemporaryFile(suffix=".mp4", delete=False).name
 
     _build_video(ref_path, user_path, title, score, grade, out_mp4, source)
