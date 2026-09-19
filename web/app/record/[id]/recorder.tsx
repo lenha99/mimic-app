@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { addGuestClaim } from "@/lib/guest-claims";
 import type { Meme } from "@/lib/memes";
 import styles from "./record.module.css";
 
@@ -17,6 +18,9 @@ type Score = {
 };
 
 type Phase = "ready" | "recording" | "scoring" | "result";
+
+/** 결과를 서버에 저장하는 단계 (이슈 #23 — 서버가 같은 오디오를 다시 채점한다). */
+type PublishPhase = "idle" | "publishing" | "done";
 
 const GRADE_CLASS: Record<string, string> = {
   SS: styles.gradeSS,
@@ -34,10 +38,17 @@ export default function Recorder({ meme, refUrl }: { meme: Meme; refUrl: string 
   const [playing, setPlaying] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  const [publishPhase, setPublishPhase] = useState<PublishPhase>("idle");
+  const [wantsPublic, setWantsPublic] = useState(false); // 공개는 opt-in (이슈 #16)
+  const [publishedPublic, setPublishedPublic] = useState(false);
+  const [adjusted, setAdjusted] = useState<{ from: number; to: number } | null>(null);
+
   const audioRef = useRef<HTMLAudioElement>(null);
   const recRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<number | null>(null);
+  // 저장할 때 같은 오디오를 서버로 다시 보내야 해서 들고 있는다.
+  const blobRef = useRef<Blob | null>(null);
 
   const clearTimer = () => {
     if (timerRef.current !== null) {
@@ -63,6 +74,7 @@ export default function Recorder({ meme, refUrl }: { meme: Meme; refUrl: string 
         return;
       }
       setPhase("scoring");
+      blobRef.current = blob;
       try {
         const body = new FormData();
         body.append("file", blob, "recording.webm");
@@ -167,10 +179,61 @@ export default function Recorder({ meme, refUrl }: { meme: Meme; refUrl: string 
     }
   }, [meme.title, result]);
 
+  /**
+   * 결과를 서버에 저장한다 (이슈 #23).
+   *
+   * 점수는 보내지 않는다 — 서버가 같은 오디오를 Modal 에 다시 채점시켜 나온 값만
+   * 기록한다. 그래서 화면 점수와 확정 점수가 미세하게 다를 수 있고, 다르면
+   * 확정값으로 바꿔 보여준다 (랭킹에 올라가는 건 확정값이라 속이면 안 된다).
+   */
+  const publish = useCallback(async () => {
+    const blob = blobRef.current;
+    if (!blob || !result) return;
+
+    setPublishPhase("publishing");
+    setError(null);
+    try {
+      const body = new FormData();
+      body.append("file", blob, "recording.webm");
+      body.append("is_public", String(wantsPublic));
+
+      const res = await fetch(
+        `/api/publish-recording?meme_id=${encodeURIComponent(meme.id)}`,
+        { method: "POST", body },
+      );
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setError(data.error ?? "저장에 실패했습니다.");
+        setPublishPhase("idle");
+        return;
+      }
+
+      // 비로그인이면 1회용 토큰이 온다. 로그인 후 /profile 에서 귀속시킨다.
+      if (data.claimToken) addGuestClaim(data.claimToken);
+
+      if (typeof data.score === "number" && data.score !== result.score) {
+        setAdjusted({ from: result.score, to: data.score });
+      }
+      setResult((prev) =>
+        prev ? { ...prev, score: data.score, grade: data.grade, breakdown: data.breakdown } : prev,
+      );
+      setPublishedPublic(wantsPublic);
+      setPublishPhase("done");
+    } catch {
+      setError("네트워크 오류가 났습니다. 다시 시도해 주세요.");
+      setPublishPhase("idle");
+    }
+  }, [meme.id, result, wantsPublic]);
+
   const retry = useCallback(() => {
     setResult(null);
     setError(null);
     setPhase("ready");
+    setPublishPhase("idle");
+    setWantsPublic(false);
+    setPublishedPublic(false);
+    setAdjusted(null);
+    blobRef.current = null;
   }, []);
 
   const pct = Math.min(100, (elapsed / MAX_MS) * 100);
@@ -277,6 +340,53 @@ export default function Recorder({ meme, refUrl }: { meme: Meme; refUrl: string 
             <div className={styles.waves}>
               <Wave label="원본" data={result.waveform.ref} tone="ref" />
               <Wave label="나" data={result.waveform.user} tone="user" />
+            </div>
+          )}
+
+          {publishPhase === "done" ? (
+            <div className={styles.publish}>
+              <p className={styles.publishDone}>
+                저장 완료 ✓{" "}
+                {publishedPublic
+                  ? "다른 사람들이 듣고 투표할 수 있어요."
+                  : "나만 볼 수 있게 저장했어요."}
+              </p>
+              {adjusted && (
+                <p className={styles.hint}>
+                  서버가 다시 채점해 점수가 확정됐어요 ({adjusted.from} → {adjusted.to}점).
+                </p>
+              )}
+              {publishedPublic && (
+                <Link href="/rank" className={styles.publishLink}>
+                  랭킹 보러 가기 →
+                </Link>
+              )}
+            </div>
+          ) : (
+            <div className={styles.publish}>
+              <label className={styles.publishToggle}>
+                <input
+                  type="checkbox"
+                  checked={wantsPublic}
+                  onChange={(e) => setWantsPublic(e.target.checked)}
+                  disabled={publishPhase === "publishing"}
+                />
+                <span>다른 사람이 듣고 투표할 수 있게 공개</span>
+              </label>
+              <p className={styles.hint}>
+                공개하지 않으면 나만 볼 수 있게 저장됩니다. 공개한 녹음만 랭킹에 올라가요.
+              </p>
+              <button
+                className={styles.publishBtn}
+                onClick={publish}
+                disabled={publishPhase === "publishing"}
+              >
+                {publishPhase === "publishing"
+                  ? "저장 중… 서버가 다시 채점합니다"
+                  : wantsPublic
+                    ? "공개하고 저장"
+                    : "저장하기"}
+              </button>
             </div>
           )}
 

@@ -73,7 +73,7 @@ export default async function Home() {
       <footer className={styles.foot}>
         MIMIC 웹 리빌드 · M1
         <br />
-        녹음은 채점에만 쓰이고 저장되지 않습니다.
+        녹음은 &ldquo;저장하기&rdquo;를 누를 때만 서버에 남고, 공개는 직접 선택해야 합니다.
       </footer>
     </main>
   );

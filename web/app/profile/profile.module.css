@@ -98,3 +98,14 @@
   font-size: 13px;
   cursor: pointer;
 }
+
+.claimed {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--panel);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--lime);
+}

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "./sign-out-button";
 import { NicknameEditor } from "./nickname-editor";
+import { ClaimPending } from "./claim-pending";
 import styles from "./profile.module.css";
 
 /**
@@ -31,6 +32,8 @@ export default async function ProfilePage() {
         </div>
         <SignOutButton />
       </div>
+
+      <ClaimPending />
 
       {profile ? (
         <div className={styles.card}>
