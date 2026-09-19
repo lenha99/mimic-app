@@ -60,9 +60,10 @@ class _ResultScreenState extends State<ResultScreen>
         source: widget.meme.source,
         score: widget.result.score, grade: widget.result.grade,
         rec: widget.recording,);
-      await Share.shareXFiles([XFile(video.path)],
+      await SharePlus.instance.share(ShareParams(
+        files: [XFile(video.path)],
         text: '나 ${widget.meme.title} ${widget.result.grade} '
-              '${widget.result.score}점 🎙 너도 도전해봐!',);
+              '${widget.result.score}점 🎙 너도 도전해봐!',),);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -75,10 +76,10 @@ class _ResultScreenState extends State<ResultScreen>
 
   void _challengeFriend() {
     Analytics.shared(widget.meme.id, 'challenge');
-    Share.share(
+    SharePlus.instance.share(ShareParams(text:
       '🎙 ${widget.meme.title} 따라하기 챌린지!\n'
       '내 점수 ${widget.result.score}점(${widget.result.grade}) 넘어봐 😎\n'
-      '👉 ${Config.challengeLink(widget.meme.id, title: widget.meme.title, score: widget.result.score)}');
+      '👉 ${Config.challengeLink(widget.meme.id, title: widget.meme.title, score: widget.result.score)}',),);
   }
 
   @override
