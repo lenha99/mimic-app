@@ -9,6 +9,13 @@ import { config } from "@/lib/config";
  */
 const MAX_BYTES = 10 * 1024 * 1024; // modal_app._decode_upload 와 같은 상한
 
+/**
+ * 플랫폼 기본 함수 제한(10초)으로는 콜드 스타트 채점이 끝나기 전에 함수가 죽는다.
+ * 그러면 우리 에러 메시지 대신 플랫폼 504 가 나가서 원인도 안 보인다.
+ * 예열(/api/warm)이 대부분을 흡수하지만, 예열이 실패한 경우를 위한 바닥값이다.
+ */
+export const maxDuration = 60;
+
 export async function POST(req: Request) {
   const memeId = new URL(req.url).searchParams.get("meme_id");
   if (!memeId) {
@@ -27,10 +34,11 @@ export async function POST(req: Request) {
   body.append("file", file, "recording.webm");
 
   try {
-    // Modal 콜드 스타트가 수십 초까지 간다. 넉넉히 기다린다.
+    // Modal 콜드 스타트가 수십 초까지 간다. 다만 maxDuration 보다는 먼저 끊어서
+    // 플랫폼이 함수를 죽이기 전에 우리 문구로 답하게 한다.
     const res = await fetch(
       `${config.scoreUrl}?meme_id=${encodeURIComponent(memeId)}`,
-      { method: "POST", body, signal: AbortSignal.timeout(90_000) },
+      { method: "POST", body, signal: AbortSignal.timeout(55_000) },
     );
     // 서버가 JSON 이 아닌 걸 뱉으면 그대로 흘리지 않고 에러로 바꾼다.
     const text = await res.text();
