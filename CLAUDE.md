@@ -28,8 +28,9 @@ lib/
   result_screen.dart # 결과 + 닮음 % + 공유
   waveform.dart      # 음파 애니메이션 위젯
 
-scoring_engine.py    # 채점 엔진 (검증 완료)
-modal_app.py         # 서버 API (채점 + 영상생성)
+modal_app.py         # 서버 API (채점 + 영상생성). 채점식 _score() 도 여기 있다 —
+                     #   무거운 의존성을 image.imports() 안에 가둬야 해서 별도
+                     #   모듈로 못 뺀다. 고치면 test/calibration_test.py 를 돌릴 것.
 video_maker.py       # 공유영상 생성 (A: 합성오디오 B: 닮음%)
 memes.json           # 밈 목록 (코드 수정 없이 여기서 관리)
 deploy.sh            # 원커맨드 배포 스크립트
