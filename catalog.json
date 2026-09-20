@@ -44,6 +44,15 @@
       "plays": 41900
     },
     {
+      "id": "muyaho",
+      "title": "무야호",
+      "source": "무한도전",
+      "emoji": "🎉",
+      "plays": 0,
+      "line": "무야호~!",
+      "draft": true
+    },
+    {
       "id": "geoje_yaho",
       "title": "거제 야호",
       "source": "원이 · 리센느 미나미",
@@ -59,15 +68,6 @@
       "emoji": "🍚",
       "plays": 0,
       "line": "밥은 먹고 다니냐",
-      "draft": true
-    },
-    {
-      "id": "muyaho",
-      "title": "무야호",
-      "source": "무한도전",
-      "emoji": "🎉",
-      "plays": 0,
-      "line": "무야호~!",
       "draft": true
     },
     {

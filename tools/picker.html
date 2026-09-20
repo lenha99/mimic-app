@@ -78,6 +78,8 @@
     <p class="hint">
       파형을 드래그해서 구간을 잡고, 경계는 끝을 잡아 끌거나 위 버튼으로 미세 조정해.
       <kbd>space</kbd> 구간 재생 · <kbd>←</kbd><kbd>→</kbd> 시작 0.05초 · <kbd>shift</kbd>+<kbd>←</kbd><kbd>→</kbd> 끝 0.05초
+      <br><span style="color:#4fd8e8">청록색으로 칠해진 곳이 사람 목소리가 잡히는 구간</span>이야 — 그 밖은 음악·효과음·무음이라
+      고르면 채점이 안 된다. 기본 선택은 제일 긴 목소리 구간에 맞춰뒀어.
       <br>말이 시작되기 직전·끝난 직후로 조금 여유를 두면 돼. 앞뒤 무음은 어차피 자동으로 잘린다.
     </p>
   </div>
@@ -88,7 +90,7 @@ import WaveSurfer from 'https://cdn.jsdelivr.net/npm/wavesurfer.js@7/dist/wavesu
 import RegionsPlugin from 'https://cdn.jsdelivr.net/npm/wavesurfer.js@7/dist/plugins/regions.esm.js';
 
 // ingest.py 가 이 자리에 설정 JSON 을 꽂는다.
-const cfg = /*__PICK_CONFIG__*/ { offset: 0, window: 60 };
+const cfg = /*__PICK_CONFIG__*/ { offset: 0, window: 60, max_s: 10.0 };
 const OFFSET = cfg.offset;          // 이 wav 가 원본의 몇 초부터인지
 document.getElementById('title').textContent = cfg.video_title || '구간 고르기';
 document.getElementById('meta').textContent =
@@ -106,19 +108,37 @@ const mini = WaveSurfer.create({
 });
 
 let region = null;
+const markers = new Set();   // 말소리 표시용 — 사용자가 고른 구간과 구분한다
 
 ws.on('decode', () => {
   const dur = ws.getDuration();
+
+  // 파형만 봐선 어디가 말소리인지 모른다(음악·발소리도 똑같이 크다).
+  // 미리 찾아둔 유성 구간을 옅게 칠해서 어디를 잡아야 할지 보이게 한다.
+  // 주 화자 음역은 청록, 음역이 크게 다른 소리(다른 사람·효과음)는 주황.
+  // 두 색을 섞어 자르면 한 사람이 따라할 수 없어 게이트에서 막힌다.
+  for (const [a, b, hz, isMain] of (cfg.voiced || [])) {
+    const m = regions.addRegion({
+      start: a, end: Math.min(b, dur),
+      color: isMain ? 'rgba(79,216,232,0.13)' : 'rgba(255,140,60,0.16)',
+      content: hz ? `${Math.round(hz)}Hz` : '',
+      drag: false, resize: false,
+    });
+    markers.add(m.id);
+    m.element.style.pointerEvents = 'none';
+  }
+
   const s = Math.min(cfg.start ?? dur * 0.4, dur - 0.5);
   const e = Math.min(cfg.end ?? s + 2.2, dur);
   region = regions.addRegion({
-    start: s, end: e, color: 'rgba(216,255,62,0.18)', drag: true, resize: true,
+    start: s, end: e, color: 'rgba(216,255,62,0.22)', drag: true, resize: true,
   });
   update();
 });
-regions.on('region-updated', update);
-regions.enableDragSelection({ color: 'rgba(216,255,62,0.18)' });
+regions.on('region-updated', r => { if (!markers.has(r.id)) update(); });
+regions.enableDragSelection({ color: 'rgba(216,255,62,0.22)' });
 regions.on('region-created', r => {
+  if (markers.has(r.id)) return;
   if (region && r.id !== region.id) region.remove();
   region = r; update();
 });
@@ -133,12 +153,17 @@ function update() {
   const len = region.end - region.start;
   document.getElementById('readout').innerHTML =
     `${len.toFixed(2)}초 <span class="dim">· 원본 ${fmt(OFFSET + region.start)} → ${fmt(OFFSET + region.end)}</span>`;
-  // 길이가 UX 를 정한다 — 8초를 넘기면 녹음 화면 흐름 자체가 바뀐다.
+  // 길이가 녹음 화면의 흐름을 정한다. 경계값은 recorder.tsx 에서 가져온 것.
   const w = document.getElementById('warn');
   const btn = document.getElementById('confirm');
+  const MAX = cfg.max_s ?? 10.0;
   if (len < 1.2) { w.textContent = '1.2초보다 짧으면 안 돼 (녹음 창 최소값)'; btn.disabled = true; }
-  else if (len > 6.0) { w.textContent = '6초를 넘으면 수동 정지 UI 로 넘어가. 더 짧게 잡아봐'; btn.disabled = true; }
-  else if (len > 4.5) { w.textContent = '권장대(1.5~4.5초)보다 길어. 되긴 하는데 타이밍 점수가 박해져'; btn.disabled = false; }
+  else if (len > MAX) {
+    w.textContent = `${MAX}초를 넘으면 듣기와 따라하기가 두 탭으로 갈려. 그래도 하려면 --max-seconds 를 올려`;
+    btn.disabled = true;
+  }
+  else if (len > 7.2) { w.textContent = '"다 했어 →" 수동 정지 버튼이 붙어 (긴 대사엔 오히려 자연스러움)'; btn.disabled = false; }
+  else if (len > 4.5) { w.textContent = '권장대(1.5~4.5초)보다 길어. 타이밍은 길이 비율이라 중간에 끊으면 크게 깎여'; btn.disabled = false; }
   else { w.textContent = ''; btn.disabled = false; }
 }
 

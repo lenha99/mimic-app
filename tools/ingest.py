@@ -38,7 +38,12 @@ ID_RE = re.compile(r"^[a-z0-9_]{3,32}$")
 # 게이트 임계값 — 근거는 docs/ 아닌 코드다. 주석에 출처를 남긴다.
 MIN_TRIMMED_S = 0.35     # _score.load() 는 SR*0.15 미만을 거부. 2배 여유.
 MIN_DURATION_S = 1.2     # recorder.tsx MIN_WINDOW_MS=1200
-MAX_DURATION_S = 6.0     # 창 = dur+800ms → MANUAL_STOP_ABOVE_MS(8000) 까지 여유
+# 길이가 녹음 화면의 흐름을 정한다. 녹음 창 = 원본 길이 + TAIL_MS(800ms) 이므로:
+#   ~7.2초  수동 정지 버튼 없음 (완전 원테이크)
+#   ~10초   "다 했어 →" 버튼이 붙는다 (MANUAL_STOP_ABOVE_MS=8000)
+#   10초 초과  듣기와 따라하기가 두 탭으로 갈린다 (LONG_REF_SECONDS=10)
+STOP_BUTTON_S = 7.2
+MAX_DURATION_S = 10.0    # 흐름이 갈리는 진짜 경계. --max-seconds 로 넘길 수 있다.
 SWEET_S = (1.5, 4.5)     # 기존 코퍼스 0.82~4.02초
 MIN_VOICED_FRAMES = 25   # _score 는 5 미만이면 피치를 통째로 버린다. 5는 '안 터짐', 25는 '실제로 측정됨'
 MIN_VOICED_RATIO = 0.35
@@ -156,7 +161,10 @@ def normalize(src, dst, start_s=None, end_s=None, denoise=False):
                f":measured_LRA={stats['input_lra']}:measured_thresh={stats['input_thresh']}"
                ":linear=true")
 
-    chain = ["highpass=f=80"]
+    # 채점의 pyin 은 fmin=65Hz 부터 본다. 하이패스를 그 위(80Hz)에 걸었더니 저음
+    # 남성 목소리(송강호 ~76Hz)의 기본주파수가 깎여 유성 프레임이 반토막 났다
+    # (64개 → 32개). fmin 아래인 55Hz 로 내린다 — 럼블은 걷고 목소리는 남긴다.
+    chain = ["highpass=f=55"]
     if denoise:
         # 약하게만. 기준 음성에만 건 필터는 유저의 깨끗한 마이크엔 없어서,
         # 세게 걸면 모두에게 음색 감점이 깔린다.
@@ -176,7 +184,7 @@ def normalize(src, dst, start_s=None, end_s=None, denoise=False):
 
 # ---------------------------------------------------------------- 품질 검사
 
-def qa(path, voice=True):
+def qa(path, voice=True, max_s=MAX_DURATION_S):
     """게이트 실행. (metrics, failures, warnings) 반환."""
     import numpy as np
     import librosa
@@ -201,10 +209,17 @@ def qa(path, voice=True):
         fails.append(f"트림 후 {trimmed:.2f}초 — {MIN_TRIMMED_S}초 미만이면 채점이 거부한다")
     if dur < MIN_DURATION_S:
         fails.append(f"길이 {dur:.2f}초 — 최소 {MIN_DURATION_S}초")
-    if dur > MAX_DURATION_S:
-        fails.append(f"길이 {dur:.2f}초 — {MAX_DURATION_S}초 넘으면 수동 정지 UI 로 넘어간다")
+    if dur > max_s:
+        fails.append(
+            f"길이 {dur:.2f}초 — {max_s}초를 넘으면 듣기와 따라하기가 두 탭으로 갈린다. "
+            "그래도 넣으려면 --max-seconds 를 올려라")
+    elif dur > STOP_BUTTON_S:
+        warns.append(f"길이 {dur:.2f}초 — '다 했어 →' 수동 정지 버튼이 붙는다 (긴 대사엔 오히려 자연스럽다)")
     elif not (SWEET_S[0] <= dur <= SWEET_S[1]):
         warns.append(f"길이 {dur:.2f}초 — 권장대는 {SWEET_S[0]}~{SWEET_S[1]}초")
+    if dur > SWEET_S[1]:
+        # timing 은 순수 길이 비율(100*min/max)이라 길수록 중간에 멈추면 크게 깎인다.
+        warns.append(f"길수록 타이밍 점수가 박해진다 — 1초 일찍 끊으면 {100*dur/(dur+1):.0f}점")
     if peak < 1e-3:
         fails.append("사실상 무음이다")
     if clip_ratio > MAX_CLIP_RATIO:
@@ -343,14 +358,14 @@ def cmd_add(a):
         normalize(src, out, s, e, denoise=a.denoise)
 
     print(f"· 검사 중: {out}")
-    m, fails, warns = qa(out, voice=not a.nonvoice)
+    m, fails, warns = qa(out, voice=not a.nonvoice, max_s=a.max_seconds)
     print_qa(m, fails, warns)
-    if fails and not a.force:
+    if fails and not a.ignore_gates:
         # 파일은 남긴다 — 구간을 다시 고르려면 잘린 걸 들어보고 뜯어봐야 한다.
         # 레지스트리에만 안 넣으므로 배포로는 절대 안 샌다.
         print(f"\n게이트를 통과 못 했다. 잘린 파일은 검사용으로 남겨둔다: {out}\n"
               "구간을 다시 고르거나(scan), --denoise 를 쓰거나, 직접 녹음/TTS 로\n"
-              "대체해라. 그래도 넣으려면 --force.")
+              "대체해라. 그래도 넣으려면 --ignore-gates.")
         sys.exit(1)
 
     entry = {"id": a.id, "title": a.title, "source": a.source or "",
@@ -382,7 +397,7 @@ def cmd_add(a):
 
 
 def cmd_qa(a):
-    m, fails, warns = qa(Path(a.path), voice=not a.nonvoice)
+    m, fails, warns = qa(Path(a.path), voice=not a.nonvoice, max_s=a.max_seconds)
     print_qa(m, fails, warns)
     sys.exit(1 if fails else 0)
 
@@ -433,6 +448,55 @@ def cmd_scan(a):
     print("\n  위 '시작(초)'을 --start 로, +길이를 --end 로 넣어 add 해라.")
 
 
+def _voiced_spans(wav, min_len=0.25, bridge=0.2):
+    """목소리 구간 [[시작, 끝, 중앙음높이Hz, 주음역인가], …].
+
+    파형만 봐선 어디가 목소리인지 안 보인다. 게다가 음역대까지 알려줘야 한다 —
+    한 클립에 두 사람이 섞이면 한 사람이 따라할 수 없어 게이트에서 막히는데,
+    그걸 자르고 나서야 알면 늦다.
+    """
+    import numpy as np
+    import librosa
+    y, sr = librosa.load(str(wav), sr=SR, mono=True)
+    f0, voiced, _ = librosa.pyin(y, fmin=65, fmax=2093, sr=sr)
+    if voiced is None or not len(voiced):
+        return []
+    hop = 512
+    spans, run = [], None
+    for i, v in enumerate(voiced):
+        t = i * hop / sr
+        if v and run is None:
+            run = t
+        elif not v and run is not None:
+            spans.append([run, t]); run = None
+    if run is not None:
+        spans.append([run, len(y) / sr])
+
+    merged = []
+    for s in spans:
+        if merged and s[0] - merged[-1][1] <= bridge:   # 숨 쉬는 틈은 이어 붙인다
+            merged[-1][1] = s[1]
+        else:
+            merged.append(s)
+    merged = [s for s in merged if s[1] - s[0] >= min_len]
+    if not merged:
+        return []
+
+    out = []
+    for a_, b_ in merged:
+        seg = f0[int(a_ * sr / hop):int(b_ * sr / hop)]
+        seg = seg[~np.isnan(seg)]
+        out.append([round(a_, 2), round(b_, 2),
+                    round(float(np.median(seg)), 1) if len(seg) else 0.0])
+
+    # 가장 긴 구간의 음역을 '주 화자'로 본다. 7세미톤 넘게 벌어지면 다른 소리다.
+    main = max(out, key=lambda s: s[1] - s[0])[2]
+    for s in out:
+        gap = abs(12 * np.log2((s[2] + 1e-9) / (main + 1e-9))) if s[2] else 99
+        s.append(bool(gap <= 7))
+    return out
+
+
 def cmd_pick(a):
     """파형을 보고 귀로 들으며 구간을 고른다.
 
@@ -458,12 +522,24 @@ def cmd_pick(a):
     if r.returncode != 0:
         die(f"구간 디코드 실패:\n{r.stderr[-800:]}")
 
-    cfg = {"offset": offset, "window": window,
+    # 어디가 말소리인지 파형만 봐선 모른다 — 음악·발소리도 똑같이 크다. pyin 으로
+    # 유성 구간을 미리 찾아 파형 위에 칠해주고, 기본 선택도 제일 긴 구간에 맞춘다.
+    voiced_spans = _voiced_spans(clip)
+    if voiced_spans and not a.start:
+        # 주 화자 음역의 구간 중 제일 긴 것에 기본 선택을 맞춘다
+        main_spans = [s for s in voiced_spans if s[3]] or voiced_spans
+        lo, hi = max(main_spans, key=lambda s: s[1] - s[0])[:2]
+        cfg_start, cfg_end = max(0.0, lo - 0.15), min(window, hi + 0.15)
+    else:
+        cfg_start = (ts_to_s(a.start) - offset) if a.start else None
+        cfg_end = (ts_to_s(a.end) - offset) if a.end else None
+
+    cfg = {"offset": offset, "window": window, "max_s": a.max_seconds,
+           "voiced": voiced_spans,
            "video_title": info.get("video_title"), "channel": info.get("channel"),
-           "start": (ts_to_s(a.start) - offset) if a.start else None,
-           "end": (ts_to_s(a.end) - offset) if a.end else None}
+           "start": cfg_start, "end": cfg_end}
     page = (Path(__file__).parent / "picker.html").read_text(encoding="utf-8")
-    token = "/*__PICK_CONFIG__*/ { offset: 0, window: 60 }"
+    token = "/*__PICK_CONFIG__*/ { offset: 0, window: 60, max_s: 10.0 }"
     if token not in page:
         die("picker.html 의 설정 자리를 찾지 못했다")
     page = page.replace(token, _json.dumps(cfg, ensure_ascii=False))
@@ -660,7 +736,13 @@ def main():
                        default="짧은 인용. 권리자 요청 시 즉시 삭제.")
         p.add_argument("--denoise", action="store_true", help="약한 노이즈 리덕션 추가")
         p.add_argument("--nonvoice", action="store_true", help="동물·효과음 (억양 게이트 면제)")
-        p.add_argument("--force", action="store_true", help="게이트 실패해도 진행")
+        p.add_argument("--max-seconds", dest="max_seconds", type=float,
+                       default=MAX_DURATION_S,
+                       help=f"길이 상한(초). 기본 {MAX_DURATION_S} — 넘으면 듣기/따라하기가 갈린다")
+        p.add_argument("--force", action="store_true",
+                       help="이미 레지스트리에 있는 id 를 덮어쓴다 (구간 다시 자를 때)")
+        p.add_argument("--ignore-gates", dest="ignore_gates", action="store_true",
+                       help="품질 게이트 실패를 무시하고 등록한다. 웬만하면 쓰지 마라")
 
     pk = sub.add_parser("pick", help="파형 보며 구간을 골라 그대로 넣는다 (권장)")
     pk.add_argument("--around", help="대략의 위치 (00:09:55). 없으면 한가운데")
@@ -674,6 +756,7 @@ def main():
 
     q = sub.add_parser("qa", help="기존 wav 에 게이트만 다시 돌린다")
     q.add_argument("path"); q.add_argument("--nonvoice", action="store_true")
+    q.add_argument("--max-seconds", dest="max_seconds", type=float, default=MAX_DURATION_S)
     q.set_defaults(func=cmd_qa)
 
     s = sub.add_parser("scan", help="영상에서 대사만 깨끗한 구간을 찾는다")
