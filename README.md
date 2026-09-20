@@ -28,8 +28,7 @@ cd mimic-app && flutter pub get && flutter run
 
 | 영역 | 파일 | 상태 |
 |---|---|---|
-| 채점 엔진 | `scoring_engine.py` | ✅ 검증 완료 |
-| 서버리스 API(채점+영상) | `modal_app.py` | ✅ 문법 검증, 배포만 하면 됨 |
+| 채점 엔진 + 서버리스 API | `modal_app.py` | ✅ `test/calibration_test.py` 로 회귀 검증 |
 | 공유영상 생성기 | `video_maker.py` | ✅ 실제 mp4 생성 검증 |
 | 기준 음성 생성 | `make_reference.py` | ✅ 코드 검증(네 PC 실행) |
 | Flutter 앱 | `lib/*.dart` | ✅ 전체 화면 구현 |

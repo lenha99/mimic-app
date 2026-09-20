@@ -305,7 +305,10 @@ async def make_video(meme_id: str, title: str, score: int,
 #  - 억양(pitch): 보이스드 구간만 추려 '세미톤 컨투어'로 비교(절대 음높이 무관).
 #    무음/비보이스 프레임을 섞지 않아 안정적. DTW로 타이밍 정렬 후 평균 세미톤 오차로 점수.
 #  - 음색(tone):  MFCC(음색 특징) DTW 코사인 유사도. UI의 '음색'과 의미 일치.
-#  - 타이밍(timing): 길이 비율.
+#  - 타이밍(timing): 에너지 포락선(리듬/강약 모양) 상관 x 길이 비율.
+#    길이 비율만 쓰면 '길이만 맞으면 100점'이 된다 — 거꾸로 말해도, 순수 잡음을
+#    넣어도, 완전히 다른 밈이어도 우연히 길이가 같으면 만점이었다. 포락선 상관을
+#    곱해 '언제 세고 언제 약한가'까지 봐야 그게 막힌다. (test/calibration_test.py)
 #  - 동물 등 비음성 사운드는 보이스드 프레임이 적으면 억양을 제외하고 가중치 재분배.
 #  - 같은 소리=100, 비슷=높게 나오도록 매핑 보정.
 def _score(reference_path, user_path):
@@ -352,15 +355,30 @@ def _score(reference_path, user_path):
         tone_cost = 1.0
     tone = 100.0 * float(np.clip(1.0 - tone_cost, 0.0, 1.0))
 
-    # 타이밍: 길이 비율
-    timing = 100.0 * (min(len(ref), len(usr)) / max(len(ref), len(usr)))
+    # 타이밍: 에너지 포락선 상관 x 길이 비율
+    def envelope(y, n=64):
+        """에너지 포락선을 고정 길이로 리샘플 — 리듬/강약 '모양'만 남긴다."""
+        rms = librosa.feature.rms(y=y, frame_length=1024, hop_length=256)[0]
+        if len(rms) < 2:
+            return np.zeros(n)
+        e = np.interp(np.linspace(0, 1, n), np.linspace(0, 1, len(rms)), rms)
+        return e / (e.max() + 1e-9)
+
+    shape = float(np.corrcoef(envelope(ref), envelope(usr))[0, 1])
+    if not np.isfinite(shape):
+        shape = 0.0
+    dur = min(len(ref), len(usr)) / max(len(ref), len(usr))
+    timing = 100.0 * max(0.0, shape) * dur
 
     # 가중 합 (억양 없으면 그 가중치를 음색/타이밍에 재분배)
+    # 가중치 근거: test/calibration_test.py 의 변형 사다리로 격자탐색한 값.
+    # 이전 값(.40/.40/.20)은 '오답 최고점 > 정답 최저점'(마진 -8.0)이었고,
+    # 이 값에서 마진 +10.6 으로 뒤집힌다. 바꾸려면 그 테스트를 먼저 돌릴 것.
     comps = []
     if pitch is not None:
-        comps.append((pitch, 0.40))
-    comps.append((tone, 0.40))
-    comps.append((timing, 0.20))
+        comps.append((pitch, 0.15))
+    comps.append((tone, 0.50))
+    comps.append((timing, 0.35))
     wsum = sum(w for _, w in comps)
     total = round(sum(v * w for v, w in comps) / wsum)
 

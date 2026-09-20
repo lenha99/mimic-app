@@ -116,7 +116,7 @@ git checkout main && git pull && git branch -d feat/record-retry
 - UI를 건드렸으면 **스크린샷/영상 필수**.
 - CI(초록 체크)가 통과해야 merge.
 - 리뷰어가 없으면 **Self-merge 해도 된다.** 단, 다음 중 하나면 반드시 상대 리뷰를 받는다:
-  - `modal_app.py` / `scoring_engine.py` (서버·채점 로직)
+  - `modal_app.py` (서버·채점 로직 — `_score()` 포함)
   - `pubspec.yaml` (의존성)
   - `android/` `ios/` (빌드 설정)
   - 결제·수익화 관련
@@ -133,7 +133,7 @@ merge 방식은 **Squash merge**로 통일 (히스토리가 깔끔해짐).
 |---|---|
 | 앱 UI/UX | `lib/*_screen.dart`, `lib/theme.dart`, `lib/rewards.dart`, `lib/waveform.dart` |
 | 앱 코어 | `lib/data.dart`, `lib/config.dart`, `lib/game_state.dart`, `lib/analytics.dart` |
-| 서버/채점 | `modal_app.py`, `scoring_engine.py`, `video_maker.py` |
+| 서버/채점 | `modal_app.py`, `video_maker.py` |
 | 콘텐츠 | `memes.json`, `catalog.json`, `refs*/` |
 
 ---
