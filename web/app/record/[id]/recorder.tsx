@@ -8,24 +8,37 @@ import styles from "./record.module.css";
 /**
  * 원테이크 — 탭 한 번에 원본 재생 → 3·2·1 → 자동 녹음 → 자동 정지 → 채점.
  *
- * 이전 화면은 "원본 듣기" 탭, "녹음 시작" 탭, "정지" 탭으로 세 번을 눌러야
- * 0.7초짜리 소리 하나를 냈다. 조작이 소리보다 길면 밈이 아니라 장비가 된다.
+ * 조작이 소리보다 길면 밈이 아니라 장비가 된다. 그래서 짧은 소리는 정지 버튼 없이
+ * 한 번에 흐르게 한다. 녹음 창은 원본 길이에서 계산하고, 남은 시간은 줄어드는
+ * 링으로만 보여준다. 링은 타이머이면서 "언제 끝내야 하는지"를 가르치는 코치다.
  *
- * 정지 버튼을 없앤 것이 핵심이다. 녹음 창은 원본 길이에서 계산하고, 남은 시간은
- * 줄어드는 링으로만 보여준다. 링은 타이머이면서 동시에 "언제 끝내야 하는지"를
- * 가르치는 코치다 — 타이밍이 점수의 35% 라 이 안내가 곧 점수다.
+ * 긴 원본(10초 초과)은 규칙이 달라진다. 1분짜리를 듣자마자 1분을 따라하게 하면
+ * 한 번의 시도가 2분이다. 그건 자동으로 이어붙일 일이 아니라서, 듣기와 따라하기를
+ * 따로 두고 정지도 직접 하게 한다.
+ *
+ * 재생 순서 주의: `play()` 는 사용자 제스처가 살아 있는 동안 불러야 한다.
+ * 앞에 `await` 이 하나라도 끼면 제스처 유효기간이 끝나 자동재생 정책에 막힌다.
+ * (실제로 그렇게 짰다가 원본이 안 들리고 바로 녹음으로 넘어가는 버그가 났다.)
+ * 그래서 탭하면 재생을 먼저 걸고, 마이크 권한은 그 뒤에 병렬로 받는다.
  */
 
 /** 녹음 창 = 원본 길이 + 여유. 말이 늦게 시작돼도 잘리지 않을 만큼만 준다. */
 const TAIL_MS = 800;
 const MIN_WINDOW_MS = 1200;
-const MAX_WINDOW_MS = 6000;
-/** 원본 길이를 못 읽었을 때 쓰는 값. 카탈로그 밈이 대체로 이 언저리다. */
+/** 1분짜리 원본도 담을 수 있어야 한다. */
+const MAX_WINDOW_MS = 75_000;
+/** 이보다 긴 녹음은 직접 끊을 수 있어야 한다 — 기다리게만 두면 답답하다. */
+const MANUAL_STOP_ABOVE_MS = 8_000;
+/** 이보다 긴 원본은 듣기와 따라하기를 분리한다. */
+const LONG_REF_SECONDS = 10;
+/** 원본 길이를 못 읽었을 때 쓰는 값. */
 const FALLBACK_REF_MS = 1400;
-/** 3 → 2 → 1 한 칸. 짧게 — 기다리게 하는 게 목적이 아니라 준비시키는 게 목적. */
+/** onEnded 가 안 오는 경우를 대비한 안전망 여유분. */
+const LISTEN_GUARD_MS = 3_000;
+/** 3 → 2 → 1 한 칸. 기다리게 하는 게 아니라 준비시키는 게 목적. */
 const COUNT_STEP_MS = 320;
-/** 채점이 이만큼 넘어가면 그때 "서버 깨우는 중"을 꺼낸다. 처음부터 겁주지 않는다. */
-const SLOW_AFTER_MS = 6000;
+/** 채점이 이만큼 넘어가면 그때 "서버 깨우는 중"을 꺼낸다. */
+const SLOW_AFTER_MS = 6_000;
 const LEVEL_BARS = 17;
 const RING_R = 112;
 const RING_C = 2 * Math.PI * RING_R;
@@ -40,7 +53,6 @@ type Score = {
 
 type Phase =
   | "idle"
-  | "arming"
   | "listening"
   | "countdown"
   | "recording"
@@ -65,7 +77,6 @@ const GRADE_CLASS: Record<string, string> = {
 
 /**
  * 숫자만으로는 웃기지 않는다. 사람이 한마디 해줘야 공유하고 싶어진다.
- * 세 축 중 제일 잘 된 것과 제일 못 된 것을 집어서 말해준다.
  * (억양/음색/타이밍 전부 받침이 있어 조사는 "이"/"은"으로 고정된다.)
  */
 function verdict(score: number, bd: Score["breakdown"]): string {
@@ -97,27 +108,33 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
   const [refSeconds, setRefSeconds] = useState<number | null>(null);
   const [slow, setSlow] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [canStop, setCanStop] = useState(false);
+  /** 렌더에서 읽어야 하는 값이라 ref(chain) 와 짝으로 둔다. */
+  const [chaining, setChaining] = useState(false);
 
   const refAudio = useRef<HTMLAudioElement>(null);
   const userAudio = useRef<HTMLAudioElement>(null);
   const recorder = useRef<MediaRecorder | null>(null);
   const stream = useRef<MediaStream | null>(null);
+  /** getUserMedia 는 재생과 병렬로 돌린다. 녹음 시작 직전에 이 약속을 기다린다. */
+  const micRequest = useRef<Promise<MediaStream> | null>(null);
   const audioCtx = useRef<AudioContext | null>(null);
   const analyser = useRef<AnalyserNode | null>(null);
   const timers = useRef<number[]>([]);
   const windowMs = useRef<number>(FALLBACK_REF_MS + TAIL_MS);
-  /** rAF 루프와 이벤트 핸들러가 최신 phase 를 봐야 해서 따로 둔다. */
   const phaseRef = useRef<Phase>("idle");
-  /** 원본 재생이 끝나 카운트다운으로 넘어갔는지 — onEnded 와 안전망 타이머 중복 방지. */
+  /** 원본 재생이 끝나면 이어서 녹음할지. "원본만 듣기"로 들어오면 false. */
+  const chain = useRef(false);
+  /** onEnded 와 안전망 타이머가 겹쳐 카운트다운이 두 번 돌지 않게. */
   const advanced = useRef(false);
   /** 채점 대기 중 원본 다음에 내 소리를 자동으로 한 번 틀었는지. */
   const abPlayed = useRef(false);
 
-  // 렌더 중에 ref 를 쓰면 안 되므로 커밋 후에 맞춘다. rAF 루프와 오디오 이벤트는
-  // 둘 다 커밋 이후에 돌기 때문에 이 시점으로 충분하다.
   useEffect(() => {
     phaseRef.current = phase;
   }, [phase]);
+
+  const isLong = refSeconds !== null && refSeconds > LONG_REF_SECONDS;
 
   const clearTimers = useCallback(() => {
     timers.current.forEach((t) => window.clearTimeout(t));
@@ -127,12 +144,12 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
   const releaseMic = useCallback(() => {
     stream.current?.getTracks().forEach((t) => t.stop());
     stream.current = null;
+    micRequest.current = null;
     analyser.current = null;
     void audioCtx.current?.close().catch(() => {});
     audioCtx.current = null;
   }, []);
 
-  // 화면을 떠날 때 마이크를 놓고 blob URL 을 돌려준다.
   useEffect(
     () => () => {
       clearTimers();
@@ -146,10 +163,7 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
     return () => URL.revokeObjectURL(userUrl);
   }, [userUrl]);
 
-  /**
-   * 채점 서버 예열. 화면이 열리자마자 한 번 찌른다 — 사용자가 원본을 듣고
-   * 3·2·1 을 세는 4~6초 동안 Modal 컨테이너가 깨어난다.
-   */
+  /** 채점 서버 예열. 화면이 열리자마자 한 번 찌른다. */
   useEffect(() => {
     void fetch("/api/warm", { method: "POST" }).catch(() => {});
   }, []);
@@ -191,12 +205,28 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
     [meme.id],
   );
 
-  const beginRecording = useCallback(() => {
-    const live = stream.current;
+  const stopRecording = useCallback(() => {
+    const rec = recorder.current;
+    if (rec && rec.state !== "inactive") rec.stop();
+  }, []);
+
+  const beginRecording = useCallback(async () => {
+    // 재생과 병렬로 받아둔 마이크를 여기서 기다린다.
+    let live = stream.current;
     if (!live) {
-      setError("마이크가 끊겼어. 다시 눌러줘.");
-      setPhase("idle");
-      return;
+      if (!micRequest.current) {
+        setError("마이크가 준비되지 않았어. 다시 눌러줘.");
+        setPhase("idle");
+        return;
+      }
+      try {
+        live = await micRequest.current;
+        stream.current = live;
+      } catch {
+        setError("마이크를 켜줘야 점수가 나와.");
+        setPhase("idle");
+        return;
+      }
     }
 
     const chunks: Blob[] = [];
@@ -233,6 +263,7 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
     rec.start();
     setLevels(new Array(LEVEL_BARS).fill(0));
     setRemain(1);
+    setCanStop(windowMs.current > MANUAL_STOP_ABOVE_MS);
     setPhase("recording");
 
     timers.current.push(
@@ -245,6 +276,7 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
   const beginCountdown = useCallback(() => {
     if (advanced.current) return;
     advanced.current = true;
+    clearTimers();
 
     const seconds = refAudio.current?.duration;
     const refMs =
@@ -256,60 +288,107 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
       Math.max(MIN_WINDOW_MS, Math.round(refMs) + TAIL_MS),
     );
 
+    refAudio.current?.pause();
     setPhase("countdown");
     setCount(3);
     timers.current.push(window.setTimeout(() => setCount(2), COUNT_STEP_MS));
     timers.current.push(window.setTimeout(() => setCount(1), COUNT_STEP_MS * 2));
-    timers.current.push(window.setTimeout(beginRecording, COUNT_STEP_MS * 3));
-  }, [beginRecording]);
+    timers.current.push(
+      window.setTimeout(() => void beginRecording(), COUNT_STEP_MS * 3),
+    );
+  }, [beginRecording, clearTimers]);
 
-  const start = useCallback(async () => {
-    setError(null);
-    setResult(null);
-    setPlaying(null);
-    advanced.current = false;
-    clearTimers();
+  /**
+   * 마이크 요청. 재생을 막지 않도록 await 하지 않고 약속만 들고 있는다.
+   * 이미 받아둔 게 있으면 그대로 쓴다.
+   */
+  const requestMic = useCallback(() => {
+    if (stream.current || micRequest.current) return;
+    if (!navigator.mediaDevices?.getUserMedia) return;
+    micRequest.current = navigator.mediaDevices.getUserMedia({ audio: true });
+    // 여기서 처리하지 않으면 거부 시 unhandled rejection 이 된다.
+    micRequest.current.catch(() => {});
+  }, []);
 
-    // 인앱 웹뷰는 권한 거부보다 API 자체가 없는 경우가 많다 (/probe 와 같은 이유).
-    if (
-      !navigator.mediaDevices?.getUserMedia ||
-      typeof MediaRecorder === "undefined"
-    ) {
+  /**
+   * 원본 재생. **반드시 클릭 핸들러에서 동기적으로 호출해야 한다** — 앞에 await 이
+   * 있으면 제스처가 만료돼 자동재생 정책에 막힌다.
+   */
+  const playRef = useCallback(
+    (thenRecord: boolean) => {
+      const el = refAudio.current;
+      if (!el) {
+        setError("원본을 불러오지 못했어. 새로고침 해볼래?");
+        return;
+      }
+
+      setError(null);
+      setResult(null);
+      advanced.current = false;
+      chain.current = thenRecord;
+      setChaining(thenRecord);
+      clearTimers();
+
+      try {
+        el.currentTime = 0;
+      } catch {
+        // 메타데이터가 아직이면 0 으로 못 돌릴 수 있다. 그대로 재생한다.
+      }
+
+      el.play()
+        .then(() => {
+          setPhase("listening");
+          setRemain(1);
+          // onEnded 가 안 오는 경우(길이 미상·디코드 실패)를 위한 안전망.
+          const guard =
+            (refSeconds !== null ? refSeconds * 1000 : FALLBACK_REF_MS) +
+            LISTEN_GUARD_MS;
+          if (thenRecord) {
+            timers.current.push(window.setTimeout(beginCountdown, guard));
+          }
+        })
+        .catch(() => {
+          // 예전엔 여기서 조용히 녹음으로 넘어갔다. 그러면 원본을 못 들은 채로
+          // 녹음이 돌아 점수만 이상하게 나온다. 이제는 말해주고 멈춘다.
+          setPhase("idle");
+          setError("원본이 재생되지 않았어. 한 번 더 눌러줄래?");
+        });
+    },
+    [beginCountdown, clearTimers, refSeconds],
+  );
+
+  /** 듣고 바로 따라하기 (짧은 원본의 기본 동작). */
+  const listenAndRecord = useCallback(() => {
+    if (typeof MediaRecorder === "undefined") {
       setError("이 브라우저에선 녹음이 안 돼. 크롬이나 사파리로 열어줘.");
       return;
     }
+    playRef(true); // 제스처가 살아 있는 동안 재생 먼저
+    requestMic(); // 마이크는 병렬로
+  }, [playRef, requestMic]);
 
-    setPhase("arming");
-    try {
-      stream.current = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch {
-      setError("마이크를 켜줘야 점수가 나와.");
-      setPhase("idle");
+  /** 원본만 듣기 — 녹음으로 이어지지 않는다. */
+  const listenOnly = useCallback(() => {
+    playRef(false);
+  }, [playRef]);
+
+  /** 원본을 건너뛰고 바로 따라하기. */
+  const recordNow = useCallback(() => {
+    if (typeof MediaRecorder === "undefined") {
+      setError("이 브라우저에선 녹음이 안 돼. 크롬이나 사파리로 열어줘.");
       return;
     }
+    setError(null);
+    setResult(null);
+    advanced.current = false;
+    chain.current = false;
+    setChaining(false);
+    refAudio.current?.pause();
+    requestMic();
+    beginCountdown();
+  }, [beginCountdown, requestMic]);
 
-    setPhase("listening");
-    setRemain(1);
-    const el = refAudio.current;
-    if (el) {
-      el.currentTime = 0;
-      try {
-        await el.play();
-      } catch {
-        // 재생이 막히면 듣기를 건너뛰고 바로 카운트다운으로 간다.
-        beginCountdown();
-        return;
-      }
-    } else {
-      beginCountdown();
-      return;
-    }
-
-    // onEnded 가 안 오는 경우(길이 미상·디코드 실패)를 대비한 안전망.
-    timers.current.push(window.setTimeout(beginCountdown, MAX_WINDOW_MS));
-  }, [beginCountdown, clearTimers]);
-
-  // 링 진행도와 레벨 미터. 듣는 중엔 원본 진행도, 녹음 중엔 남은 시간.
+  // 링 진행도와 레벨 미터.
   useEffect(() => {
     if (phase !== "listening" && phase !== "recording") return;
 
@@ -370,7 +449,8 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
   const onRefEnded = useCallback(() => {
     setPlaying(null);
     if (phaseRef.current === "listening") {
-      beginCountdown();
+      if (chain.current) beginCountdown();
+      else setPhase("idle");
       return;
     }
     // 채점을 기다리는 동안 원본 다음에 내 소리를 한 번 이어서 들려준다.
@@ -380,7 +460,6 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
     }
   }, [beginCountdown, toggle]);
 
-  // 채점이 시작되면 비교 재생을 먼저 건다. 막히면 버튼으로 직접 들으면 된다.
   useEffect(() => {
     if (phase !== "scoring" || abPlayed.current) return;
     toggle("ref");
@@ -399,7 +478,7 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
       try {
         await navigator.share({ title: "MIMIC", text, url: link });
       } catch {
-        // 공유 시트를 닫은 것뿐이다. 복사로 떨어뜨리지 않는다.
+        // 공유 시트를 닫은 것뿐이다.
       }
       return;
     }
@@ -413,7 +492,6 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
   }, [meme.title, result]);
 
   const ringOffset = RING_C * (1 - remain);
-  const busy = phase === "arming" || phase === "listening" || phase === "countdown";
 
   return (
     <>
@@ -426,7 +504,11 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
           if (Number.isFinite(d) && d > 0) setRefSeconds(d);
         }}
         onPlay={() => setPlaying("ref")}
+        onPause={() => setPlaying(null)}
         onEnded={onRefEnded}
+        onError={() =>
+          setError("원본을 불러오지 못했어. 잠시 뒤 다시 눌러줄래?")
+        }
       />
       {userUrl && (
         <audio
@@ -452,7 +534,7 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
         </div>
       )}
 
-      {(phase === "idle" || phase === "arming") && (
+      {phase === "idle" && (
         <section className={styles.stage}>
           <p className={styles.kicker}>원본</p>
           <h2 className={styles.hero}>{meme.title}</h2>
@@ -463,7 +545,7 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
         </section>
       )}
 
-      {busy && phase !== "arming" && (
+      {(phase === "listening" || phase === "countdown") && (
         <section className={styles.stage}>
           <div className={styles.ringWrap}>
             <svg
@@ -473,12 +555,7 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
               viewBox="0 0 256 256"
               aria-hidden="true"
             >
-              <circle
-                cx="128"
-                cy="128"
-                r={RING_R}
-                className={styles.ringTrack}
-              />
+              <circle cx="128" cy="128" r={RING_R} className={styles.ringTrack} />
               <circle
                 cx="128"
                 cy="128"
@@ -511,7 +588,18 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
           <h2 className={styles.cue}>
             {phase === "listening" ? "잘 들어" : "준비"}
           </h2>
-          <p className={styles.cueSub}>끝나면 바로 녹음 시작</p>
+          <p className={styles.cueSub}>
+            {phase === "countdown"
+              ? "곧 시작"
+              : chaining
+                ? "끝나면 바로 녹음 시작"
+                : "듣기만 하는 중"}
+          </p>
+          {phase === "listening" && (
+            <button className={styles.skip} onClick={beginCountdown}>
+              지금 따라하기 →
+            </button>
+          )}
         </section>
       )}
 
@@ -549,7 +637,14 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
           <h2 className={styles.cueLoud} aria-live="assertive">
             따라해
           </h2>
-          <p className={styles.cueSub}>알아서 끊어줄게</p>
+          <p className={styles.cueSub}>
+            {canStop ? "다 하면 끊어도 돼" : "알아서 끊어줄게"}
+          </p>
+          {canStop && (
+            <button className={styles.skip} onClick={stopRecording}>
+              다 했어 →
+            </button>
+          )}
         </section>
       )}
 
@@ -575,9 +670,7 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
               onClick={() => toggle("user")}
             />
           </div>
-          {slow && (
-            <p className={styles.slow}>서버 깨우는 중이라 몇 초만 더</p>
-          )}
+          {slow && <p className={styles.slow}>서버 깨우는 중이라 몇 초만 더</p>}
         </section>
       )}
 
@@ -590,16 +683,41 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
         </p>
       )}
 
-      {phase !== "result" && phase !== "scoring" && (
+      {phase === "idle" && (
         <div className={styles.dock}>
-          <button className={styles.go} onClick={start} disabled={busy}>
-            {phase === "arming" ? "마이크 여는 중…" : "듣고 바로 따라하기"}
-          </button>
-          <p className={styles.note}>
-            탭 한 번이면 원본 → 3·2·1 → 녹음까지 자동
-            <br />
-            로그인 없이 바로 · 점수만 내고 바로 버려
-          </p>
+          {isLong ? (
+            <>
+              <button className={styles.go} onClick={listenOnly}>
+                원본 듣기
+              </button>
+              <div className={styles.secondary}>
+                <button className={styles.ghost} onClick={recordNow}>
+                  바로 따라하기
+                </button>
+              </div>
+              <p className={styles.note}>
+                {refSeconds?.toFixed(0)}초짜리라 듣기와 따라하기를 따로 뒀어
+                <br />
+                녹음은 직접 끊을 수 있어 · 점수만 내고 바로 버려
+              </p>
+            </>
+          ) : (
+            <>
+              <button className={styles.go} onClick={listenAndRecord}>
+                듣고 바로 따라하기
+              </button>
+              <div className={styles.secondary}>
+                <button className={styles.ghost} onClick={listenOnly}>
+                  원본만 듣기
+                </button>
+              </div>
+              <p className={styles.note}>
+                탭 한 번이면 원본 → 3·2·1 → 녹음까지 자동
+                <br />
+                로그인 없이 바로 · 점수만 내고 바로 버려
+              </p>
+            </>
+          )}
         </div>
       )}
 
@@ -681,7 +799,10 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
               {copied ? "링크 복사됨" : "친구한테 던지기"}
             </button>
             <div className={styles.secondary}>
-              <button className={styles.ghost} onClick={start}>
+              <button
+                className={styles.ghost}
+                onClick={isLong ? recordNow : listenAndRecord}
+              >
                 다시
               </button>
               {next ? (
