@@ -3,8 +3,18 @@ import { getMemes } from "@/lib/memes";
 import { createClient } from "@/lib/supabase/server";
 import styles from "./page.module.css";
 
+/**
+ * 홈은 목록이 아니라 첫 챌린지다.
+ *
+ * 이전 홈은 "고르기"를 첫 관문으로 세웠다 — 목록에서 하나 고르고, 상세로 들어가고,
+ * 거기서 또 두 번 눌러야 소리가 났다. 고르는 행위가 체험보다 앞서면 대부분은
+ * 고르다 나간다. 그래서 맨 위 하나를 바로 도전 가능한 상태로 놓고, 나머지는
+ * 그 아래에 둔다.
+ */
 export default async function Home() {
   const { memes, stale } = await getMemes();
+  const [today, ...rest] = memes;
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -13,67 +23,75 @@ export default async function Home() {
   return (
     <main className="shell">
       <header className={styles.head}>
-        <div className={styles.topRow}>
-          <div className="logo">🎙 MIMIC</div>
+        <span className={styles.logo}>MIMIC</span>
+        <div className={styles.headRight}>
+          {stale && <span className={styles.stale}>서버 응답 없음 · 내장 목록</span>}
           <nav className={styles.nav}>
             <Link href="/rank">🏆 랭킹</Link>
             <Link href="/vote">🗳️ 투표</Link>
             <Link href={user ? "/profile" : "/login"}>{user ? "프로필" : "로그인"}</Link>
           </nav>
         </div>
-        <h1 className={styles.title}>
-          듣고, 따라하고,
-          <br />
-          점수로 확인하세요
-        </h1>
-        <p className={styles.sub}>
-          AI가 피치·톤·타이밍 세 축으로 채점합니다. 설치 없이 브라우저에서 바로.
-        </p>
-
-        <div className={styles.notice}>
-          <p className={styles.noticeText}>
-            녹음이 안 되면 브라우저 문제일 수 있습니다. 마이크 검사로 확인하세요.
-          </p>
-          <Link href="/probe" className={styles.noticeLink}>
-            마이크 검사 →
-          </Link>
-        </div>
       </header>
 
-      <section>
-        <div className={styles.listHead}>
-          <span className="eyebrow">따라할 소리</span>
-          {stale && <span className={styles.stale}>서버 응답 없음 · 내장 목록</span>}
-        </div>
+      {today && (
+        <section className={styles.hero}>
+          <div className={styles.heroTop}>
+            <span className={styles.heroKicker}>오늘의 소리</span>
+            {typeof today.plays === "number" && (
+              <span className={styles.heroPlays}>
+                {today.plays.toLocaleString("ko-KR")}명 도전
+              </span>
+            )}
+          </div>
 
-        <ul className={styles.grid}>
-          {memes.map((m) => (
-            <li key={m.id}>
-              <Link href={`/record/${m.id}`} className={styles.card}>
-                <span className={styles.emoji} aria-hidden="true">
-                  {m.emoji}
-                </span>
-                <div className={styles.cardBody}>
-                  <h2 className={styles.cardTitle}>{m.title}</h2>
-                  <p className={styles.cardMeta}>
-                    {m.source}
-                    {typeof m.plays === "number" &&
-                      ` · ${m.plays.toLocaleString("ko-KR")}회`}
-                  </p>
-                </div>
-                <span className={styles.go} aria-hidden="true">
-                  →
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </section>
+          <p className={styles.heroFace} aria-hidden="true">
+            {today.emoji}
+          </p>
+          <h1 className={styles.heroTitle}>{today.title}</h1>
+          <p className={styles.heroSource}>{today.source}</p>
+
+          <Link href={`/record/${today.id}`} className={styles.heroGo}>
+            듣고 바로 따라하기
+          </Link>
+        </section>
+      )}
+
+      {rest.length > 0 && (
+        <section className={styles.more}>
+          <h2 className={styles.moreHead}>다른 소리</h2>
+          <ul className={styles.list}>
+            {rest.map((m) => (
+              <li key={m.id}>
+                <Link href={`/record/${m.id}`} className={styles.row}>
+                  <span className={styles.rowFace} aria-hidden="true">
+                    {m.emoji}
+                  </span>
+                  <span className={styles.rowBody}>
+                    <span className={styles.rowTitle}>{m.title}</span>
+                    <span className={styles.rowMeta}>
+                      {m.source}
+                      {typeof m.plays === "number" &&
+                        ` · ${m.plays.toLocaleString("ko-KR")}명`}
+                    </span>
+                  </span>
+                  <span className={styles.rowGo} aria-hidden="true">
+                    →
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <footer className={styles.foot}>
-        MIMIC 웹 리빌드 · M1
-        <br />
-        녹음은 채점에만 쓰이고 저장되지 않습니다.
+        <p className={styles.footNote}>
+          로그인 없이 바로 도전 · 점수만 내고 녹음은 바로 버려
+        </p>
+        <Link href="/probe" className={styles.footLink}>
+          녹음이 안 되면 마이크 검사 →
+        </Link>
       </footer>
     </main>
   );
