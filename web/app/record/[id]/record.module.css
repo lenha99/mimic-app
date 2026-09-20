@@ -244,6 +244,26 @@
   color: var(--ash);
 }
 
+/* 듣는 중/녹음 중 빠져나가기 --------------------------------------------- */
+
+.skip {
+  margin-top: 4px;
+  min-height: 44px;
+  padding: 10px 20px;
+  border: 1px solid var(--rule);
+  border-radius: 22px;
+  background: transparent;
+  color: var(--ash);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.skip:hover {
+  color: var(--white);
+  border-color: var(--ash);
+}
+
 /* 원본 vs 나 ----------------------------------------------------------- */
 
 .compare {
