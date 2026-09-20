@@ -542,6 +542,7 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
             {meme.source}
             {refSeconds !== null && ` · ${refSeconds.toFixed(1)}초`}
           </p>
+          {meme.line && <p className={styles.line}>“{meme.line}”</p>}
         </section>
       )}
 
@@ -595,6 +596,7 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
                 ? "끝나면 바로 녹음 시작"
                 : "듣기만 하는 중"}
           </p>
+          {meme.line && <p className={styles.lineCue}>“{meme.line}”</p>}
           {phase === "listening" && (
             <button className={styles.skip} onClick={beginCountdown}>
               지금 따라하기 →
@@ -640,6 +642,8 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
           <p className={styles.cueSub}>
             {canStop ? "다 하면 끊어도 돼" : "알아서 끊어줄게"}
           </p>
+          {/* 듣기 화면과 같은 자리에 같은 크기로 — 따라하는 순간 대사가 움직이면 안 된다. */}
+          {meme.line && <p className={styles.lineCue}>“{meme.line}”</p>}
           {canStop && (
             <button className={styles.skip} onClick={stopRecording}>
               다 했어 →

@@ -237,6 +237,33 @@
   color: var(--ash);
 }
 
+/* 대사 ----------------------------------------------------------------- */
+/* 말소리 밈에만 붙는다. 동물 소리는 line 이 없어 렌더되지 않는다. */
+
+.line,
+.lineCue {
+  margin: 0;
+  font-weight: 700;
+  /* 한국어는 어절 단위로 끊어야 읽힌다 */
+  word-break: keep-all;
+  text-wrap: balance;
+}
+
+.line {
+  margin-top: 10px;
+  font-size: 17px;
+  line-height: 1.45;
+  color: var(--white);
+}
+
+/* 팔 길이에서 소리치며 읽는 글자라 안내 문구보다 확실히 커야 한다. */
+.lineCue {
+  margin-top: 12px;
+  font-size: clamp(20px, 6vw, 26px);
+  line-height: 1.35;
+  color: var(--white);
+}
+
 .slow {
   margin: 4px 0 0;
   font-size: 12px;

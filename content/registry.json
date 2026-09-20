@@ -1,0 +1,294 @@
+{
+  "_comment": "밈 콘텐츠의 단일 진실 소스. 여기만 고치고 `python tools/sync_catalog.py` 를 돌리면 catalog.json · memes.json · web FALLBACK · Flutter demoMemes 가 전부 갱신된다. 클립 추가는 `python tools/ingest.py` 가 이 파일에 항목을 써 준다.",
+  "_schema": {
+    "id": "URL·파일명으로 쓰이는 키. 기준 음성은 볼륨의 {id}.wav",
+    "title": "화면에 크게 뜨는 이름",
+    "source": "출처 한 줄 (영화 제목, 채널명 등)",
+    "emoji": "목록의 유일한 시각 요소",
+    "line": "따라 말할 대사. 말소리 밈에만 있음 (동물 소리는 생략)",
+    "plays": "사회적 증거용 숫자. 내림차순이 목록 순서와 맞는 관례",
+    "origin": "원본 URL 과 잘라온 구간 (재인제스트·출처 표기용)",
+    "license": "kind: cc0 | original | self | tts",
+    "duration_ms": "정규화 후 길이. 8000 초과면 수동 정지 UI, 10000 초과면 듣기/따라하기 분리",
+    "voiced_frames": "pyin 유성 프레임 수. 5 미만이면 피치 채점이 꺼진다"
+  },
+  "memes": [
+    {
+      "id": "rooster",
+      "title": "꼬끼오",
+      "source": "수탉",
+      "emoji": "🐓",
+      "plays": 128400,
+      "origin": {
+        "url": "https://freesound.org/s/43382/"
+      },
+      "license": {
+        "kind": "cc0",
+        "holder": "AGFX (Freesound)",
+        "note": "CC0 1.0"
+      },
+      "added": "2026-06-23",
+      "duration_ms": 2980
+    },
+    {
+      "id": "cat",
+      "title": "야오옹",
+      "source": "고양이",
+      "emoji": "🐱",
+      "plays": 96300,
+      "origin": {
+        "url": "https://freesound.org/s/110011/"
+      },
+      "license": {
+        "kind": "cc0",
+        "holder": "tuberatanka (Freesound)",
+        "note": "CC0 1.0"
+      },
+      "added": "2026-06-23",
+      "duration_ms": 1540
+    },
+    {
+      "id": "goat",
+      "title": "메에에",
+      "source": "염소",
+      "emoji": "🐐",
+      "plays": 81200,
+      "origin": {
+        "url": "https://freesound.org/s/581240/"
+      },
+      "license": {
+        "kind": "cc0",
+        "holder": "Kinoton (Freesound)",
+        "note": "CC0 1.0"
+      },
+      "added": "2026-06-23",
+      "duration_ms": 4020
+    },
+    {
+      "id": "wolf",
+      "title": "아우우",
+      "source": "늑대",
+      "emoji": "🐺",
+      "plays": 67400,
+      "origin": {
+        "url": "https://freesound.org/s/429109/"
+      },
+      "license": {
+        "kind": "cc0",
+        "holder": "cazadordoblekatana (Freesound)",
+        "note": "CC0 1.0"
+      },
+      "added": "2026-06-23",
+      "duration_ms": 3390
+    },
+    {
+      "id": "cow",
+      "title": "음메에",
+      "source": "소",
+      "emoji": "🐄",
+      "plays": 54100,
+      "origin": {
+        "url": "https://freesound.org/s/59245/"
+      },
+      "license": {
+        "kind": "cc0",
+        "holder": "Zozzy (Freesound)",
+        "note": "CC0 1.0"
+      },
+      "added": "2026-06-23",
+      "duration_ms": 1720
+    },
+    {
+      "id": "dolphin",
+      "title": "이이익",
+      "source": "돌고래",
+      "emoji": "🐬",
+      "plays": 41900,
+      "origin": {
+        "url": "https://freesound.org/s/456151/"
+      },
+      "license": {
+        "kind": "cc0",
+        "holder": "jfournier18 (Freesound)",
+        "note": "CC0 1.0"
+      },
+      "added": "2026-06-23",
+      "duration_ms": 2580
+    },
+    {
+      "id": "geoje_yaho",
+      "title": "거제 야호",
+      "source": "원이 · 리센느 미나미",
+      "emoji": "🏝️",
+      "plays": 0,
+      "line": "거제! 야호!",
+      "kind": "shortform",
+      "origin": {
+        "platform": "youtube",
+        "video_id": "OrCOflk2QmQ",
+        "url": "https://www.youtube.com/watch?v=OrCOflk2QmQ",
+        "channel": "안녕하세요원이입니다잘부탁드립니다",
+        "video_title": "갸루와 거제에 왔습니다 (거제 1편)",
+        "upload_date": "20260522",
+        "start": "00:22:06.8",
+        "end": "00:22:08.5"
+      },
+      "license": {
+        "kind": "original-clip",
+        "holder": "안녕하세요원이입니다 (YouTube)",
+        "note": "짧은 인용. 권리자 요청 시 즉시 삭제."
+      },
+      "added": "2026-09-20",
+      "duration_ms": 1700,
+      "qa": {
+        "duration_s": 1.7,
+        "trimmed_s": 1.7,
+        "peak": 0.5141,
+        "clip_ratio": 0.0,
+        "sr": 22050,
+        "samples": 37486,
+        "voiced_frames": 71,
+        "voiced_ratio": 0.96,
+        "semitone_std": 0.91,
+        "semitone_range": 2.6,
+        "self_score": 100,
+        "self_pitch": 100,
+        "degraded_score": 71,
+        "score_spread": 29
+      },
+      "draft": true
+    },
+    {
+      "id": "bap_meokgo",
+      "title": "밥은 먹고 다니냐",
+      "source": "살인의 추억",
+      "emoji": "🍚",
+      "plays": 0,
+      "line": "밥은 먹고 다니냐",
+      "kind": "movie",
+      "origin": {
+        "platform": "youtube",
+        "video_id": "Hi-ilfr7cbw",
+        "url": "https://www.youtube.com/watch?v=Hi-ilfr7cbw",
+        "channel": "원산지한국",
+        "video_title": "송강호. 살인의 추억. 애드립.",
+        "upload_date": "20150606",
+        "start": "0.5",
+        "end": "3.0"
+      },
+      "license": {
+        "kind": "original-clip",
+        "holder": "CJ ENM",
+        "note": "짧은 인용. 권리자 요청 시 즉시 삭제."
+      },
+      "added": "2026-09-20",
+      "duration_ms": 2500,
+      "qa": {
+        "duration_s": 2.5,
+        "trimmed_s": 2.48,
+        "peak": 0.5328,
+        "clip_ratio": 0.0,
+        "sr": 22050,
+        "samples": 55126,
+        "voiced_frames": 94,
+        "voiced_ratio": 0.87,
+        "semitone_std": 2.2,
+        "semitone_range": 7.4,
+        "self_score": 100,
+        "self_pitch": 100,
+        "degraded_score": 65,
+        "score_spread": 35
+      },
+      "draft": true
+    },
+    {
+      "id": "muyaho",
+      "title": "무야호",
+      "source": "무한도전",
+      "emoji": "🎉",
+      "plays": 0,
+      "line": "무야호~!",
+      "kind": "variety",
+      "origin": {
+        "platform": "youtube",
+        "video_id": "yj4c5zkp3Yo",
+        "url": "https://www.youtube.com/watch?v=yj4c5zkp3Yo",
+        "channel": "천재배카서",
+        "video_title": "무야호 (원본)",
+        "upload_date": "20210317",
+        "start": null,
+        "end": null
+      },
+      "license": {
+        "kind": "original-clip",
+        "holder": "MBC",
+        "note": "짧은 인용. 권리자 요청 시 즉시 삭제."
+      },
+      "added": "2026-09-20",
+      "duration_ms": 1990,
+      "qa": {
+        "duration_s": 1.99,
+        "trimmed_s": 1.99,
+        "peak": 0.3001,
+        "clip_ratio": 0.0,
+        "sr": 22050,
+        "samples": 43777,
+        "voiced_frames": 58,
+        "voiced_ratio": 0.67,
+        "semitone_std": 1.17,
+        "semitone_range": 4.3,
+        "self_score": 100,
+        "self_pitch": 100,
+        "degraded_score": 72,
+        "score_spread": 28
+      },
+      "draft": true
+    },
+    {
+      "id": "mitjang_ppaegi",
+      "title": "동작 그만",
+      "source": "타짜",
+      "emoji": "🃏",
+      "plays": 0,
+      "line": "동작 그만, 밑장 빼기냐",
+      "kind": "movie",
+      "origin": {
+        "platform": "youtube",
+        "video_id": "fJ20r7x2Kvg",
+        "url": "https://www.youtube.com/watch?v=fJ20r7x2Kvg",
+        "channel": "마법동자",
+        "video_title": "타짜 아귀 동작그만",
+        "upload_date": "20220507",
+        "start": "8.9",
+        "end": "11.3"
+      },
+      "license": {
+        "kind": "original-clip",
+        "holder": "CJ ENM",
+        "note": "짧은 인용. 권리자 요청 시 즉시 삭제."
+      },
+      "added": "2026-09-20",
+      "duration_ms": 2400,
+      "qa": {
+        "duration_s": 2.4,
+        "trimmed_s": 2.4,
+        "peak": 0.585,
+        "clip_ratio": 0.0,
+        "sr": 22050,
+        "samples": 52921,
+        "voiced_frames": 62,
+        "voiced_ratio": 0.6,
+        "semitone_std": 3.99,
+        "semitone_range": 14.3,
+        "self_score": 100,
+        "self_pitch": 100,
+        "degraded_score": 62,
+        "score_spread": 38
+      },
+      "draft": true,
+      "filters": [
+        "afftdn"
+      ]
+    }
+  ]
+}

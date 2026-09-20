@@ -28,17 +28,29 @@ lib/
   result_screen.dart # 결과 + 닮음 % + 공유
   waveform.dart      # 음파 애니메이션 위젯
 
-scoring_engine.py    # 채점 엔진 (검증 완료)
-modal_app.py         # 서버 API (채점 + 영상생성)
+scoring_engine.py    # 채점 엔진 (테스트 전용 — 배포되는 건 modal_app._score 쪽이다)
+modal_app.py         # 서버 API (채점 + 영상생성 + 카탈로그/운영자 엔드포인트)
 video_maker.py       # 공유영상 생성 (A: 합성오디오 B: 닮음%)
-memes.json           # 밈 목록 (코드 수정 없이 여기서 관리)
 deploy.sh            # 원커맨드 배포 스크립트
+
+content/
+  registry.json      # 밈 콘텐츠의 단일 진실 소스 (출처·라이선스·QA 수치 포함)
+  TAKEDOWNS.md       # 내린 콘텐츠 기록
+tools/
+  ingest.py          # 클립 인제스트: 받기 → 정규화 → 품질 게이트 → 업로드 → 검증
+  sync_catalog.py    # registry → catalog.json / memes.json / 웹 / Flutter 사본 생성
+  trend_scan.py      # 새 밈 후보 발굴
+refs_kr/             # 원본 유래 클립 (gitignore — 레지스트리로 재생성한다)
+
+web/                 # Next.js 웹앱 — 지금 사용자가 실제로 쓰는 건 이쪽이다
 ```
 
 ## 자주 수정하는 것
 - 문구 변경: `lib/strings.dart`
 - 색상 변경: `lib/theme.dart`
-- 밈 추가: `memes.json` 에 한 줄 + modal volume put으로 wav 업로드
+- 밈 추가: `python tools/ingest.py add ...` → `publish` (README §8). `catalog.json`·
+  `memes.json`·웹 `FALLBACK`·Flutter `demoMemes` 는 `content/registry.json` 에서
+  생성되는 사본이라 **직접 고치면 안 된다** (CI 가 막는다)
 - 서버 URL: `lib/config.dart` defaultValue
 
 ## 환경 세팅 순서 (Windows + Android)

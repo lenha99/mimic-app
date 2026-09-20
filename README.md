@@ -127,22 +127,53 @@ flutter run
 
 ---
 
-## 8. 밈 추가하기 (코드 수정 없이)
+## 8. 밈 추가하기
 
-운영자가 새 밈을 늘리는 법:
+콘텐츠의 단일 진실 소스는 **`content/registry.json`** 이다. 나머지(루트 `catalog.json`·
+`memes.json`, 웹 `FALLBACK`, Flutter `demoMemes`)는 전부 거기서 생성된다 —
+손으로 고치면 CI(`test/catalog_test.py`)가 막는다.
 
-1. **기준 음성 업로드**
-   ```bash
-   modal volume put meme-refs new_meme.wav
-   ```
-2. **memes.json 에 한 줄 추가** (서버가 이 파일을 앱에 제공)
-   ```json
-   {"id": "new_meme", "title": "제목", "source": "출처", "emoji": "🎯", "plays": 0}
-   ```
-3. 끝. 카드 글로우 색은 id 해시로 **자동 배정**, 앱 재배포 불필요.
+```bash
+pip install -r tools/requirements-ingest.txt          # yt-dlp (최초 1회)
 
-`MEMES_URL` 환경변수로 memes.json 위치를 주면 앱이 자동으로 최신 목록을 불러옴.
-비워두면 내장 기본 4종 사용.
+# 1) 파형 보고 귀로 들으며 구간을 고른다 → 그대로 인제스트까지 (권장)
+python tools/ingest.py pick --url "https://youtu.be/..." --around 00:09:55 \
+    --id geoje_yaho --title "거제 야호" --line "거제! 야호!" \
+    --source "원이" --kind shortform
+# 브라우저가 열린다. 드래그로 구간 잡고 space 로 들어보고 "이 구간으로 만들기".
+# 경계는 ← → (시작) / shift+← → (끝) 로 0.05초씩 민다.
+
+# 구간 숫자를 이미 안다면 곧장:
+python tools/ingest.py add --id geoje_yaho --url "https://youtu.be/..." \
+    --start 00:09:54.2 --end 00:09:56.8 \
+    --title "거제 야호" --line "거제! 야호!" --source "원이" --kind shortform
+
+# 3) 올리고 검증 (draft — 목록엔 안 뜨고 /record/{id} 직링크로만 열린다)
+export MIMIC_ADMIN_TOKEN=...          # Modal 시크릿 mimic-admin 의 값
+python tools/ingest.py publish geoje_yaho
+
+# 4) 실기기에서 확인한 뒤 공개
+python tools/ingest.py publish geoje_yaho --live
+
+# 내릴 때 (권리자 요청 등)
+python tools/ingest.py remove geoje_yaho --reason "권리자 요청"
+```
+
+**품질 게이트가 보는 것** — 전부 `modal_app._score` 에서 역산한 값이다:
+길이 1.2~6.0초(8초를 넘으면 녹음 UI 가 바뀐다), 유성 프레임 25개 이상
+(5개 미만이면 채점에서 억양 40%가 통째로 빠진다), 억양 폭 1.5~8.0 세미톤
+(밋밋하면 누가 해도 같은 점수, 너무 넓으면 pyin 이 배경음악을 쫓는 중),
+자기채점 90점 이상, 그리고 **억양을 뒤섞은 가짜 테이크와 15점 이상 벌어질 것**.
+마지막 항목이 핵심이다 — 이 채점기는 백색잡음에도 60점을 주기 때문에 절대 점수가
+아니라 격차로 봐야 변별력이 있다.
+
+**구간을 다시 잡고 싶으면** 같은 명령에 `--force` 를 붙여 다시 돌리면 된다.
+원본은 `refs_kr/.cache/` 에 디코드된 채로 남아 있어서 두 번째부터는 내려받기가 없다.
+잘린 결과가 마음에 안 들면 게이트를 통과했더라도 그냥 다시 자르면 된다 —
+`publish` 하기 전까지는 프로덕션에 아무 영향이 없다.
+
+새 밈 후보 발굴은 `python tools/trend_scan.py` 로 훑는다. 검색어 목록
+(`tools/trend_queries.txt`)이 품질을 정한다.
 
 ## 9. UI/UX 적용 디자인 (8.7/10)
 
