@@ -28,7 +28,25 @@
         "note": "CC0 1.0"
       },
       "added": "2026-06-23",
-      "duration_ms": 2980
+      "duration_ms": 2790,
+      "qa": {
+        "duration_s": 2.79,
+        "trimmed_s": 2.69,
+        "peak": 0.6808,
+        "clip_ratio": 0.0,
+        "lufs": -13.83,
+        "true_peak_db": -3.25,
+        "sr": 22050,
+        "samples": 61450,
+        "voiced_frames": 99,
+        "voiced_ratio": 0.82,
+        "semitone_std": 5.73,
+        "semitone_range": 17.7,
+        "self_score": 100,
+        "self_pitch": 100,
+        "degraded_score": 65,
+        "score_spread": 35
+      }
     },
     {
       "id": "cat",
@@ -45,7 +63,25 @@
         "note": "CC0 1.0"
       },
       "added": "2026-06-23",
-      "duration_ms": 1540
+      "duration_ms": 1540,
+      "qa": {
+        "duration_s": 1.54,
+        "trimmed_s": 1.49,
+        "peak": 0.575,
+        "clip_ratio": 0.0,
+        "lufs": -14.02,
+        "true_peak_db": -4.78,
+        "sr": 22050,
+        "samples": 34059,
+        "voiced_frames": 39,
+        "voiced_ratio": 0.58,
+        "semitone_std": 0.6,
+        "semitone_range": 1.9,
+        "self_score": 100,
+        "self_pitch": 100,
+        "degraded_score": 74,
+        "score_spread": 26
+      }
     },
     {
       "id": "goat",
@@ -62,7 +98,25 @@
         "note": "CC0 1.0"
       },
       "added": "2026-06-23",
-      "duration_ms": 4020
+      "duration_ms": 2600,
+      "qa": {
+        "duration_s": 2.6,
+        "trimmed_s": 2.55,
+        "peak": 0.8913,
+        "clip_ratio": 0.0,
+        "lufs": -13.93,
+        "true_peak_db": -0.92,
+        "sr": 22050,
+        "samples": 57401,
+        "voiced_frames": 29,
+        "voiced_ratio": 0.26,
+        "semitone_std": 0.84,
+        "semitone_range": 3.3,
+        "self_score": 100,
+        "self_pitch": 100,
+        "degraded_score": 76,
+        "score_spread": 24
+      }
     },
     {
       "id": "wolf",
@@ -79,7 +133,25 @@
         "note": "CC0 1.0"
       },
       "added": "2026-06-23",
-      "duration_ms": 3390
+      "duration_ms": 3170,
+      "qa": {
+        "duration_s": 3.17,
+        "trimmed_s": 3.04,
+        "peak": 0.5428,
+        "clip_ratio": 0.0,
+        "lufs": -13.93,
+        "true_peak_db": -5.27,
+        "sr": 22050,
+        "samples": 69922,
+        "voiced_frames": 137,
+        "voiced_ratio": 1.0,
+        "semitone_std": 1.22,
+        "semitone_range": 4.2,
+        "self_score": 100,
+        "self_pitch": 100,
+        "degraded_score": 67,
+        "score_spread": 33
+      }
     },
     {
       "id": "cow",
@@ -96,7 +168,25 @@
         "note": "CC0 1.0"
       },
       "added": "2026-06-23",
-      "duration_ms": 1720
+      "duration_ms": 1720,
+      "qa": {
+        "duration_s": 1.72,
+        "trimmed_s": 1.72,
+        "peak": 0.7961,
+        "clip_ratio": 0.0,
+        "lufs": -14.01,
+        "true_peak_db": -1.98,
+        "sr": 22050,
+        "samples": 37844,
+        "voiced_frames": 69,
+        "voiced_ratio": 0.93,
+        "semitone_std": 4.57,
+        "semitone_range": 19.4,
+        "self_score": 100,
+        "self_pitch": 100,
+        "degraded_score": 64,
+        "score_spread": 36
+      }
     },
     {
       "id": "dolphin",
@@ -113,7 +203,25 @@
         "note": "CC0 1.0"
       },
       "added": "2026-06-23",
-      "duration_ms": 2580
+      "duration_ms": 2180,
+      "qa": {
+        "duration_s": 2.18,
+        "trimmed_s": 2.16,
+        "peak": 0.6179,
+        "clip_ratio": 0.0,
+        "lufs": -14.0,
+        "true_peak_db": -3.52,
+        "sr": 22050,
+        "samples": 48067,
+        "voiced_frames": 41,
+        "voiced_ratio": 0.44,
+        "semitone_std": 5.14,
+        "semitone_range": 11.8,
+        "self_score": 100,
+        "self_pitch": 100,
+        "degraded_score": 73,
+        "score_spread": 27
+      }
     },
     {
       "id": "muyaho",
@@ -143,18 +251,20 @@
       "qa": {
         "duration_s": 1.99,
         "trimmed_s": 1.99,
-        "peak": 0.3001,
+        "peak": 0.4997,
         "clip_ratio": 0.0,
+        "lufs": -13.97,
+        "true_peak_db": -5.94,
         "sr": 22050,
-        "samples": 43777,
-        "voiced_frames": 58,
-        "voiced_ratio": 0.67,
-        "semitone_std": 1.17,
-        "semitone_range": 4.3,
+        "samples": 43779,
+        "voiced_frames": 67,
+        "voiced_ratio": 0.78,
+        "semitone_std": 1.62,
+        "semitone_range": 8.0,
         "self_score": 100,
         "self_pitch": 100,
-        "degraded_score": 72,
-        "score_spread": 28
+        "degraded_score": 71,
+        "score_spread": 29
       },
       "draft": true
     },
@@ -185,19 +295,21 @@
       "duration_ms": 3030,
       "qa": {
         "duration_s": 3.03,
-        "trimmed_s": 3.0,
-        "peak": 0.8386,
+        "trimmed_s": 2.97,
+        "peak": 0.8913,
         "clip_ratio": 0.0,
+        "lufs": -14.11,
+        "true_peak_db": -0.7,
         "sr": 22050,
-        "samples": 66813,
+        "samples": 66814,
         "voiced_frames": 105,
         "voiced_ratio": 0.8,
-        "semitone_std": 4.73,
-        "semitone_range": 20.5,
+        "semitone_std": 4.79,
+        "semitone_range": 20.6,
         "self_score": 100,
         "self_pitch": 100,
-        "degraded_score": 65,
-        "score_spread": 35
+        "degraded_score": 66,
+        "score_spread": 34
       },
       "draft": true
     },
@@ -229,16 +341,18 @@
       "qa": {
         "duration_s": 1.45,
         "trimmed_s": 1.45,
-        "peak": 0.8167,
+        "peak": 0.8913,
         "clip_ratio": 0.0,
+        "lufs": -14.3,
+        "true_peak_db": -0.65,
         "sr": 22050,
-        "samples": 31974,
-        "voiced_frames": 8,
-        "voiced_ratio": 0.13,
-        "semitone_std": 1.96,
-        "semitone_range": 5.3,
+        "samples": 31975,
+        "voiced_frames": 0,
+        "voiced_ratio": 0.0,
+        "semitone_std": 0.0,
+        "semitone_range": 0.0,
         "self_score": 100,
-        "self_pitch": 100,
+        "self_pitch": 0,
         "degraded_score": 60,
         "score_spread": 40
       },
@@ -272,15 +386,17 @@
       "qa": {
         "duration_s": 5.43,
         "trimmed_s": 5.43,
-        "peak": 0.841,
+        "peak": 0.8913,
         "clip_ratio": 0.0,
+        "lufs": -14.12,
+        "true_peak_db": -0.91,
         "sr": 22050,
-        "samples": 119733,
-        "voiced_frames": 122,
-        "voiced_ratio": 0.52,
-        "semitone_std": 10.44,
-        "semitone_range": 33.6,
-        "pitch_gap_semitones": 13.6,
+        "samples": 119734,
+        "voiced_frames": 100,
+        "voiced_ratio": 0.43,
+        "semitone_std": 10.98,
+        "semitone_range": 33.5,
+        "pitch_gap_semitones": 12.8,
         "self_score": 100,
         "self_pitch": 100,
         "degraded_score": 61,
@@ -290,6 +406,51 @@
       "filters": [
         "afftdn"
       ]
+    },
+    {
+      "id": "eoiga_eopne",
+      "title": "어이가 없네",
+      "source": "베테랑",
+      "emoji": "😑",
+      "plays": 0,
+      "line": "어이가 없네",
+      "kind": "movie",
+      "origin": {
+        "platform": "youtube",
+        "video_id": "zASuuYQFht4",
+        "url": "https://www.youtube.com/watch?v=zASuuYQFht4",
+        "channel": "마쎄",
+        "video_title": "조태오 : \" 지금 내 기분이 그래 어이가 없네 \"",
+        "upload_date": "20230602",
+        "start": "93.37",
+        "end": "98.62"
+      },
+      "license": {
+        "kind": "original-clip",
+        "holder": "CJ ENM",
+        "note": "짧은 인용. 권리자 요청 시 즉시 삭제."
+      },
+      "added": "2026-09-21",
+      "duration_ms": 5250,
+      "qa": {
+        "duration_s": 5.25,
+        "trimmed_s": 5.25,
+        "peak": 0.8913,
+        "clip_ratio": 0.0,
+        "lufs": -14.32,
+        "true_peak_db": -0.43,
+        "sr": 22050,
+        "samples": 115765,
+        "voiced_frames": 127,
+        "voiced_ratio": 0.56,
+        "semitone_std": 3.01,
+        "semitone_range": 9.4,
+        "self_score": 100,
+        "self_pitch": 100,
+        "degraded_score": 66,
+        "score_spread": 34
+      },
+      "draft": true
     }
   ]
 }

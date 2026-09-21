@@ -6,6 +6,7 @@
         --title "밥은 먹고 다니냐" --line "밥은 먹고 다니냐" --source "살인의 추억" --emoji 🍚
 
     python tools/ingest.py add --id muyaho --file ~/Downloads/take3.wav --title "무야호"  # 로컬 파일
+    python tools/ingest.py locate --url "https://..." --text "4딸라"             # 대사 위치 찾기
     python tools/ingest.py scan --url "https://..." --around 00:01:13            # 깨끗한 구간 찾기
     python tools/ingest.py qa refs_kr/bap_meokgo.wav                             # 게이트만 재실행
 
@@ -54,6 +55,13 @@ MIN_SELF_SCORE = 90
 # 이 엔진은 백색잡음에도 60점(억양 81점)을 준다. 바닥이 높아서 절대 기준은 무의미하고,
 # 변별력은 '자기 자신'과 '틀린 억양' 사이의 격차로 봐야 한다.
 MIN_SCORE_SPREAD = 15
+# 재생 라우드니스. 점수엔 안 들어가지만 "원본이 안 들린다"가 곧 이탈이다.
+# 기존 코퍼스는 -10.6(고양이) ~ -22.3(밥은 먹고 다니냐) 로 12dB 이 벌어져 있었다 —
+# 목록에서 다음 걸 누를 때마다 볼륨을 다시 잡아야 했다는 뜻이다.
+TARGET_LUFS = -14.0      # 스트리밍 관례(-14)에 맞춘다. -16 은 폰 스피커엔 작다.
+TARGET_TP_DB = -1.0      # 리미터 천장
+LOUDNESS_WARN = 1.0      # 목표에서 이만큼 벗어나면 경고
+LOUDNESS_FAIL = 3.0      # 이만큼이면 불합격 — 게인이 어딘가에서 막혔다는 뜻
 
 
 def die(msg):
@@ -135,18 +143,51 @@ def download_section(url, start_s, end_s, out_dir, pad=2.0):
 
 # ---------------------------------------------------------------- 정규화
 
-def _loudnorm_measure(src, cut):
-    af = "highpass=f=80,loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json"
+def _pre_chain(denoise):
+    """라우드니스를 재기 전에 거치는 필터들. 잰 값과 실제로 나갈 소리가 같아야 한다.
+
+    채점의 pyin 은 fmin=65Hz 부터 본다. 하이패스를 그 위(80Hz)에 걸었더니 저음
+    남성 목소리(송강호 ~76Hz)의 기본주파수가 깎여 유성 프레임이 반토막 났다
+    (64개 → 32개). fmin 아래인 55Hz 로 내린다 — 럼블은 걷고 목소리는 남긴다.
+    """
+    chain = ["highpass=f=55"]
+    if denoise:
+        # 약하게만. 기준 음성에만 건 필터는 유저의 깨끗한 마이크엔 없어서,
+        # 세게 걸면 모두에게 음색 감점이 깔린다.
+        chain.append("afftdn=nf=-25:tn=1")
+    return chain
+
+
+# 무음 제거 문턱(-45dB)은 절대값이라 게인 뒤에 와야 한다. 앞에 뒀더니 원본이
+# 조용한 클립일수록 더 많이 잘렸다 — 염소 울음이 4.02초에서 2.59초로 뭉텅 날아갔다.
+_TRIM = ("silenceremove=start_periods=1:start_silence=0.05:"
+         "start_threshold=-45dB:detection=rms")
+
+
+def measure_lufs(src, cut=(), pre=()):
+    """통합 라우드니스(LUFS)와 트루피크(dBTP). 못 재면 (None, None)."""
+    af = ",".join([*pre, f"loudnorm=I={TARGET_LUFS}:TP={TARGET_TP_DB}:LRA=11"
+                         ":print_format=json"])
     r = run(["ffmpeg", "-v", "info", *cut, "-i", str(src), "-af", af, "-f", "null", "-"])
     m = re.search(r"\{[^{}]*input_i[^{}]*\}", r.stderr, re.DOTALL)
-    return json.loads(m.group(0)) if m else None
+    if not m:
+        return None, None
+    d = json.loads(m.group(0))
+    try:
+        return float(d["input_i"]), float(d["input_tp"])
+    except (KeyError, ValueError):       # 무음이면 -inf 가 온다
+        return None, None
 
 
 def normalize(src, dst, start_s=None, end_s=None, denoise=False):
     """기존 코퍼스와 같은 포맷으로 맞춘다: mono / 22050 / pcm_s16le, 앞뒤 무음 제거.
 
     라우드니스는 재생 UX 용이다 — _score 는 피크 정규화를 하므로 점수엔 영향이 없다.
-    2패스로 재는 이유: 2초짜리 짧은 클립은 1패스 추정이 크게 빗나간다.
+    그래서 오래 방치됐는데, 실제로는 목표를 아무도 안 지키고 있었다. loudnorm 의
+    linear 모드는 트루피크 천장에 걸리면 게인을 조용히 줄인다. 영화 대사처럼
+    순간 피크가 큰 클립("밥은 먹고 다니냐")은 그 바람에 목표보다 6dB 낮게 나왔고,
+    아무도 검사하지 않으니 그대로 올라갔다. 이제는 게인을 직접 걸고, 피크는
+    리미터가 받고, 결과를 다시 재서 어긋나면 게이트가 잡는다.
     """
     cut = []
     if start_s is not None:
@@ -154,31 +195,25 @@ def normalize(src, dst, start_s=None, end_s=None, denoise=False):
     if end_s is not None:
         cut += ["-to", f"{end_s:.3f}"]
 
-    ln = "loudnorm=I=-16:TP=-1.5:LRA=11"
-    stats = _loudnorm_measure(src, cut)
-    if stats:
-        ln += (f":measured_I={stats['input_i']}:measured_TP={stats['input_tp']}"
-               f":measured_LRA={stats['input_lra']}:measured_thresh={stats['input_thresh']}"
-               ":linear=true")
+    pre = _pre_chain(denoise)
+    measured, _ = measure_lufs(src, cut, pre)
+    gain = 0.0 if measured is None else TARGET_LUFS - measured
 
-    # 채점의 pyin 은 fmin=65Hz 부터 본다. 하이패스를 그 위(80Hz)에 걸었더니 저음
-    # 남성 목소리(송강호 ~76Hz)의 기본주파수가 깎여 유성 프레임이 반토막 났다
-    # (64개 → 32개). fmin 아래인 55Hz 로 내린다 — 럼블은 걷고 목소리는 남긴다.
-    chain = ["highpass=f=55"]
-    if denoise:
-        # 약하게만. 기준 음성에만 건 필터는 유저의 깨끗한 마이크엔 없어서,
-        # 세게 걸면 모두에게 음색 감점이 깔린다.
-        chain.append("afftdn=nf=-25:tn=1")
-    chain.append(ln)
-    trim = ("silenceremove=start_periods=1:start_silence=0.05:"
-            "start_threshold=-45dB:detection=rms")
-    chain += [trim, "areverse", trim, "areverse"]
+    def render(g):
+        limit = 10 ** (TARGET_TP_DB / 20.0)
+        chain = [*pre, f"volume={g:.2f}dB", _TRIM, "areverse", _TRIM, "areverse",
+                 f"alimiter=limit={limit:.4f}:attack=5:release=50:level=disabled"]
+        r = run(["ffmpeg", "-y", "-v", "error", *cut, "-i", str(src),
+                 "-af", ",".join(chain), "-ac", "1", "-ar", str(SR),
+                 "-c:a", "pcm_s16le", "-map_metadata", "-1", str(dst)])
+        if r.returncode != 0:
+            die(f"ffmpeg 정규화 실패:\n{r.stderr[-1500:]}")
 
-    r = run(["ffmpeg", "-y", "-v", "error", *cut, "-i", str(src),
-             "-af", ",".join(chain), "-ac", "1", "-ar", str(SR),
-             "-c:a", "pcm_s16le", "-map_metadata", "-1", str(dst)])
-    if r.returncode != 0:
-        die(f"ffmpeg 정규화 실패:\n{r.stderr[-1500:]}")
+    render(gain)
+    # 리미터가 깎은 만큼 라우드니스도 내려간다. 한 번 재서 보정하면 대개 0.2LU 안에 든다.
+    got, _ = measure_lufs(dst)
+    if got is not None and abs(got - TARGET_LUFS) > 0.3:
+        render(gain + (TARGET_LUFS - got))
     return dst
 
 
@@ -201,8 +236,11 @@ def qa(path, voice=True, max_s=MAX_DURATION_S):
     peak = float(np.max(np.abs(y))) if len(y) else 0.0
     clip_ratio = float(np.mean(np.abs(y) > 0.999)) if len(y) else 1.0
 
+    lufs, tp = measure_lufs(path)
     m = {"duration_s": round(dur, 2), "trimmed_s": round(trimmed, 2),
          "peak": round(peak, 4), "clip_ratio": round(clip_ratio, 5),
+         "lufs": round(lufs, 2) if lufs is not None else None,
+         "true_peak_db": round(tp, 2) if tp is not None else None,
          "sr": sr, "samples": len(y)}
 
     if trimmed < MIN_TRIMMED_S:
@@ -224,6 +262,17 @@ def qa(path, voice=True, max_s=MAX_DURATION_S):
         fails.append("사실상 무음이다")
     if clip_ratio > MAX_CLIP_RATIO:
         fails.append(f"클리핑 {clip_ratio*100:.2f}% — 원본을 다시 따와라")
+    # 라우드니스는 귀로만 알 수 있던 항목이라 오래 새고 있었다. 이제 숫자로 막는다 —
+    # 목록에서 클립을 넘길 때마다 볼륨을 다시 잡게 되면 그게 이탈이다.
+    if lufs is None:
+        warns.append("라우드니스를 못 쟀다 (ffmpeg loudnorm 출력 없음)")
+    else:
+        miss = abs(lufs - TARGET_LUFS)
+        if miss > LOUDNESS_FAIL:
+            fails.append(f"라우드니스 {lufs:.1f} LUFS — 목표 {TARGET_LUFS} 에서 {miss:.1f}dB "
+                         "벗어났다. 게인이 리미터나 피크 천장에 막혔다는 뜻이다")
+        elif miss > LOUDNESS_WARN:
+            warns.append(f"라우드니스 {lufs:.1f} LUFS — 목표 {TARGET_LUFS} 에서 {miss:.1f}dB")
 
     # 피치: _score 의 40%가 여기 달려 있다
     f0, voiced, _ = librosa.pyin(y, fmin=65, fmax=2093, sr=sr)
@@ -497,6 +546,93 @@ def _voiced_spans(wav, min_len=0.25, bridge=0.2):
     return out
 
 
+def _caption_chars(url):
+    """자막을 (글자, 시각) 으로 편다. 자동 자막이면 단어마다 시각이 박혀 있다."""
+    import glob
+
+    with tempfile.TemporaryDirectory() as tmp:
+        r = run(yt_dlp_cmd() + ["--skip-download", "--write-subs", "--write-auto-subs",
+                                "--sub-langs", "ko.*", "--sub-format", "vtt",
+                                "--no-playlist", "-o", str(Path(tmp) / "s"), url])
+        files = sorted(glob.glob(str(Path(tmp) / "s*.vtt")))
+        if not files:
+            return []
+        vtt = Path(files[0]).read_text(encoding="utf-8", errors="replace")
+
+    # 자동 자막은 한 큐를 두 번 보낸다(누적 표시용). 단어 시각이 박힌 줄만 쓰면
+    # 중복이 저절로 걸러진다: `머리좋은<00:00:01.350><c> 버터</c>…`
+    cue = re.compile(r"^(\d\d:\d\d:\d\d\.\d\d\d) -->", re.M)
+    word = re.compile(r"<(\d\d:\d\d:\d\d\.\d\d\d)><c>(.*?)</c>")
+    out, seen = [], set()
+    for block in re.split(r"\n\n+", vtt):
+        m = cue.search(block)
+        if not m:
+            continue
+        t0 = ts_to_s(m.group(1))
+        pairs = word.findall(block)
+        if not pairs:
+            continue
+        head = re.sub(r"<[^>]*>", "", block.split("\n", 1)[1].split("<", 1)[0]).strip()
+        for ch in head:
+            if not ch.isspace():
+                out.append((ch, t0))
+        for t, w in pairs:
+            ts = ts_to_s(t)
+            if (ts, w) in seen:
+                continue
+            seen.add((ts, w))
+            for ch in w:
+                if not ch.isspace():
+                    out.append((ch, ts))
+    return out
+
+
+def cmd_locate(a):
+    """대사가 영상 어디쯤인지 자막으로 찾는다.
+
+    긴 영상에서 --around 를 모르면 픽커는 한가운데 60초를 띄우고, 거기 대사가
+    없으면 눈으로 훑는 수밖에 없다. 한국어 자동 자막은 받아쓰기가 엉망이지만
+    ('4딸라' → '쟈 달러') 글자 단위로는 절반쯤 맞아서 위치를 잡기엔 충분하다.
+    정확한 경계는 어차피 픽커에서 귀로 잡는다 — 여기선 어느 1분인지만 좁힌다.
+    """
+    from difflib import SequenceMatcher
+
+    chars = _caption_chars(a.url)
+    if not chars:
+        die("자막이 없다. --around 없이 pick 을 띄우고 확대/축소로 찾아라.")
+
+    q = re.sub(r"\s", "", a.text)
+    text = "".join(c for c, _ in chars)
+    width = len(q) + 4
+    scored = []
+    for i in range(0, max(1, len(text) - 1)):
+        win = text[i:i + width]
+        if len(win) < len(q) // 2:
+            break
+        scored.append((SequenceMatcher(None, q, win).ratio(), chars[i][1]))
+
+    scored.sort(key=lambda s: -s[0])
+    hits, used = [], []
+    for score, t in scored:                    # 같은 대목이 여러 번 걸리니 5초 안은 하나로
+        if any(abs(t - u) < 5.0 for u in used):
+            continue
+        used.append(t)
+        hits.append((score, t))
+        if len(hits) >= 5:
+            break
+
+    print(f"\n  자막 {len(text)}자에서 '{a.text}' 와 닮은 곳 — 받아쓰기가 틀려도 위치는 맞는다\n")
+    for score, t in hits:
+        i = next(k for k, (_, ts) in enumerate(chars) if ts >= t)
+        around = f"{int(t) // 60:02d}:{t % 60:05.2f}"
+        print(f"  {score:5.2f}  {around}  …{text[max(0, i - 6):i + width + 6]}…")
+    if hits:
+        t = hits[0][1]
+        print(f"\n  제일 그럴듯한 데서 픽커 열기:\n"
+              f"  python tools/ingest.py pick --url \"{a.url}\" --around {t:.1f} "
+              f"--window 40 --id ID --title '제목' --line '{a.text}'")
+
+
 def cmd_pick(a):
     """파형을 보고 귀로 들으며 구간을 고른다.
 
@@ -585,6 +721,66 @@ def cmd_pick(a):
 
     a.start, a.end, a.file = s_str, e_str, None
     cmd_add(a)
+
+
+def _renorm_source(entry):
+    """이 항목을 다시 정규화할 원본. 없으면 None.
+
+    결과는 언제나 refs_kr/ 로 나간다(publish 가 거길 먼저 본다). 제자리에 덮어쓰면
+    두 번 돌릴 때마다 무음 제거가 누적돼 원본이 조금씩 갉힌다 — 실제로 한 번
+    날려먹고 git 에서 되살렸다. 원본은 건드리지 않는 게 규칙이다.
+    """
+    vid = (entry.get("origin") or {}).get("video_id")
+    if vid and (CACHE_DIR / f"{vid}.wav").exists():
+        return CACHE_DIR / f"{vid}.wav"
+    # 원본을 다시 받아올 수 없는 것들(CC0 코퍼스)은 받아둔 wav 자체가 원본이다.
+    for d in ("refs_animals", "refs_cc0"):
+        p = ROOT / d / f"{entry['id']}.wav"
+        if p.exists():
+            return p
+    return None
+
+
+def cmd_renorm(a):
+    """정규화 규칙이 바뀌면 기존 클립을 전부 다시 만든다.
+
+    라우드니스 목표를 고쳐도 이미 들어간 클립은 옛 값 그대로 남는다. 그래서 목록을
+    넘길 때마다 볼륨이 튀었다 — 고양이 -10.6 LUFS, 밥은 먹고 다니냐 -22.3 LUFS.
+    메타데이터(plays·added·출처)는 건드리지 않고 소리와 QA 수치만 다시 쓴다.
+    """
+    doc = load_registry()
+    targets = [m for m in doc["memes"] if not a.ids or m["id"] in a.ids]
+    if a.ids:
+        missing = set(a.ids) - {m["id"] for m in targets}
+        if missing:
+            die(f"레지스트리에 없다: {', '.join(sorted(missing))}")
+
+    changed, skipped = [], []
+    for entry in targets:
+        src = _renorm_source(entry)
+        if src is None:
+            skipped.append(entry["id"])
+            continue
+        origin = entry.get("origin") or {}
+        denoise = "afftdn" in (entry.get("filters") or [])
+        out = CLIP_DIR / f"{entry['id']}.wav"
+        print(f"\n· {entry['id']} ← {src.name}")
+        CLIP_DIR.mkdir(parents=True, exist_ok=True)
+        normalize(src, out, ts_to_s(origin.get("start")),
+                  ts_to_s(origin.get("end")), denoise=denoise)
+
+        before = (entry.get("qa") or {}).get("lufs")
+        m, fails, warns = qa(out, voice=bool(entry.get("line")))   # 동물은 억양 게이트 면제
+        print_qa(m, fails, warns)
+        entry["qa"], entry["duration_ms"] = m, int(round(m.get("duration_s", 0) * 1000))
+        changed.append((entry["id"], before, m.get("lufs")))
+
+    save_registry(doc)      # 카탈로그 사본까지 같이 갱신한다
+    print("\n  라우드니스 (LUFS)")
+    for cid, before, after in changed:
+        print(f"    {cid:<20} {before if before is not None else '  ?':>7} → {after:>7}")
+    if skipped:
+        print(f"\n  원본이 없어 건너뜀: {', '.join(skipped)}")
 
 
 def _admin_token():
@@ -754,10 +950,19 @@ def main():
     content_args(a)
     a.set_defaults(func=cmd_add)
 
+    rn = sub.add_parser("renorm", help="정규화 규칙이 바뀌면 기존 클립을 다시 만든다")
+    rn.add_argument("ids", nargs="*", help="비우면 레지스트리 전체")
+    rn.set_defaults(func=cmd_renorm)
+
     q = sub.add_parser("qa", help="기존 wav 에 게이트만 다시 돌린다")
     q.add_argument("path"); q.add_argument("--nonvoice", action="store_true")
     q.add_argument("--max-seconds", dest="max_seconds", type=float, default=MAX_DURATION_S)
     q.set_defaults(func=cmd_qa)
+
+    lo = sub.add_parser("locate", help="대사가 영상 어디쯤인지 자막으로 찾는다")
+    lo.add_argument("--url", required=True)
+    lo.add_argument("--text", required=True, help="찾을 대사 (자막 받아쓰기가 틀려도 된다)")
+    lo.set_defaults(func=cmd_locate)
 
     s = sub.add_parser("scan", help="영상에서 대사만 깨끗한 구간을 찾는다")
     s.add_argument("--url", required=True)

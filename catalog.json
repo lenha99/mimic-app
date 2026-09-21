@@ -78,6 +78,15 @@
       "plays": 0,
       "line": "동작 그만, 밑장 빼기냐",
       "draft": true
+    },
+    {
+      "id": "eoiga_eopne",
+      "title": "어이가 없네",
+      "source": "베테랑",
+      "emoji": "😑",
+      "plays": 0,
+      "line": "어이가 없네",
+      "draft": true
     }
   ]
 }
