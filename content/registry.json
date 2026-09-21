@@ -53,8 +53,8 @@
         "semitone_range": 8.0,
         "self_score": 100,
         "self_pitch": 100,
-        "degraded_score": 71,
-        "score_spread": 29
+        "degraded_score": 61,
+        "score_spread": 39
       }
     },
     {
@@ -97,8 +97,8 @@
         "semitone_range": 9.4,
         "self_score": 100,
         "self_pitch": 100,
-        "degraded_score": 66,
-        "score_spread": 34
+        "degraded_score": 61,
+        "score_spread": 39
       },
       "draft": true
     },
@@ -143,8 +143,8 @@
         "pitch_gap_semitones": 12.8,
         "self_score": 100,
         "self_pitch": 100,
-        "degraded_score": 61,
-        "score_spread": 39
+        "degraded_score": 58,
+        "score_spread": 42
       },
       "filters": [
         "afftdn"
@@ -190,8 +190,8 @@
         "semitone_range": 20.6,
         "self_score": 100,
         "self_pitch": 100,
-        "degraded_score": 66,
-        "score_spread": 34
+        "degraded_score": 63,
+        "score_spread": 37
       },
       "draft": true
     },
@@ -235,8 +235,8 @@
         "semitone_range": 0.0,
         "self_score": 100,
         "self_pitch": 0,
-        "degraded_score": 60,
-        "score_spread": 40
+        "degraded_score": 46,
+        "score_spread": 54
       },
       "draft": true
     },
@@ -271,8 +271,8 @@
         "semitone_range": 17.7,
         "self_score": 100,
         "self_pitch": 100,
-        "degraded_score": 65,
-        "score_spread": 35
+        "degraded_score": 59,
+        "score_spread": 41
       }
     },
     {
@@ -306,8 +306,8 @@
         "semitone_range": 1.9,
         "self_score": 100,
         "self_pitch": 100,
-        "degraded_score": 74,
-        "score_spread": 26
+        "degraded_score": 64,
+        "score_spread": 36
       }
     },
     {
@@ -341,8 +341,8 @@
         "semitone_range": 3.3,
         "self_score": 100,
         "self_pitch": 100,
-        "degraded_score": 76,
-        "score_spread": 24
+        "degraded_score": 77,
+        "score_spread": 23
       }
     },
     {
@@ -376,8 +376,8 @@
         "semitone_range": 4.2,
         "self_score": 100,
         "self_pitch": 100,
-        "degraded_score": 67,
-        "score_spread": 33
+        "degraded_score": 64,
+        "score_spread": 36
       }
     },
     {
@@ -411,8 +411,8 @@
         "semitone_range": 19.4,
         "self_score": 100,
         "self_pitch": 100,
-        "degraded_score": 64,
-        "score_spread": 36
+        "degraded_score": 54,
+        "score_spread": 46
       }
     },
     {
@@ -446,8 +446,8 @@
         "semitone_range": 11.8,
         "self_score": 100,
         "self_pitch": 100,
-        "degraded_score": 73,
-        "score_spread": 27
+        "degraded_score": 69,
+        "score_spread": 31
       }
     }
   ]

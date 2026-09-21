@@ -59,6 +59,32 @@ with slim_image.imports():
     from fastapi import UploadFile, Response
 
 
+# ---- 배포 버전 ----
+# 배포본이 코드보다 낡으면 기능이 조용히 사라진다. 실제로 서버가 7시간 낡은
+# 상태로 돌면서, 클라이언트가 보낸 대사(line)를 받는 파라미터가 없어 통째로
+# 버리고 있었다. 아무도 에러를 못 봤다 — 그냥 대사가 화면에 안 나올 뿐이었다.
+#
+# deploy 시점의 커밋을 이미지에 구워 넣고 여기서 돌려준다. doctor 가 main 과
+# 대조한다. 배포 시점에 로컬에서 평가되므로 컨테이너에 git 이 없어도 된다.
+def _git_sha():
+    try:
+        return subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True,
+                              text=True, cwd=os.path.dirname(os.path.abspath(__file__))
+                              ).stdout.strip()[:12] or "unknown"
+    except Exception:
+        return "unknown"
+
+
+DEPLOYED_SHA = _git_sha()
+
+
+@app.function(image=slim_image)
+@modal.fastapi_endpoint(method="GET")
+def version():
+    """배포된 커밋. doctor 가 main 과 대조한다."""
+    return {"sha": DEPLOYED_SHA}
+
+
 # ---- 업로드 오디오 디코딩 ----
 # 브라우저 MediaRecorder 는 컨테이너를 제 마음대로 고른다. 안드로이드 카톡 인앱
 # 웹뷰는 audio/webm;codecs=opus, iOS 는 audio/mp4 를 준다. libsndfile 은 둘 다
@@ -202,9 +228,10 @@ def _ref_path(meme_id):
 # 측정이 아니라 추론을 했다.
 #
 # 한 파일에 append 하지 않는다. 볼륨은 요청마다 다른 컨테이너에 붙고 각자 자기
-# 시점의 뷰로 커밋하기 때문에, 같은 파일을 여럿이 고치면 쓰기가 유실된다
-# (기준 음성 업로드에서 실제로 겪었다). 이벤트마다 고유 파일명으로 쓰면 충돌할
-# 일 자체가 없고 커밋은 순수하게 더하기만 한다. 나중에 날짜별로 합치면 된다.
+# 시점의 뷰를 들고 있어서, 같은 경로를 여럿이 고치면 마지막에 커밋한 쪽이 이긴다.
+# 채점은 동시에 여러 건이 들어오는 경로라 그 방식으로는 반드시 샌다.
+# 이벤트마다 고유 파일명으로 쓰면 충돌할 일 자체가 없고 커밋은 순수하게
+# 더하기만 한다. 나중에 날짜별로 합치면 된다.
 EVENT_DIR = "/refs/events"
 
 
@@ -423,6 +450,35 @@ def admin_remove(token: str, meme_id: str):
 #  - 타이밍(timing): 길이 비율.
 #  - 동물 등 비음성 사운드는 보이스드 프레임이 적으면 억양을 제외하고 가중치 재분배.
 #  - 같은 소리=100, 비슷=높게 나오도록 매핑 보정.
+def _timing_from_path(wp, n_ref, n_usr):
+    """DTW 정렬 경로가 대각선에서 얼마나 벗어났는가 = 리듬 오차 (0~100).
+
+    예전엔 타이밍을 길이 비율로 쟀다:
+
+        timing = 100 * min(len(ref), len(usr)) / max(len(ref), len(usr))
+
+    이건 타이밍이 아니라 길이다. 앞부분을 뭉개고 뒷부분을 늘여서 리듬을 완전히
+    망쳐도 총 길이만 맞으면 100점이 나왔다. 가중치 20%가 통째로 공짜였다.
+
+    음색을 재느라 이미 MFCC DTW 를 돌리고 있고, 그 정렬 경로가 곧 "원본의 이
+    시점이 내 녹음의 어느 시점에 해당하는가"다. 경로가 대각선이면 둘이 같은
+    속도로 간 것이고, 휘어 있으면 그만큼 빠르거나 느렸던 것이다. 벗어난 정도를
+    양쪽 길이로 정규화해 평균 낸다 — 길이가 달라도 비교가 된다.
+
+    경로는 (i, j) 쌍의 배열이고 역순으로 들어온다. 방향은 상관없다.
+    """
+    import numpy as np
+    if wp is None or len(wp) == 0 or n_ref < 2 or n_usr < 2:
+        return 0.0
+    wp = np.asarray(wp, dtype=float)
+    # 각 축을 0~1 로 펴서 대각선을 y=x 로 만든다
+    i = wp[:, 0] / (n_ref - 1)
+    j = wp[:, 1] / (n_usr - 1)
+    dev = float(np.mean(np.abs(i - j)))
+    # 0.25 는 "네 박자짜리에서 한 박 밀렸다" 정도다. 거기서 대략 37점이 된다.
+    return 100.0 * float(np.exp(-dev / 0.25))
+
+
 def _score(reference_path, user_path):
     SR = 22050
 
@@ -467,8 +523,8 @@ def _score(reference_path, user_path):
         tone_cost = 1.0
     tone = 100.0 * float(np.clip(1.0 - tone_cost, 0.0, 1.0))
 
-    # 타이밍: 길이 비율
-    timing = 100.0 * (min(len(ref), len(usr)) / max(len(ref), len(usr)))
+    # 타이밍: 리듬이 얼마나 어긋났는가 (MFCC 정렬 경로에서 읽는다)
+    timing = _timing_from_path(wpm, ma.shape[1], mb.shape[1])
 
     # 가중 합 (억양 없으면 그 가중치를 음색/타이밍에 재분배)
     comps = []
