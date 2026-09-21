@@ -822,6 +822,18 @@ def cmd_publish(a):
     if out.get("error"):
         die(f"서버가 거부했다: {out['error']}")
     print(f"✓ 업로드: {out}")
+
+    # --live 는 서버에만 공개로 올리고 레지스트리 플래그는 그대로 뒀었다. 그러면
+    # sync_catalog 가 웹 FALLBACK·Flutter 사본에서 계속 걸러내서, 프로덕션엔
+    # 떠 있는데 오프라인 목록엔 없는 상태가 된다. 올린 대로 레지스트리도 맞춘다.
+    if a.live and entry.pop("draft", None):
+        doc = load_registry()
+        for m in doc["memes"]:
+            if m["id"] == a.id:
+                m.pop("draft", None)
+        save_registry(doc)
+        print("  draft 해제 — 레지스트리와 생성 사본도 공개로 맞췄다")
+
     cmd_verify(a)
 
 
