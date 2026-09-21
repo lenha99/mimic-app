@@ -102,10 +102,11 @@ def _decode_upload(raw: bytes):
 @app.function(image=score_image, volumes={REF_DIR: volume},
               scaledown_window=300, enable_memory_snapshot=True)
 @modal.fastapi_endpoint(method="POST", docs=True)
-async def score(meme_id: str, file: UploadFile):
+async def score(meme_id: str, file: UploadFile, client: str = ""):
     """
     meme_id: 따라할 밈 식별자 (예: 'ronaldo_siu') — query param
     file:    유저 녹음 (multipart 필드 'file', wav/m4a)
+    client:  익명 기기 식별자(선택). 랭킹에서 같은 사람의 연속 시도를 묶는 용도.
     """
     ref_path = _ref_path(meme_id)
     if ref_path is None:
@@ -117,6 +118,16 @@ async def score(meme_id: str, file: UploadFile):
 
     result = _score(ref_path, user_path)
     os.unlink(user_path)
+
+    if isinstance(result.get("score"), int):
+        bd = result.get("breakdown") or {}
+        _log_event("score", {
+            "meme_id": meme_id, "score": result["score"],
+            "grade": result.get("grade"),
+            "pitch": bd.get("pitch"), "tone": bd.get("tone"),
+            "timing": bd.get("timing"),
+            **({"client": client[:64]} if client else {}),
+        })
     return result
 
 
@@ -182,6 +193,78 @@ def _ref_path(meme_id):
         return path
     volume.reload()
     return path if os.path.exists(path) else None
+
+
+# ---- 이벤트 로그 ----
+# 지금까지 이 서비스는 자기 자신에 대해 아무것도 몰랐다. 누가 뭘 눌렀는지,
+# 녹음까지 갔는지, 점수가 어떻게 분포하는지 답할 방법이 없었고 catalog 의
+# `plays` 는 registry.json 에 손으로 적어둔 숫자였다. 그래서 UI 를 고칠 때마다
+# 측정이 아니라 추론을 했다.
+#
+# 한 파일에 append 하지 않는다. 볼륨은 요청마다 다른 컨테이너에 붙고 각자 자기
+# 시점의 뷰로 커밋하기 때문에, 같은 파일을 여럿이 고치면 쓰기가 유실된다
+# (기준 음성 업로드에서 실제로 겪었다). 이벤트마다 고유 파일명으로 쓰면 충돌할
+# 일 자체가 없고 커밋은 순수하게 더하기만 한다. 나중에 날짜별로 합치면 된다.
+EVENT_DIR = "/refs/events"
+
+
+def _log_event(kind: str, data: dict):
+    """이벤트 한 건. 실패해도 절대 호출자를 깨뜨리지 않는다."""
+    import json, os, time, uuid
+    try:
+        day = time.strftime("%Y-%m-%d", time.gmtime())
+        d = os.path.join(EVENT_DIR, day)
+        os.makedirs(d, exist_ok=True)
+        rec = {"kind": kind, "ts": time.time(), **data}
+        with open(os.path.join(d, f"{uuid.uuid4().hex}.json"), "w", encoding="utf-8") as f:
+            json.dump(rec, f, ensure_ascii=False)
+        volume.commit()
+    except Exception:
+        pass    # 로깅 때문에 채점이 실패하는 일은 없어야 한다
+
+
+@app.function(image=slim_image, volumes={REF_DIR: volume})
+@modal.fastapi_endpoint(method="GET")
+def stats(days: int = 7):
+    """밈별 집계. 랭킹·투표가 여기 위에 올라간다.
+
+    녹음 자체는 채점 직후 버린다(PRIVACY.md). 남는 건 숫자뿐이다.
+    """
+    import json, os, time
+    volume.reload()
+    cutoff = time.time() - days * 86400
+    per = {}
+    if os.path.isdir(EVENT_DIR):
+        for day in sorted(os.listdir(EVENT_DIR)):
+            d = os.path.join(EVENT_DIR, day)
+            if not os.path.isdir(d):
+                continue
+            for name in os.listdir(d):
+                try:
+                    with open(os.path.join(d, name), encoding="utf-8") as f:
+                        e = json.load(f)
+                except Exception:
+                    continue
+                if e.get("kind") != "score" or e.get("ts", 0) < cutoff:
+                    continue
+                b = per.setdefault(e.get("meme_id", "?"),
+                                   {"plays": 0, "scores": [], "best": 0})
+                b["plays"] += 1
+                sc = e.get("score")
+                if isinstance(sc, int):
+                    b["scores"].append(sc)
+                    b["best"] = max(b["best"], sc)
+
+    out = []
+    for mid, b in per.items():
+        xs = sorted(b["scores"])
+        out.append({
+            "meme_id": mid, "plays": b["plays"], "best": b["best"],
+            "median": xs[len(xs) // 2] if xs else None,
+            "mean": round(sum(xs) / len(xs)) if xs else None,
+        })
+    out.sort(key=lambda r: -r["plays"])
+    return {"days": days, "memes": out}
 
 
 # ---- 동적 밈 카탈로그 (운영자 추가/삭제 + 친구 UGC 업로드, 앱 재빌드 불필요) ----

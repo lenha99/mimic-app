@@ -17,10 +17,13 @@ const MAX_BYTES = 10 * 1024 * 1024; // modal_app._decode_upload 와 같은 상�
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
-  const memeId = new URL(req.url).searchParams.get("meme_id");
+  const q = new URL(req.url).searchParams;
+  const memeId = q.get("meme_id");
   if (!memeId) {
     return Response.json({ error: "meme_id 가 없습니다" }, { status: 400 });
   }
+  // 익명 기기 식별자. 랭킹 집계용이고 없으면 그냥 안 보낸다.
+  const client = (q.get("client") ?? "").slice(0, 64);
 
   const file = (await req.formData()).get("file");
   if (!(file instanceof Blob) || file.size === 0) {
@@ -37,7 +40,8 @@ export async function POST(req: Request) {
     // Modal 콜드 스타트가 수십 초까지 간다. 다만 maxDuration 보다는 먼저 끊어서
     // 플랫폼이 함수를 죽이기 전에 우리 문구로 답하게 한다.
     const res = await fetch(
-      `${config.scoreUrl}?meme_id=${encodeURIComponent(memeId)}`,
+      `${config.scoreUrl}?meme_id=${encodeURIComponent(memeId)}` +
+        (client ? `&client=${encodeURIComponent(client)}` : ""),
       { method: "POST", body, signal: AbortSignal.timeout(55_000) },
     );
     // 서버가 JSON 이 아닌 걸 뱉으면 그대로 흘리지 않고 에러로 바꾼다.
