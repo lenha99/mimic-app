@@ -18,6 +18,8 @@ export type Meme = {
  */
 // <generated:catalog> — content/registry.json 에서 생성. 직접 고치지 말 것.
 const FALLBACK: Meme[] = [
+  { id: "muyaho", title: "무야호", source: "무한도전", emoji: "🎉", plays: 0, line: "무야호~!" },
+  { id: "mitjang_ppaegi", title: "동작 그만", source: "타짜", emoji: "🃏", plays: 0, line: "동작 그만, 밑장 빼기냐" },
   { id: "rooster", title: "꼬끼오", source: "수탉", emoji: "🐓", plays: 128400 },
   { id: "cat", title: "야오옹", source: "고양이", emoji: "🐱", plays: 96300 },
   { id: "goat", title: "메에에", source: "염소", emoji: "🐐", plays: 81200 },
@@ -26,6 +28,25 @@ const FALLBACK: Meme[] = [
   { id: "dolphin", title: "이이익", source: "돌고래", emoji: "🐬", plays: 41900 },
 ];
 // </generated:catalog>
+
+/**
+ * 제목과 겹치지 않을 때만 대사를 돌려준다.
+ *
+ * 말소리 밈은 제목이 대사에서 따온 경우가 많다("밥은 먹고 다니냐" / "무야호").
+ * 그럴 때 둘을 나란히 찍으면 같은 말이 두 번 나와서, 대사가 정보가 아니라
+ * 장식이 된다. 반대로 "동작 그만" → "동작 그만, 밑장 빼기냐"처럼 대사가 더
+ * 길면 그게 실제로 뭘 외쳐야 하는지 알려주는 유일한 정보다.
+ */
+export function extraLine(meme: Meme): string | null {
+  if (!meme.line) return null;
+  const bare = (s: string) => s.replace(/[\s~!?.,·'"“”‘’]/g, "");
+  return bare(meme.line) === bare(meme.title) ? null : meme.line;
+}
+
+/** 사회적 증거는 숫자가 있을 때만 증거다. "0명 도전"은 오히려 말리는 문구다. */
+export function playCount(meme: Meme): number | null {
+  return typeof meme.plays === "number" && meme.plays > 0 ? meme.plays : null;
+}
 
 export type MemeListResult = {
   memes: Meme[];

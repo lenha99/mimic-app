@@ -129,6 +129,8 @@ class Api {
 
 // <generated:catalog> — content/registry.json 에서 생성. 직접 고치지 말 것.
 const demoMemes = [
+  Meme(id: 'muyaho', title: '무야호', source: '무한도전', emoji: '🎉', plays: 0, refUrl: '',),
+  Meme(id: 'mitjang_ppaegi', title: '동작 그만', source: '타짜', emoji: '🃏', plays: 0, refUrl: '',),
   Meme(id: 'rooster', title: '꼬끼오', source: '수탉', emoji: '🐓', plays: 128400, refUrl: '',),
   Meme(id: 'cat', title: '야오옹', source: '고양이', emoji: '🐱', plays: 96300, refUrl: '',),
   Meme(id: 'goat', title: '메에에', source: '염소', emoji: '🐐', plays: 81200, refUrl: '',),

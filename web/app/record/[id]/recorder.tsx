@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Meme } from "@/lib/memes";
+import { extraLine, type Meme } from "@/lib/memes";
 import styles from "./record.module.css";
 
 /**
@@ -76,12 +76,31 @@ const GRADE_CLASS: Record<string, string> = {
 };
 
 /**
+ * 채점기가 억양 축을 실제로 썼는가.
+ *
+ * 원본에 유성 프레임이 5개도 없으면 서버는 억양(40%)을 빼고 나머지를 재분배해
+ * 총점을 낸다(modal_app._score). 그런데 breakdown 으로는 `pitch: 0` 을 보내서,
+ * 화면에는 "억양 0점"으로 뜨고 총평은 "억양이 아쉬워"라고 사용자를 탓한다.
+ * 원본 클립이 문제인데 사람한테 뒤집어씌우는 셈이다.
+ *
+ * 총점 공식이 둘을 구분해준다 — 억양을 넣었으면 0점이 총점을 끌어내렸어야 한다.
+ * 빼고 계산한 값과 총점이 맞으면 축이 빠진 것이다. 추측이 아니라 산수다.
+ */
+function pitchScored(r: Score): boolean {
+  if (r.breakdown.pitch > 0) return true;
+  const { tone, timing } = r.breakdown;
+  const without = Math.round((tone * 0.4 + timing * 0.2) / 0.6);
+  const with0 = Math.round(tone * 0.4 + timing * 0.2);
+  return !(r.score === without && r.score !== with0);
+}
+
+/**
  * 숫자만으로는 웃기지 않는다. 사람이 한마디 해줘야 공유하고 싶어진다.
  * (억양/음색/타이밍 전부 받침이 있어 조사는 "이"/"은"으로 고정된다.)
  */
-function verdict(score: number, bd: Score["breakdown"]): string {
+function verdict(score: number, bd: Score["breakdown"], hasPitch = true): string {
   const axes: [string, number][] = [
-    ["억양", bd.pitch],
+    ...(hasPitch ? ([["억양", bd.pitch]] as [string, number][]) : []),
     ["음색", bd.tone],
     ["타이밍", bd.timing],
   ];
@@ -542,7 +561,10 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
             {meme.source}
             {refSeconds !== null && ` · ${refSeconds.toFixed(1)}초`}
           </p>
-          {meme.line && <p className={styles.line}>“{meme.line}”</p>}
+          {/* 제목이 이미 대사인 밈("무야호")은 같은 말을 두 번 찍지 않는다. */}
+          {extraLine(meme) && (
+            <p className={styles.line}>“{extraLine(meme)}”</p>
+          )}
         </section>
       )}
 
@@ -586,7 +608,8 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
               </span>
             )}
           </div>
-          <h2 className={styles.cue}>
+          {/* 대사가 있으면 주인공은 대사다. 안내 문구가 읽을 글자보다 크면 안 된다. */}
+          <h2 className={meme.line ? styles.cueSmall : styles.cue}>
             {phase === "listening" ? "잘 들어" : "준비"}
           </h2>
           <p className={styles.cueSub}>
@@ -636,14 +659,22 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
               ))}
             </div>
           </div>
-          <h2 className={styles.cueLoud} aria-live="assertive">
+          <h2
+            className={meme.line ? styles.cueSmallLoud : styles.cueLoud}
+            aria-live="assertive"
+          >
             따라해
           </h2>
           <p className={styles.cueSub}>
             {canStop ? "다 하면 끊어도 돼" : "알아서 끊어줄게"}
           </p>
-          {/* 듣기 화면과 같은 자리에 같은 크기로 — 따라하는 순간 대사가 움직이면 안 된다. */}
-          {meme.line && <p className={styles.lineCue}>“{meme.line}”</p>}
+          {/* 듣기 화면과 같은 자리에 같은 크기로 — 따라하는 순간 대사가 움직이면 안 된다.
+              바뀌는 건 색뿐이다: 흰색(읽어둬) → 형광(지금 외쳐). */}
+          {meme.line && (
+            <p className={`${styles.lineCue} ${styles.lineLive}`}>
+              “{meme.line}”
+            </p>
+          )}
           {canStop && (
             <button className={styles.skip} onClick={stopRecording}>
               다 했어 →
@@ -737,7 +768,9 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
             </span>
           </div>
 
-          <p className={styles.verdict}>{verdict(result.score, result.breakdown)}</p>
+          <p className={styles.verdict}>
+            {verdict(result.score, result.breakdown, pitchScored(result))}
+          </p>
 
           {beat !== null && (
             <div className={styles.beat}>
@@ -777,14 +810,22 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
             </div>
           )}
 
+          {!pitchScored(result) && (
+            <p className={styles.axisNote}>
+              이 원본은 목소리 구간이 짧아 억양은 빼고 쟀어
+            </p>
+          )}
+
           <dl className={styles.metrics}>
-            {(
-              [
-                ["억양", result.breakdown.pitch],
-                ["음색", result.breakdown.tone],
-                ["타이밍", result.breakdown.timing],
-              ] as const
-            ).map(([label, value]) => (
+            {[
+              // 채점에 안 쓰인 축은 빼고 보여준다. 0 으로 찍으면 사용자가
+              // 자기가 못한 줄 안다 — 실제로는 원본이 억양을 못 내준 것이다.
+              ...(pitchScored(result)
+                ? [["억양", result.breakdown.pitch] as const]
+                : []),
+              ["음색", result.breakdown.tone] as const,
+              ["타이밍", result.breakdown.timing] as const,
+            ].map(([label, value]) => (
               <div key={label} className={styles.metric}>
                 <dt className={styles.metricLabel}>{label}</dt>
                 <div className={styles.metricTrack}>
