@@ -64,8 +64,11 @@ with slim_image.imports():
 # 상태로 돌면서, 클라이언트가 보낸 대사(line)를 받는 파라미터가 없어 통째로
 # 버리고 있었다. 아무도 에러를 못 봤다 — 그냥 대사가 화면에 안 나올 뿐이었다.
 #
-# deploy 시점의 커밋을 이미지에 구워 넣고 여기서 돌려준다. doctor 가 main 과
-# 대조한다. 배포 시점에 로컬에서 평가되므로 컨테이너에 git 이 없어도 된다.
+# deploy 시점의 커밋을 이미지 환경변수로 구워 넣는다.
+#
+# 처음엔 모듈 상수에 담았는데 늘 "unknown" 이 나왔다 — 모듈은 컨테이너에서도
+# 다시 import 되고, 거기엔 git 도 .git 도 없다. 배포 때 로컬에서 한 번 읽은 값이
+# 컨테이너까지 따라가려면 이미지에 실어야 한다.
 def _git_sha():
     try:
         return subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True,
@@ -75,14 +78,14 @@ def _git_sha():
         return "unknown"
 
 
-DEPLOYED_SHA = _git_sha()
+version_image = slim_image.env({"MIMIC_SHA": _git_sha()})
 
 
-@app.function(image=slim_image)
+@app.function(image=version_image)
 @modal.fastapi_endpoint(method="GET")
 def version():
-    """배포된 커밋. doctor 가 main 과 대조한다."""
-    return {"sha": DEPLOYED_SHA}
+    """배포된 커밋. doctor 가 로컬과 대조한다."""
+    return {"sha": os.environ.get("MIMIC_SHA", "unknown")}
 
 
 # ---- 업로드 오디오 디코딩 ----
