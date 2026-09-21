@@ -147,8 +147,8 @@ async def score(meme_id: str, file: UploadFile):
     meme_id: 따라할 밈 식별자 (예: 'ronaldo_siu') — query param
     file:    유저 녹음 (multipart 필드 'file', wav/m4a)
     """
-    ref_path = os.path.join(REF_DIR, f"{meme_id}.wav")
-    if not os.path.exists(ref_path):
+    ref_path = _ref_path(meme_id)
+    if ref_path is None:
         return {"error": f"기준 음성 없음: {meme_id}"}
 
     user_path = _decode_upload(await file.read())
@@ -164,10 +164,9 @@ async def score(meme_id: str, file: UploadFile):
 @modal.fastapi_endpoint(method="GET")
 def reference(meme_id: str):
     """기준 음성(wav) 스트리밍 — 앱의 '원본 듣기'용. query: meme_id"""
-    import os
     from fastapi import Response
-    path = os.path.join(REF_DIR, f"{meme_id}.wav")
-    if not os.path.exists(path):
+    path = _ref_path(meme_id)
+    if path is None:
         return Response(status_code=404)
     with open(path, "rb") as f:
         data = f.read()
@@ -229,6 +228,57 @@ def challenge(meme_id: str = "", title: str = "", score: int = 0):
     return HTMLResponse(html_doc)
 
 
+def _wav_problem(data: bytes):
+    """업로드 바이트가 진짜 PCM wav 인지 헤더만 보고 검사. 문제 없으면 None.
+
+    기준 음성은 서버가 트랜스코딩하지 않고 그대로 {id}.wav 로 쓴다. mp3 를 .wav 로
+    이름만 바꿔 올리면 업로드는 성공하고 채점에서야 librosa 가 터진다. slim 이미지엔
+    librosa 가 없으니 표준 라이브러리로 헤더만 뜯는다.
+    """
+    import struct
+    if len(data) < 44 or data[:4] != b"RIFF" or data[8:12] != b"WAVE":
+        return "RIFF/WAVE 헤더가 아니다 (mp3·m4a 를 .wav 로 바꿔 올린 것 아닌가)"
+    pos, fmt, has_data = 12, None, False
+    while pos + 8 <= len(data):
+        cid = data[pos:pos + 4]
+        size = struct.unpack("<I", data[pos + 4:pos + 8])[0]
+        body = data[pos + 8:pos + 8 + size]
+        if cid == b"fmt " and len(body) >= 16:
+            fmt = struct.unpack("<HHIIHH", body[:16])  # format, ch, sr, byterate, align, bits
+        elif cid == b"data":
+            has_data = size > 0
+        pos += 8 + size + (size & 1)
+    if fmt is None:
+        return "fmt 청크가 없다"
+    if not has_data:
+        return "data 청크가 비었다"
+    audio_format, channels, sample_rate, _, _, bits = fmt
+    if audio_format != 1:
+        return f"PCM 이 아니다 (format={audio_format})"
+    if channels != 1:
+        return f"모노가 아니다 (channels={channels})"
+    if bits != 16:
+        return f"16비트가 아니다 (bits={bits})"
+    if sample_rate not in (16000, 22050, 44100, 48000):
+        return f"예상 밖 샘플레이트 {sample_rate} (권장 22050)"
+    return None
+
+
+def _ref_path(meme_id):
+    """기준 음성 경로. 없으면 볼륨을 한 번 리로드해 보고 그래도 없으면 None.
+
+    카탈로그(_load_catalog)는 매번 reload 하지만 wav 조회는 안 했다. 그래서 방금
+    올린 밈이 '목록엔 보이는데 소리만 404' 나는 구간이 컨테이너 수명(300초)만큼
+    있었다. 히트 경로엔 reload 를 안 태우고 미스일 때만 한 번 본다.
+    """
+    import os
+    path = os.path.join(REF_DIR, f"{meme_id}.wav")
+    if os.path.exists(path):
+        return path
+    volume.reload()
+    return path if os.path.exists(path) else None
+
+
 # ---- 동적 밈 카탈로그 (운영자 추가/삭제 + 친구 UGC 업로드, 앱 재빌드 불필요) ----
 # 카탈로그는 meme-refs 볼륨의 catalog.json 에 저장. 기준 음성은 {id}.wav.
 def _load_catalog():
@@ -250,9 +300,16 @@ def _save_catalog(memes_list):
 
 @app.function(image=slim_image, volumes={REF_DIR: volume})
 @modal.fastapi_endpoint(method="GET")
-def memes():
-    """앱이 불러오는 밈 목록(JSON 배열). Config.memesUrl 로 연결 → 콘텐츠 동적."""
-    return _load_catalog()
+def memes(include_draft: int = 0):
+    """앱이 불러오는 밈 목록(JSON 배열). Config.memesUrl 로 연결 → 콘텐츠 동적.
+
+    draft 항목은 기본으로 숨긴다. include_draft=1 로 미리보기(로컬 개발 서버에
+    NEXT_PUBLIC_MEMES_URL 을 이 쿼리째 넣으면 미공개 밈까지 보인다).
+    """
+    cat = _load_catalog()
+    if include_draft:
+        return cat
+    return [m for m in cat if not m.get("draft")]
 
 
 @app.function(image=slim_image, volumes={REF_DIR: volume})
@@ -260,14 +317,21 @@ def memes():
 async def submit(title: str, file: UploadFile, source: str = "친구", emoji: str = "🎤"):
     """친구/유저가 자기 목소리를 새 챌린지로 업로드(UGC). 누구나 가능."""
     import os, uuid
+    data = await file.read()
+    # 운영자 경로(admin_add)만큼 빡세게 보진 않는다 — 기기마다 샘플레이트가 달라서.
+    # 다만 wav 가 아닌 걸 {id}.wav 로 저장해 채점에서 터지는 것만 막는다.
+    if len(data) < 44 or data[:4] != b"RIFF" or data[8:12] != b"WAVE":
+        return {"error": "wav 형식이 아니다"}
     mid = "ugc_" + uuid.uuid4().hex[:8]
     with open(os.path.join(REF_DIR, f"{mid}.wav"), "wb") as f:
-        f.write(await file.read())
+        f.write(data)
     volume.commit()
     cat = _load_catalog()
     entry = {"id": mid, "title": (title or "내 소리")[:20], "source": source,
              "emoji": emoji, "plays": 0, "ugc": True}
-    cat.insert(0, entry)  # 새 UGC를 목록 맨 앞에
+    # 맨 앞(0)은 홈 히어로("오늘의 소리") 자리라 편집 영역으로 남긴다.
+    # 무인증 업로드가 히어로를 가져가면 안 되므로 바로 다음 칸에 꽂는다.
+    cat.insert(min(1, len(cat)), entry)
     _save_catalog(cat)
     return entry
 
@@ -276,19 +340,74 @@ async def submit(title: str, file: UploadFile, source: str = "친구", emoji: st
               secrets=[modal.Secret.from_name("mimic-admin")])
 @modal.fastapi_endpoint(method="POST")
 async def admin_add(token: str, meme_id: str, title: str, file: UploadFile,
-                    source: str = "", emoji: str = "🎙", plays: int = 0):
-    """운영자 전용: 밈 추가/수정 (기준 wav 업로드 + 카탈로그 등록). token 필요."""
+                    source: str = "", emoji: str = "🎙", plays: int = 0,
+                    line: str = "", origin_url: str = "", draft: bool = False):
+    """운영자 전용: 밈 추가/수정 (기준 wav 업로드 + 카탈로그 등록). token 필요.
+
+    line 은 따라 말할 대사 — 말소리 밈에만 있고 동물 소리엔 없다. 빈 값이면
+    카탈로그에 키 자체를 넣지 않는다(앱이 유무로 분기하므로 빈 문자열은 곤란).
+    draft=True 면 목록에는 안 뜨고 /record/{id} 직링크로만 열린다 — 실기기에서
+    먼저 돌려보고 공개하기 위한 상태다.
+    """
     import os
     if token != os.environ.get("ADMIN_TOKEN"):
         return Response(status_code=403, content="forbidden")
+
+    data = await file.read()
+    problem = _wav_problem(data)
+    if problem:
+        return {"error": f"기준 음성 형식 오류: {problem}"}
+
     with open(os.path.join(REF_DIR, f"{meme_id}.wav"), "wb") as f:
-        f.write(await file.read())
+        f.write(data)
     volume.commit()
+
+    old = next((m for m in _load_catalog() if m.get("id") == meme_id), {})
     cat = [m for m in _load_catalog() if m.get("id") != meme_id]
-    cat.append({"id": meme_id, "title": title, "source": source,
-                "emoji": emoji, "plays": plays})
+    # 기존 항목을 베이스로 덮어쓴다 — 예전엔 고정 키로 새 dict 를 만들어서
+    # 재업로드할 때마다 line 같은 필드가 소리 없이 날아갔다.
+    entry = dict(old)
+    entry.update({"id": meme_id, "title": title, "source": source,
+                  "emoji": emoji, "plays": plays})
+    if line:
+        entry["line"] = line
+    if origin_url:
+        entry["origin_url"] = origin_url
+    if draft:
+        entry["draft"] = True
+    else:
+        entry.pop("draft", None)
+    cat.append(entry)
     _save_catalog(cat)
-    return {"ok": True, "count": len(cat)}
+    return {"ok": True, "count": len(cat), "entry": entry}
+
+
+@app.function(image=slim_image, volumes={REF_DIR: volume},
+              secrets=[modal.Secret.from_name("mimic-admin")])
+@modal.fastapi_endpoint(method="POST")
+async def admin_set_catalog(token: str, file: UploadFile):
+    """운영자 전용: 카탈로그 전체 교체 (content/registry.json 에서 생성한 catalog.json 업로드).
+
+    admin_add 는 끝에 append 라 순서를 못 잡는다. 홈 히어로가 memes[0] 이므로
+    순서 자체가 콘텐츠 결정이고, 그건 레지스트리에서 정한다.
+    UGC 항목은 손대지 않고 앞에 그대로 남긴다 — 유저가 올린 걸 운영 작업이 지우면 안 된다.
+    """
+    import os, json
+    if token != os.environ.get("ADMIN_TOKEN"):
+        return Response(status_code=403, content="forbidden")
+    try:
+        pushed = json.loads((await file.read()).decode("utf-8")).get("memes", [])
+    except Exception as e:
+        return {"error": f"카탈로그 JSON 파싱 실패: {e}"}
+    if not isinstance(pushed, list) or not pushed:
+        return {"error": "빈 카탈로그는 받지 않는다"}
+    missing = [m["id"] for m in pushed
+               if not os.path.exists(os.path.join(REF_DIR, f"{m['id']}.wav"))]
+    if missing:
+        return {"error": f"기준 음성이 없는 id: {missing}"}
+    ugc = [m for m in _load_catalog() if m.get("ugc")]
+    _save_catalog(ugc + pushed)
+    return {"ok": True, "count": len(ugc) + len(pushed), "ugc_kept": len(ugc)}
 
 
 @app.function(image=slim_image, volumes={REF_DIR: volume},
@@ -316,8 +435,8 @@ async def make_video(meme_id: str, title: str, score: int,
     채점 후 호출. 원본 vs 나 공유영상(9:16 mp4)을 생성해 바이트로 반환.
     file: 유저 녹음 (multipart 필드 'file', 채점 때 보낸 것과 동일)
     """
-    ref_path = os.path.join(REF_DIR, f"{meme_id}.wav")
-    if not os.path.exists(ref_path):
+    ref_path = _ref_path(meme_id)
+    if ref_path is None:
         return {"error": f"기준 음성 없음: {meme_id}"}
 
     user_path = _decode_upload(await file.read())

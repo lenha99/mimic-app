@@ -25,12 +25,17 @@ function parseBeat(raw: string | string[] | undefined): number | null {
 }
 
 async function findMeme(id: string) {
-  const { memes } = await getMemes();
-  const index = memes.findIndex((m) => m.id === id);
-  if (index < 0) return null;
+  // 미공개(draft) 밈도 직링크로는 열려야 한다 — 공개 전에 실기기에서 확인하는 경로다.
+  const { memes } = await getMemes({ includeDraft: true });
+  const meme = memes.find((m) => m.id === id);
+  if (!meme) return null;
+
   // 결과 화면에서 목록으로 돌아가지 않고 바로 다음 소리로 넘어가기 위한 것.
-  const next = memes.length > 1 ? memes[(index + 1) % memes.length] : null;
-  return { meme: memes[index], next };
+  // 다음 소리는 공개된 것 중에서 고른다 — 미공개를 남에게 떠넘기면 안 된다.
+  const live = memes.filter((m) => !m.draft);
+  const at = live.findIndex((m) => m.id === id);
+  const next = live.length > 1 && at >= 0 ? live[(at + 1) % live.length] : live[0] ?? null;
+  return { meme, next: next && next.id !== id ? next : null };
 }
 
 export async function generateMetadata({
