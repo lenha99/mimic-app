@@ -40,7 +40,9 @@ elseif (-not $env:MIMIC_ADMIN_TOKEN) {
     $env:MIMIC_ADMIN_TOKEN = Read-Host "mimic-admin 의 ADMIN_TOKEN (모르면 Ctrl+C 후 -NewToken 으로)"
 }
 
-$cmdArgs = @("tools/ingest.py", "publish-all")   # $args 는 자동 변수라 쓰면 안 된다
+# -u: 파이프로 넘기면 파이썬 출력이 블록 버퍼링된다. 그대로 두면 명령이 다
+# 끝날 때까지 로그 파일이 생기지도 않아서, 진행 중인지 멈춘 건지 알 수가 없다.
+$cmdArgs = @("-u", "tools/ingest.py", "publish-all")   # $args 는 자동 변수라 쓰면 안 된다
 if (-not $Draft) { $cmdArgs += "--live" }
 
 Write-Host ""
@@ -48,6 +50,15 @@ Write-Host ""
 # 문자열로 펴서 콘솔과 로그에 같이 흘린다.
 $ErrorActionPreference = "Continue"
 & python @cmdArgs 2>&1 | ForEach-Object { $_.ToString() } | Tee-Object -FilePath $log
+$uploaded = $?
+
+# 목록 순서는 곧 콘텐츠 결정이다(memes[0] 이 홈 히어로). admin_add 는 append 라
+# 하나라도 실패하면 순서가 어긋난다. 레지스트리 순서를 통째로 다시 박는다.
+if ($uploaded) {
+    Write-Host "`n· 카탈로그 순서 맞추기"
+    & python -u tools/ingest.py push-catalog 2>&1 | ForEach-Object { $_.ToString() } |
+        Tee-Object -FilePath $log -Append
+}
 
 Write-Host ""
 Write-Host "전체 출력: $log"
