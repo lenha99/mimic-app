@@ -940,7 +940,22 @@ def cmd_push_catalog(a):
     """
     import urllib.parse, urllib.request
     run([sys.executable, str(ROOT / "tools" / "sync_catalog.py")])
-    data = (ROOT / "catalog.json").read_bytes()
+    doc = json.loads((ROOT / "catalog.json").read_text(encoding="utf-8"))
+
+    # 목록에 있는데 소리가 안 나는 상태가 제일 나쁘다. 사용자는 앱이 고장났다고
+    # 여기고 나간다. 프로덕션이 실제로 그 바이트를 돌려주는 것만 올린다 —
+    # 서버도 같은 검사를 하지만(missing), 거기선 통째로 거부당해서 아무것도
+    # 못 고친다. 여기서 빼고 무엇을 뺐는지 말해주는 편이 낫다.
+    keep, dropped = [], []
+    for m in doc["memes"]:
+        (keep if _fetch_reference(m["id"], tries=1) is not None else dropped).append(m)
+    if dropped:
+        print("  ! 기준 음성이 프로덕션에 없어 목록에서 뺀다: "
+              + ", ".join(m["id"] for m in dropped))
+    if not keep:
+        die("올릴 수 있는 항목이 하나도 없다")
+    doc["memes"] = keep
+    data = (json.dumps(doc, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
     url = f"{BASE}-admin-set-catalog.modal.run?" + urllib.parse.urlencode(
         {"token": _admin_token()})
     boundary = "----mimic"
