@@ -21,6 +21,10 @@ param(
 
 Set-Location (Join-Path $PSScriptRoot "..")
 $env:PYTHONIOENCODING = "utf-8"
+# PowerShell 은 네이티브 명령의 stdout 을 [Console]::OutputEncoding 으로 디코딩한다.
+# 한국어 윈도우 기본값은 CP949 라 파이썬의 UTF-8 출력이 '臾댁빞??' 처럼 깨진다.
+# 보내는 데이터와는 무관한 표시 문제지만, 로그를 읽을 수 없게 되므로 맞춰준다.
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $log = Join-Path (Get-Location) "publish.log"
 
 if ($NewToken) {
@@ -31,9 +35,11 @@ if ($NewToken) {
     $env:MIMIC_ADMIN_TOKEN = $tok
     Remove-Variable tok
     # 시크릿은 컨테이너가 뜰 때 읽힌다. 떠 있던 컨테이너는 옛 토큰을 들고 있어서
-    # 바로 올리면 403 이 난다. 스케일다운(scaledown_window=300)을 기다린다.
-    Write-Host "· 떠 있는 컨테이너가 새 토큰을 집게 6분 기다린다 (scaledown 300초)"
-    Start-Sleep -Seconds 360
+    # 바로 올리면 403 이 난다. 스케일다운(300초)을 기다리는 건 추측이고, 재배포는
+    # 컨테이너를 전부 갈아치우므로 즉시 확정된다. 이미지가 캐시돼 있어 몇 초면 끝난다.
+    Write-Host "· 새 토큰을 바로 물리려고 재배포한다 (컨테이너 교체)"
+    modal deploy modal_app.py | Out-Null
+    if (-not $?) { Write-Host "x 재배포 실패 - 여기서 멈춘다"; exit 1 }
 }
 elseif (-not $env:MIMIC_ADMIN_TOKEN) {
     # Read-Host 로 받으면 PowerShell 히스토리에 안 남는다.

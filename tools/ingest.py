@@ -793,8 +793,48 @@ def _admin_token():
 BASE = "https://lenha99--meme-scoring"
 
 
-def cmd_publish(a):
+UPLOAD_TRIES = 3         # 볼륨에 쓰기가 유실되는 일이 실제로 있다. 아래 주석 참고.
+
+
+def _fetch_reference(mid, tries=6, wait=10):
+    """프로덕션이 실제로 돌려주는 기준 음성 바이트. 끝내 못 받으면 None."""
+    import time, urllib.parse, urllib.request
+    ref = f"{BASE}-reference.modal.run?meme_id={urllib.parse.quote(mid)}"
+    for i in range(tries):
+        try:
+            with urllib.request.urlopen(ref, timeout=30) as r:
+                return r.read()
+        except Exception as e:
+            if i + 1 < tries:
+                print(f"  · 기준 음성 아직 안 보임 ({e}) — 재시도 {i+1}/{tries}")
+                time.sleep(wait)
+    return None
+
+
+def _admin_add(entry, wav, live):
     import urllib.parse, urllib.request
+    q = {"token": _admin_token(), "meme_id": entry["id"], "title": entry["title"],
+         "source": entry.get("source", ""), "emoji": entry.get("emoji", "🎙"),
+         "plays": entry.get("plays", 0), "line": entry.get("line", ""),
+         "origin_url": (entry.get("origin") or {}).get("url", "") or "",
+         "draft": "true" if (entry.get("draft") and not live) else "false"}
+    url = f"{BASE}-admin-add.modal.run?" + urllib.parse.urlencode(q)
+
+    boundary = "----mimic"
+    body = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; "
+            f"filename=\"{entry['id']}.wav\"\r\nContent-Type: audio/wav\r\n\r\n").encode()
+    body += wav.read_bytes() + f"\r\n--{boundary}--\r\n".encode()
+    req = urllib.request.Request(url, data=body, method="POST",
+                                 headers={"Content-Type": f"multipart/form-data; boundary={boundary}"})
+    with urllib.request.urlopen(req, timeout=120) as res:
+        out = json.loads(res.read().decode())
+    if out.get("error"):
+        die(f"서버가 거부했다: {out['error']}")
+    return out
+
+
+def cmd_publish(a):
+    import hashlib
     entry = next((m for m in load_registry()["memes"] if m["id"] == a.id), None)
     if not entry:
         die(f"레지스트리에 없다: {a.id}")
@@ -803,28 +843,23 @@ def cmd_publish(a):
         wav = ROOT / "refs_animals" / f"{a.id}.wav"
     if not wav.exists():
         die(f"기준 음성 파일이 없다: refs_kr/{a.id}.wav")
+    want = hashlib.sha256(wav.read_bytes()).hexdigest()
 
-    q = {"token": _admin_token(), "meme_id": a.id, "title": entry["title"],
-         "source": entry.get("source", ""), "emoji": entry.get("emoji", "🎙"),
-         "plays": entry.get("plays", 0), "line": entry.get("line", ""),
-         "origin_url": (entry.get("origin") or {}).get("url", "") or "",
-         "draft": "true" if (entry.get("draft") and not a.live) else "false"}
-    url = f"{BASE}-admin-add.modal.run?" + urllib.parse.urlencode(q)
+    # 서버가 ok 를 줘도 파일이 볼륨에 남지 않는 일이 있다. 11개를 연달아 올렸더니
+    # 3개는 60초 내내 404 였고 1개는 옛 파일이 그대로 나왔다 — 요청마다 다른
+    # 컨테이너에 붙는데 각자 자기 시점의 볼륨 뷰로 커밋하면서 남의 쓰기를 덮는다.
+    # 그러니 200 을 믿지 않는다. 프로덕션에서 같은 바이트가 나와야 성공이다.
+    for attempt in range(1, UPLOAD_TRIES + 1):
+        print(f"✓ 업로드: {_admin_add(entry, wav, a.live)}")
+        got = _fetch_reference(a.id, tries=3, wait=8)
+        if got is not None and hashlib.sha256(got).hexdigest() == want:
+            break
+        why = "안 보인다" if got is None else "옛 파일이 나온다"
+        if attempt < UPLOAD_TRIES:
+            print(f"  ! 올렸는데 프로덕션에서 {why} — 다시 올린다 ({attempt}/{UPLOAD_TRIES})")
+    else:
+        die(f"{UPLOAD_TRIES}번 올렸는데 프로덕션에 반영되지 않는다: {a.id}")
 
-    boundary = "----mimic"
-    body = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; "
-            f"filename=\"{a.id}.wav\"\r\nContent-Type: audio/wav\r\n\r\n").encode()
-    body += wav.read_bytes() + f"\r\n--{boundary}--\r\n".encode()
-    req = urllib.request.Request(url, data=body, method="POST",
-                                 headers={"Content-Type": f"multipart/form-data; boundary={boundary}"})
-    with urllib.request.urlopen(req, timeout=120) as res:
-        out = json.loads(res.read().decode())
-    if out.get("error"):
-        die(f"서버가 거부했다: {out['error']}")
-    print(f"✓ 업로드: {out}")
-
-    # 검증까지 통과한 뒤에 플래그를 내린다. 먼저 내렸더니 업로드는 200 인데
-    # 기준 음성이 프로덕션에 없는 상태에서 레지스트리만 '공개'가 됐다.
     cmd_verify(a)
 
     # --live 는 서버에만 공개로 올리고 레지스트리 플래그는 그대로 뒀었다. 그러면
@@ -862,21 +897,14 @@ def cmd_publish_all(a):
 
 
 def cmd_verify(a):
-    import hashlib, time, urllib.request, urllib.parse
+    import hashlib, urllib.request, urllib.parse
     wav = CLIP_DIR / f"{a.id}.wav"
+    if not wav.exists():
+        wav = ROOT / "refs_animals" / f"{a.id}.wav"
     local = hashlib.sha256(wav.read_bytes()).hexdigest() if wav.exists() else None
 
     # 1) 바이트 왕복 — 볼륨 반영과 원시 쓰기 경로를 한 번에 본다
-    ref = f"{BASE}-reference.modal.run?meme_id={urllib.parse.quote(a.id)}"
-    got = None
-    for i in range(6):
-        try:
-            with urllib.request.urlopen(ref, timeout=30) as r:
-                got = r.read()
-            break
-        except Exception as e:
-            print(f"  · 기준 음성 아직 안 보임 ({e}) — 재시도 {i+1}/6")
-            time.sleep(10)
+    got = _fetch_reference(a.id)
     if got is None:
         die("기준 음성을 못 받았다")
     same = local == hashlib.sha256(got).hexdigest() if local else None
