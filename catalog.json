@@ -1,11 +1,90 @@
 {
-  "_comment": "밈을 추가하려면 이 배열에 항목만 넣으면 됨. 코드 수정 불필요. 서버 볼륨에 {id}.wav 기준음성도 함께 업로드. accent 색은 비우면 자동 배정. 현재는 동물 사운드팩(CC0).",
+  "_comment": "이 파일은 content/registry.json 에서 생성된다. 직접 고치지 말고 레지스트리를 고친 뒤 `python tools/sync_catalog.py` 를 돌려라. 기준 음성은 meme-refs 볼륨의 {id}.wav.",
   "memes": [
-    {"id": "rooster", "title": "꼬끼오", "source": "수탉", "emoji": "🐓", "plays": 128400},
-    {"id": "cat", "title": "야오옹", "source": "고양이", "emoji": "🐱", "plays": 96300},
-    {"id": "goat", "title": "메에에", "source": "염소", "emoji": "🐐", "plays": 81200},
-    {"id": "wolf", "title": "아우우", "source": "늑대", "emoji": "🐺", "plays": 67400},
-    {"id": "cow", "title": "음메에", "source": "소", "emoji": "🐄", "plays": 54100},
-    {"id": "dolphin", "title": "이이익", "source": "돌고래", "emoji": "🐬", "plays": 41900}
+    {
+      "id": "muyaho",
+      "title": "무야호",
+      "source": "무한도전",
+      "emoji": "🎉",
+      "plays": 0,
+      "line": "무야호~!"
+    },
+    {
+      "id": "eoiga_eopne",
+      "title": "어이가 없네",
+      "source": "베테랑",
+      "emoji": "😑",
+      "plays": 0,
+      "line": "어이가 없네",
+      "draft": true
+    },
+    {
+      "id": "mitjang_ppaegi",
+      "title": "동작 그만",
+      "source": "타짜",
+      "emoji": "🃏",
+      "plays": 0,
+      "line": "동작 그만, 밑장 빼기냐"
+    },
+    {
+      "id": "geoje_yaho",
+      "title": "거제 야호",
+      "source": "원이 · 리센느 미나미",
+      "emoji": "🏝️",
+      "plays": 0,
+      "line": "거제! 야호!",
+      "draft": true
+    },
+    {
+      "id": "bap_meokgo",
+      "title": "밥은 먹고 다니냐",
+      "source": "살인의 추억",
+      "emoji": "🍚",
+      "plays": 0,
+      "line": "밥은 먹고 다니냐",
+      "draft": true
+    },
+    {
+      "id": "rooster",
+      "title": "꼬끼오",
+      "source": "수탉",
+      "emoji": "🐓",
+      "plays": 128400
+    },
+    {
+      "id": "cat",
+      "title": "야오옹",
+      "source": "고양이",
+      "emoji": "🐱",
+      "plays": 96300
+    },
+    {
+      "id": "goat",
+      "title": "메에에",
+      "source": "염소",
+      "emoji": "🐐",
+      "plays": 81200
+    },
+    {
+      "id": "wolf",
+      "title": "아우우",
+      "source": "늑대",
+      "emoji": "🐺",
+      "plays": 67400
+    },
+    {
+      "id": "cow",
+      "title": "음메에",
+      "source": "소",
+      "emoji": "🐄",
+      "plays": 54100
+    },
+    {
+      "id": "dolphin",
+      "title": "이이익",
+      "source": "돌고래",
+      "emoji": "🐬",
+      "plays": 41900
+    }
   ]
 }
