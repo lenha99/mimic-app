@@ -823,10 +823,14 @@ def cmd_publish(a):
         die(f"서버가 거부했다: {out['error']}")
     print(f"✓ 업로드: {out}")
 
+    # 검증까지 통과한 뒤에 플래그를 내린다. 먼저 내렸더니 업로드는 200 인데
+    # 기준 음성이 프로덕션에 없는 상태에서 레지스트리만 '공개'가 됐다.
+    cmd_verify(a)
+
     # --live 는 서버에만 공개로 올리고 레지스트리 플래그는 그대로 뒀었다. 그러면
     # sync_catalog 가 웹 FALLBACK·Flutter 사본에서 계속 걸러내서, 프로덕션엔
     # 떠 있는데 오프라인 목록엔 없는 상태가 된다. 올린 대로 레지스트리도 맞춘다.
-    if a.live and entry.pop("draft", None):
+    if a.live and entry.get("draft"):
         doc = load_registry()
         for m in doc["memes"]:
             if m["id"] == a.id:
@@ -834,7 +838,27 @@ def cmd_publish(a):
         save_registry(doc)
         print("  draft 해제 — 레지스트리와 생성 사본도 공개로 맞췄다")
 
-    cmd_verify(a)
+
+def cmd_publish_all(a):
+    """레지스트리 전체를 다시 올린다.
+
+    renorm 으로 소리를 다시 만들면 서버엔 옛 파일이 그대로 남는다. 한 개씩
+    올리는 셸 반복문을 받아적게 하면 id 목록을 손으로 치다가 틀린다(실제로
+    'dolphin','bap_meokgo' 가 붙어 'dolphinmeokgo' 가 됐다). 목록은 레지스트리가
+    갖고 있으니 여기서 읽는다.
+    """
+    ids = [m["id"] for m in load_registry()["memes"]]
+    failed = []
+    for i, mid in enumerate(ids, 1):
+        print(f"\n[{i}/{len(ids)}] {mid}")
+        try:
+            cmd_publish(argparse.Namespace(id=mid, live=a.live))
+        except SystemExit:      # die() 한 개 때문에 나머지를 멈추지 않는다
+            failed.append(mid)
+    print(f"\n✓ {len(ids) - len(failed)}/{len(ids)} 올렸다")
+    if failed:
+        print(f"✗ 실패: {', '.join(failed)}\n  같은 명령을 다시 돌리면 된다 (업로드는 덮어쓰기다)")
+        sys.exit(1)
 
 
 def cmd_verify(a):
@@ -986,6 +1010,10 @@ def main():
     p = sub.add_parser("publish", help="볼륨 업로드 + 카탈로그 등록 + 검증")
     p.add_argument("id"); p.add_argument("--live", action="store_true", help="draft 해제하고 바로 공개")
     p.set_defaults(func=cmd_publish)
+
+    pa = sub.add_parser("publish-all", help="레지스트리 전체를 다시 올린다 (renorm 뒤)")
+    pa.add_argument("--live", action="store_true", help="draft 해제하고 바로 공개")
+    pa.set_defaults(func=cmd_publish_all)
 
     v = sub.add_parser("verify", help="프로덕션에서 실제로 되는지 확인")
     v.add_argument("id")

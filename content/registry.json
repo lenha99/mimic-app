@@ -402,10 +402,10 @@
         "degraded_score": 61,
         "score_spread": 39
       },
-      "draft": true,
       "filters": [
         "afftdn"
-      ]
+      ],
+      "draft": true
     },
     {
       "id": "eoiga_eopne",
