@@ -47,6 +47,7 @@ STOP_BUTTON_S = 7.2
 MAX_DURATION_S = 10.0    # 흐름이 갈리는 진짜 경계. --max-seconds 로 넘길 수 있다.
 SWEET_S = (1.5, 4.5)     # 기존 코퍼스 0.82~4.02초
 MIN_VOICED_FRAMES = 25   # _score 는 5 미만이면 피치를 통째로 버린다. 5는 '안 터짐', 25는 '실제로 측정됨'
+MIN_VOICED_FRAMES_HARD = 5   # 이 아래면 억양 40%가 채점에서 아예 빠진다
 MIN_VOICED_RATIO = 0.35
 SEMITONE_STD = (1.5, 8.0)  # 아래면 단조로워 변별 불가, 위면 pyin 이 음악을 쫓는 중
 MAX_CLIP_RATIO = 0.005
@@ -783,6 +784,115 @@ def cmd_renorm(a):
         print(f"\n  원본이 없어 건너뜀: {', '.join(skipped)}")
 
 
+def cmd_doctor(a):
+    """프로덕션이 레지스트리와 맞는지 전부 대조한다.
+
+    하루에 조용한 실패가 다섯 종류 났다: 라우드니스가 목표를 한 번도 안 맞췄고,
+    배포본이 낡아 대사를 통째로 버렸고, 업로드가 200 을 받고도 볼륨에 안 남았고,
+    --live 가 draft 를 안 지웠고, 목록 순서가 업로드 순서였다. 전부 같은
+    원인이다 — 보낸 뒤에 그쪽에서 실제로 그렇게 됐는지 읽지 않았다.
+
+    그 대조를 사람이 하면 한 번은 하고 두 번째부터 안 한다. 여기 묶어둔다.
+    """
+    import hashlib
+    import subprocess
+    import urllib.request
+
+    reg = load_registry()["memes"]
+    problems, notes = [], []
+
+    def get(url, timeout=60):
+        with urllib.request.urlopen(url, timeout=timeout) as r:
+            return r.read()
+
+    # 1) 배포본이 코드와 같은가
+    print("· 배포 버전")
+    local = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True,
+                           text=True, cwd=str(ROOT)).stdout.strip()[:12]
+    try:
+        served = json.loads(get(f"{BASE}-version.modal.run", 30)).get("sha")
+        print(f"  서버 {served} / 로컬 {local}")
+        if served == "unknown":
+            notes.append("배포 서버가 커밋을 모른다 (git 없는 환경에서 배포됨)")
+        elif served != local:
+            problems.append(f"배포본이 로컬과 다르다 (서버 {served} / 로컬 {local})."
+                            " modal deploy modal_app.py")
+    except Exception as e:
+        problems.append(f"/version 을 못 읽었다 ({e}) — 배포가 이 기능보다 낡았다")
+
+    # 2) 공개 목록이 레지스트리 순서·내용과 맞는가
+    print("· 카탈로그")
+    try:
+        cat = json.loads(get(f"{BASE}-memes.modal.run"))
+    except Exception as e:
+        die(f"카탈로그를 못 읽었다: {e}")
+    want = [m["id"] for m in reg if not m.get("draft")]
+    got = [m["id"] for m in cat]
+    print(f"  {len(got)}개 공개")
+    if got != want:
+        problems.append("목록 순서/구성이 레지스트리와 다르다 — push-catalog 가 필요하다")
+        print(f"    서버: {got}")
+        print(f"    기대: {want}")
+    for m in cat:
+        r = next((x for x in reg if x["id"] == m["id"]), None)
+        if r and r.get("line") and not m.get("line"):
+            problems.append(f"{m['id']}: 대사가 서버에 없다 (배포가 낡았거나 다시 올려야 한다)")
+
+    # 3) 목록에 있는 것은 반드시 소리가 나야 한다
+    print("· 기준 음성")
+    for m in cat:
+        mid = m["id"]
+        wav = CLIP_DIR / f"{mid}.wav"
+        if not wav.exists():
+            wav = ROOT / "refs_animals" / f"{mid}.wav"
+        try:
+            data = get(f"{BASE}-reference.modal.run?meme_id={mid}")
+        except Exception:
+            problems.append(f"{mid}: 목록에 떠 있는데 기준 음성이 404 다 — 눌러도 소리가 안 난다")
+            continue
+        if wav.exists():
+            same = hashlib.sha256(data).hexdigest() == hashlib.sha256(wav.read_bytes()).hexdigest()
+            if not same:
+                notes.append(f"{mid}: 서버 파일이 로컬과 다르다 (옛 버전이 서비스 중)")
+    print(f"  {len(cat)}개 확인")
+
+    # 4) 라우드니스 — 목록을 넘길 때 볼륨이 튀는가
+    print("· 라우드니스")
+    lo = [(m["id"], (m.get("qa") or {}).get("lufs")) for m in reg
+          if (m.get("qa") or {}).get("lufs") is not None]
+    if lo:
+        vals = [v for _, v in lo]
+        spread = max(vals) - min(vals)
+        print(f"  {min(vals):.1f} ~ {max(vals):.1f} LUFS (폭 {spread:.1f}dB)")
+        for mid, v in lo:
+            if abs(v - TARGET_LUFS) > LOUDNESS_FAIL:
+                problems.append(f"{mid}: {v} LUFS — 목표 {TARGET_LUFS} 에서 너무 멀다")
+        if spread > 3.0:
+            problems.append(f"라우드니스 폭 {spread:.1f}dB — 목록을 넘길 때 볼륨이 튄다")
+
+    # 5) 채점이 실제로 억양 축을 쓰는가
+    print("· 채점 축")
+    for m in reg:
+        if m.get("draft"):      # 미공개는 고치는 중인 것이다. 사용자에게 안 보인다.
+            continue
+        q = m.get("qa") or {}
+        if m.get("line") and q.get("voiced_frames", 99) < MIN_VOICED_FRAMES_HARD:
+            problems.append(f"{m['id']}: 유성 프레임 {q['voiced_frames']}개 — "
+                            "억양 40%가 죽은 클립이다. 구간을 다시 골라라")
+        if q.get("pitch_gap_semitones", 0) > 7:
+            notes.append(f"{m['id']}: 화자가 둘이다 — 한 사람이 따라할 수 없다")
+
+    print()
+    for n in notes:
+        print(f"  ! {n}")
+    for x in problems:
+        print(f"  ✗ {x}")
+    if problems:
+        print(f"\n{len(problems)}건. 위를 고쳐라.")
+        sys.exit(1)
+    print("✓ 프로덕션이 레지스트리와 맞다")
+
+
 def _admin_token():
     tok = os.environ.get("MIMIC_ADMIN_TOKEN")
     if not tok:
@@ -793,7 +903,9 @@ def _admin_token():
 BASE = "https://lenha99--meme-scoring"
 
 
-UPLOAD_TRIES = 3         # 볼륨에 쓰기가 유실되는 일이 실제로 있다. 아래 주석 참고.
+UPLOAD_TRIES = 2         # 대부분은 기다리면 된다. 아래 주석 참고.
+VISIBLE_TRIES = 10       # 반영까지 수 분 걸리는 걸 봤다. 넉넉히 기다린다.
+VISIBLE_WAIT = 20
 
 
 def _fetch_reference(mid, tries=6, wait=10):
@@ -845,20 +957,24 @@ def cmd_publish(a):
         die(f"기준 음성 파일이 없다: refs_kr/{a.id}.wav")
     want = hashlib.sha256(wav.read_bytes()).hexdigest()
 
-    # 서버가 ok 를 줘도 파일이 볼륨에 남지 않는 일이 있다. 11개를 연달아 올렸더니
-    # 3개는 60초 내내 404 였고 1개는 옛 파일이 그대로 나왔다 — 요청마다 다른
-    # 컨테이너에 붙는데 각자 자기 시점의 볼륨 뷰로 커밋하면서 남의 쓰기를 덮는다.
-    # 그러니 200 을 믿지 않는다. 프로덕션에서 같은 바이트가 나와야 성공이다.
+    # 서버가 ok 를 줘도 곧바로 읽히지는 않는다. 11개를 연달아 올렸을 때 3개가
+    # 60초 내내 404 였고 1개는 옛 파일이 나왔다. 처음엔 쓰기가 유실된 줄 알았는데,
+    # 한참 뒤에 다시 보니 넷 다 최신 파일이 멀쩡히 나왔다 — 유실이 아니라 볼륨
+    # 반영이 느린 것이다(_ref_path 가 미스 때 리로드를 해도 그랬다).
+    #
+    # 그래도 200 을 성공으로 치지는 않는다. "올렸다"고 해놓고 앱에서 소리가 안
+    # 나는 게 제일 나쁘기 때문이다. 다만 성급하게 다시 올리는 대신 오래 기다린다.
     for attempt in range(1, UPLOAD_TRIES + 1):
         print(f"✓ 업로드: {_admin_add(entry, wav, a.live)}")
-        got = _fetch_reference(a.id, tries=3, wait=8)
+        got = _fetch_reference(a.id, tries=VISIBLE_TRIES, wait=VISIBLE_WAIT)
         if got is not None and hashlib.sha256(got).hexdigest() == want:
             break
         why = "안 보인다" if got is None else "옛 파일이 나온다"
         if attempt < UPLOAD_TRIES:
-            print(f"  ! 올렸는데 프로덕션에서 {why} — 다시 올린다 ({attempt}/{UPLOAD_TRIES})")
+            print(f"  ! {VISIBLE_TRIES * VISIBLE_WAIT}초 기다려도 {why} — 다시 올린다")
     else:
-        die(f"{UPLOAD_TRIES}번 올렸는데 프로덕션에 반영되지 않는다: {a.id}")
+        die(f"프로덕션에 반영되지 않는다: {a.id}. 볼륨 반영이 늦는 것일 수 있으니 "
+            "몇 분 뒤 doctor 로 다시 확인해봐라")
 
     cmd_verify(a)
 
@@ -1065,6 +1181,9 @@ def main():
     pa.add_argument("--only", nargs="*", default=[],
                     help="이 id 들만 (쉼표나 공백으로 구분). 실패한 것만 다시 올릴 때")
     pa.set_defaults(func=cmd_publish_all)
+
+    dr = sub.add_parser("doctor", help="프로덕션이 레지스트리와 맞는지 전부 대조")
+    dr.set_defaults(func=cmd_doctor)
 
     v = sub.add_parser("verify", help="프로덕션에서 실제로 되는지 확인")
     v.add_argument("id")

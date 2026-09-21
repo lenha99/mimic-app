@@ -19,7 +19,9 @@ export type Meme = {
 // <generated:catalog> — content/registry.json 에서 생성. 직접 고치지 말 것.
 const FALLBACK: Meme[] = [
   { id: "muyaho", title: "무야호", source: "무한도전", emoji: "🎉", plays: 0, line: "무야호~!" },
+  { id: "eoiga_eopne", title: "어이가 없네", source: "베테랑", emoji: "😑", plays: 0, line: "어이가 없네" },
   { id: "mitjang_ppaegi", title: "동작 그만", source: "타짜", emoji: "🃏", plays: 0, line: "동작 그만, 밑장 빼기냐" },
+  { id: "geoje_yaho", title: "거제 야호", source: "원이 · 리센느 미나미", emoji: "🏝️", plays: 0, line: "거제! 야호!" },
   { id: "rooster", title: "꼬끼오", source: "수탉", emoji: "🐓", plays: 128400 },
   { id: "cat", title: "야오옹", source: "고양이", emoji: "🐱", plays: 96300 },
   { id: "goat", title: "메에에", source: "염소", emoji: "🐐", plays: 81200 },

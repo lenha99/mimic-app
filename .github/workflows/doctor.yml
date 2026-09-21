@@ -1,0 +1,49 @@
+name: doctor
+
+# 코드가 스스로를 검사하는 건 CI 가 하지만, 실제로 배포된 것을 검사하는 건
+# 아무도 하지 않았다. 이 레포의 사고는 전부 코드와 배포 사이의 틈에서 났다 —
+# 배포본이 7시간 낡아 대사를 통째로 버리고, 라우드니스가 12dB 벌어지고,
+# 목록에 떠 있는 밈의 소리가 404 였다. 사람이 하면 한 번은 하고 만다.
+on:
+  schedule:
+    - cron: "0 22 * * *"   # 매일 07:00 KST
+  workflow_dispatch:
+
+jobs:
+  doctor:
+    name: 프로덕션이 레지스트리와 맞는가
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python tools/ingest.py doctor
+
+      # 실패를 초록 체크 옆에 묻어두면 아무도 안 본다. 이슈로 올린다.
+      - if: failure()
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const title = "doctor: 프로덕션이 레지스트리와 어긋났다";
+            const { data: open } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo,
+              state: "open", labels: "doctor",
+            });
+            const url = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}` +
+                        `/actions/runs/${context.runId}`;
+            const body = `자동 점검이 실패했다. 무엇이 어긋났는지는 실행 로그에 있다.\n\n${url}\n\n` +
+                         "로컬에서 같은 걸 본다: `python tools/ingest.py doctor`";
+            if (open.length) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: open[0].number, body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner, repo: context.repo.repo,
+                title, body, labels: ["doctor"],
+              });
+            }

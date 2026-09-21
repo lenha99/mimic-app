@@ -5,7 +5,7 @@
 
 요청이 올 때만 실행 → 안 쓰면 과금 0.
 
-주의: librosa/matplotlib/fastapi 등 무거운 의존성은 `with image.imports()`로
+주의: librosa/fastapi 등 무거운 의존성은 `with image.imports()`로
 감싸 컨테이너에서만 import 한다. (modal deploy 는 이 스크립트를 로컬에서 import
 하므로, 로컬에 없는 패키지를 모듈 레벨에서 import 하면 배포가 실패한다.)
 annotation 은 from __future__ 로 문자열화해 로컬 평가를 피한다.
@@ -18,25 +18,13 @@ import modal
 
 # 채점 전용 이미지.
 #
-# 예전엔 채점도 아래 heavy 이미지를 썼는데, 거기엔 matplotlib 과 fonts-nanum 이
-# 들어 있다. 둘 다 공유 카드를 그리는 make_video 전용이고 _score 는 한 줄도 쓰지
-# 않는다. 그런데도 채점 컨테이너가 깰 때마다 그걸 같이 지고 올라왔다 —
-# 이미지도 크고, imports 블록에서 matplotlib.pyplot 과 font_manager 까지 읽었다.
-#
 # 채점은 웹앱의 임계 경로다(사용자가 소리를 낸 직후 기다리는 그 시간). 여기서
-# 뺄 수 있는 건 다 뺀다.
+# 뺄 수 있는 건 다 뺀다. 한때 공유 카드를 그리느라 matplotlib 과 fonts-nanum 이
+# 같이 올라왔는데, 영상 생성 자체를 접으면서 그 이미지는 사라졌다.
 score_image = (
     modal.Image.debian_slim()
     .apt_install("ffmpeg", "libsndfile1")
     .pip_install("librosa", "numpy", "scipy", "soundfile", "fastapi[standard]")
-)
-
-# 카드·영상 생성용. matplotlib 과 한글 폰트가 필요하다.
-image = (
-    modal.Image.debian_slim()
-    .apt_install("ffmpeg", "libsndfile1", "fonts-nanum")
-    .pip_install("librosa", "numpy", "scipy", "soundfile",
-                 "matplotlib", "fastapi[standard]")
 )
 
 # 기준 음성 스트리밍 전용 경량 이미지 (librosa 없음 → 콜드 스타트 빠름)
@@ -48,15 +36,8 @@ app = modal.App("meme-scoring")
 volume = modal.Volume.from_name("meme-refs", create_if_missing=True)
 REF_DIR = "/refs"
 
-# 앱 배포(APK) 저장 볼륨 — 친구 챌린지 링크에서 다운로드용
-dist_volume = modal.Volume.from_name("meme-app-dist", create_if_missing=True)
-APK_DIR = "/dist"
-
-# 친구 챌린지 링크/다운로드 베이스 URL (배포 후 실제 URL)
-DOWNLOAD_URL = "https://lenha99--meme-scoring-download.modal.run"
-
-# 채점 컨테이너의 import. matplotlib 이 없다는 점만 빼면 아래와 같다.
-# numba JIT 워밍도 여기서 해야 한다 — 채점 컨테이너는 아래 블록을 실행하지 않는다.
+# 컨테이너 안에서만 실행되는 import (로컬 deploy 시엔 건너뜀).
+# numba JIT 워밍을 여기서 끝내둔다 — 콜드 스타트 후 첫 채점이 느려지는 걸 막는다.
 with score_image.imports():
     import numpy as np
     import librosa
@@ -72,31 +53,36 @@ with score_image.imports():
         pass
 
 
-# 컨테이너 안에서만 실행되는 import (로컬 deploy 시엔 건너뜀)
-with image.imports():
-    import numpy as np
-    import librosa
-    import matplotlib
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-    from matplotlib import font_manager as fm
-    from fastapi import UploadFile, Response
-
-    # numba JIT 워밍 — 콜드 스타트 후 첫 채점이 느려지는 것 방지.
-    # 컨테이너 초기화 때 더미 신호로 pyin/rms/dtw를 한 번 돌려 JIT 컴파일을
-    # 끝내둔다. enable_memory_snapshot 과 함께 쓰면 이 상태가 스냅샷에 포함됨.
-    try:
-        _w = np.random.randn(8000).astype("float32")
-        librosa.pyin(_w, fmin=65, fmax=2093, sr=22050)
-        librosa.feature.rms(y=_w)
-        librosa.sequence.dtw(np.zeros((1, 12)), np.zeros((1, 12)), metric="euclidean")
-    except Exception:
-        pass
-
 # slim 컨테이너에서도 fastapi 심볼이 모듈 전역에 있어야 UploadFile/Response
 # 어노테이션을 해석할 수 있다 (image.imports는 heavy 이미지 컨테이너에서만 실행됨).
 with slim_image.imports():
     from fastapi import UploadFile, Response
+
+
+# ---- 배포 버전 ----
+# 배포본이 코드보다 낡으면 기능이 조용히 사라진다. 실제로 서버가 7시간 낡은
+# 상태로 돌면서, 클라이언트가 보낸 대사(line)를 받는 파라미터가 없어 통째로
+# 버리고 있었다. 아무도 에러를 못 봤다 — 그냥 대사가 화면에 안 나올 뿐이었다.
+#
+# deploy 시점의 커밋을 이미지에 구워 넣고 여기서 돌려준다. doctor 가 main 과
+# 대조한다. 배포 시점에 로컬에서 평가되므로 컨테이너에 git 이 없어도 된다.
+def _git_sha():
+    try:
+        return subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True,
+                              text=True, cwd=os.path.dirname(os.path.abspath(__file__))
+                              ).stdout.strip()[:12] or "unknown"
+    except Exception:
+        return "unknown"
+
+
+DEPLOYED_SHA = _git_sha()
+
+
+@app.function(image=slim_image)
+@modal.fastapi_endpoint(method="GET")
+def version():
+    """배포된 커밋. doctor 가 main 과 대조한다."""
+    return {"sha": DEPLOYED_SHA}
 
 
 # ---- 업로드 오디오 디코딩 ----
@@ -142,10 +128,11 @@ def _decode_upload(raw: bytes):
 @app.function(image=score_image, volumes={REF_DIR: volume},
               scaledown_window=300, enable_memory_snapshot=True)
 @modal.fastapi_endpoint(method="POST", docs=True)
-async def score(meme_id: str, file: UploadFile):
+async def score(meme_id: str, file: UploadFile, client: str = ""):
     """
     meme_id: 따라할 밈 식별자 (예: 'ronaldo_siu') — query param
     file:    유저 녹음 (multipart 필드 'file', wav/m4a)
+    client:  익명 기기 식별자(선택). 랭킹에서 같은 사람의 연속 시도를 묶는 용도.
     """
     ref_path = _ref_path(meme_id)
     if ref_path is None:
@@ -157,6 +144,16 @@ async def score(meme_id: str, file: UploadFile):
 
     result = _score(ref_path, user_path)
     os.unlink(user_path)
+
+    if isinstance(result.get("score"), int):
+        bd = result.get("breakdown") or {}
+        _log_event("score", {
+            "meme_id": meme_id, "score": result["score"],
+            "grade": result.get("grade"),
+            "pitch": bd.get("pitch"), "tone": bd.get("tone"),
+            "timing": bd.get("timing"),
+            **({"client": client[:64]} if client else {}),
+        })
     return result
 
 
@@ -171,61 +168,6 @@ def reference(meme_id: str):
     with open(path, "rb") as f:
         data = f.read()
     return Response(content=data, media_type="audio/wav")
-
-
-@app.function(image=slim_image, volumes={APK_DIR: dist_volume})
-@modal.fastapi_endpoint(method="GET")
-def download():
-    """앱 APK 다운로드 — 친구가 사이드로드 설치용."""
-    import os
-    from fastapi import Response
-    p = os.path.join(APK_DIR, "mimic.apk")
-    if not os.path.exists(p):
-        return Response(status_code=404, content="앱 파일이 아직 준비되지 않았어요.")
-    with open(p, "rb") as f:
-        data = f.read()
-    return Response(
-        content=data,
-        media_type="application/vnd.android.package-archive",
-        headers={"Content-Disposition": "attachment; filename=mimic.apk"})
-
-
-@app.function(image=slim_image)
-@modal.fastapi_endpoint(method="GET")
-def challenge(meme_id: str = "", title: str = "", score: int = 0):
-    """친구 지목 링크가 도착하는 랜딩 페이지. 챌린지 안내 + 앱 받기 버튼."""
-    from fastapi.responses import HTMLResponse
-    import html as _html
-    name = _html.escape(title or meme_id or "이 소리")
-    html_doc = f"""<!doctype html><html lang="ko"><head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MIMIC 챌린지</title>
-<style>
-  body{{margin:0;background:#0A0A0B;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-    min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box}}
-  .card{{max-width:420px;text-align:center}}
-  .logo{{font-size:34px;font-weight:900;background:linear-gradient(90deg,#E8FF3A,#00E5FF);
-    -webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:2px}}
-  h1{{font-size:26px;line-height:1.3;margin:18px 0 8px}}
-  .accent{{color:#E8FF3A}}
-  .score{{font-size:60px;font-weight:900;color:#FF2D78;margin:10px 0 4px}}
-  .sub{{color:#8A8A92;font-size:15px;margin-bottom:30px}}
-  .btn{{display:block;background:#E8FF3A;color:#0A0A0B;font-weight:800;font-size:18px;
-    text-decoration:none;padding:18px;border-radius:18px;margin:10px 0}}
-  .note{{color:#8A8A92;font-size:12px;margin-top:18px;line-height:1.6}}
-</style></head><body><div class="card">
-  <div class="logo">🎙 MIMIC</div>
-  <h1><span class="accent">{name}</span> 따라하기<br>챌린지가 도착했어요!</h1>
-  <div class="score">{int(score)}점</div>
-  <div class="sub">친구 점수를 넘어봐 😎</div>
-  <a class="btn" href="{DOWNLOAD_URL}">📲 앱 받기 (Android)</a>
-  <div class="note">
-    설치 시 "출처를 알 수 없는 앱 허용"이 필요해요.<br>
-    iPhone은 곧 지원 예정입니다.
-  </div>
-</div></body></html>"""
-    return HTMLResponse(html_doc)
 
 
 def _wav_problem(data: bytes):
@@ -277,6 +219,79 @@ def _ref_path(meme_id):
         return path
     volume.reload()
     return path if os.path.exists(path) else None
+
+
+# ---- 이벤트 로그 ----
+# 지금까지 이 서비스는 자기 자신에 대해 아무것도 몰랐다. 누가 뭘 눌렀는지,
+# 녹음까지 갔는지, 점수가 어떻게 분포하는지 답할 방법이 없었고 catalog 의
+# `plays` 는 registry.json 에 손으로 적어둔 숫자였다. 그래서 UI 를 고칠 때마다
+# 측정이 아니라 추론을 했다.
+#
+# 한 파일에 append 하지 않는다. 볼륨은 요청마다 다른 컨테이너에 붙고 각자 자기
+# 시점의 뷰를 들고 있어서, 같은 경로를 여럿이 고치면 마지막에 커밋한 쪽이 이긴다.
+# 채점은 동시에 여러 건이 들어오는 경로라 그 방식으로는 반드시 샌다.
+# 이벤트마다 고유 파일명으로 쓰면 충돌할 일 자체가 없고 커밋은 순수하게
+# 더하기만 한다. 나중에 날짜별로 합치면 된다.
+EVENT_DIR = "/refs/events"
+
+
+def _log_event(kind: str, data: dict):
+    """이벤트 한 건. 실패해도 절대 호출자를 깨뜨리지 않는다."""
+    import json, os, time, uuid
+    try:
+        day = time.strftime("%Y-%m-%d", time.gmtime())
+        d = os.path.join(EVENT_DIR, day)
+        os.makedirs(d, exist_ok=True)
+        rec = {"kind": kind, "ts": time.time(), **data}
+        with open(os.path.join(d, f"{uuid.uuid4().hex}.json"), "w", encoding="utf-8") as f:
+            json.dump(rec, f, ensure_ascii=False)
+        volume.commit()
+    except Exception:
+        pass    # 로깅 때문에 채점이 실패하는 일은 없어야 한다
+
+
+@app.function(image=slim_image, volumes={REF_DIR: volume})
+@modal.fastapi_endpoint(method="GET")
+def stats(days: int = 7):
+    """밈별 집계. 랭킹·투표가 여기 위에 올라간다.
+
+    녹음 자체는 채점 직후 버린다(PRIVACY.md). 남는 건 숫자뿐이다.
+    """
+    import json, os, time
+    volume.reload()
+    cutoff = time.time() - days * 86400
+    per = {}
+    if os.path.isdir(EVENT_DIR):
+        for day in sorted(os.listdir(EVENT_DIR)):
+            d = os.path.join(EVENT_DIR, day)
+            if not os.path.isdir(d):
+                continue
+            for name in os.listdir(d):
+                try:
+                    with open(os.path.join(d, name), encoding="utf-8") as f:
+                        e = json.load(f)
+                except Exception:
+                    continue
+                if e.get("kind") != "score" or e.get("ts", 0) < cutoff:
+                    continue
+                b = per.setdefault(e.get("meme_id", "?"),
+                                   {"plays": 0, "scores": [], "best": 0})
+                b["plays"] += 1
+                sc = e.get("score")
+                if isinstance(sc, int):
+                    b["scores"].append(sc)
+                    b["best"] = max(b["best"], sc)
+
+    out = []
+    for mid, b in per.items():
+        xs = sorted(b["scores"])
+        out.append({
+            "meme_id": mid, "plays": b["plays"], "best": b["best"],
+            "median": xs[len(xs) // 2] if xs else None,
+            "mean": round(sum(xs) / len(xs)) if xs else None,
+        })
+    out.sort(key=lambda r: -r["plays"])
+    return {"days": days, "memes": out}
 
 
 # ---- 동적 밈 카탈로그 (운영자 추가/삭제 + 친구 UGC 업로드, 앱 재빌드 불필요) ----
@@ -427,30 +442,6 @@ def admin_remove(token: str, meme_id: str):
     return {"ok": True, "count": len(cat)}
 
 
-@app.function(image=image, volumes={REF_DIR: volume}, timeout=120)
-@modal.fastapi_endpoint(method="POST", docs=True)
-async def make_video(meme_id: str, title: str, score: int,
-                     grade: str, file: UploadFile, source: str = "원본"):
-    """
-    채점 후 호출. 원본 vs 나 공유영상(9:16 mp4)을 생성해 바이트로 반환.
-    file: 유저 녹음 (multipart 필드 'file', 채점 때 보낸 것과 동일)
-    """
-    ref_path = _ref_path(meme_id)
-    if ref_path is None:
-        return {"error": f"기준 음성 없음: {meme_id}"}
-
-    user_path = _decode_upload(await file.read())
-    if user_path is None:
-        return {"error": "녹음 파일을 디코딩할 수 없음"}
-    out_mp4 = tempfile.NamedTemporaryFile(suffix=".mp4", delete=False).name
-
-    _build_video(ref_path, user_path, title, score, grade, out_mp4, source)
-    with open(out_mp4, "rb") as v:
-        data = v.read()
-    os.unlink(user_path); os.unlink(out_mp4)
-    return Response(content=data, media_type="video/mp4")
-
-
 # ---- 채점 로직 ----
 # 신뢰성 설계:
 #  - 억양(pitch): 보이스드 구간만 추려 '세미톤 컨투어'로 비교(절대 음높이 무관).
@@ -459,6 +450,35 @@ async def make_video(meme_id: str, title: str, score: int,
 #  - 타이밍(timing): 길이 비율.
 #  - 동물 등 비음성 사운드는 보이스드 프레임이 적으면 억양을 제외하고 가중치 재분배.
 #  - 같은 소리=100, 비슷=높게 나오도록 매핑 보정.
+def _timing_from_path(wp, n_ref, n_usr):
+    """DTW 정렬 경로가 대각선에서 얼마나 벗어났는가 = 리듬 오차 (0~100).
+
+    예전엔 타이밍을 길이 비율로 쟀다:
+
+        timing = 100 * min(len(ref), len(usr)) / max(len(ref), len(usr))
+
+    이건 타이밍이 아니라 길이다. 앞부분을 뭉개고 뒷부분을 늘여서 리듬을 완전히
+    망쳐도 총 길이만 맞으면 100점이 나왔다. 가중치 20%가 통째로 공짜였다.
+
+    음색을 재느라 이미 MFCC DTW 를 돌리고 있고, 그 정렬 경로가 곧 "원본의 이
+    시점이 내 녹음의 어느 시점에 해당하는가"다. 경로가 대각선이면 둘이 같은
+    속도로 간 것이고, 휘어 있으면 그만큼 빠르거나 느렸던 것이다. 벗어난 정도를
+    양쪽 길이로 정규화해 평균 낸다 — 길이가 달라도 비교가 된다.
+
+    경로는 (i, j) 쌍의 배열이고 역순으로 들어온다. 방향은 상관없다.
+    """
+    import numpy as np
+    if wp is None or len(wp) == 0 or n_ref < 2 or n_usr < 2:
+        return 0.0
+    wp = np.asarray(wp, dtype=float)
+    # 각 축을 0~1 로 펴서 대각선을 y=x 로 만든다
+    i = wp[:, 0] / (n_ref - 1)
+    j = wp[:, 1] / (n_usr - 1)
+    dev = float(np.mean(np.abs(i - j)))
+    # 0.25 는 "네 박자짜리에서 한 박 밀렸다" 정도다. 거기서 대략 37점이 된다.
+    return 100.0 * float(np.exp(-dev / 0.25))
+
+
 def _score(reference_path, user_path):
     SR = 22050
 
@@ -503,8 +523,8 @@ def _score(reference_path, user_path):
         tone_cost = 1.0
     tone = 100.0 * float(np.clip(1.0 - tone_cost, 0.0, 1.0))
 
-    # 타이밍: 길이 비율
-    timing = 100.0 * (min(len(ref), len(usr)) / max(len(ref), len(usr)))
+    # 타이밍: 리듬이 얼마나 어긋났는가 (MFCC 정렬 경로에서 읽는다)
+    timing = _timing_from_path(wpm, ma.shape[1], mb.shape[1])
 
     # 가중 합 (억양 없으면 그 가중치를 음색/타이밍에 재분배)
     comps = []
@@ -536,72 +556,3 @@ def _score(reference_path, user_path):
         },
         "waveform": {"ref": bars(ref), "user": bars(usr)},
     }
-
-
-# ---- 공유 영상 생성 ----
-FONT_PATH = "/usr/share/fonts/truetype/nanum/NanumSquareRoundB.ttf"
-VOLT, PINK, ASH = "#E8FF3A", "#FF2D78", "#8A8A92"
-
-
-def _bars(path, n=56):
-    y, _ = librosa.load(path, sr=22050, mono=True)
-    y, _ = librosa.effects.trim(y, top_db=25)
-    step = max(1, len(y) // n)
-    return [float(np.abs(y[i:i+step]).max()) for i in range(0, len(y), step)][:n]
-
-
-def _grade_color(g):
-    return {"SS": VOLT, "S": "#00E5FF", "A": "#7CFF6B"}.get(g, PINK)
-
-
-def _build_card(ref_audio, usr_audio, title, score, grade, out_png, source="원본"):
-    font = fm.FontProperties(fname=FONT_PATH) if os.path.exists(FONT_PATH) else None
-    fig = plt.figure(figsize=(9, 16), dpi=120)
-    fig.patch.set_facecolor("#0A0A0B")
-
-    fig.text(0.5, 0.88, title, ha="center", color="#fff", fontsize=42,
-             fontweight="bold", fontproperties=font)
-    fig.text(0.5, 0.83, "따라하기 챌린지", ha="center", color=ASH,
-             fontsize=20, fontproperties=font)
-
-    for audio, color, y0, lbl, ly in [
-        (ref_audio, VOLT, 0.60, source, 0.755),
-        (usr_audio, PINK, 0.42, "나", 0.575),
-    ]:
-        ax = fig.add_axes([0.1, y0, 0.8, 0.15]); ax.set_facecolor("#0A0A0B")
-        b = _bars(audio)
-        ax.bar(range(len(b)), b, color=color, width=0.7)
-        ax.bar(range(len(b)), [-x for x in b], color=color, width=0.7)
-        ax.set_ylim(-1, 1); ax.axis("off")
-        fig.text(0.12, ly, lbl, color=color, fontsize=24,
-                 fontweight="bold", fontproperties=font)
-
-    fig.text(0.5, 0.27, grade, ha="center", color=_grade_color(grade),
-             fontsize=130, fontweight="bold")
-    fig.text(0.5, 0.17, f"{score}점", ha="center", color="#fff",
-             fontsize=64, fontweight="bold", fontproperties=font)
-    fig.text(0.5, 0.07, "MIMIC · 너도 도전해봐", ha="center", color=ASH,
-             fontsize=26, fontproperties=font)
-
-    plt.savefig(out_png, facecolor="#0A0A0B")
-    plt.close()
-
-
-def _build_video(ref_audio, usr_audio, title, score, grade, out_mp4, source="원본"):
-    """공유용 9:16 mp4 생성. 오디오는 원본→나 순으로 이어붙임."""
-    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as t:
-        card = t.name
-    _build_card(ref_audio, usr_audio, title, score, grade, card, source)
-    cmd = [
-        "ffmpeg", "-y", "-loglevel", "error",
-        "-loop", "1", "-t", "3", "-i", card,
-        "-i", ref_audio, "-i", usr_audio,
-        "-filter_complex",
-        "[0:v]scale=1080:1920[v];[1:a][2:a]concat=n=2:v=0:a=1[a]",
-        "-map", "[v]", "-map", "[a]",
-        "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac",
-        "-shortest", out_mp4,
-    ]
-    subprocess.run(cmd, check=True)
-    os.unlink(card)
-    return out_mp4
