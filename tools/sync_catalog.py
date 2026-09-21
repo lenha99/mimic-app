@@ -2,7 +2,7 @@
 content/registry.json 하나에서 카탈로그 사본 전부를 생성한다.
 
 지금까지 밈 목록은 네 군데에 손으로 복사돼 있었다:
-  catalog.json · memes.json · web/lib/memes.ts(FALLBACK) · lib/data.dart(demoMemes)
+  catalog.json · memes.json · web/lib/memes.ts(FALLBACK)
 하나라도 빠뜨리면 Modal 이 죽었을 때 새 밈 페이지가 404 난다. 그래서 레지스트리를
 단일 진실 소스로 두고 나머지는 전부 여기서 찍어낸다.
 
@@ -67,24 +67,6 @@ def render_ts(memes):
     return "\n".join(lines)
 
 
-def render_dart(memes):
-    lines = [BEGIN, "const demoMemes = ["]
-    for m in live(memes):
-        e = public_entry(m)
-        parts = [
-            f"id: '{e['id']}'",
-            f"title: '{e['title']}'",
-            f"source: '{e['source']}'",
-            f"emoji: '{e['emoji']}'",
-            f"plays: {e.get('plays', 0)}",
-            "refUrl: ''",
-        ]
-        lines.append(f"  Meme({', '.join(parts)},),")
-    lines.append("];")
-    lines.append(END)
-    return "\n".join(lines)
-
-
 def splice(path: Path, block: str) -> str:
     """파일의 마커 사이를 block 으로 갈아끼운 전체 텍스트를 돌려준다."""
     text = path.read_text(encoding="utf-8")
@@ -105,7 +87,6 @@ def targets(memes):
         (ROOT / "catalog.json", catalog),
         (ROOT / "memes.json", catalog),
         (ROOT / "web" / "lib" / "memes.ts", splice(ROOT / "web" / "lib" / "memes.ts", render_ts(memes))),
-        (ROOT / "lib" / "data.dart", splice(ROOT / "lib" / "data.dart", render_dart(memes))),
     ]
 
 

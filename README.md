@@ -1,7 +1,7 @@
-# MIMIC — 밈 따라하기 앱 완성 패키지
+# MIMIC — 밈 따라하기 웹앱
 
-밈 사운드(SIUUUU 등)를 따라하면 점수가 나오고, 결과가 자동으로
-"원본 vs 나" 공유영상이 되어 퍼지는 앱. **운영 비용 거의 0**으로 설계.
+밈 사운드와 영화 명대사를 따라 외치면 점수가 나오고, 그 점수를 친구에게
+도전장으로 던지는 웹앱. 설치 없이 링크 하나. **운영 비용 거의 0**으로 설계.
 
 ---
 
@@ -17,7 +17,7 @@
 빠른 시작:
 ```bash
 git clone https://github.com/lenha99/mimic-app.git
-cd mimic-app && flutter pub get && flutter run
+cd mimic-app/web && npm install && npm run dev
 ```
 
 **`main`에 직접 push 금지.** 브랜치 → PR → merge.
@@ -28,18 +28,21 @@ cd mimic-app && flutter pub get && flutter run
 
 | 영역 | 파일 | 상태 |
 |---|---|---|
-| 채점 엔진 | `scoring_engine.py` | ✅ 검증 완료 |
-| 서버리스 API(채점+영상) | `modal_app.py` | ✅ 문법 검증, 배포만 하면 됨 |
-| 공유영상 생성기 | `video_maker.py` | ✅ 실제 mp4 생성 검증 |
-| 기준 음성 생성 | `make_reference.py` | ✅ 코드 검증(네 PC 실행) |
-| Flutter 앱 | `lib/*.dart` | ✅ 전체 화면 구현 |
-| 디자인 프리뷰 | `preview.html` | ✅ 브라우저로 확인 |
+| 웹앱 | `web/` | ✅ 사용자가 실제로 쓰는 것 |
+| 채점 서버 | `modal_app.py` | ✅ Modal 배포 |
+| 채점 엔진 사본 | `scoring_engine.py` | ✅ 테스트 전용 |
+| 콘텐츠 파이프라인 | `tools/ingest.py` | ✅ 인제스트~검증 |
+| 콘텐츠 원본 | `content/registry.json` | ✅ 단일 진실 소스 |
+
+Flutter 클라이언트(`lib/*.dart`)와 공유영상 생성기(`video_maker.py`)는 걷어냈다.
+쓰지 않는 클라이언트가 CI·카탈로그 동기화 비용을 계속 먹었고, 영상은 만드는 데
+오래 걸려 공유 흐름을 끊었다. 히스토리는 git 에 남아 있다.
 
 ---
 
 ## 2. 배포 순서 (전부 무료 티어)
 
-### (1) 채점/영상 서버 — Modal
+### (1) 채점 서버 — Modal
 ```bash
 pip install modal
 modal token new                       # 무료 가입
@@ -63,17 +66,6 @@ modal deploy modal_app.py
 #   .../score        (채점)
 #   .../make_video   (공유영상)
 ```
-
-### (4) Flutter 앱
-```bash
-flutter create meme_mimic
-# lib/*.dart, pubspec.yaml 덮어쓰기
-# data.dart 의 baseUrl 을 (3)의 score URL로 교체
-flutter pub get
-flutter run
-```
-
----
 
 ## 3. 비용 구조 (왜 0원에 가깝나)
 
@@ -130,7 +122,7 @@ flutter run
 ## 8. 밈 추가하기
 
 콘텐츠의 단일 진실 소스는 **`content/registry.json`** 이다. 나머지(루트 `catalog.json`·
-`memes.json`, 웹 `FALLBACK`, Flutter `demoMemes`)는 전부 거기서 생성된다 —
+`memes.json`, 웹 `FALLBACK`)는 전부 거기서 생성된다 —
 손으로 고치면 CI(`test/catalog_test.py`)가 막는다.
 
 ```bash

@@ -1,23 +1,29 @@
-# 출시 전 최종 체크 (네 PC에서 실행)
-
-이 환경은 Dart SDK 다운로드가 차단되어 아래는 직접 돌려야 9.8 확정.
+# 출시 전 최종 체크
 
 ```bash
-flutter pub get
-flutter analyze --fatal-infos    # → "No issues found!" 떠야 함
-flutter test                      # → 위젯 테스트 전체 통과
-pytest test/scoring_test.py -v    # → 채점 5종 통과 (이미 검증됨)
-./deploy.sh run                   # → 서버배포+URL주입+실행
+pytest test/ -q                         # 채점 엔진 + 카탈로그 드리프트
+cd web && npm run build && npm run lint # 타입 검사 포함
+python tools/ingest.py doctor           # 프로덕션이 레지스트리와 맞는가
 ```
 
-## 검증 완료 (이 환경에서)
-- 채점 엔진 5종 테스트 통과 (무음 0점, 완벽 90+, 재현성)
-- 콤보/스트릭 로직 통과 (누적·끊김·마일스톤)
-- 공유영상 mp4 실제 생성
-- 자체 린터 import/문법 에러 0
-- 전 화면 시각 렌더 확인
+`doctor` 가 핵심이다. 나머지는 코드가 스스로를 검사하지만, doctor 만이
+**실제로 배포된 것**을 검사한다. 이 레포에서 났던 사고는 전부 코드가 아니라
+배포와 코드 사이의 틈에서 났다 — 배포본이 7시간 낡아 대사를 통째로 버리고,
+업로드가 200 을 받고도 볼륨에 안 남고, 라우드니스 목표를 아무도 재지 않았다.
 
-## 미검증 (네 PC 필요)
-- flutter analyze 통과 여부
-- 위젯 테스트 실제 실행
-- 실기기 UI 렌더
+## 사람이 직접 봐야 하는 것
+
+자동으로 못 거르는 것만 남긴다.
+
+- 실기기에서 녹음 → 채점 → 결과까지 한 번 (마이크 권한은 기기마다 다르다)
+- 새 클립은 귀로 한 번 — 게이트는 "채점에 적합한 소리인가"는 재지만
+  "그게 맞는 대사인가"는 못 잰다
+- 목록을 위에서 아래로 넘기며 볼륨이 튀지 않는지
+
+## 배포
+
+```bash
+modal deploy modal_app.py    # 서버
+# 웹은 main 머지 시 Vercel 자동 배포
+python tools/ingest.py doctor  # 배포 후 다시
+```
