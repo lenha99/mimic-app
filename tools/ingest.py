@@ -883,6 +883,12 @@ def cmd_publish_all(a):
     갖고 있으니 여기서 읽는다.
     """
     ids = [m["id"] for m in load_registry()["memes"]]
+    if a.only:
+        want = [i for chunk in a.only for i in chunk.split(",") if i]
+        missing = set(want) - set(ids)
+        if missing:
+            die(f"레지스트리에 없다: {', '.join(sorted(missing))}")
+        ids = [i for i in ids if i in set(want)]     # 순서는 레지스트리를 따른다
     failed = []
     for i, mid in enumerate(ids, 1):
         print(f"\n[{i}/{len(ids)}] {mid}")
@@ -1041,6 +1047,8 @@ def main():
 
     pa = sub.add_parser("publish-all", help="레지스트리 전체를 다시 올린다 (renorm 뒤)")
     pa.add_argument("--live", action="store_true", help="draft 해제하고 바로 공개")
+    pa.add_argument("--only", nargs="*", default=[],
+                    help="이 id 들만 (쉼표나 공백으로 구분). 실패한 것만 다시 올릴 때")
     pa.set_defaults(func=cmd_publish_all)
 
     v = sub.add_parser("verify", help="프로덕션에서 실제로 되는지 확인")

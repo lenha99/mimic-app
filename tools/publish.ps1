@@ -16,7 +16,8 @@
 #>
 param(
     [switch]$NewToken,   # 토큰을 새로 발급해 시크릿을 덮어쓴다
-    [switch]$Draft       # 목록에 안 띄우고 /record/{id} 직링크로만 (기본은 --live)
+    [switch]$Draft,      # 목록에 안 띄우고 /record/{id} 직링크로만 (기본은 --live)
+    [string[]]$Only = @() # 이 id 들만 올린다. 실패한 것만 다시 돌릴 때
 )
 
 Set-Location (Join-Path $PSScriptRoot "..")
@@ -50,6 +51,7 @@ elseif (-not $env:MIMIC_ADMIN_TOKEN) {
 # 끝날 때까지 로그 파일이 생기지도 않아서, 진행 중인지 멈춘 건지 알 수가 없다.
 $cmdArgs = @("-u", "tools/ingest.py", "publish-all")   # $args 는 자동 변수라 쓰면 안 된다
 if (-not $Draft) { $cmdArgs += "--live" }
+if ($Only.Count -gt 0) { $cmdArgs += "--only"; $cmdArgs += $Only }
 
 Write-Host ""
 # 네이티브 exe 의 stderr 를 그대로 파이프하면 PS 5.1 이 ErrorRecord 로 감싼다.
@@ -59,7 +61,8 @@ $ErrorActionPreference = "Continue"
 $uploaded = $?
 
 # 목록 순서는 곧 콘텐츠 결정이다(memes[0] 이 홈 히어로). admin_add 는 append 라
-# 하나라도 실패하면 순서가 어긋난다. 레지스트리 순서를 통째로 다시 박는다.
+# 하나라도 실패하면, 또 일부만 다시 올리면 순서가 어긋난다. 레지스트리 순서를
+# 통째로 다시 박는다.
 if ($uploaded) {
     Write-Host "`n· 카탈로그 순서 맞추기"
     & python -u tools/ingest.py push-catalog 2>&1 | ForEach-Object { $_.ToString() } |
@@ -68,4 +71,7 @@ if ($uploaded) {
 
 Write-Host ""
 Write-Host "전체 출력: $log"
-Write-Host "토큰은 이 창에 남아 있다. 다시 돌리려면:  python tools/ingest.py publish-all --live"
+# powershell -File 로 부르면 이건 자식 프로세스다. 여기서 만든 $env: 는 부모 창으로
+# 돌아가지 않는다. "토큰이 창에 남아 있다"고 안내했다가 매번 다시 헤맸다.
+Write-Host "실패한 게 있으면 그것만 다시:"
+Write-Host "  powershell -ExecutionPolicy Bypass -File tools\publish.ps1 -NewToken -Only id1,id2"
