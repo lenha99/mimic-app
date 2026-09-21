@@ -515,7 +515,14 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
     const url = new URL(window.location.href);
     url.searchParams.set("s", String(result.score));
     const link = url.toString();
-    const text = `${meme.title} ${result.score}점 (${result.grade}). 넘어봐.`;
+    // 도전장을 받고 왔으면 고리가 거기서 끊기면 안 된다. 이겼으면 되갚는 말이,
+    // 졌으면 다시 부르는 말이 나가야 그 사람이 또 던진다.
+    const text =
+      beat === null
+        ? `${meme.title} ${result.score}점 (${result.grade}). 넘어봐.`
+        : result.score > beat
+          ? `${meme.title} ${result.score}점. 니 ${beat}점 넘었다. 다시 해봐.`
+          : `${meme.title} ${result.score}점. ${beat}점 아직 못 넘었어. 한 번 더 간다.`;
 
     if (navigator.share) {
       try {
@@ -532,7 +539,7 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
     } catch {
       setError("공유가 안 됐어. 주소창 링크를 직접 보내줘.");
     }
-  }, [meme.title, result]);
+  }, [meme.title, result, beat]);
 
   const ringOffset = RING_C * (1 - remain);
 
