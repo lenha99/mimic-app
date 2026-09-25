@@ -20,14 +20,13 @@ export type Meme = {
 const FALLBACK: Meme[] = [
   { id: "muyaho", title: "무야호", source: "무한도전", emoji: "🎉", plays: 0, line: "무야호~!" },
   { id: "eoiga_eopne", title: "어이가 없네", source: "베테랑", emoji: "😑", plays: 0, line: "어이가 없네" },
-  { id: "mitjang_ppaegi", title: "동작 그만", source: "타짜", emoji: "🃏", plays: 0, line: "동작 그만, 밑장 빼기냐" },
   { id: "geoje_yaho", title: "거제 야호", source: "원이 · 리센느 미나미", emoji: "🏝️", plays: 0, line: "거제! 야호!" },
-  { id: "rooster", title: "꼬끼오", source: "수탉", emoji: "🐓", plays: 128400 },
-  { id: "cat", title: "야오옹", source: "고양이", emoji: "🐱", plays: 96300 },
-  { id: "goat", title: "메에에", source: "염소", emoji: "🐐", plays: 81200 },
-  { id: "wolf", title: "아우우", source: "늑대", emoji: "🐺", plays: 67400 },
-  { id: "cow", title: "음메에", source: "소", emoji: "🐄", plays: 54100 },
-  { id: "dolphin", title: "이이익", source: "돌고래", emoji: "🐬", plays: 41900 },
+  { id: "rooster", title: "꼬끼오", source: "수탉", emoji: "🐓", plays: 0 },
+  { id: "cat", title: "야오옹", source: "고양이", emoji: "🐱", plays: 0 },
+  { id: "goat", title: "메에에", source: "염소", emoji: "🐐", plays: 0 },
+  { id: "wolf", title: "아우우", source: "늑대", emoji: "🐺", plays: 0 },
+  { id: "cow", title: "음메에", source: "소", emoji: "🐄", plays: 0 },
+  { id: "dolphin", title: "이이익", source: "돌고래", emoji: "🐬", plays: 0 },
 ];
 // </generated:catalog>
 
@@ -45,9 +44,16 @@ export function extraLine(meme: Meme): string | null {
   return bare(meme.line) === bare(meme.title) ? null : meme.line;
 }
 
-/** 사회적 증거는 숫자가 있을 때만 증거다. "0명 도전"은 오히려 말리는 문구다. */
+/**
+ * 도전한 사람 수 — 보여줄 만할 때만.
+ *
+ * 숫자는 서버가 실제 채점 기록으로 센 사람 수다(modal_app.memes). "2명 도전"은
+ * 사회적 증거가 아니라 반대 신호라, 그보다 적으면 아예 숨긴다.
+ */
+const SHOW_PLAYS_FROM = 10;
+
 export function playCount(meme: Meme): number | null {
-  return typeof meme.plays === "number" && meme.plays > 0 ? meme.plays : null;
+  return typeof meme.plays === "number" && meme.plays >= SHOW_PLAYS_FROM ? meme.plays : null;
 }
 
 export type MemeListResult = {
@@ -94,8 +100,10 @@ export async function getMemes(
       : config.memesUrl;
 
     // Modal 은 콜드 스타트가 있으므로 넉넉히 기다리되, 무한정 매달리지는 않는다.
+    // 5분 캐시. 매 요청 Modal 을 부르면 홈이 정적 페이지가 될 수 없고,
+    // 목록은 하루에 몇 번 바뀌지도 않는다.
     const res = await fetch(url, {
-      cache: "no-store",
+      next: { revalidate: 300 },
       signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) return { memes: FALLBACK, stale: true };

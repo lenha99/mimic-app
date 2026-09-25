@@ -5,8 +5,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { usePlaybackLevel } from "@/components/use-playback-level";
 import { VoiceAvatar } from "@/components/voice-avatar";
 import type { Avatar } from "@/lib/avatar";
+import { clientId } from "@/lib/client-id";
 import { addGuestClaim } from "@/lib/guest-claims";
 import { extraLine, type Meme } from "@/lib/memes";
+import { track } from "@/lib/track";
 import styles from "./record.module.css";
 
 /**
@@ -85,29 +87,6 @@ const GRADE_CLASS: Record<string, string> = {
   B: styles.gradeMid,
   C: styles.gradeLow,
 };
-
-/**
- * 익명 기기 식별자.
- *
- * 랭킹에서 "같은 사람이 30번 시도한 것"과 "서른 명이 한 번씩 한 것"을 구분하려면
- * 뭔가는 있어야 한다. 계정을 만들게 하면 그 자리에서 대부분 나가므로, 브라우저에
- * 난수 하나를 두고 그걸 보낸다. 사람에 대한 정보는 들어 있지 않고, 브라우저
- * 데이터를 지우면 사라진다. 저장이 막힌 환경(사생활 보호 창 등)에서는 조용히
- * 빈 값이 되고 서버는 그냥 기록하지 않는다.
- */
-function clientId(): string {
-  try {
-    const k = "mimic.cid";
-    let v = localStorage.getItem(k);
-    if (!v) {
-      v = Math.random().toString(36).slice(2) + Date.now().toString(36);
-      localStorage.setItem(k, v);
-    }
-    return v;
-  } catch {
-    return "";
-  }
-}
 
 /**
  * 채점기가 억양 축을 실제로 썼는가.
@@ -236,6 +215,15 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar }:
     void fetch("/api/warm", { method: "POST" }).catch(() => {});
   }, []);
 
+  // 퍼널: 이 화면에 들어왔다. 친구 점수(?s=)를 달고 왔으면 도전장을 받고 온 것이다 —
+  // 이 앱이 퍼지는 유일한 길이 실제로 도는지는 이 숫자가 말해준다.
+  useEffect(() => {
+    track("view_record", { meme_id: meme.id });
+    if (beat !== null) track("arrive_challenge", { meme_id: meme.id });
+    // 화면당 한 번만 센다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const submit = useCallback(
     async (blob: Blob) => {
       if (blob.size === 0) {
@@ -336,6 +324,7 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar }:
     }
 
     rec.start();
+    track("record_start", { meme_id: meme.id });
     setLevels(new Array(LEVEL_BARS).fill(0));
     setRemain(1);
     setCanStop(windowMs.current > MANUAL_STOP_ABOVE_MS);
@@ -346,7 +335,7 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar }:
         if (rec.state !== "inactive") rec.stop();
       }, windowMs.current),
     );
-  }, [clearTimers, releaseMic, submit]);
+  }, [clearTimers, meme.id, releaseMic, submit]);
 
   const beginCountdown = useCallback(() => {
     if (advanced.current) return;
@@ -412,6 +401,7 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar }:
 
       el.play()
         .then(() => {
+          track("play_ref", { meme_id: meme.id });
           setPhase("listening");
           setRemain(1);
           // onEnded 가 안 오는 경우(길이 미상·디코드 실패)를 위한 안전망.
@@ -429,7 +419,7 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar }:
           setError("원본이 재생되지 않았어. 한 번 더 눌러줄래?");
         });
     },
-    [beginCountdown, clearTimers, refSeconds],
+    [beginCountdown, clearTimers, meme.id, refSeconds],
   );
 
   /** 듣고 바로 따라하기 (짧은 원본의 기본 동작). */
@@ -556,6 +546,7 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar }:
           ? `${meme.title} ${result.score}점. 니 ${beat}점 넘었다. 다시 해봐.`
           : `${meme.title} ${result.score}점. ${beat}점 아직 못 넘었어. 한 번 더 간다.`;
 
+    track("share", { meme_id: meme.id, via: "share" in navigator ? "sheet" : "copy" });
     if (navigator.share) {
       try {
         await navigator.share({ title: "MIMIC", text, url: link });
@@ -571,7 +562,7 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar }:
     } catch {
       setError("공유가 안 됐어. 주소창 링크를 직접 보내줘.");
     }
-  }, [meme.title, result, beat]);
+  }, [meme.id, meme.title, result, beat]);
 
   /**
    * 결과를 서버에 저장한다 (이슈 #23).

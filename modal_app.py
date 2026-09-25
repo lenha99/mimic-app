@@ -41,7 +41,7 @@ REF_DIR = "/refs"
 with score_image.imports():
     import numpy as np
     import librosa
-    from fastapi import UploadFile, Response
+    from fastapi import UploadFile, Response, Request
 
     try:
         _w = np.random.randn(8000).astype("float32")
@@ -56,7 +56,7 @@ with score_image.imports():
 # slim 컨테이너에서도 fastapi 심볼이 모듈 전역에 있어야 UploadFile/Response
 # 어노테이션을 해석할 수 있다 (image.imports는 heavy 이미지 컨테이너에서만 실행됨).
 with slim_image.imports():
-    from fastapi import UploadFile, Response
+    from fastapi import UploadFile, Response, Request
 
 
 # ---- 배포 버전 ----
@@ -255,37 +255,63 @@ def _log_event(kind: str, data: dict):
         pass    # 로깅 때문에 채점이 실패하는 일은 없어야 한다
 
 
+def _iter_events(since: float = 0):
+    """볼륨에 쌓인 이벤트를 하나씩. 깨진 파일은 건너뛴다."""
+    import json, os
+    if not os.path.isdir(EVENT_DIR):
+        return
+    for day in sorted(os.listdir(EVENT_DIR)):
+        d = os.path.join(EVENT_DIR, day)
+        if not os.path.isdir(d):
+            continue
+        for name in os.listdir(d):
+            try:
+                with open(os.path.join(d, name), encoding="utf-8") as f:
+                    e = json.load(f)
+            except Exception:
+                continue
+            if e.get("ts", 0) >= since:
+                yield e
+
+
+def _people(events) -> int:
+    """사람 수 — 같은 기기(client)는 한 명. 식별자가 없는 이벤트는 각각 한 명으로 센다."""
+    ids, anon = set(), 0
+    for e in events:
+        if e.get("client"):
+            ids.add(e["client"])
+        else:
+            anon += 1
+    return len(ids) + anon
+
+
+# 퍼널 순서. 이 앱이 퍼지는 길은 이것 하나다 — 들어와서, 듣고, 외치고, 점수 받고,
+# 던지고, 받은 사람이 다시 들어온다. 어디서 새는지 모르면 고칠 곳도 모른다.
+FUNNEL = ("view_home", "view_record", "play_ref", "record_start", "score", "share",
+          "arrive_challenge")
+
+
 @app.function(image=slim_image, volumes={REF_DIR: volume})
 @modal.fastapi_endpoint(method="GET")
 def stats(days: int = 7):
-    """밈별 집계. 랭킹·투표가 여기 위에 올라간다.
+    """밈별 채점 집계 + 퍼널.
 
-    녹음 자체는 채점 직후 버린다(PRIVACY.md). 남는 건 숫자뿐이다.
+    녹음 자체는 여기 없다(PRIVACY.md). 남는 건 숫자와 익명 기기 식별자뿐이다.
     """
-    import json, os, time
+    import time
     volume.reload()
-    cutoff = time.time() - days * 86400
+    events = list(_iter_events(time.time() - days * 86400))
+
     per = {}
-    if os.path.isdir(EVENT_DIR):
-        for day in sorted(os.listdir(EVENT_DIR)):
-            d = os.path.join(EVENT_DIR, day)
-            if not os.path.isdir(d):
-                continue
-            for name in os.listdir(d):
-                try:
-                    with open(os.path.join(d, name), encoding="utf-8") as f:
-                        e = json.load(f)
-                except Exception:
-                    continue
-                if e.get("kind") != "score" or e.get("ts", 0) < cutoff:
-                    continue
-                b = per.setdefault(e.get("meme_id", "?"),
-                                   {"plays": 0, "scores": [], "best": 0})
-                b["plays"] += 1
-                sc = e.get("score")
-                if isinstance(sc, int):
-                    b["scores"].append(sc)
-                    b["best"] = max(b["best"], sc)
+    for e in events:
+        if e.get("kind") != "score":
+            continue
+        b = per.setdefault(e.get("meme_id", "?"), {"plays": 0, "scores": [], "best": 0})
+        b["plays"] += 1
+        sc = e.get("score")
+        if isinstance(sc, int):
+            b["scores"].append(sc)
+            b["best"] = max(b["best"], sc)
 
     out = []
     for mid, b in per.items():
@@ -296,7 +322,41 @@ def stats(days: int = 7):
             "mean": round(sum(xs) / len(xs)) if xs else None,
         })
     out.sort(key=lambda r: -r["plays"])
-    return {"days": days, "memes": out}
+
+    funnel = []
+    for kind in FUNNEL:
+        es = [e for e in events if e.get("kind") == kind]
+        funnel.append({"step": kind, "events": len(es), "people": _people(es)})
+
+    return {"days": days, "memes": out, "funnel": funnel}
+
+
+@app.function(image=slim_image, volumes={REF_DIR: volume})
+@modal.fastapi_endpoint(method="POST")
+async def track(request: Request):
+    """화면 이벤트 한 건 (브라우저 sendBeacon).
+
+    sendBeacon 은 text/plain 으로 보내서 CORS 사전 요청이 없다. 그래서 본문을
+    직접 JSON 으로 읽는다. 모르는 kind 는 버린다 — 아무나 부를 수 있는 곳이라
+    임의 문자열로 볼륨을 채우게 두면 안 된다.
+    """
+    import json
+    try:
+        body = json.loads((await request.body())[:2048] or b"{}")
+    except Exception:
+        return Response(status_code=204)
+    kind = body.get("kind")
+    if kind not in FUNNEL or kind == "score":   # score 는 채점 서버가 직접 남긴다
+        return Response(status_code=204)
+    rec = {}
+    for k in ("meme_id", "client"):
+        v = body.get(k)
+        if isinstance(v, str) and v:
+            rec[k] = v[:64]
+    if isinstance(body.get("via"), str):
+        rec["via"] = body["via"][:16]
+    _log_event(kind, rec)
+    return Response(status_code=204)
 
 
 # ---- 동적 밈 카탈로그 (운영자 추가/삭제 + 친구 UGC 업로드, 앱 재빌드 불필요) ----
@@ -326,7 +386,18 @@ def memes(include_draft: int = 0):
     draft 항목은 기본으로 숨긴다. include_draft=1 로 미리보기(로컬 개발 서버에
     NEXT_PUBLIC_MEMES_URL 을 이 쿼리째 넣으면 미공개 밈까지 보인다).
     """
+    import time
     cat = _load_catalog()
+
+    # plays 는 실제로 채점까지 간 사람 수다. 예전엔 registry 에 손으로 적은 숫자
+    # (꼬끼오 128,400 등)가 그대로 나가서, 실제 1명인 소리가 "13만명 도전"으로 보였다.
+    # 한 번 들키면 신뢰가 통째로 무너지는 종류의 거짓말이라, 여기서 실측으로 덮어쓴다.
+    counted = {}
+    for e in _iter_events(time.time() - 365 * 86400):
+        if e.get("kind") == "score":
+            counted.setdefault(e.get("meme_id"), []).append(e)
+    cat = [{**m, "plays": _people(counted.get(m.get("id"), []))} for m in cat]
+
     if include_draft:
         return cat
     return [m for m in cat if not m.get("draft")]

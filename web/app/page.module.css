@@ -41,14 +41,6 @@
   border-color: var(--ash-dim);
 }
 
-.me {
-  display: flex;
-  border-radius: 50%;
-  background: var(--panel);
-  border: 1px solid var(--rule);
-  padding: 2px;
-}
-
 .stale {
   font-family: var(--mono);
   font-size: 10px;
@@ -110,18 +102,6 @@
   font-size: 12px;
   font-weight: 700;
   color: var(--volt);
-}
-
-/* 사회적 증거가 아직 없는 클립. "0명 도전"보다 "새로 들어옴"이 정직하고 잘 끈다. */
-.new {
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  color: var(--stage);
-  background: var(--volt);
-  border-radius: 999px;
-  padding: 3px 9px;
 }
 
 .stage {
@@ -432,14 +412,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.cardNew {
-  flex: none;
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--accent);
 }
 
 /* 동물 소리 — 타일 ----------------------------------------------------- */

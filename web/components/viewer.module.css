@@ -1,0 +1,29 @@
+/* 홈 헤더의 로그인 자리. 로그인 여부를 알기 전에도 폭을 잡아 헤더가 흔들리지 않게 한다. */
+.slot {
+  display: inline-block;
+  width: 64px;
+  height: 34px;
+}
+
+.pill {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--white);
+  text-decoration: none;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 7px 13px;
+}
+
+.pill:hover {
+  border-color: var(--ash-dim);
+}
+
+.me {
+  display: flex;
+  border-radius: 50%;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  padding: 2px;
+}

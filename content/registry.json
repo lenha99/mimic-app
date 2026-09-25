@@ -6,7 +6,7 @@
     "source": "출처 한 줄 (영화 제목, 채널명 등)",
     "emoji": "목록의 유일한 시각 요소",
     "line": "따라 말할 대사. 말소리 밈에만 있음 (동물 소리는 생략)",
-    "plays": "사회적 증거용 숫자. 내림차순이 목록 순서와 맞는 관례",
+    "plays": "안 쓴다 — 도전 수는 서버가 실제 채점 기록으로 센다(modal_app.memes). 0 으로 둔다",
     "origin": "원본 URL 과 잘라온 구간 (재인제스트·출처 표기용)",
     "license": "kind: cc0 | original | self | tts",
     "duration_ms": "정규화 후 길이. 8000 초과면 수동 정지 UI, 10000 초과면 듣기/따라하기 분리",
@@ -147,7 +147,9 @@
       },
       "filters": [
         "afftdn"
-      ]
+      ],
+      "draft": true,
+      "draft_reason": "원본에 화자가 둘이라 혼자 따라할 수 없다 (doctor 경고). 한 사람 구간으로 다시 고르기 전까지 목록에서 뺀다"
     },
     {
       "id": "geoje_yaho",
@@ -243,7 +245,7 @@
       "title": "꼬끼오",
       "source": "수탉",
       "emoji": "🐓",
-      "plays": 128400,
+      "plays": 0,
       "origin": {
         "url": "https://freesound.org/s/43382/"
       },
@@ -278,7 +280,7 @@
       "title": "야오옹",
       "source": "고양이",
       "emoji": "🐱",
-      "plays": 96300,
+      "plays": 0,
       "origin": {
         "url": "https://freesound.org/s/110011/"
       },
@@ -313,7 +315,7 @@
       "title": "메에에",
       "source": "염소",
       "emoji": "🐐",
-      "plays": 81200,
+      "plays": 0,
       "origin": {
         "url": "https://freesound.org/s/581240/"
       },
@@ -348,7 +350,7 @@
       "title": "아우우",
       "source": "늑대",
       "emoji": "🐺",
-      "plays": 67400,
+      "plays": 0,
       "origin": {
         "url": "https://freesound.org/s/429109/"
       },
@@ -383,7 +385,7 @@
       "title": "음메에",
       "source": "소",
       "emoji": "🐄",
-      "plays": 54100,
+      "plays": 0,
       "origin": {
         "url": "https://freesound.org/s/59245/"
       },
@@ -418,7 +420,7 @@
       "title": "이이익",
       "source": "돌고래",
       "emoji": "🐬",
-      "plays": 41900,
+      "plays": 0,
       "origin": {
         "url": "https://freesound.org/s/456151/"
       },

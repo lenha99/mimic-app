@@ -1,10 +1,21 @@
 import Link from "next/link";
-import { ShoutingAvatar } from "@/components/shouting-avatar";
+import { HomeBeacon } from "@/components/home-beacon";
+import { MyShoutingAvatar, ViewerBadge } from "@/components/viewer";
 import { VoiceAvatar } from "@/components/voice-avatar";
 import type { Avatar } from "@/lib/avatar";
 import { extraLine, getMemes, playCount, type Meme } from "@/lib/memes";
-import { getViewer } from "@/lib/viewer";
+import { createPublicClient } from "@/lib/supabase/public";
 import styles from "./page.module.css";
+
+/**
+ * 정적 페이지로 두고 5분마다 다시 만든다.
+ *
+ * 요청마다 서버에서 그리던 때는 첫 응답이 6초였다 — 트래픽이 없으니 매번
+ * 콜드 스타트였고, 그 뒤로 Modal 카탈로그와 Supabase 까지 기다렸다. 카톡 링크를
+ * 눌렀는데 6초 동안 하얀 화면이면 대부분 닫는다. 누구인지(로그인·내 캐릭터)는
+ * 브라우저에서 나중에 채운다 (components/viewer).
+ */
+export const revalidate = 300;
 
 /**
  * 홈은 목록이 아니라 첫 챌린지다.
@@ -32,8 +43,10 @@ const CAST: { avatar: Avatar; level: number }[] = [
 ];
 
 export default async function Home() {
-  const [{ memes, stale }, viewer] = await Promise.all([getMemes(), getViewer()]);
-  const [today, ...rest] = memes;
+  const [{ memes, stale }, social] = await Promise.all([getMemes(), socialReady()]);
+
+  const today = pickToday(memes);
+  const rest = memes.filter((m) => m !== today);
 
   // 명대사와 동물 소리는 고르는 마음이 다르다 — 하나는 "저거 나도 할 줄 알아",
   // 다른 하나는 "저건 웃기겠다". 한 줄로 섞어두면 둘 다 안 보인다.
@@ -47,18 +60,12 @@ export default async function Home() {
         <span className={styles.logo}>MIMIC</span>
         <nav className={styles.nav}>
           {stale && <span className={styles.stale}>내장 목록</span>}
-          <Link href="/rank" className={styles.navPill}>
-            🏆 랭킹
-          </Link>
-          {viewer.loggedIn ? (
-            <Link href="/profile" className={styles.me} aria-label="내 프로필">
-              <VoiceAvatar avatar={viewer.avatar} size={34} />
-            </Link>
-          ) : (
-            <Link href="/login" className={styles.navPill}>
-              로그인
+          {social && (
+            <Link href="/rank" className={styles.navPill}>
+              🏆 랭킹
             </Link>
           )}
+          <ViewerBadge />
         </nav>
       </header>
 
@@ -69,18 +76,16 @@ export default async function Home() {
               <span className={styles.live} aria-hidden="true" />
               오늘의 소리
             </span>
-            {playCount(today) !== null ? (
+            {playCount(today) !== null && (
               <span className={styles.plays}>
                 {playCount(today)!.toLocaleString("ko-KR")}명 도전
               </span>
-            ) : (
-              <span className={styles.new}>NEW</span>
             )}
           </div>
 
           <div className={styles.stage}>
             <p className={styles.bubble}>{today.line ?? today.title}</p>
-            <ShoutingAvatar avatar={viewer.avatar} size={148} />
+            <MyShoutingAvatar size={148} />
           </div>
 
           <h1 className={styles.heroTitle}>
@@ -92,7 +97,7 @@ export default async function Home() {
           <Link href={`/record/${today.id}`} className={styles.heroGo}>
             듣고 바로 따라하기
           </Link>
-          <p className={styles.heroNote}>로그인 없이 · 탭 한 번 · 점수는 몇 초 만에</p>
+          <p className={styles.heroNote}>로그인 없이 · 탭 한 번이면 시작</p>
 
           <div className={styles.eq} aria-hidden="true">
             {Array.from({ length: 28 }, (_, i) => (
@@ -157,7 +162,8 @@ export default async function Home() {
       )}
 
       <section className={styles.promos}>
-        <Link href={viewer.loggedIn ? "/profile" : "/login"} className={styles.promo}>
+        {/* 로그인 안 했으면 /profile 이 로그인으로 보낸다. */}
+        <Link href="/profile" className={styles.promo}>
           <div className={styles.cast} aria-hidden="true">
             {CAST.map((c, i) => (
               <span key={i} style={{ animationDelay: `${i * 180}ms` }}>
@@ -167,19 +173,21 @@ export default async function Home() {
           </div>
           <p className={styles.promoTitle}>내 목소리 캐릭터</p>
           <p className={styles.promoText}>녹음하면 이 녀석들이 네 목소리로 외쳐. 몸·색·눈·모자 골라서 꾸미기</p>
-          <span className={styles.promoGo}>
-            {viewer.loggedIn ? "캐릭터 꾸미러 가기 →" : "로그인하고 만들기 →"}
-          </span>
+          <span className={styles.promoGo}>내 캐릭터 만들기 →</span>
         </Link>
 
-        <Link href="/vote" className={`${styles.promo} ${styles.promoVote}`}>
-          <p className={styles.promoTitle}>이 목소리에 투표</p>
-          <p className={styles.promoText}>
-            웃겨도 좋고, 똑같아도 좋고. 남의 녹음 둘 듣고 끌리는 쪽에 한 표
-          </p>
-          <span className={styles.promoGo}>투표하러 가기 →</span>
-        </Link>
+        {social && (
+          <Link href="/vote" className={`${styles.promo} ${styles.promoVote}`}>
+            <p className={styles.promoTitle}>이 목소리에 투표</p>
+            <p className={styles.promoText}>
+              웃겨도 좋고, 똑같아도 좋고. 남의 녹음 둘 듣고 끌리는 쪽에 한 표
+            </p>
+            <span className={styles.promoGo}>투표하러 가기 →</span>
+          </Link>
+        )}
       </section>
+
+      <HomeBeacon />
 
       <footer className={styles.foot}>
         <p className={styles.footNote}>
@@ -205,14 +213,44 @@ function LineCard({ meme, accent }: { meme: Meme; accent: (typeof ACCENTS)[numbe
       {line && <span className={styles.cardLine}>“{line}”</span>}
       <span className={styles.cardFoot}>
         <span>{meme.source}</span>
-        {playCount(meme) !== null ? (
-          <span>{compact(playCount(meme)!)}명</span>
-        ) : (
-          <span className={styles.cardNew}>NEW</span>
-        )}
+        {playCount(meme) !== null && <span>{compact(playCount(meme)!)}명</span>}
       </span>
     </Link>
   );
+}
+
+/**
+ * "오늘의 소리"는 정말 날마다 바뀐다(한국 시간 자정 기준). 예전엔 목록 첫 줄이
+ * 고정으로 앉아 있어서 "오늘의"가 거짓말이었고, 다시 올 이유도 못 만들었다.
+ * 페이지가 5분마다 다시 만들어지므로 자정이 지나면 늦어도 5분 안에 바뀐다.
+ */
+function pickToday(memes: Meme[]): Meme | undefined {
+  if (memes.length === 0) return undefined;
+  const day = Math.floor((Date.now() + 9 * 3_600_000) / 86_400_000);
+  return memes[day % memes.length];
+}
+
+/**
+ * 투표·랭킹을 홈에 내세워도 되는가.
+ *
+ * 대결은 같은 밈에 공개 녹음이 둘 이상 있어야 만들어진다. 그 전에 홈에서 "투표"를
+ * 내세우면 새로 온 사람은 로그인 벽을 넘고 빈 방을 본다 — 죽은 앱처럼 보인다.
+ * 조건이 채워지는 순간 저절로 나타난다(5분 안에).
+ */
+async function socialReady(): Promise<boolean> {
+  try {
+    const { data } = await createPublicClient()
+      .from("recordings")
+      .select("meme_id")
+      .eq("is_public", true)
+      .eq("hidden", false)
+      .limit(1000);
+    const per = new Map<string, number>();
+    for (const r of data ?? []) per.set(r.meme_id, (per.get(r.meme_id) ?? 0) + 1);
+    return [...per.values()].some((n) => n >= 2);
+  } catch {
+    return false;
+  }
 }
 
 /** 128,400 → 12.8만. 타일이 좁아서 긴 숫자는 줄바꿈된다. */
