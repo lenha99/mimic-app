@@ -62,6 +62,11 @@
   width: 100%;
 }
 
+.performer {
+  display: flex;
+  justify-content: center;
+}
+
 .voteBtn {
   background: var(--volt);
   color: #0a0a0b;

@@ -1,12 +1,16 @@
 import { redirect } from "next/navigation";
+import { signAudio } from "@/lib/audio-url";
+import { normalizeAvatar } from "@/lib/avatar";
 import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "./sign-out-button";
 import { NicknameEditor } from "./nickname-editor";
 import { ClaimPending } from "./claim-pending";
+import { AvatarEditor } from "./avatar-editor";
+import { MyRecordings, type MyRecording } from "./my-recordings";
 import styles from "./profile.module.css";
 
 /**
- * TODO(Dev A): 내 녹음 목록, 내 순위 뱃지.
+ * TODO(Dev A): 내 순위 뱃지.
  * profiles row는 /auth/callback의 ensureProfile()이 첫 로그인 때 만들어줌.
  */
 export default async function ProfilePage() {
@@ -17,11 +21,29 @@ export default async function ProfilePage() {
 
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+  const [{ data: profile }, { data: recordings }, { data: memes }] = await Promise.all([
+    supabase.from("profiles").select("*").eq("id", user.id).single(),
+    supabase
+      .from("recordings")
+      .select("id, meme_id, score, grade, is_public, hidden, audio_path, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(50),
+    supabase.from("memes").select("id, title"),
+  ]);
+
+  // 내 녹음만 조회했으니(user_id 조건 + RLS) 서명해도 된다.
+  const urls = await signAudio((recordings ?? []).map((r) => r.audio_path));
+  const items: MyRecording[] = (recordings ?? []).map((r) => ({
+    id: r.id,
+    memeTitle: memes?.find((m) => m.id === r.meme_id)?.title ?? r.meme_id,
+    score: r.score,
+    grade: r.grade,
+    isPublic: r.is_public,
+    hidden: r.hidden,
+    audioUrl: urls.get(r.audio_path) ?? null,
+    createdAt: r.created_at,
+  }));
 
   return (
     <main className="shell">
@@ -36,11 +58,13 @@ export default async function ProfilePage() {
       <ClaimPending />
 
       {profile ? (
-        <div className={styles.card}>
-          <p className={styles.nickname}>
-            {profile.avatar_emoji} {profile.nickname}
-          </p>
-          <NicknameEditor userId={user.id} initialNickname={profile.nickname} />
+        <div className={styles.stack}>
+          <div className={styles.card}>
+            <p className={styles.nickname}>{profile.nickname}</p>
+            <NicknameEditor userId={user.id} initialNickname={profile.nickname} />
+          </div>
+          <AvatarEditor userId={user.id} initial={normalizeAvatar(profile.avatar)} />
+          <MyRecordings items={items} />
         </div>
       ) : (
         <p className={styles.warn}>

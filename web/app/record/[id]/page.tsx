@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { refAudio } from "@/lib/config";
 import { extraLine, getMemes } from "@/lib/memes";
+import { getViewer } from "@/lib/viewer";
 import Recorder from "./recorder";
 import styles from "./record.module.css";
 
@@ -80,6 +81,7 @@ export default async function RecordPage({ params, searchParams }: Props) {
 
   const { meme, next } = found;
   const beat = parseBeat((await searchParams).s);
+  const viewer = await getViewer();
 
   return (
     <main className="shell">
@@ -98,6 +100,8 @@ export default async function RecordPage({ params, searchParams }: Props) {
         refUrl={refAudio(meme.id)}
         beat={beat}
         next={next ? { id: next.id, title: next.title } : null}
+        loggedIn={viewer.loggedIn}
+        avatar={viewer.avatar}
       />
     </main>
   );

@@ -95,3 +95,10 @@
   min-width: 44px;
   text-align: right;
 }
+
+.subhead {
+  margin: 28px 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ash);
+}

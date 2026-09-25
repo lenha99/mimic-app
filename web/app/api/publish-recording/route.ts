@@ -1,26 +1,32 @@
 import { randomUUID } from "node:crypto";
 import { config } from "@/lib/config";
+import { getMemes } from "@/lib/memes";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 
 /**
- * "결과 공개하기" 버튼이 부를 단일 엔드포인트 (이슈 #23).
+ * "저장하기" 버튼이 부를 단일 엔드포인트 (이슈 #23).
  *
  * 브라우저가 보낸 점수는 절대 믿지 않는다 — 여기서 같은 오디오를 Modal에
  * 다시 채점시켜 나온 값만 recordings에 쓴다. 위조 가능한 클라이언트 점수가
  * 랭킹에 올라가는 걸 막기 위한 유일한 방법이다.
  *
  * 로그인 유저면 user_id로, 게스트면 user_id null + claim_token 발급(이슈 #19).
- * 게스트는 나중에 로그인하면 클라이언트가 이 claim_token으로 recordings row를
- * 자기 계정에 귀속시킨다(마이그레이션 20260916000008 참고).
+ * 게스트는 비공개 저장만 된다 — 신고는 로그인해야 할 수 있는데, 공개는 아무나
+ * 할 수 있으면 익명 게시판이 된다.
  */
 const MAX_BYTES = 10 * 1024 * 1024;
 
+/** /api/score 와 같은 이유 — 콜드 스타트 채점이 플랫폼 기본 제한(10초)보다 길다. */
+export const maxDuration = 60;
+
 export async function POST(req: Request) {
-  const memeId = new URL(req.url).searchParams.get("meme_id");
+  const q = new URL(req.url).searchParams;
+  const memeId = q.get("meme_id");
   if (!memeId) {
     return Response.json({ error: "meme_id가 없습니다" }, { status: 400 });
   }
+  const client = (q.get("client") ?? "").slice(0, 64);
 
   const form = await req.formData();
   const file = form.get("file");
@@ -39,7 +45,23 @@ export async function POST(req: Request) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // 2) 같은 오디오로 Modal에 다시 채점 요청 — 클라이언트가 뭐라 주장하든 무시.
+  if (isPublic && !user) {
+    return Response.json({ error: "공개하려면 로그인이 필요해요." }, { status: 401 });
+  }
+
+  // 2) 카탈로그에 있는 밈인지. recordings.meme_id 는 memes 를 참조하는데, memes 테이블은
+  //    레지스트리를 따라오지 않는다 — 새 밈이 생길 때마다 여기서 채운다.
+  const { memes, stale } = await getMemes({ includeDraft: true });
+  const meme = memes.find((m) => m.id === memeId);
+  if (!meme || stale) {
+    return Response.json(
+      { error: stale ? "카탈로그 서버가 응답하지 않아요. 잠시 후 다시 저장해 주세요." : "없는 밈입니다" },
+      { status: stale ? 503 : 404 },
+    );
+  }
+
+  // 3) 같은 오디오로 Modal에 다시 채점 요청 — 클라이언트가 뭐라 주장하든 무시.
+  //    rescore=1: 방금 /api/score 로 한 번 센 도전을 "N명 도전"에 또 세지 않게.
   let scoreResult: {
     score: number;
     grade: string;
@@ -48,13 +70,13 @@ export async function POST(req: Request) {
   try {
     const modalForm = new FormData();
     modalForm.append("file", file, "recording.webm");
-    const res = await fetch(`${config.scoreUrl}?meme_id=${encodeURIComponent(memeId)}`, {
-      method: "POST",
-      body: modalForm,
-      signal: AbortSignal.timeout(90_000),
-    });
+    const res = await fetch(
+      `${config.scoreUrl}?meme_id=${encodeURIComponent(memeId)}&rescore=1` +
+        (client ? `&client=${encodeURIComponent(client)}` : ""),
+      { method: "POST", body: modalForm, signal: AbortSignal.timeout(55_000) },
+    );
     const data = await res.json();
-    if (!res.ok || data.error) {
+    if (!res.ok || data.error || typeof data.score !== "number") {
       return Response.json({ error: data.error ?? "채점에 실패했습니다." }, { status: 502 });
     }
     scoreResult = data;
@@ -65,8 +87,17 @@ export async function POST(req: Request) {
     );
   }
 
-  // 3) Storage 업로드 + recordings insert — service_role로 RLS 우회 (여기가 신뢰 경계).
+  // 4) Storage 업로드 + recordings insert — service_role로 RLS 우회 (여기가 신뢰 경계).
   const service = createServiceClient();
+
+  const { error: memeError } = await service.from("memes").upsert(
+    { id: meme.id, title: meme.title, source: meme.source ?? null, emoji: meme.emoji ?? "🎙" },
+    { onConflict: "id" },
+  );
+  if (memeError) {
+    return Response.json({ error: "결과 저장에 실패했습니다." }, { status: 500 });
+  }
+
   const folder = user?.id ?? "guest";
   const path = `${folder}/${randomUUID()}.webm`;
 
@@ -76,7 +107,6 @@ export async function POST(req: Request) {
   if (uploadError) {
     return Response.json({ error: "파일 저장에 실패했습니다." }, { status: 500 });
   }
-  const { data: publicUrl } = service.storage.from("recordings").getPublicUrl(path);
 
   const claimToken = user ? undefined : randomUUID();
   const { data: recording, error: insertError } = await service
@@ -84,7 +114,7 @@ export async function POST(req: Request) {
     .insert({
       user_id: user?.id ?? null,
       meme_id: memeId,
-      audio_url: publicUrl.publicUrl,
+      audio_path: path,
       score: scoreResult.score,
       grade: scoreResult.grade,
       pitch: scoreResult.breakdown.pitch,
@@ -93,10 +123,12 @@ export async function POST(req: Request) {
       is_public: isPublic,
       ...(claimToken ? { claim_token: claimToken } : {}),
     })
-    .select("id, claim_token")
+    .select("id")
     .single();
 
   if (insertError || !recording) {
+    // 행이 없으면 파일은 아무도 못 찾는 고아가 된다. 지운다.
+    await service.storage.from("recordings").remove([path]);
     return Response.json({ error: "결과 저장에 실패했습니다." }, { status: 500 });
   }
 

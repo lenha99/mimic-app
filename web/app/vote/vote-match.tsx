@@ -1,11 +1,19 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { usePlaybackLevel } from "@/components/use-playback-level";
+import { VoiceAvatar } from "@/components/voice-avatar";
+import type { Avatar } from "@/lib/avatar";
 import { createClient } from "@/lib/supabase/client";
 import styles from "./vote.module.css";
 
-type Recording = { id: string; audio_url: string; user_id: string | null };
+type Recording = {
+  id: string;
+  /** 서버가 서명한 짧은 URL. 서명이 실패하면 null — 카드는 뜨고 재생만 안 된다. */
+  audioUrl: string | null;
+  avatar: Avatar;
+};
 
 export function VoteMatch({
   memeId,
@@ -67,11 +75,34 @@ export function VoteMatch({
   );
 }
 
+/**
+ * 녹음 한 장. 재생하면 그 사람 캐릭터가 그 목소리로 입을 연다.
+ * 닉네임은 안 보인다 — 누구 건지 알면 친구 쪽으로 표가 쏠린다.
+ */
 function Card({ label, recording, onVote }: { label: string; recording: Recording; onVote: () => void }) {
+  const audio = useRef<HTMLAudioElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const level = usePlaybackLevel(audio, recording.audioUrl, playing);
+
   return (
     <div className={styles.card}>
       <span className={styles.cardLabel}>{label} · 익명</span>
-      <audio controls src={recording.audio_url} className={styles.audio} />
+      <div className={styles.performer}>
+        <VoiceAvatar avatar={recording.avatar} level={level} size={104} />
+      </div>
+      {recording.audioUrl ? (
+        <audio
+          ref={audio}
+          controls
+          src={recording.audioUrl}
+          className={styles.audio}
+          onPlay={() => setPlaying(true)}
+          onPause={() => setPlaying(false)}
+          onEnded={() => setPlaying(false)}
+        />
+      ) : (
+        <p className={styles.warn}>이 녹음을 불러오지 못했어요.</p>
+      )}
       <button onClick={onVote} className={styles.voteBtn}>
         이 목소리에 투표
       </button>
