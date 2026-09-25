@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { normalizeAvatar } from "@/lib/avatar";
 import { config } from "@/lib/config";
-import { getMemes } from "@/lib/memes";
+import { findMeme } from "@/lib/challenges";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 
@@ -68,13 +68,10 @@ export async function POST(req: Request) {
 
   // 2) 카탈로그에 있는 밈인지. recordings.meme_id 는 memes 를 참조하는데, memes 테이블은
   //    레지스트리를 따라오지 않는다 — 새 밈이 생길 때마다 여기서 채운다.
-  const { memes, stale } = await getMemes({ includeDraft: true });
-  const meme = memes.find((m) => m.id === memeId);
-  if (!meme || stale) {
-    return Response.json(
-      { error: stale ? "카탈로그 서버가 응답하지 않아요. 잠시 후 다시 저장해 주세요." : "없는 밈입니다" },
-      { status: stale ? 503 : 404 },
-    );
+  // 운영 콘텐츠든 사용자 챌린지든 (lib/challenges.findMeme).
+  const meme = (await findMeme(memeId))?.meme;
+  if (!meme) {
+    return Response.json({ error: "없는 챌린지예요" }, { status: 404 });
   }
 
   // 3) 같은 오디오로 Modal에 다시 채점 요청 — 클라이언트가 뭐라 주장하든 무시.

@@ -9,6 +9,7 @@ import { ClaimPending } from "./claim-pending";
 import { DeleteAccount } from "./delete-account";
 import Link from "next/link";
 import { VoiceAvatar } from "@/components/voice-avatar";
+import { MyChallenges, type MyChallenge } from "./my-challenges";
 import { MyRecordings, type MyRecording } from "./my-recordings";
 import styles from "./profile.module.css";
 
@@ -34,6 +35,13 @@ export default async function ProfilePage() {
       .limit(50),
     supabase.from("memes").select("id, title"),
   ]);
+  // 내 챌린지 (RLS: 내 것은 상태와 상관없이 보인다).
+  const { data: challenges } = await supabase
+    .from("challenges")
+    .select("id, title, emoji, line, status")
+    .eq("creator_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(30);
 
   // 내 녹음만 조회했으니(user_id 조건 + RLS) 서명해도 된다.
   const urls = await signAudio((recordings ?? []).map((r) => r.audio_path));
@@ -79,6 +87,7 @@ export default async function ProfilePage() {
               <em>버럭이·할머니·MZ… 꾸미러 가기 →</em>
             </span>
           </Link>
+          <MyChallenges items={(challenges ?? []) as MyChallenge[]} />
           <MyRecordings items={items} />
           <DeleteAccount />
         </div>

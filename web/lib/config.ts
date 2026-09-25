@@ -17,6 +17,10 @@ export const config = {
   /** 기준 음성 스트리밍 — Supabase Storage 이전 예정 (#18) */
   referenceUrl: env.NEXT_PUBLIC_REFERENCE_URL ?? "https://lenha99--meme-scoring-reference.modal.run",
 
+  /** 사용자 챌린지 기준 음성 만들기·지우기 — 서버 전용 (UGC_TOKEN 필요). */
+  ugcCreateUrl: env.UGC_CREATE_URL ?? "https://lenha99--meme-scoring-ugc-create.modal.run",
+  ugcRemoveUrl: env.UGC_REMOVE_URL ?? "https://lenha99--meme-scoring-ugc-remove.modal.run",
+
   /** 이 웹앱의 공개 주소. OG 태그의 metadataBase 로도 쓰인다. */
   siteUrl: resolveSiteUrl(),
 } as const;

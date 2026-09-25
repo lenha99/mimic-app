@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { refAudio } from "@/lib/config";
-import { extraLine, getMemes } from "@/lib/memes";
+import { findMeme as findAnyMeme } from "@/lib/challenges";
+import { extraLine } from "@/lib/memes";
 import { getViewer } from "@/lib/viewer";
 import Recorder from "./recorder";
 import styles from "./record.module.css";
@@ -26,10 +27,11 @@ function parseBeat(raw: string | string[] | undefined): number | null {
 }
 
 async function findMeme(id: string) {
-  // 미공개(draft) 밈도 직링크로는 열려야 한다 — 공개 전에 실기기에서 확인하는 경로다.
-  const { memes } = await getMemes({ includeDraft: true });
-  const meme = memes.find((m) => m.id === id);
-  if (!meme) return null;
+  // 미공개(draft) 밈과 검토 전 사용자 챌린지도 직링크로는 열려야 한다 —
+  // 챌린지를 만든 사람이 링크를 바로 친구한테 던지는 경로다.
+  const found = await findAnyMeme(id);
+  if (!found) return null;
+  const { meme, catalog: memes } = found;
 
   // 결과 화면에서 목록으로 돌아가지 않고 바로 다음 소리로 넘어가기 위한 것.
   // 다음 소리는 공개된 것 중에서 고른다 — 미공개를 남에게 떠넘기면 안 된다.

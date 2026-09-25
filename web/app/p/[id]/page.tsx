@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { signAudio } from "@/lib/audio-url";
 import { DEFAULT_AVATAR, encodeAvatar, normalizeAvatar } from "@/lib/avatar";
-import { extraLine, getMemes } from "@/lib/memes";
+import { findMeme } from "@/lib/challenges";
+import { extraLine } from "@/lib/memes";
 import { createServiceClient } from "@/lib/supabase/service";
 import { SharePlayer } from "./player";
 import styles from "./share.module.css";
@@ -29,14 +30,14 @@ async function load(id: string) {
     .maybeSingle();
   if (!rec || rec.hidden || !(rec.shared || rec.is_public)) return null;
 
-  const [{ memes }, profile, urls] = await Promise.all([
-    getMemes({ includeDraft: true }),
+  const [found, profile, urls] = await Promise.all([
+    findMeme(rec.meme_id),
     rec.user_id
       ? service.from("profiles").select("nickname, avatar").eq("id", rec.user_id).maybeSingle()
       : Promise.resolve({ data: null }),
     signAudio([rec.audio_path]),
   ]);
-  const meme = memes.find((m) => m.id === rec.meme_id);
+  const meme = found?.meme;
   if (!meme) return null;
 
   const avatarSource = rec.avatar ?? profile.data?.avatar ?? null;

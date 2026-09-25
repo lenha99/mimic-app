@@ -519,6 +519,96 @@ def admin_remove(token: str, meme_id: str):
     return {"ok": True, "count": len(cat)}
 
 
+# ---- 사용자 챌린지 (UGC) ----
+# 사용자가 녹음한 소리를 챌린지로 만든다. 웹(/api/challenges)만 부른다 — 토큰(UGC_TOKEN)이
+# 없으면 거부. 예전 submit 처럼 누구나 부를 수 있게 두면 아무 소리나 볼륨에 쌓인다.
+#
+# 카탈로그(catalog.json)는 건드리지 않는다. 목록·검토 상태는 Supabase challenges 테이블이
+# 들고, 여기는 채점 기준 음성({id}.wav)만 만든다. 채점·원본 듣기는 기존 경로가 그대로
+# {id}.wav 를 읽으므로 운영 콘텐츠와 똑같이 돈다.
+UGC_ID = r"^u_[a-z0-9]{8}$"
+UGC_MIN_S, UGC_MAX_S = 0.4, 6.5
+
+
+@app.function(image=score_image, volumes={REF_DIR: volume},
+              secrets=[modal.Secret.from_name("mimic-ugc")])
+@modal.fastapi_endpoint(method="POST")
+async def ugc_create(token: str, meme_id: str, file: UploadFile):
+    """브라우저 녹음 → 앞뒤 무음 자르기 → 라운드니스 맞추기 → 품질 검사 → {id}.wav.
+
+    폰 녹음은 앞뒤에 숨소리·정적이 길고 크기가 제각각이다. 운영 클립과 같은 규칙
+    (-14 LUFS, 22.05k 모노 16bit)으로 맞춰야 채점도 원본 듣기도 똑같이 된다.
+    """
+    import os, re
+    import soundfile as sf
+    if token != os.environ.get("UGC_TOKEN"):
+        return Response(status_code=403, content="forbidden")
+    if not re.match(UGC_ID, meme_id):
+        return {"error": "잘못된 챌린지 id"}
+    dst = os.path.join(REF_DIR, f"{meme_id}.wav")
+    if os.path.exists(dst):
+        return {"error": "이미 있는 챌린지 id"}
+
+    raw = await file.read()
+    if not raw or len(raw) > MAX_UPLOAD_BYTES:
+        return {"error": "녹음이 비었거나 너무 커"}
+    src = tempfile.NamedTemporaryFile(delete=False).name
+    out = tempfile.NamedTemporaryFile(suffix=".wav", delete=False).name
+    try:
+        with open(src, "wb") as f:
+            f.write(raw)
+        trim = "silenceremove=start_periods=1:start_threshold=-42dB:start_silence=0.05"
+        af = f"{trim},areverse,{trim},areverse,loudnorm=I=-14:TP=-1.5:LRA=11"
+        subprocess.run(
+            ["ffmpeg", "-v", "error", "-y", "-i", src, "-af", af,
+             "-ac", "1", "-ar", "22050", "-c:a", "pcm_s16le", out],
+            check=True, capture_output=True, timeout=30,
+        )
+        y, sr = sf.read(out, dtype="float32")
+        dur = len(y) / sr if sr else 0
+        if dur < UGC_MIN_S:
+            return {"error": "소리가 너무 짧거나 거의 안 들려. 조금 더 크게, 길게 해줘"}
+        if dur > UGC_MAX_S:
+            return {"error": f"너무 길어. {int(UGC_MAX_S)}초 안으로 해줘"}
+        peak = float(np.max(np.abs(y))) if len(y) else 0.0
+        if peak < 0.05:
+            return {"error": "소리가 거의 안 들려. 마이크 가까이에서 다시 해줘"}
+        with open(out, "rb") as f:
+            data = f.read()
+        problem = _wav_problem(data)
+        if problem:
+            return {"error": f"변환 실패: {problem}"}
+        with open(dst, "wb") as f:
+            f.write(data)
+        volume.commit()
+        return {"ok": True, "duration_ms": int(dur * 1000)}
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return {"error": "녹음을 읽을 수 없어. 다시 녹음해줄래?"}
+    finally:
+        for p_ in (src, out):
+            try:
+                os.unlink(p_)
+            except OSError:
+                pass
+
+
+@app.function(image=slim_image, volumes={REF_DIR: volume},
+              secrets=[modal.Secret.from_name("mimic-ugc")])
+@modal.fastapi_endpoint(method="POST")
+def ugc_remove(token: str, meme_id: str):
+    """반려·탈퇴 시 기준 음성을 지운다. 목소리를 남겨두지 않는다."""
+    import os, re
+    if token != os.environ.get("UGC_TOKEN"):
+        return Response(status_code=403, content="forbidden")
+    if not re.match(UGC_ID, meme_id):
+        return {"error": "잘못된 챌린지 id"}
+    p_ = os.path.join(REF_DIR, f"{meme_id}.wav")
+    if os.path.exists(p_):
+        os.remove(p_)
+        volume.commit()
+    return {"ok": True}
+
+
 # ---- 채점 로직 ----
 # 신뢰성 설계:
 #  - 억양(pitch): 보이스드 구간만 추려 '세미톤 컨투어'로 비교(절대 음높이 무관).

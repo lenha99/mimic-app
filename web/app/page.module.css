@@ -484,6 +484,24 @@
   text-decoration: none;
 }
 
+.promoCreate {
+  background:
+    radial-gradient(90% 90% at 100% 0%, rgba(255, 45, 120, 0.2), transparent 60%),
+    var(--panel);
+  border-color: rgba(255, 45, 120, 0.3);
+}
+
+.promoCreate .promoGo {
+  color: var(--pink);
+}
+
+.sectionHead a {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--pink);
+  text-decoration: none;
+}
+
 .promoVote {
   background:
     radial-gradient(90% 90% at 100% 0%, rgba(0, 229, 255, 0.16), transparent 60%),

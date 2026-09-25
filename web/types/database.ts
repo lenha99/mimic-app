@@ -147,6 +147,33 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["reports"]["Insert"]>;
         Relationships: [];
       };
+      /** 사용자 챌린지. 기준 음성은 Modal 볼륨 {id}.wav. 쓰기는 서버(service_role)만. */
+      challenges: {
+        Row: {
+          id: string;
+          creator_id: string;
+          title: string;
+          line: string | null;
+          emoji: string;
+          duration_ms: number | null;
+          status: "pending" | "approved" | "rejected";
+          created_at: string;
+          reviewed_at: string | null;
+        };
+        Insert: {
+          id: string;
+          creator_id: string;
+          title: string;
+          line?: string | null;
+          emoji?: string;
+          duration_ms?: number | null;
+          status?: "pending" | "approved" | "rejected";
+          created_at?: string;
+          reviewed_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["challenges"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: {
       rankings: {

@@ -3,6 +3,7 @@ import { HomeBeacon } from "@/components/home-beacon";
 import { MyShoutingAvatar, ViewerBadge } from "@/components/viewer";
 import { VoiceAvatar } from "@/components/voice-avatar";
 import { PRESETS } from "@/lib/avatar";
+import { listApprovedChallenges } from "@/lib/challenges";
 import { extraLine, getMemes, playCount, type Meme } from "@/lib/memes";
 import { createPublicClient } from "@/lib/supabase/public";
 import styles from "./page.module.css";
@@ -40,7 +41,11 @@ const CAST = ["버럭이", "슬픔이", "아저씨", "할머니", "MZ"].map((nam
 }));
 
 export default async function Home() {
-  const [{ memes, stale }, social] = await Promise.all([getMemes(), socialReady()]);
+  const [{ memes, stale }, social, friends] = await Promise.all([
+    getMemes(),
+    socialReady(),
+    listApprovedChallenges(),
+  ]);
 
   const today = pickToday(memes);
   const rest = memes.filter((m) => m !== today);
@@ -135,6 +140,22 @@ export default async function Home() {
         </section>
       )}
 
+      {friends.length > 0 && (
+        <section className={styles.section}>
+          <div className={styles.sectionHead}>
+            <h2>친구들이 만든 챌린지</h2>
+            <Link href="/create">나도 만들기 →</Link>
+          </div>
+          <ul className={styles.rail}>
+            {friends.map((m, i) => (
+              <li key={m.id}>
+                <LineCard meme={m} accent={ACCENTS[(i + 2) % ACCENTS.length]} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {sounds.length > 0 && (
         <section className={styles.section}>
           <div className={styles.sectionHead}>
@@ -162,6 +183,15 @@ export default async function Home() {
       )}
 
       <section className={styles.promos}>
+        {/* 콘텐츠가 모자란 걸 사용자 목소리로 메운다. 만든 사람이 곧 링크를 던진다. */}
+        <Link href="/create" className={`${styles.promo} ${styles.promoCreate}`}>
+          <p className={styles.promoTitle}>🎤 내 소리로 챌린지 만들기</p>
+          <p className={styles.promoText}>
+            엄마 전화 받는 소리, 친구 말버릇, 사투리 한마디. 5초 녹음하면 친구들이 날 따라해
+          </p>
+          <span className={styles.promoGo}>만들러 가기 →</span>
+        </Link>
+
         <Link href="/avatar" className={styles.promo}>
           <div className={styles.cast} aria-hidden="true">
             {CAST.map((c, i) => (

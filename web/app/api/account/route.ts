@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { removeUgcAudio } from "@/lib/challenges";
 import { createServiceClient } from "@/lib/supabase/service";
 
 /**
@@ -34,6 +35,10 @@ export async function DELETE() {
       return Response.json({ error: "탈퇴에 실패했어요. 다시 시도해주세요." }, { status: 500 });
     }
   }
+
+  // 내가 만든 챌린지의 기준 음성(Modal 볼륨)도 지운다. 행은 계정과 함께 cascade 로 사라진다.
+  const { data: mine } = await service.from("challenges").select("id").eq("creator_id", user.id);
+  await Promise.all((mine ?? []).map((c) => removeUgcAudio(c.id)));
 
   const { error: deleteError } = await service.auth.admin.deleteUser(user.id);
   if (deleteError) {

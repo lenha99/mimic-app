@@ -44,7 +44,7 @@ function loadViewer(): Promise<Viewer> {
   return pending;
 }
 
-function useViewer(): Viewer | null {
+export function useViewer(): Viewer | null {
   const [viewer, setViewer] = useState<Viewer | null>(null);
   useEffect(() => {
     let alive = true;
