@@ -41,12 +41,6 @@
   border-color: var(--ash-dim);
 }
 
-.stale {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--ash);
-}
-
 /* 오늘의 소리 ---------------------------------------------------------- */
 
 .hero {

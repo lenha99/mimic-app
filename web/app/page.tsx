@@ -42,7 +42,7 @@ const CAST = ["버럭이", "슬픔이", "아저씨", "할머니", "MZ"].map((nam
 }));
 
 export default async function Home() {
-  const [{ memes, stale }, social, friends] = await Promise.all([
+  const [{ memes }, social, friends] = await Promise.all([
     getMemes(),
     socialReady(),
     listApprovedChallenges(),
@@ -62,7 +62,7 @@ export default async function Home() {
       <header className={styles.head}>
         <span className={styles.logo}>MIMIC</span>
         <nav className={styles.nav}>
-          {stale && <span className={styles.stale}>내장 목록</span>}
+          {/* 카탈로그 서버가 늦으면 내장 목록(FALLBACK)으로 그린다. 사용자에겐 의미 없는 말이라 안 보인다. */}
           {social && (
             <Link href="/rank" className={styles.navPill}>
               🏆 랭킹
