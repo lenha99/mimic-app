@@ -10,14 +10,14 @@
 git clone https://github.com/lenha99/mimic-app.git
 cd mimic-app
 sh setup.sh          # 훅 등록 + pub get (Windows는 Git Bash에서)
-flutter run          # 폰 USB 연결 + 개발자옵션 USB 디버깅 ON
+cd web && npm run dev   # http://localhost:3000
 ```
 
 `setup.sh`가 `main` 직접 push를 막는 훅을 깔아준다. **이걸 안 돌리면 실수로
 main에 밀어넣게 된다.** (무료 플랜 private 저장소라 GitHub 서버쪽 보호를
 못 걸어서 로컬에서 막는 방식)
 
-Flutter SDK 설치가 안 돼 있으면 `CLAUDE.md`의 "환경 세팅 순서" 참고.
+Node 와 Python 만 있으면 된다. 구조는 `CLAUDE.md` 참고.
 서버(Modal) 없이도 앱은 뜬다. 채점만 안 될 뿐.
 
 ---
@@ -49,7 +49,7 @@ Flutter SDK 설치가 안 돼 있으면 `CLAUDE.md`의 "환경 세팅 순서" �
 1. **`main`에 직접 push 하지 않는다.** 항상 브랜치 → PR → merge.
    (`setup.sh`를 돌렸으면 훅이 알아서 막아준다)
 2. **작업 시작 전에 `git pull`** 한다. 안 하면 충돌난다.
-3. **APK/키스토어/`.env`는 커밋하지 않는다.** (`.gitignore`에 이미 막아둠)
+3. **`.env`·토큰·키는 커밋하지 않는다.** (`.gitignore`에 이미 막아둠)
 4. **서로 같은 파일을 동시에 만지지 않는다.** 만질 거면 먼저 말한다.
 
 ---
@@ -89,7 +89,7 @@ git checkout main && git pull && git branch -d feat/record-retry
 | `feat/` | 새 기능 | `feat/daily-challenge` |
 | `fix/` | 버그 수정 | `fix/ios-mic-permission` |
 | `refactor/` | 동작 그대로, 구조만 | `refactor/split-result-screen` |
-| `chore/` | 설정·의존성·문서 | `chore/bump-flutter-3.27` |
+| `chore/` | 설정·의존성·문서 | `chore/bump-next-16` |
 | `exp/` | 실험 (merge 안 할 수도 있음) | `exp/new-scoring-weights` |
 
 ---
@@ -131,9 +131,10 @@ merge 방식은 **Squash merge**로 통일 (히스토리가 깔끔해짐).
 
 | 영역 | 파일 |
 |---|---|
-| 앱 UI/UX | `lib/*_screen.dart`, `lib/theme.dart`, `lib/rewards.dart`, `lib/waveform.dart` |
-| 앱 코어 | `lib/data.dart`, `lib/config.dart`, `lib/game_state.dart`, `lib/analytics.dart` |
-| 서버/채점 | `modal_app.py`, `scoring_engine.py`, `video_maker.py` |
+| 앱 UI/UX | `web/app/**`, `web/app/globals.css` |
+| 앱 코어 | `web/lib/memes.ts`, `web/lib/config.ts` |
+| 서버/채점 | `modal_app.py`, `scoring_engine.py` |
+| 콘텐츠 | `content/registry.json`, `tools/ingest.py` |
 | 콘텐츠 | `memes.json`, `catalog.json`, `refs*/` |
 
 ---
@@ -151,8 +152,8 @@ merge 방식은 **Squash merge**로 통일 (히스토리가 깔끔해짐).
 PR 올리기 전 최소한 이것만:
 
 ```bash
-flutter analyze --fatal-infos    # 경고 0
-flutter test                     # 위젯 테스트
+cd web && npm run build          # 타입 검사 포함
+cd web && npm run lint           # 경고 0
 pytest test/scoring_test.py -v   # 채점 엔진 (서버 건드렸을 때만)
 ```
 
@@ -165,12 +166,8 @@ CI가 push할 때마다 자동으로 같은 걸 돌린다. 빨간 X면 merge 금
 `RELEASE_GATES.md` 참고. 요약하면:
 
 ```bash
-flutter build apk --release \
-  --dart-define=SCORE_URL=... --dart-define=VIDEO_URL=...
-gh release create v0.2.0 build/app/outputs/flutter-apk/app-release.apk
-```
-
-APK는 **저장소가 아니라 GitHub Releases**에 올린다.
+main 에 머지되면 Vercel 이 프로덕션(`mimic-web-omega.vercel.app`)을
+자동 배포한다. 서버는 `modal deploy modal_app.py`.
 
 ---
 

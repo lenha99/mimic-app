@@ -1,5 +1,5 @@
 /**
- * 환경값은 전부 여기 한 곳에서 관리한다. (Flutter 쪽 lib/config.dart 와 같은 역할)
+ * 환경값은 전부 여기 한 곳에서 관리한다.
  *
  * 기본값은 현재 배포돼 있는 Modal 엔드포인트 — 아직 Supabase 이전 전이라
  * 기존 서버를 그대로 쓴다. 이전이 끝나면 memes/reference 는 Supabase 로 간다.
@@ -16,9 +16,6 @@ export const config = {
 
   /** 기준 음성 스트리밍 — Supabase Storage 이전 예정 (#18) */
   referenceUrl: env.NEXT_PUBLIC_REFERENCE_URL ?? "https://lenha99--meme-scoring-reference.modal.run",
-
-  /** 공유 영상 생성 — 출시 범위에서 제외 검토 중 (#23) */
-  videoUrl: env.NEXT_PUBLIC_VIDEO_URL ?? "https://lenha99--meme-scoring-make-video.modal.run",
 
   /** 이 웹앱의 공개 주소. OG 태그의 metadataBase 로도 쓰인다. */
   siteUrl: resolveSiteUrl(),

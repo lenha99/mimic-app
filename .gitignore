@@ -75,3 +75,8 @@ Thumbs.db
 *.zip
 out/
 tmp/
+
+# 원본 유래 밈 클립 — 커밋하지 않는다.
+# git 히스토리에 들어간 저작물은 파일을 지워도 안 없어지고, 히스토리 재작성은
+# CONTRIBUTING 이 금지한다. content/registry.json 의 origin 으로 언제든 다시 만든다.
+refs_kr/

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { refAudio } from "@/lib/config";
-import { getMemes } from "@/lib/memes";
+import { extraLine, getMemes } from "@/lib/memes";
 import Recorder from "./recorder";
 import styles from "./record.module.css";
 
@@ -25,12 +25,17 @@ function parseBeat(raw: string | string[] | undefined): number | null {
 }
 
 async function findMeme(id: string) {
-  const { memes } = await getMemes();
-  const index = memes.findIndex((m) => m.id === id);
-  if (index < 0) return null;
+  // 미공개(draft) 밈도 직링크로는 열려야 한다 — 공개 전에 실기기에서 확인하는 경로다.
+  const { memes } = await getMemes({ includeDraft: true });
+  const meme = memes.find((m) => m.id === id);
+  if (!meme) return null;
+
   // 결과 화면에서 목록으로 돌아가지 않고 바로 다음 소리로 넘어가기 위한 것.
-  const next = memes.length > 1 ? memes[(index + 1) % memes.length] : null;
-  return { meme: memes[index], next };
+  // 다음 소리는 공개된 것 중에서 고른다 — 미공개를 남에게 떠넘기면 안 된다.
+  const live = memes.filter((m) => !m.draft);
+  const at = live.findIndex((m) => m.id === id);
+  const next = live.length > 1 && at >= 0 ? live[(at + 1) % live.length] : live[0] ?? null;
+  return { meme, next: next && next.id !== id ? next : null };
 }
 
 export async function generateMetadata({
@@ -51,10 +56,21 @@ export async function generateMetadata({
       ? `친구가 ${meme.title} 따라하기로 ${beat}점을 냈어요. 설치 없이 탭 한 번이면 도전할 수 있어요.`
       : `${meme.source} 소리를 따라해 보세요. 설치 없이 탭 한 번이면 점수가 나옵니다.`;
 
+  // 미리보기 카드. 카톡에 링크를 던졌을 때 회색 박스가 뜨면 아무도 안 누른다.
+  const card = new URLSearchParams({
+    title: meme.title,
+    source: meme.source ?? "",
+    emoji: meme.emoji ?? "🎙",
+    ...(extraLine(meme) ? { line: extraLine(meme)! } : {}),
+    ...(beat !== null ? { s: String(beat) } : {}),
+  });
+  const images = [{ url: `/api/og?${card}`, width: 1200, height: 630 }];
+
   return {
     title,
     description,
-    openGraph: { title, description, type: "website" },
+    openGraph: { title, description, type: "website", images },
+    twitter: { card: "summary_large_image", title, description, images },
   };
 }
 

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getMemes } from "@/lib/memes";
+import { extraLine, getMemes, playCount } from "@/lib/memes";
 import { createClient } from "@/lib/supabase/server";
 import styles from "./page.module.css";
 
@@ -20,6 +20,14 @@ export default async function Home() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // 명대사와 동물 소리는 고르는 마음이 다르다 — 하나는 "저거 나도 할 줄 알아",
+  // 다른 하나는 "저건 웃기겠다". 한 줄로 섞어두면 둘 다 안 보인다.
+  // 구분 기준은 line 의 유무다 (말소리 밈에만 대사가 있다는 레지스트리 규칙).
+  const groups = [
+    { head: "명대사", items: rest.filter((m) => m.line) },
+    { head: "동물 소리", items: rest.filter((m) => !m.line) },
+  ].filter((g) => g.items.length > 0);
+
   return (
     <main className="shell">
       <header className={styles.head}>
@@ -38,10 +46,12 @@ export default async function Home() {
         <section className={styles.hero}>
           <div className={styles.heroTop}>
             <span className={styles.heroKicker}>오늘의 소리</span>
-            {typeof today.plays === "number" && (
+            {playCount(today) !== null ? (
               <span className={styles.heroPlays}>
-                {today.plays.toLocaleString("ko-KR")}명 도전
+                {playCount(today)!.toLocaleString("ko-KR")}명 도전
               </span>
+            ) : (
+              <span className={styles.new}>NEW</span>
             )}
           </div>
 
@@ -49,6 +59,9 @@ export default async function Home() {
             {today.emoji}
           </p>
           <h1 className={styles.heroTitle}>{today.title}</h1>
+          {extraLine(today) && (
+            <p className={styles.heroLine}>“{extraLine(today)}”</p>
+          )}
           <p className={styles.heroSource}>{today.source}</p>
 
           <Link href={`/record/${today.id}`} className={styles.heroGo}>
@@ -57,11 +70,11 @@ export default async function Home() {
         </section>
       )}
 
-      {rest.length > 0 && (
-        <section className={styles.more}>
-          <h2 className={styles.moreHead}>다른 소리</h2>
+      {groups.map((g) => (
+        <section key={g.head} className={styles.more}>
+          <h2 className={styles.moreHead}>{g.head}</h2>
           <ul className={styles.list}>
-            {rest.map((m) => (
+            {g.items.map((m) => (
               <li key={m.id}>
                 <Link href={`/record/${m.id}`} className={styles.row}>
                   <span className={styles.rowFace} aria-hidden="true">
@@ -69,12 +82,22 @@ export default async function Home() {
                   </span>
                   <span className={styles.rowBody}>
                     <span className={styles.rowTitle}>{m.title}</span>
+                    {/* 대사가 곧 후크다 — 출처보다 앞에 둔다. 뭘 외칠지가 먼저다. */}
                     <span className={styles.rowMeta}>
+                      {extraLine(m) && (
+                        <span className={styles.rowLine}>“{extraLine(m)}”</span>
+                      )}
+                      {extraLine(m) && " · "}
                       {m.source}
-                      {typeof m.plays === "number" &&
-                        ` · ${m.plays.toLocaleString("ko-KR")}명`}
+                      {playCount(m) !== null &&
+                        ` · ${playCount(m)!.toLocaleString("ko-KR")}명`}
                     </span>
                   </span>
+                  {playCount(m) === null && (
+                    <span className={styles.newDot} aria-label="새 소리">
+                      NEW
+                    </span>
+                  )}
                   <span className={styles.rowGo} aria-hidden="true">
                     →
                   </span>
@@ -83,7 +106,7 @@ export default async function Home() {
             ))}
           </ul>
         </section>
-      )}
+      ))}
 
       <footer className={styles.foot}>
         <p className={styles.footNote}>

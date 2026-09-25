@@ -1,7 +1,7 @@
-# MIMIC — 밈 따라하기 앱 완성 패키지
+# MIMIC — 밈 따라하기 웹앱
 
-밈 사운드(SIUUUU 등)를 따라하면 점수가 나오고, 결과가 자동으로
-"원본 vs 나" 공유영상이 되어 퍼지는 앱. **운영 비용 거의 0**으로 설계.
+밈 사운드와 영화 명대사를 따라 외치면 점수가 나오고, 그 점수를 친구에게
+도전장으로 던지는 웹앱. 설치 없이 링크 하나. **운영 비용 거의 0**으로 설계.
 
 ---
 
@@ -17,7 +17,7 @@
 빠른 시작:
 ```bash
 git clone https://github.com/lenha99/mimic-app.git
-cd mimic-app && flutter pub get && flutter run
+cd mimic-app/web && npm install && npm run dev
 ```
 
 **`main`에 직접 push 금지.** 브랜치 → PR → merge.
@@ -28,18 +28,21 @@ cd mimic-app && flutter pub get && flutter run
 
 | 영역 | 파일 | 상태 |
 |---|---|---|
-| 채점 엔진 | `scoring_engine.py` | ✅ 검증 완료 |
-| 서버리스 API(채점+영상) | `modal_app.py` | ✅ 문법 검증, 배포만 하면 됨 |
-| 공유영상 생성기 | `video_maker.py` | ✅ 실제 mp4 생성 검증 |
-| 기준 음성 생성 | `make_reference.py` | ✅ 코드 검증(네 PC 실행) |
-| Flutter 앱 | `lib/*.dart` | ✅ 전체 화면 구현 |
-| 디자인 프리뷰 | `preview.html` | ✅ 브라우저로 확인 |
+| 웹앱 | `web/` | ✅ 사용자가 실제로 쓰는 것 |
+| 채점 서버 | `modal_app.py` | ✅ Modal 배포 |
+| 채점 엔진 사본 | `scoring_engine.py` | ✅ 테스트 전용 |
+| 콘텐츠 파이프라인 | `tools/ingest.py` | ✅ 인제스트~검증 |
+| 콘텐츠 원본 | `content/registry.json` | ✅ 단일 진실 소스 |
+
+Flutter 클라이언트(`lib/*.dart`)와 공유영상 생성기(`video_maker.py`)는 걷어냈다.
+쓰지 않는 클라이언트가 CI·카탈로그 동기화 비용을 계속 먹었고, 영상은 만드는 데
+오래 걸려 공유 흐름을 끊었다. 히스토리는 git 에 남아 있다.
 
 ---
 
 ## 2. 배포 순서 (전부 무료 티어)
 
-### (1) 채점/영상 서버 — Modal
+### (1) 채점 서버 — Modal
 ```bash
 pip install modal
 modal token new                       # 무료 가입
@@ -63,17 +66,6 @@ modal deploy modal_app.py
 #   .../score        (채점)
 #   .../make_video   (공유영상)
 ```
-
-### (4) Flutter 앱
-```bash
-flutter create meme_mimic
-# lib/*.dart, pubspec.yaml 덮어쓰기
-# data.dart 의 baseUrl 을 (3)의 score URL로 교체
-flutter pub get
-flutter run
-```
-
----
 
 ## 3. 비용 구조 (왜 0원에 가깝나)
 
@@ -127,22 +119,69 @@ flutter run
 
 ---
 
-## 8. 밈 추가하기 (코드 수정 없이)
+## 8. 밈 추가하기
 
-운영자가 새 밈을 늘리는 법:
+콘텐츠의 단일 진실 소스는 **`content/registry.json`** 이다. 나머지(루트 `catalog.json`·
+`memes.json`, 웹 `FALLBACK`)는 전부 거기서 생성된다 —
+손으로 고치면 CI(`test/catalog_test.py`)가 막는다.
 
-1. **기준 음성 업로드**
-   ```bash
-   modal volume put meme-refs new_meme.wav
-   ```
-2. **memes.json 에 한 줄 추가** (서버가 이 파일을 앱에 제공)
-   ```json
-   {"id": "new_meme", "title": "제목", "source": "출처", "emoji": "🎯", "plays": 0}
-   ```
-3. 끝. 카드 글로우 색은 id 해시로 **자동 배정**, 앱 재배포 불필요.
+```bash
+pip install -r tools/requirements-ingest.txt          # yt-dlp (최초 1회)
 
-`MEMES_URL` 환경변수로 memes.json 위치를 주면 앱이 자동으로 최신 목록을 불러옴.
-비워두면 내장 기본 4종 사용.
+# 0) 긴 영상이면 대사가 어디쯤인지부터 (한국어 자동 자막으로 찾는다)
+python tools/ingest.py locate --url "https://youtu.be/..." --text "4딸라"
+# 받아쓰기는 엉망이다('4딸라' → '쟈 달러'). 위치만 쓰고 경계는 아래 픽커에서 잡는다.
+
+# 1) 파형 보고 귀로 들으며 구간을 고른다 → 그대로 인제스트까지 (권장)
+python tools/ingest.py pick --url "https://youtu.be/..." --around 00:09:55 \
+    --id geoje_yaho --title "거제 야호" --line "거제! 야호!" \
+    --source "원이" --kind shortform
+# 브라우저가 열린다. 드래그로 구간 잡고 space 로 들어보고 "이 구간으로 만들기".
+# 경계는 ← → (시작) / shift+← → (끝) 로 0.05초씩 민다.
+
+# 구간 숫자를 이미 안다면 곧장:
+python tools/ingest.py add --id geoje_yaho --url "https://youtu.be/..." \
+    --start 00:09:54.2 --end 00:09:56.8 \
+    --title "거제 야호" --line "거제! 야호!" --source "원이" --kind shortform
+
+# 3) 올리고 검증 (draft — 목록엔 안 뜨고 /record/{id} 직링크로만 열린다)
+export MIMIC_ADMIN_TOKEN=...          # Modal 시크릿 mimic-admin 의 값
+python tools/ingest.py publish geoje_yaho
+
+# 4) 실기기에서 확인한 뒤 공개
+python tools/ingest.py publish geoje_yaho --live
+
+# 내릴 때 (권리자 요청 등)
+python tools/ingest.py remove geoje_yaho --reason "권리자 요청"
+```
+
+**품질 게이트가 보는 것** — 전부 `modal_app._score` 에서 역산한 값이다:
+길이 1.2~10초(7.2초를 넘으면 수동 정지 버튼이, 10초를 넘으면 듣기/따라하기 탭이
+붙는다), 유성 프레임 25개 이상(5개 미만이면 채점에서 억양 40%가 통째로 빠진다),
+억양 폭 1.5~8.0 세미톤(밋밋하면 누가 해도 같은 점수, 너무 넓으면 pyin 이 배경음악을
+쫓는 중), 자기채점 90점 이상, 라우드니스 -14 LUFS ±3, 그리고 **억양을 뒤섞은 가짜
+테이크와 15점 이상 벌어질 것**. 마지막 항목이 핵심이다 — 이 채점기는 백색잡음에도
+60점을 주기 때문에 절대 점수가 아니라 격차로 봐야 변별력이 있다.
+
+**라우드니스는 점수에 안 들어가지만 게이트에 있다.** `_score` 는 피크 정규화를 하니
+점수는 볼륨과 무관하다. 그래서 오래 방치됐고, 그 사이 코퍼스가 -10.6 LUFS(고양이)
+~ -22.3 LUFS(밥은 먹고 다니냐)로 12dB 벌어져 있었다 — 목록에서 다음 밈을 누를
+때마다 볼륨을 다시 잡아야 했다는 뜻이다. 원인은 `loudnorm` 의 linear 모드가
+트루피크 천장에 걸리면 게인을 조용히 줄이는 것이었고, 아무도 결과를 다시 재지
+않아서 드러나지 않았다. 지금은 게인을 직접 걸고 피크는 리미터가 받고, 만든 뒤
+다시 재서 어긋나면 게이트가 잡는다.
+
+**정규화 규칙을 바꿨으면** `python tools/ingest.py renorm` 으로 레지스트리 전체를
+다시 만든다(`renorm <id>` 로 하나만). 메타데이터는 그대로 두고 소리와 QA 수치만
+다시 쓴다. 원본은 절대 제자리에서 덮어쓰지 않고 결과는 항상 `refs_kr/` 로 나간다.
+
+**구간을 다시 잡고 싶으면** 같은 명령에 `--force` 를 붙여 다시 돌리면 된다.
+원본은 `refs_kr/.cache/` 에 디코드된 채로 남아 있어서 두 번째부터는 내려받기가 없다.
+잘린 결과가 마음에 안 들면 게이트를 통과했더라도 그냥 다시 자르면 된다 —
+`publish` 하기 전까지는 프로덕션에 아무 영향이 없다.
+
+새 밈 후보 발굴은 `python tools/trend_scan.py` 로 훑는다. 검색어 목록
+(`tools/trend_queries.txt`)이 품질을 정한다.
 
 ## 9. UI/UX 적용 디자인 (8.7/10)
 
