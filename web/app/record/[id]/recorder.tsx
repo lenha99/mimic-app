@@ -189,6 +189,11 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar }:
   const abPlayed = useRef(false);
   /** 저장할 때 같은 오디오를 서버로 다시 보내야 해서 들고 있는다. */
   const blobRef = useRef<Blob | null>(null);
+  /**
+   * 시도 번호. 저장 요청이 걸린 채로 다시 녹음하면, 늦게 온 이전 저장 응답이
+   * 새 결과의 점수를 덮어쓰면 안 된다. 응답이 왔을 때 번호가 바뀌었으면 버린다.
+   */
+  const attempt = useRef(0);
 
   // 내 소리를 틀면 캐릭터가 그 소리로 입을 연다.
   const userLevel = usePlaybackLevel(userAudio, userUrl, playing === "user");
@@ -240,6 +245,7 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar }:
       }
 
       blobRef.current = blob;
+      attempt.current += 1;
       setUserUrl(URL.createObjectURL(blob));
       setPublishPhase("idle");
       setWantsPublic(false);
@@ -578,6 +584,7 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar }:
     const blob = blobRef.current;
     if (!blob || !result) return;
     const makePublic = loggedIn && wantsPublic;
+    const mine = attempt.current;
 
     setPublishPhase("publishing");
     setError(null);
@@ -592,14 +599,17 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar }:
         { method: "POST", body },
       );
       const data = await res.json();
+
+      // 비로그인이면 1회용 토큰이 온다. 로그인 후 /profile 에서 귀속시킨다.
+      // 그 사이 다시 녹음했더라도 이 녹음은 저장됐으니 토큰은 챙긴다.
+      if (data.claimToken) addGuestClaim(data.claimToken);
+      if (mine !== attempt.current) return;
+
       if (!res.ok || data.error) {
         setError(data.error ?? "저장이 안 됐어. 다시 눌러줄래?");
         setPublishPhase("idle");
         return;
       }
-
-      // 비로그인이면 1회용 토큰이 온다. 로그인 후 /profile 에서 귀속시킨다.
-      if (data.claimToken) addGuestClaim(data.claimToken);
 
       if (typeof data.score === "number" && data.score !== result.score) {
         setAdjusted({ from: result.score, to: data.score });
@@ -610,6 +620,7 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar }:
       setPublishedPublic(makePublic);
       setPublishPhase("done");
     } catch {
+      if (mine !== attempt.current) return;
       setError("네트워크가 끊겼어. 다시 저장해줄래?");
       setPublishPhase("idle");
     }

@@ -27,12 +27,22 @@ export function ClaimPending() {
     void (async () => {
       const supabase = createClient();
       let ok = 0;
+      const settled: string[] = [];
       for (const token of tokens) {
         const { error } = await supabase.rpc("claim_recording", { p_claim_token: token });
         if (!error) ok += 1;
+        // 버려도 되는 건 결론이 난 토큰뿐이다 — 가져왔거나, 서버가 "없는/이미 쓴 토큰"이라고
+        // 거부했거나. 네트워크 오류나 로그인 직후 세션이 아직 안 붙은 경우(login required)는
+        // 다음에 다시 시도해야 한다. 여기서 지우면 그 녹음은 영영 못 가져온다.
+        if (
+          !error ||
+          error.message.includes("invalid or already claimed") ||
+          error.code === "22P02" // uuid 형식이 아닌 토큰 — 다시 해도 안 된다
+        ) {
+          settled.push(token);
+        }
       }
-      // 성공이든 거부든 다시 시도할 이유가 없다 (토큰은 1회용).
-      removeGuestClaims(tokens);
+      removeGuestClaims(settled);
       if (cancelled) return;
       if (ok > 0) {
         setClaimed(ok);
