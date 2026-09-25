@@ -26,6 +26,17 @@
   color: var(--pink);
   font-size: 13px;
   margin: 0;
+  text-align: center;
+}
+
+/* 제공자·Supabase 가 돌려준 원인. 사용자가 캡처해서 보내주면 바로 고칠 수 있게 그대로 보인다. */
+.reason {
+  display: block;
+  margin-top: 4px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ash);
+  word-break: break-all;
 }
 
 .kakao,

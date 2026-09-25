@@ -17,7 +17,9 @@ export default function LoginPage() {
 
 function LoginForm() {
   const supabase = createClient();
-  const error = useSearchParams().get("error");
+  const params = useSearchParams();
+  const error = params.get("error");
+  const reason = params.get("reason");
 
   const signInWith = (provider: "kakao" | "google") =>
     supabase.auth.signInWithOAuth({
@@ -33,7 +35,12 @@ function LoginForm() {
         <h1 className={styles.title}>로그인</h1>
         <p className={styles.sub}>투표하고 랭킹에 오르려면 로그인이 필요해요.</p>
 
-        {error && <p className={styles.error}>로그인에 실패했어요. 다시 시도해주세요.</p>}
+        {error && (
+          <p className={styles.error}>
+            로그인에 실패했어요. 다시 시도해주세요.
+            {reason && <span className={styles.reason}>{reason}</span>}
+          </p>
+        )}
 
         <button onClick={() => signInWith("kakao")} className={styles.kakao}>
           카카오로 시작하기

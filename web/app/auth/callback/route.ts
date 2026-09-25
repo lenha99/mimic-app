@@ -8,6 +8,11 @@ export async function GET(request: Request) {
   const next = safeNext(searchParams.get("next"));
   const origin = resolveOrigin(request);
 
+  // 제공자(카카오·구글)나 Supabase 가 거절하면 code 대신 error_description 이 온다.
+  // 그걸 삼키고 "실패했어요"만 띄우면 원인을 알 길이 없다 — 설정 문제는 대부분
+  // 여기 문구에 그대로 적혀 온다(예: KOE004, redirect 불일치).
+  let reason = searchParams.get("error_description") ?? searchParams.get("error");
+
   if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
@@ -15,9 +20,12 @@ export async function GET(request: Request) {
       await ensureProfile(supabase);
       return NextResponse.redirect(`${origin}${next}`);
     }
+    reason = error.message;
   }
 
-  return NextResponse.redirect(`${origin}/login?error=auth_failed`);
+  const q = new URLSearchParams({ error: "auth_failed" });
+  if (reason) q.set("reason", reason.slice(0, 200));
+  return NextResponse.redirect(`${origin}/login?${q}`);
 }
 
 /**
