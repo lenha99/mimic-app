@@ -2,7 +2,7 @@ import Link from "next/link";
 import { HomeBeacon } from "@/components/home-beacon";
 import { MyShoutingAvatar, ViewerBadge } from "@/components/viewer";
 import { VoiceAvatar } from "@/components/voice-avatar";
-import type { Avatar } from "@/lib/avatar";
+import { PRESETS } from "@/lib/avatar";
 import { extraLine, getMemes, playCount, type Meme } from "@/lib/memes";
 import { createPublicClient } from "@/lib/supabase/public";
 import styles from "./page.module.css";
@@ -33,14 +33,11 @@ export const revalidate = 300;
 /** 카드마다 조명 색을 돌린다. 같은 색이 이어지면 목록이 한 덩어리로 보인다. */
 const ACCENTS = ["volt", "cyan", "pink", "lime"] as const;
 
-/** 캐릭터 소개 줄에 세울 얼굴들. 조합이 이만큼 된다는 걸 한 줄로 보여준다. */
-const CAST: { avatar: Avatar; level: number }[] = [
-  { avatar: { body: "cat", color: "pink", eyes: "happy", hat: "bow" }, level: 0 },
-  { avatar: { body: "bear", color: "peach", eyes: "dot", hat: "cap" }, level: 0.7 },
-  { avatar: { body: "ghost", color: "lilac", eyes: "star", hat: "crown" }, level: 0.3 },
-  { avatar: { body: "blob", color: "cyan", eyes: "sleepy", hat: "headset" }, level: 0 },
-  { avatar: { body: "cat", color: "lime", eyes: "dot", hat: "none" }, level: 0.9 },
-];
+/** 캐릭터 소개 줄에 세울 얼굴들 — 이런 녀석들까지 된다는 걸 한 줄로 보여준다. */
+const CAST = ["버럭이", "슬픔이", "아저씨", "할머니", "MZ"].map((name, i) => ({
+  avatar: PRESETS.find((p) => p.name === name)!.avatar,
+  level: [0.7, 0, 0.3, 0, 0.9][i],
+}));
 
 export default async function Home() {
   const [{ memes, stale }, social] = await Promise.all([getMemes(), socialReady()]);
@@ -65,6 +62,9 @@ export default async function Home() {
               🏆 랭킹
             </Link>
           )}
+          <Link href="/avatar" className={styles.navPill}>
+            🎨 캐릭터
+          </Link>
           <ViewerBadge />
         </nav>
       </header>
@@ -162,8 +162,7 @@ export default async function Home() {
       )}
 
       <section className={styles.promos}>
-        {/* 로그인 안 했으면 /profile 이 로그인으로 보낸다. */}
-        <Link href="/profile" className={styles.promo}>
+        <Link href="/avatar" className={styles.promo}>
           <div className={styles.cast} aria-hidden="true">
             {CAST.map((c, i) => (
               <span key={i} style={{ animationDelay: `${i * 180}ms` }}>
@@ -172,7 +171,9 @@ export default async function Home() {
             ))}
           </div>
           <p className={styles.promoTitle}>내 목소리 캐릭터</p>
-          <p className={styles.promoText}>녹음하면 이 녀석들이 네 목소리로 외쳐. 몸·색·눈·모자 골라서 꾸미기</p>
+          <p className={styles.promoText}>
+            버럭이·슬픔이부터 아저씨·할머니까지. 녹음하면 이 녀석이 네 목소리로 외쳐
+          </p>
           <span className={styles.promoGo}>내 캐릭터 만들기 →</span>
         </Link>
 

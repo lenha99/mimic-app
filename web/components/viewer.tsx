@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { DEFAULT_AVATAR, normalizeAvatar, type Avatar } from "@/lib/avatar";
+import { DEFAULT_AVATAR, normalizeAvatar, readLocalAvatar, type Avatar } from "@/lib/avatar";
 import { createClient } from "@/lib/supabase/client";
 import { ShoutingAvatar } from "./shouting-avatar";
 import { VoiceAvatar } from "./voice-avatar";
@@ -29,7 +29,8 @@ function loadViewer(): Promise<Viewer> {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) return { loggedIn: false, avatar: DEFAULT_AVATAR };
+      // 로그인 전에 캐릭터 탭에서 꾸몄으면 그 녀석이 외친다.
+      if (!user) return { loggedIn: false, avatar: readLocalAvatar() ?? DEFAULT_AVATAR };
       const { data } = await supabase
         .from("profiles")
         .select("avatar")
@@ -37,7 +38,7 @@ function loadViewer(): Promise<Viewer> {
         .maybeSingle();
       return { loggedIn: true, avatar: normalizeAvatar(data?.avatar) };
     } catch {
-      return { loggedIn: false, avatar: DEFAULT_AVATAR };
+      return { loggedIn: false, avatar: readLocalAvatar() ?? DEFAULT_AVATAR };
     }
   })();
   return pending;

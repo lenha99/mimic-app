@@ -7,7 +7,8 @@ import { SignOutButton } from "./sign-out-button";
 import { NicknameEditor } from "./nickname-editor";
 import { ClaimPending } from "./claim-pending";
 import { DeleteAccount } from "./delete-account";
-import { AvatarEditor } from "./avatar-editor";
+import Link from "next/link";
+import { VoiceAvatar } from "@/components/voice-avatar";
 import { MyRecordings, type MyRecording } from "./my-recordings";
 import styles from "./profile.module.css";
 
@@ -71,7 +72,13 @@ export default async function ProfilePage() {
             <p className={styles.nickname}>{profile.nickname}</p>
             <NicknameEditor userId={user.id} initialNickname={profile.nickname} />
           </div>
-          <AvatarEditor userId={user.id} initial={normalizeAvatar(profile.avatar)} />
+          <Link href="/avatar" className={styles.avatarCard}>
+            <VoiceAvatar avatar={normalizeAvatar(profile.avatar)} size={72} />
+            <span>
+              <strong>내 캐릭터</strong>
+              <em>버럭이·할머니·MZ… 꾸미러 가기 →</em>
+            </span>
+          </Link>
           <MyRecordings items={items} />
           <DeleteAccount />
         </div>

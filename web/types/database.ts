@@ -4,12 +4,9 @@
  * (공통 파일 — CLAUDE.md의 "공통 파일" 규칙 확인)
  */
 /** profiles.avatar — 모르는 키는 DB check 제약이 거부한다. */
-export type AvatarJson = {
-  body?: string;
-  color?: string;
-  eyes?: string;
-  hat?: string;
-};
+export type AvatarJson = Partial<
+  Record<"body" | "color" | "eyes" | "hair" | "hairColor" | "face" | "glasses" | "hat" | "fx", string>
+>;
 
 export interface Database {
   public: {

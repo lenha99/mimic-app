@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocalAvatar } from "@/components/use-local-avatar";
 import { usePlaybackLevel } from "@/components/use-playback-level";
 import { VoiceAvatar } from "@/components/voice-avatar";
 import type { Avatar } from "@/lib/avatar";
@@ -128,7 +129,7 @@ function verdict(score: number, bd: Score["breakdown"], hasPitch = true): string
   return "원본 한 번 더 듣고 가자";
 }
 
-export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar }: Props) {
+export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: accountAvatar }: Props) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [count, setCount] = useState(3);
   const [remain, setRemain] = useState(1);
@@ -143,6 +144,9 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar }:
   const [canStop, setCanStop] = useState(false);
   /** 렌더에서 읽어야 하는 값이라 ref(chain) 와 짝으로 둔다. */
   const [chaining, setChaining] = useState(false);
+  /** 로그인했으면 계정 캐릭터, 아니면 캐릭터 탭에서 이 폰에 저장해둔 녀석. */
+  const localAvatar = useLocalAvatar();
+  const avatar: Avatar = (!loggedIn && localAvatar) || accountAvatar;
 
   const [publishPhase, setPublishPhase] = useState<PublishPhase>("idle");
   const [wantsPublic, setWantsPublic] = useState(false); // 공개는 opt-in (이슈 #16)
