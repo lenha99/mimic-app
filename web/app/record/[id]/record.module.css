@@ -190,21 +190,6 @@
   color: var(--volt);
 }
 
-.meter {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  height: 120px;
-}
-
-.meterBar {
-  width: 6px;
-  border-radius: 3px;
-  background: var(--volt);
-  transition: height 60ms linear;
-}
-
 /* 안내 문구 ------------------------------------------------------------ */
 
 .cue,
@@ -618,4 +603,89 @@
   color: var(--cyan);
   font-weight: 700;
   white-space: nowrap;
+}
+
+/* --- 결과 저장 / 공개 (이슈 #16 · #23) ---------------------------------- */
+
+.publish {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--rule);
+  border-radius: 16px;
+  background: var(--panel);
+}
+
+.publishToggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--white);
+  cursor: pointer;
+}
+
+.publishToggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--volt);
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.publishBtn {
+  font-weight: 800;
+  border-radius: 999px;
+  cursor: pointer;
+  padding: 14px 22px;
+  font-size: 15px;
+  background: transparent;
+  border: 1px solid var(--volt);
+  color: var(--volt);
+}
+
+.publishBtn:disabled {
+  border-color: var(--rule);
+  color: var(--ash-dim);
+  cursor: default;
+}
+
+.publishDone {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--lime);
+}
+
+.publishLink {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--volt);
+  text-decoration: none;
+}
+
+.publishNote {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.6;
+  color: var(--ash);
+}
+
+/* --- 목소리 캐릭터 ------------------------------------------------------ */
+
+.performer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.performerHint {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ash);
 }

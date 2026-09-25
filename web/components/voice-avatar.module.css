@@ -1,0 +1,21 @@
+/* 조용할 때도 살아 있어 보이게 — 숨 쉬는 정도만. */
+.idle {
+  animation: breathe 2.6s ease-in-out infinite;
+  transform-origin: 50% 92%;
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1, 1);
+  }
+  50% {
+    transform: scale(1.015, 0.985);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .idle {
+    animation: none;
+  }
+}

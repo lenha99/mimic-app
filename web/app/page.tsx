@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { extraLine, getMemes, playCount } from "@/lib/memes";
+import { createClient } from "@/lib/supabase/server";
 import styles from "./page.module.css";
 
 /**
@@ -14,6 +15,11 @@ export default async function Home() {
   const { memes, stale } = await getMemes();
   const [today, ...rest] = memes;
 
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   // 명대사와 동물 소리는 고르는 마음이 다르다 — 하나는 "저거 나도 할 줄 알아",
   // 다른 하나는 "저건 웃기겠다". 한 줄로 섞어두면 둘 다 안 보인다.
   // 구분 기준은 line 의 유무다 (말소리 밈에만 대사가 있다는 레지스트리 규칙).
@@ -26,7 +32,14 @@ export default async function Home() {
     <main className="shell">
       <header className={styles.head}>
         <span className={styles.logo}>MIMIC</span>
-        {stale && <span className={styles.stale}>서버 응답 없음 · 내장 목록</span>}
+        <div className={styles.headRight}>
+          {stale && <span className={styles.stale}>서버 응답 없음 · 내장 목록</span>}
+          <nav className={styles.nav}>
+            <Link href="/rank">🏆 랭킹</Link>
+            <Link href="/vote">🗳️ 투표</Link>
+            <Link href={user ? "/profile" : "/login"}>{user ? "프로필" : "로그인"}</Link>
+          </nav>
+        </div>
       </header>
 
       {today && (
@@ -97,7 +110,7 @@ export default async function Home() {
 
       <footer className={styles.foot}>
         <p className={styles.footNote}>
-          로그인 없이 바로 도전 · 점수만 내고 녹음은 바로 버려
+          로그인 없이 바로 도전 · 녹음은 &ldquo;저장하기&rdquo;를 눌러야만 남아요
         </p>
         <Link href="/probe" className={styles.footLink}>
           녹음이 안 되면 마이크 검사 →

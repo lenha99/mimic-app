@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { usePlaybackLevel } from "@/components/use-playback-level";
+import { VoiceAvatar } from "@/components/voice-avatar";
+import type { Avatar } from "@/lib/avatar";
+import { addGuestClaim } from "@/lib/guest-claims";
 import { extraLine, type Meme } from "@/lib/memes";
 import styles from "./record.module.css";
 
@@ -59,12 +63,19 @@ type Phase =
   | "scoring"
   | "result";
 
+/** 결과를 서버에 저장하는 단계 (이슈 #23 — 서버가 같은 오디오를 다시 채점한다). */
+type PublishPhase = "idle" | "publishing" | "done";
+
 type Props = {
   meme: Meme;
   refUrl: string;
   /** 공유 링크에 실려 온 친구 점수. 넘어야 할 기준이 있으면 화면이 달라진다. */
   beat: number | null;
   next: { id: string; title: string } | null;
+  /** 게스트는 비공개 저장만 된다. 공개는 신고할 수 있는 사람들 사이에서만. */
+  loggedIn: boolean;
+  /** 내 목소리를 대신 내줄 캐릭터. 게스트는 기본 캐릭터. */
+  avatar: Avatar;
 };
 
 const GRADE_CLASS: Record<string, string> = {
@@ -138,7 +149,7 @@ function verdict(score: number, bd: Score["breakdown"], hasPitch = true): string
   return "원본 한 번 더 듣고 가자";
 }
 
-export default function Recorder({ meme, refUrl, beat, next }: Props) {
+export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar }: Props) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [count, setCount] = useState(3);
   const [remain, setRemain] = useState(1);
@@ -153,6 +164,11 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
   const [canStop, setCanStop] = useState(false);
   /** 렌더에서 읽어야 하는 값이라 ref(chain) 와 짝으로 둔다. */
   const [chaining, setChaining] = useState(false);
+
+  const [publishPhase, setPublishPhase] = useState<PublishPhase>("idle");
+  const [wantsPublic, setWantsPublic] = useState(false); // 공개는 opt-in (이슈 #16)
+  const [publishedPublic, setPublishedPublic] = useState(false);
+  const [adjusted, setAdjusted] = useState<{ from: number; to: number } | null>(null);
 
   const refAudio = useRef<HTMLAudioElement>(null);
   const userAudio = useRef<HTMLAudioElement>(null);
@@ -171,6 +187,16 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
   const advanced = useRef(false);
   /** 채점 대기 중 원본 다음에 내 소리를 자동으로 한 번 틀었는지. */
   const abPlayed = useRef(false);
+  /** 저장할 때 같은 오디오를 서버로 다시 보내야 해서 들고 있는다. */
+  const blobRef = useRef<Blob | null>(null);
+  /**
+   * 시도 번호. 저장 요청이 걸린 채로 다시 녹음하면, 늦게 온 이전 저장 응답이
+   * 새 결과의 점수를 덮어쓰면 안 된다. 응답이 왔을 때 번호가 바뀌었으면 버린다.
+   */
+  const attempt = useRef(0);
+
+  // 내 소리를 틀면 캐릭터가 그 소리로 입을 연다.
+  const userLevel = usePlaybackLevel(userAudio, userUrl, playing === "user");
 
   useEffect(() => {
     phaseRef.current = phase;
@@ -218,7 +244,13 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
         return;
       }
 
+      blobRef.current = blob;
+      attempt.current += 1;
       setUserUrl(URL.createObjectURL(blob));
+      setPublishPhase("idle");
+      setWantsPublic(false);
+      setPublishedPublic(false);
+      setAdjusted(null);
       setPhase("scoring");
       setSlow(false);
       abPlayed.current = false;
@@ -541,6 +573,59 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
     }
   }, [meme.title, result, beat]);
 
+  /**
+   * 결과를 서버에 저장한다 (이슈 #23).
+   *
+   * 점수는 보내지 않는다 — 서버가 같은 오디오를 Modal 에 다시 채점시켜 나온 값만
+   * 기록한다. 그래서 화면 점수와 확정 점수가 미세하게 다를 수 있고, 다르면
+   * 확정값으로 바꿔 보여준다 (랭킹에 올라가는 건 확정값이라 속이면 안 된다).
+   */
+  const publish = useCallback(async () => {
+    const blob = blobRef.current;
+    if (!blob || !result) return;
+    const makePublic = loggedIn && wantsPublic;
+    const mine = attempt.current;
+
+    setPublishPhase("publishing");
+    setError(null);
+    try {
+      const body = new FormData();
+      body.append("file", blob, "recording.webm");
+      body.append("is_public", String(makePublic));
+
+      const res = await fetch(
+        `/api/publish-recording?meme_id=${encodeURIComponent(meme.id)}` +
+          `&client=${encodeURIComponent(clientId())}`,
+        { method: "POST", body },
+      );
+      const data = await res.json();
+
+      // 비로그인이면 1회용 토큰이 온다. 로그인 후 /profile 에서 귀속시킨다.
+      // 그 사이 다시 녹음했더라도 이 녹음은 저장됐으니 토큰은 챙긴다.
+      if (data.claimToken) addGuestClaim(data.claimToken);
+      if (mine !== attempt.current) return;
+
+      if (!res.ok || data.error) {
+        setError(data.error ?? "저장이 안 됐어. 다시 눌러줄래?");
+        setPublishPhase("idle");
+        return;
+      }
+
+      if (typeof data.score === "number" && data.score !== result.score) {
+        setAdjusted({ from: result.score, to: data.score });
+      }
+      setResult((prev) =>
+        prev ? { ...prev, score: data.score, grade: data.grade, breakdown: data.breakdown } : prev,
+      );
+      setPublishedPublic(makePublic);
+      setPublishPhase("done");
+    } catch {
+      if (mine !== attempt.current) return;
+      setError("네트워크가 끊겼어. 다시 저장해줄래?");
+      setPublishPhase("idle");
+    }
+  }, [loggedIn, meme.id, result, wantsPublic]);
+
   const ringOffset = RING_C * (1 - remain);
 
   return (
@@ -680,15 +765,8 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
                 strokeDashoffset={ringOffset}
               />
             </svg>
-            <div className={styles.meter} aria-hidden="true">
-              {levels.map((v, i) => (
-                <span
-                  key={i}
-                  className={styles.meterBar}
-                  style={{ height: `${8 + v * 104}px` }}
-                />
-              ))}
-            </div>
+            {/* 레벨 미터 대신 캐릭터가 입을 연다 — 소리가 잡히는지 보여주는 일은 같다. */}
+            <VoiceAvatar avatar={avatar} level={levels[levels.length - 1]} size={168} />
           </div>
           <h2
             className={meme.line ? styles.cueSmallLoud : styles.cueLoud}
@@ -722,6 +800,7 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
             들어볼래?
           </h2>
           <p className={styles.cueSub}>점수는 계산 중이야. 그 사이 비교해봐.</p>
+          <VoiceAvatar avatar={avatar} level={userLevel} size={132} />
           <div className={styles.compare}>
             <PlayRow
               label="원본"
@@ -764,7 +843,7 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
               <p className={styles.note}>
                 {refSeconds?.toFixed(0)}초짜리라 듣기와 따라하기를 따로 뒀어
                 <br />
-                녹음은 직접 끊을 수 있어 · 점수만 내고 바로 버려
+                녹음은 직접 끊을 수 있어 · 저장 안 하면 녹음은 바로 버려
               </p>
             </>
           ) : (
@@ -780,7 +859,7 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
               <p className={styles.note}>
                 탭 한 번이면 원본 → 3·2·1 → 녹음까지 자동
                 <br />
-                로그인 없이 바로 · 점수만 내고 바로 버려
+                로그인 없이 바로 · 저장 안 하면 녹음은 바로 버려
               </p>
             </>
           )}
@@ -818,6 +897,13 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
               </span>
             </div>
           )}
+
+          <div className={styles.performer}>
+            <VoiceAvatar avatar={avatar} level={userLevel} size={112} />
+            <p className={styles.performerHint}>
+              {playing === "user" ? "네 목소리로 외치는 중" : "‘나’를 누르면 네 목소리로 외쳐"}
+            </p>
+          </div>
 
           <div className={styles.compare}>
             <PlayRow
@@ -869,6 +955,69 @@ export default function Recorder({ meme, refUrl, beat, next }: Props) {
               </div>
             ))}
           </dl>
+
+          {publishPhase === "done" ? (
+            <div className={styles.publish}>
+              <p className={styles.publishDone}>
+                저장 완료 ✓{" "}
+                {publishedPublic
+                  ? "이제 다른 사람들이 듣고 투표할 수 있어."
+                  : loggedIn
+                    ? "나만 들을 수 있게 저장했어."
+                    : "로그인하면 내 녹음으로 가져올 수 있어."}
+              </p>
+              {adjusted && (
+                <p className={styles.publishNote}>
+                  서버가 다시 채점해서 점수가 확정됐어 ({adjusted.from} → {adjusted.to}점)
+                </p>
+              )}
+              {publishedPublic ? (
+                <Link href="/vote" className={styles.publishLink}>
+                  투표하러 가기 →
+                </Link>
+              ) : (
+                !loggedIn && (
+                  <Link href="/login" className={styles.publishLink}>
+                    로그인하고 가져오기 →
+                  </Link>
+                )
+              )}
+            </div>
+          ) : (
+            <div className={styles.publish}>
+              {loggedIn ? (
+                <label className={styles.publishToggle}>
+                  <input
+                    type="checkbox"
+                    checked={wantsPublic}
+                    onChange={(e) => setWantsPublic(e.target.checked)}
+                    disabled={publishPhase === "publishing"}
+                  />
+                  <span>다른 사람이 듣고 투표할 수 있게 공개</span>
+                </label>
+              ) : (
+                <p className={styles.publishNote}>
+                  저장해두면 로그인한 뒤 내 캐릭터로 공개하고 투표받을 수 있어
+                </p>
+              )}
+              {loggedIn && (
+                <p className={styles.publishNote}>
+                  저장 안 하면 녹음은 여기서 끝 · 저장한 건 프로필에서 언제든 지울 수 있어
+                </p>
+              )}
+              <button
+                className={styles.publishBtn}
+                onClick={publish}
+                disabled={publishPhase === "publishing"}
+              >
+                {publishPhase === "publishing"
+                  ? "저장 중… 서버가 한 번 더 채점해"
+                  : loggedIn && wantsPublic
+                    ? "공개하고 저장"
+                    : "저장하기"}
+              </button>
+            </div>
+          )}
 
           <div className={styles.dock}>
             <button className={styles.go} onClick={share}>

@@ -1,0 +1,53 @@
+.center {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+  padding-block: 40px;
+}
+
+.title {
+  font-size: 26px;
+  font-weight: 800;
+  margin: 6px 0 0;
+}
+
+.sub {
+  color: var(--ash);
+  font-size: 14px;
+  max-width: 30ch;
+  margin: 0 0 8px;
+}
+
+.error {
+  color: var(--pink);
+  font-size: 13px;
+  margin: 0;
+}
+
+.kakao,
+.google {
+  width: 100%;
+  max-width: 320px;
+  padding: 14px;
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: 15px;
+  border: none;
+  cursor: pointer;
+}
+
+/* 카카오 브랜드 컬러는 카카오 로그인 버튼 가이드라인상 고정값 — 제품 팔레트 예외. */
+.kakao {
+  background: #fee500;
+  color: #191919;
+}
+
+.google {
+  background: transparent;
+  color: var(--white);
+  border: 1px solid var(--rule);
+}

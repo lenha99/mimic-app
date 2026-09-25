@@ -41,6 +41,12 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
       - run: npm ci
-      # next build 가 타입 검사까지 한다
+      # next build 가 타입 검사까지 한다.
+      # Supabase 클라이언트가 build-time에도 URL/키 형식을 요구해서 더미 값을 준다 —
+      # 실제 값은 Vercel 환경변수에만 있으면 되고, CI 빌드에서는 쓰이지 않는다.
       - run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: placeholder-service-role-key
       - run: npm run lint

@@ -131,11 +131,13 @@ def _decode_upload(raw: bytes):
 @app.function(image=score_image, volumes={REF_DIR: volume},
               scaledown_window=300, enable_memory_snapshot=True)
 @modal.fastapi_endpoint(method="POST", docs=True)
-async def score(meme_id: str, file: UploadFile, client: str = ""):
+async def score(meme_id: str, file: UploadFile, client: str = "", rescore: int = 0):
     """
     meme_id: 따라할 밈 식별자 (예: 'ronaldo_siu') — query param
     file:    유저 녹음 (multipart 필드 'file', wav/m4a)
     client:  익명 기기 식별자(선택). 랭킹에서 같은 사람의 연속 시도를 묶는 용도.
+    rescore: 1 이면 이미 한 번 채점한 녹음을 저장 전에 다시 채점하는 것(웹
+             /api/publish-recording). 도전 수에 또 세면 "N명 도전"이 부푼다.
     """
     ref_path = _ref_path(meme_id)
     if ref_path is None:
@@ -150,7 +152,7 @@ async def score(meme_id: str, file: UploadFile, client: str = ""):
 
     if isinstance(result.get("score"), int):
         bd = result.get("breakdown") or {}
-        _log_event("score", {
+        _log_event("rescore" if rescore else "score", {
             "meme_id": meme_id, "score": result["score"],
             "grade": result.get("grade"),
             "pitch": bd.get("pitch"), "tone": bd.get("tone"),

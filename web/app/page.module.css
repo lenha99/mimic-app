@@ -18,6 +18,28 @@
   color: var(--volt);
 }
 
+.headRight {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.nav {
+  display: flex;
+  gap: 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.nav a {
+  color: var(--ash);
+  text-decoration: none;
+}
+
+.nav a:hover {
+  color: var(--white);
+}
+
 .stale {
   font-family: var(--mono);
   font-size: 11px;
