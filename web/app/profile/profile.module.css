@@ -256,3 +256,28 @@
 .recToggle input:disabled {
   opacity: 0.5;
 }
+
+/* --- 회원 탈퇴 ---------------------------------------------------------- */
+
+.danger {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.dangerBtn {
+  background: none;
+  border: none;
+  padding: 8px;
+  font-size: 12.5px;
+  color: var(--ash-dim);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.dangerBtn:hover {
+  color: var(--pink);
+}

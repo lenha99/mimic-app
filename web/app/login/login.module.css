@@ -62,3 +62,92 @@
   color: var(--white);
   border: 1px solid var(--rule);
 }
+
+/* 아이디·비밀번호 ------------------------------------------------------ */
+
+.form {
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ash);
+}
+
+.field input {
+  width: 100%;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  padding: 13px 14px;
+  font: inherit;
+  font-size: 16px; /* 16px 밑이면 iOS 가 입력할 때 화면을 확대한다 */
+  font-weight: 500;
+  color: var(--white);
+}
+
+.field input::placeholder {
+  color: var(--ash-dim);
+}
+
+.field input:focus {
+  outline: none;
+  border-color: var(--volt);
+}
+
+.submit {
+  margin-top: 4px;
+  width: 100%;
+  min-height: 54px;
+  border: none;
+  border-radius: 27px;
+  background: var(--volt);
+  color: var(--stage);
+  font-family: var(--display);
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.submit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ash);
+  text-align: center;
+}
+
+.switch {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--ash);
+}
+
+.switch button {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--volt);
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.or {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--ash-dim);
+}

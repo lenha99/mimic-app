@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "./sign-out-button";
 import { NicknameEditor } from "./nickname-editor";
 import { ClaimPending } from "./claim-pending";
+import { DeleteAccount } from "./delete-account";
 import { AvatarEditor } from "./avatar-editor";
 import { MyRecordings, type MyRecording } from "./my-recordings";
 import styles from "./profile.module.css";
@@ -52,7 +53,12 @@ export default async function ProfilePage() {
       <div className={styles.head}>
         <div>
           <div className="eyebrow">마이 프로필</div>
-          <p className={styles.email}>{user.email ?? user.id}</p>
+          <p className={styles.email}>
+            {/* 아이디 가입자의 이메일은 내부 주소라 보여줄 이유가 없다 (lib/id-account.ts). */}
+            {typeof user.user_metadata?.username === "string"
+              ? `@${user.user_metadata.username}`
+              : (user.email ?? user.id)}
+          </p>
         </div>
         <SignOutButton />
       </div>
@@ -67,6 +73,7 @@ export default async function ProfilePage() {
           </div>
           <AvatarEditor userId={user.id} initial={normalizeAvatar(profile.avatar)} />
           <MyRecordings items={items} />
+          <DeleteAccount />
         </div>
       ) : (
         <p className={styles.warn}>
