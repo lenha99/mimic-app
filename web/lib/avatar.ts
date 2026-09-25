@@ -198,3 +198,18 @@ export function writeLocalAvatar(a: Avatar): void {
     // 저장이 막힌 환경이면 이번 화면에서만 쓴다.
   }
 }
+
+/**
+ * 링크 한 줄에 싣는 캐릭터 코드 — 미리보기 카드(/api/og) 주소용.
+ * 파츠 순서대로 값을 점으로 잇는다: "blob.skin.happy.bun.gray.wrinkles.reading.flower.none".
+ * 읽을 땐 normalizeAvatar 를 거치므로 깨진 코드는 기본값으로 떨어진다.
+ */
+export function encodeAvatar(a: Avatar): string {
+  return PARTS.map((k) => a[k]).join(".");
+}
+
+export function decodeAvatar(code: string | null | undefined): Avatar {
+  if (!code) return DEFAULT_AVATAR;
+  const vals = code.split(".");
+  return normalizeAvatar(Object.fromEntries(PARTS.map((k, i) => [k, vals[i]])));
+}

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { signAudio } from "@/lib/audio-url";
-import { DEFAULT_AVATAR, normalizeAvatar } from "@/lib/avatar";
+import { DEFAULT_AVATAR, encodeAvatar, normalizeAvatar } from "@/lib/avatar";
 import { extraLine, getMemes } from "@/lib/memes";
 import { createServiceClient } from "@/lib/supabase/service";
 import { SharePlayer } from "./player";
@@ -54,7 +54,7 @@ async function load(id: string) {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const found = await load((await params).id);
   if (!found) return { title: "없는 녹음" };
-  const { meme, score, nickname } = found;
+  const { meme, score, nickname, avatar } = found;
   const who = nickname ?? "친구";
   const title = `${who}의 ${meme.title} ${score}점 — 들어봐`;
   const description = `${who}가 ${meme.title} 따라했어. 캐릭터가 목소리로 외치는 거 들어보고, 넘을 수 있으면 넘어봐.`;
@@ -64,6 +64,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     emoji: meme.emoji ?? "🎙",
     ...(extraLine(meme) ? { line: extraLine(meme)! } : {}),
     s: String(score),
+    // 카톡 미리보기에 보낸 사람 캐릭터가 외치는 모습이 뜬다.
+    a: encodeAvatar(avatar),
+    ...(nickname ? { who: nickname } : {}),
   });
   const images = [{ url: `/api/og?${card}`, width: 1200, height: 630 }];
   return {
