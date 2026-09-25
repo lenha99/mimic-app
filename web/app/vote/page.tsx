@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackHome } from "@/components/back-home";
 import { signAudio } from "@/lib/audio-url";
 import { DEFAULT_AVATAR, normalizeAvatar } from "@/lib/avatar";
 import { createClient } from "@/lib/supabase/server";
@@ -21,6 +22,7 @@ export default async function VotePage() {
   if (!user) {
     return (
       <main className="shell">
+      <BackHome />
         <div className={styles.empty}>
           <h1 className={styles.title}>🗳️ 투표하려면 로그인이 필요해요</h1>
           <Link href="/login" className={styles.loginBtn}>
@@ -38,6 +40,7 @@ export default async function VotePage() {
   if (error || !matchup || matchup.length < 2) {
     return (
       <main className="shell">
+      <BackHome />
         <p className={styles.empty}>
           아직 투표할 녹음이 없어요. 먼저 밈을 따라 해보고 결과 화면에서 공개해보세요!
         </p>
@@ -66,6 +69,7 @@ export default async function VotePage() {
 
   return (
     <main className="shell">
+      <BackHome />
       <h1 className={styles.title}>
         {meme?.emoji} {meme?.title} 배틀
       </h1>

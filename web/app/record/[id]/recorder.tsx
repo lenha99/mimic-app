@@ -986,13 +986,14 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar }:
                 </label>
               ) : (
                 <p className={styles.publishNote}>
-                  공개해서 투표받으려면 로그인이 필요해. 지금 저장해두면 로그인한 뒤
-                  내 캐릭터로 공개할 수 있어.
+                  저장해두면 로그인한 뒤 내 캐릭터로 공개하고 투표받을 수 있어
                 </p>
               )}
-              <p className={styles.publishNote}>
-                저장 안 하면 녹음은 여기서 끝. 저장한 녹음은 프로필에서 언제든 지울 수 있어.
-              </p>
+              {loggedIn && (
+                <p className={styles.publishNote}>
+                  저장 안 하면 녹음은 여기서 끝 · 저장한 건 프로필에서 언제든 지울 수 있어
+                </p>
+              )}
               <button
                 className={styles.publishBtn}
                 onClick={publish}

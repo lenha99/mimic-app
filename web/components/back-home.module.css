@@ -1,0 +1,16 @@
+.bar {
+  padding-top: 16px;
+}
+
+.back {
+  display: inline-block;
+  color: var(--ash);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  padding: 6px 2px;
+}
+
+.back:hover {
+  color: var(--white);
+}

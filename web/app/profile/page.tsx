@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { BackHome } from "@/components/back-home";
 import { signAudio } from "@/lib/audio-url";
 import { normalizeAvatar } from "@/lib/avatar";
 import { createClient } from "@/lib/supabase/server";
@@ -47,6 +48,7 @@ export default async function ProfilePage() {
 
   return (
     <main className="shell">
+      <BackHome />
       <div className={styles.head}>
         <div>
           <div className="eyebrow">마이 프로필</div>

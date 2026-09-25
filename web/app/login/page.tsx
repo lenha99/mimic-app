@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
+import { BackHome } from "@/components/back-home";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import styles from "./login.module.css";
@@ -26,6 +27,7 @@ function LoginForm() {
 
   return (
     <main className="shell">
+      <BackHome />
       <div className={styles.center}>
         <div className="logo">🎙 MIMIC</div>
         <h1 className={styles.title}>로그인</h1>

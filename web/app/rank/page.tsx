@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackHome } from "@/components/back-home";
 import { VoiceAvatar } from "@/components/voice-avatar";
 import { normalizeAvatar } from "@/lib/avatar";
 import { createClient } from "@/lib/supabase/server";
@@ -52,6 +53,7 @@ export default async function RankPage({
 
   return (
     <main className="shell">
+      <BackHome />
       <h1 className={styles.title}>🏆 랭킹</h1>
       <p className={styles.note}>
         &ldquo;이 목소리에 투표&rdquo;를 받은 만큼 올라가요 · {MIN_GAMES}판 이상 붙어본 녹음부터
