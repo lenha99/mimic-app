@@ -92,8 +92,9 @@ function LoginForm() {
         return;
       }
 
-      // 프로필에서 로그인 전에 저장한 녹음을 이 계정으로 가져온다 (claim-pending).
-      router.replace("/profile");
+      // 홈으로 — 로그인한 홈 맨 위에 "오늘은 뭐 해볼까?"와 할 일이 뜨고, 로그인 전에
+      // 저장한 녹음도 거기서 이 계정으로 가져온다 (components/viewer-welcome).
+      router.replace("/");
       router.refresh();
     } catch {
       setError("네트워크가 끊겼어요. 다시 시도해주세요.");

@@ -6,7 +6,7 @@ export function BackHome() {
   return (
     <nav className={styles.bar}>
       <Link href="/" className={styles.back}>
-        ← 홈
+        ← 홈으로
       </Link>
     </nav>
   );

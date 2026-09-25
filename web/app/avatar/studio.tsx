@@ -17,6 +17,7 @@ import {
   type Avatar,
   type AvatarPart,
 } from "@/lib/avatar";
+import { refreshViewer } from "@/components/viewer";
 import { createClient } from "@/lib/supabase/client";
 import styles from "./studio.module.css";
 
@@ -107,6 +108,7 @@ export function AvatarStudio() {
     if (!who.userId) {
       setSaved(avatar);
       setSaving(false);
+      void refreshViewer();
       setMessage("이 폰에 저장했어요. 녹음하면 이 캐릭터가 외쳐요.");
       return;
     }
@@ -117,6 +119,7 @@ export function AvatarStudio() {
       return;
     }
     setSaved(avatar);
+    void refreshViewer(); // 홈 헤더·히어로가 바로 새 캐릭터로
     setMessage("저장했어요! 녹음·투표·랭킹에 이 캐릭터로 나와요.");
   };
 

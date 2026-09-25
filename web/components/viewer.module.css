@@ -20,10 +20,24 @@
   border-color: var(--ash-dim);
 }
 
+/* 로그인했으면 캐릭터 + 닉네임. 아이콘만 있으면 로그인된 건지 모른다. */
 .me {
   display: flex;
-  border-radius: 50%;
-  background: var(--panel);
-  border: 1px solid var(--rule);
-  padding: 2px;
+  align-items: center;
+  gap: 5px;
+  max-width: 130px;
+  padding: 2px 11px 2px 3px;
+  border-radius: 999px;
+  background: rgba(232, 255, 58, 0.1);
+  border: 1px solid rgba(232, 255, 58, 0.45);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--volt);
+}
+
+.me span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

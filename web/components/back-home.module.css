@@ -1,16 +1,23 @@
 .bar {
-  padding-top: 16px;
+  padding-top: 14px;
 }
 
+/* 엄지로 바로 누를 만한 크기. 작은 글자 링크였을 땐 어디로 돌아가는지 못 찾았다. */
 .back {
-  display: inline-block;
-  color: var(--ash);
-  font-size: 13px;
-  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 16px 0 12px;
+  border-radius: 999px;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  color: var(--white);
+  font-size: 14px;
+  font-weight: 800;
   text-decoration: none;
-  padding: 6px 2px;
 }
 
 .back:hover {
-  color: var(--white);
+  border-color: var(--ash-dim);
 }

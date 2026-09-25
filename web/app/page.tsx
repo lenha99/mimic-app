@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { HomeBeacon } from "@/components/home-beacon";
 import { MyShoutingAvatar, ViewerBadge } from "@/components/viewer";
+import { ViewerWelcome } from "@/components/viewer-welcome";
 import { VoiceAvatar } from "@/components/voice-avatar";
 import { PRESETS } from "@/lib/avatar";
 import { listApprovedChallenges } from "@/lib/challenges";
@@ -73,6 +74,8 @@ export default async function Home() {
           <ViewerBadge />
         </nav>
       </header>
+
+      <ViewerWelcome todayId={today?.id} todayTitle={today?.title} />
 
       {today && (
         <section className={styles.hero}>
