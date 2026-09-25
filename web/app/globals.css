@@ -23,6 +23,8 @@
   --sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
     "Segoe UI", "Malgun Gothic", sans-serif;
   --mono: var(--font-mono), ui-monospace, SFMono-Regular, Consolas, monospace;
+  /* 점수·제목. 없으면 본문 서체로 떨어진다 (레이아웃은 안 깨진다). */
+  --display: var(--font-display), var(--sans);
 
   --gutter: 20px;
 }

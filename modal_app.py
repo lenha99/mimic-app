@@ -16,7 +16,22 @@ import subprocess
 import tempfile
 import modal
 
-# librosa 포함된 컨테이너 이미지 정의
+# 채점 전용 이미지.
+#
+# 예전엔 채점도 아래 heavy 이미지를 썼는데, 거기엔 matplotlib 과 fonts-nanum 이
+# 들어 있다. 둘 다 공유 카드를 그리는 make_video 전용이고 _score 는 한 줄도 쓰지
+# 않는다. 그런데도 채점 컨테이너가 깰 때마다 그걸 같이 지고 올라왔다 —
+# 이미지도 크고, imports 블록에서 matplotlib.pyplot 과 font_manager 까지 읽었다.
+#
+# 채점은 웹앱의 임계 경로다(사용자가 소리를 낸 직후 기다리는 그 시간). 여기서
+# 뺄 수 있는 건 다 뺀다.
+score_image = (
+    modal.Image.debian_slim()
+    .apt_install("ffmpeg", "libsndfile1")
+    .pip_install("librosa", "numpy", "scipy", "soundfile", "fastapi[standard]")
+)
+
+# 카드·영상 생성용. matplotlib 과 한글 폰트가 필요하다.
 image = (
     modal.Image.debian_slim()
     .apt_install("ffmpeg", "libsndfile1", "fonts-nanum")
@@ -39,6 +54,23 @@ APK_DIR = "/dist"
 
 # 친구 챌린지 링크/다운로드 베이스 URL (배포 후 실제 URL)
 DOWNLOAD_URL = "https://lenha99--meme-scoring-download.modal.run"
+
+# 채점 컨테이너의 import. matplotlib 이 없다는 점만 빼면 아래와 같다.
+# numba JIT 워밍도 여기서 해야 한다 — 채점 컨테이너는 아래 블록을 실행하지 않는다.
+with score_image.imports():
+    import numpy as np
+    import librosa
+    from fastapi import UploadFile, Response
+
+    try:
+        _w = np.random.randn(8000).astype("float32")
+        librosa.pyin(_w, fmin=65, fmax=2093, sr=22050)
+        librosa.feature.rms(y=_w)
+        librosa.sequence.dtw(np.zeros((1, 12)), np.zeros((1, 12)), metric="euclidean")
+        np.corrcoef(_w[:64], _w[64:128])
+    except Exception:
+        pass
+
 
 # 컨테이너 안에서만 실행되는 import (로컬 deploy 시엔 건너뜀)
 with image.imports():
@@ -107,7 +139,7 @@ def _decode_upload(raw: bytes):
 #  - enable_memory_snapshot: librosa 임포트 + JIT 워밍이 끝난 상태를 스냅샷으로
 #    저장 → 콜드 복원이 수십 초 → 수 초로 단축
 #  - scaledown_window=300: 첫 호출 이후 5분간 컨테이너 유지 → 연속 채점 ~2s
-@app.function(image=image, volumes={REF_DIR: volume},
+@app.function(image=score_image, volumes={REF_DIR: volume},
               scaledown_window=300, enable_memory_snapshot=True)
 @modal.fastapi_endpoint(method="POST", docs=True)
 async def score(meme_id: str, file: UploadFile):

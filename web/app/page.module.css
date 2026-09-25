@@ -1,18 +1,32 @@
-.head {
-  padding-block: 44px 28px;
-}
+/*
+ * 홈. 맨 위 하나가 곧 첫 챌린지이고, 나머지는 그 아래 얇은 줄로 둔다.
+ * 진단 도구(/probe)는 본문에서 빼서 바닥으로 내렸다 — 필요한 사람만 찾으면 된다.
+ */
 
-.topRow {
+.head {
+  padding-block: 22px 18px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  flex-wrap: wrap;
+}
+
+.logo {
+  font-family: var(--display);
+  font-size: 22px;
+  letter-spacing: 0.1em;
+  color: var(--volt);
+}
+
+.headRight {
+  display: flex;
+  align-items: center;
+  gap: 14px;
 }
 
 .nav {
   display: flex;
-  gap: 16px;
+  gap: 14px;
   font-size: 13px;
   font-weight: 600;
 }
@@ -26,134 +40,180 @@
   color: var(--white);
 }
 
-.title {
-  font-size: clamp(30px, 8vw, 42px);
-  font-weight: 900;
-  letter-spacing: -1.4px;
-  line-height: 1.08;
-  margin: 18px 0 0;
-  text-wrap: balance;
-}
-
-.sub {
-  color: var(--ash);
-  margin: 12px 0 0;
-  max-width: 34ch;
-}
-
-.notice {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px 14px;
-  margin-top: 26px;
-  padding: 14px 16px;
-  background: var(--panel);
-  border: 1px solid var(--rule);
-  border-left: 3px solid var(--volt);
-  border-radius: 10px;
-}
-
-.noticeText {
-  flex: 1 1 200px;
-  font-size: 14px;
-  color: var(--ash);
-  line-height: 1.55;
-  margin: 0;
-}
-
-.noticeLink {
-  flex: none;
-  background: var(--volt);
-  color: #0a0a0b;
-  font-weight: 800;
-  font-size: 14px;
-  text-decoration: none;
-  padding: 9px 16px;
-  border-radius: 999px;
-  white-space: nowrap;
-}
-
-.listHead {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  margin: 40px 0 14px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--rule);
-}
-
 .stale {
   font-family: var(--mono);
   font-size: 11px;
-  color: var(--pink);
-  letter-spacing: 0.06em;
+  font-weight: 500;
+  color: var(--ash);
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 12px;
+/* 오늘의 소리 ---------------------------------------------------------- */
+
+.hero {
+  background: var(--panel);
+  border-radius: 22px;
+  padding: 22px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.heroTop {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.heroKicker {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--pink);
+}
+
+.heroPlays {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ash);
+}
+
+.heroFace {
+  margin: 0;
+  font-size: 54px;
+  line-height: 1.1;
+}
+
+.heroTitle {
+  margin: 4px 0 0;
+  font-family: var(--display);
+  font-size: clamp(38px, 12vw, 48px);
+  line-height: 1;
+  color: var(--white);
+}
+
+.heroSource {
+  margin: 8px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ash);
+}
+
+.heroGo {
+  margin-top: 20px;
+  width: 100%;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 30px;
+  background: var(--volt);
+  color: var(--stage);
+  font-family: var(--display);
+  font-size: 20px;
+  text-decoration: none;
+}
+
+/* 나머지 목록 ---------------------------------------------------------- */
+
+.more {
+  margin-top: 30px;
+}
+
+.moreHead {
+  margin: 0 0 6px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ash);
+}
+
+.list {
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.card {
+.row {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 16px;
-  background: var(--panel);
-  border: 1px solid var(--rule);
-  border-radius: 14px;
-  color: inherit;
+  padding: 14px 4px;
+  border-bottom: 1px solid #1a1a1d;
   text-decoration: none;
+  min-height: 56px;
 }
 
-.card:active {
-  border-color: var(--volt);
+.row:hover {
+  background: #101012;
 }
 
-.go {
-  margin-left: auto;
-  font-family: var(--mono);
-  color: var(--ash-dim);
-  flex: none;
+.rowFace {
+  font-size: 26px;
+  width: 34px;
+  flex-shrink: 0;
+  text-align: center;
 }
 
-.emoji {
-  font-size: 30px;
-  line-height: 1;
-  flex: none;
+.rowBody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.cardBody {
-  min-width: 0;
+.rowTitle {
+  font-family: var(--display);
+  font-size: 19px;
+  line-height: 1.2;
+  color: var(--white);
 }
 
-.cardTitle {
-  font-size: 17px;
-  font-weight: 800;
-  letter-spacing: -0.3px;
-  margin: 0;
-  overflow-wrap: anywhere;
+.rowMeta {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ash);
 }
 
-.cardMeta {
-  font-family: var(--mono);
-  font-size: 11.5px;
-  color: var(--ash-dim);
-  margin: 3px 0 0;
+.rowGo {
+  color: var(--ash);
+  font-size: 16px;
 }
+
+/* 바닥 ----------------------------------------------------------------- */
 
 .foot {
-  margin-top: 48px;
-  padding-top: 20px;
-  border-top: 1px solid var(--rule);
-  font-family: var(--mono);
-  font-size: 11.5px;
-  color: var(--ash-dim);
-  line-height: 1.9;
+  margin-top: 34px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.footNote {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ash);
+}
+
+.footLink {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ash);
+  text-decoration: none;
+  padding: 6px;
+}
+
+.footLink:hover {
+  color: var(--cyan);
 }

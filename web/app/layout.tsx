@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { IBM_Plex_Mono } from "next/font/google";
+import { Black_Han_Sans, IBM_Plex_Mono } from "next/font/google";
 import { config } from "@/lib/config";
 import "./globals.css";
 
@@ -8,6 +8,19 @@ const mono = IBM_Plex_Mono({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
   variable: "--font-mono",
+  display: "swap",
+});
+
+/**
+ * 점수·제목 전용 디스플레이 서체. 본문은 Pretendard 그대로 둔다.
+ *
+ * 점수가 이 제품의 얼굴인데 본문 서체로 크게만 키우면 그냥 큰 글씨다.
+ * 노래방 점수판처럼 두껍고 좁은 한글 서체가 있어야 "점수가 나온다"는 느낌이 산다.
+ */
+const display = Black_Han_Sans({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-display",
   display: "swap",
 });
 
@@ -43,7 +56,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ko" className={mono.variable}>
+    <html lang="ko" className={`${mono.variable} ${display.variable}`}>
       <head>
         {/* Pretendard — Flutter 앱과 같은 서체를 쓴다 (lib/theme.dart).
             next/font 에 없는 서체라 CDN 링크로 불러온다. */}
