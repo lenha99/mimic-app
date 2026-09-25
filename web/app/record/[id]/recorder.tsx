@@ -9,6 +9,7 @@ import type { Avatar } from "@/lib/avatar";
 import { clientId } from "@/lib/client-id";
 import { addGuestClaim } from "@/lib/guest-claims";
 import { extraLine, type Meme } from "@/lib/memes";
+import { followMouth } from "@/lib/mouth";
 import { track } from "@/lib/track";
 import styles from "./record.module.css";
 
@@ -40,13 +41,22 @@ const MANUAL_STOP_ABOVE_MS = 8_000;
 const LONG_REF_SECONDS = 10;
 /** 원본 길이를 못 읽었을 때 쓰는 값. */
 const FALLBACK_REF_MS = 1400;
-/** onEnded 가 안 오는 경우를 대비한 안전망 여유분. */
-const LISTEN_GUARD_MS = 3_000;
+/**
+ * 원본이 이만큼 한 칸도 안 나아가면 끊긴 것으로 본다.
+ *
+ * 예전엔 "원본 길이 + 3초"를 벽시계로 재서 그 시간이 되면 무조건 녹음으로 넘겼다.
+ * 길이를 아직 모를 땐 1.4초로 가정해서 5초짜리 원본이 4.4초에 잘렸고, 네트워크가
+ * 버퍼링하거나 아이폰이 마이크를 켜며 재생을 멈추면 소리가 끊긴 채 녹음이 시작됐다.
+ * 이제는 재생 위치가 끝에 닿아야만 넘어가고, 멈추면 다시 틀고, 오래 막히면 녹음 대신
+ * 말해준다 — 원본을 다 못 들은 녹음은 점수도 엉터리다.
+ */
+const STALL_MS = 8_000;
+/** 멈춘 원본을 다시 틀어보는 간격. 아이폰은 마이크 권한 창이 뜰 때 재생을 멈춘다. */
+const RESUME_EVERY_MS = 600;
 /** 3 → 2 → 1 한 칸. 기다리게 하는 게 아니라 준비시키는 게 목적. */
 const COUNT_STEP_MS = 320;
 /** 채점이 이만큼 넘어가면 그때 "서버 깨우는 중"을 꺼낸다. */
 const SLOW_AFTER_MS = 6_000;
-const LEVEL_BARS = 17;
 const RING_R = 112;
 const RING_C = 2 * Math.PI * RING_R;
 
@@ -133,7 +143,8 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
   const [phase, setPhase] = useState<Phase>("idle");
   const [count, setCount] = useState(3);
   const [remain, setRemain] = useState(1);
-  const [levels, setLevels] = useState<number[]>(() => new Array(LEVEL_BARS).fill(0));
+  /** 녹음 중 마이크 크기 — 캐릭터 입이 이걸 따라 움직인다 (lib/mouth 로 부드럽게). */
+  const [micLevel, setMicLevel] = useState(0);
   const [result, setResult] = useState<Score | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [playing, setPlaying] = useState<"ref" | "user" | null>(null);
@@ -168,6 +179,10 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
   const chain = useRef(false);
   /** onEnded 와 안전망 타이머가 겹쳐 카운트다운이 두 번 돌지 않게. */
   const advanced = useRef(false);
+  /** 원본을 우리가 일부러 멈췄는지. 아니면(시스템이 끊었으면) 다시 튼다. */
+  const pausedByUs = useRef(false);
+  /** 감시 루프가 최신 beginCountdown 을 부르게. (effect 의존성에 넣으면 루프가 매번 재시작된다) */
+  const countdownRef = useRef<() => void>(() => {});
   /** 채점 대기 중 원본 다음에 내 소리를 자동으로 한 번 틀었는지. */
   const abPlayed = useRef(false);
   /** 저장할 때 같은 오디오를 서버로 다시 보내야 해서 들고 있는다. */
@@ -329,7 +344,7 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
 
     rec.start();
     track("record_start", { meme_id: meme.id });
-    setLevels(new Array(LEVEL_BARS).fill(0));
+    setMicLevel(0);
     setRemain(1);
     setCanStop(windowMs.current > MANUAL_STOP_ABOVE_MS);
     setPhase("recording");
@@ -356,6 +371,7 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
       Math.max(MIN_WINDOW_MS, Math.round(refMs) + TAIL_MS),
     );
 
+    pausedByUs.current = true;
     refAudio.current?.pause();
     setPhase("countdown");
     setCount(3);
@@ -365,6 +381,10 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
       window.setTimeout(() => void beginRecording(), COUNT_STEP_MS * 3),
     );
   }, [beginRecording, clearTimers]);
+
+  useEffect(() => {
+    countdownRef.current = beginCountdown;
+  }, [beginCountdown]);
 
   /**
    * 마이크 요청. 재생을 막지 않도록 await 하지 않고 약속만 들고 있는다.
@@ -393,6 +413,7 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
       setError(null);
       setResult(null);
       advanced.current = false;
+      pausedByUs.current = false;
       chain.current = thenRecord;
       setChaining(thenRecord);
       clearTimers();
@@ -408,13 +429,7 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
           track("play_ref", { meme_id: meme.id });
           setPhase("listening");
           setRemain(1);
-          // onEnded 가 안 오는 경우(길이 미상·디코드 실패)를 위한 안전망.
-          const guard =
-            (refSeconds !== null ? refSeconds * 1000 : FALLBACK_REF_MS) +
-            LISTEN_GUARD_MS;
-          if (thenRecord) {
-            timers.current.push(window.setTimeout(beginCountdown, guard));
-          }
+          // 끝났는지는 아래 감시 루프가 재생 위치로 판단한다 (STALL_MS 주석 참고).
         })
         .catch(() => {
           // 예전엔 여기서 조용히 녹음으로 넘어갔다. 그러면 원본을 못 들은 채로
@@ -423,7 +438,7 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
           setError("원본이 재생되지 않았어. 한 번 더 눌러줄래?");
         });
     },
-    [beginCountdown, clearTimers, meme.id, refSeconds],
+    [clearTimers, meme.id],
   );
 
   /** 듣고 바로 따라하기 (짧은 원본의 기본 동작). */
@@ -457,28 +472,57 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
     beginCountdown();
   }, [beginCountdown, requestMic]);
 
-  // 링 진행도와 레벨 미터.
+  // 링 진행도 · 원본 재생 감시 · 마이크 크기.
   useEffect(() => {
     if (phase !== "listening" && phase !== "recording") return;
 
     let raf = 0;
-    let lastLevel = 0;
-    const startedAt = performance.now();
+    let last = performance.now();
+    let mouth = 0;
+    const startedAt = last;
     const buffer = new Uint8Array(analyser.current?.fftSize ?? 1024);
 
+    // 원본 감시 상태
+    let lastPos = -1;
+    let lastProgressAt = last;
+    let lastResumeAt = 0;
+
     const loop = (now: number) => {
+      const dt = now - last;
+      last = now;
+
       if (phaseRef.current === "listening") {
         const el = refAudio.current;
-        const d = el?.duration;
-        if (el && typeof d === "number" && Number.isFinite(d) && d > 0) {
-          setRemain(Math.max(0, 1 - el.currentTime / d));
+        if (el) {
+          const d = el.duration;
+          const known = Number.isFinite(d) && d > 0;
+          if (known) setRemain(Math.max(0, 1 - el.currentTime / d));
+
+          if (el.currentTime !== lastPos) {
+            lastPos = el.currentTime;
+            lastProgressAt = now;
+          }
+
+          const done = el.ended || (known && el.currentTime >= d - 0.04);
+          if (done) {
+            if (chain.current) countdownRef.current();
+            else setPhase("idle");
+          } else if (el.paused && !pausedByUs.current && now - lastResumeAt > RESUME_EVERY_MS) {
+            // 시스템이 끊었다(아이폰 마이크 권한 창, 오디오 세션 전환). 이어서 튼다.
+            lastResumeAt = now;
+            void el.play().catch(() => {});
+          } else if (now - lastProgressAt > STALL_MS) {
+            pausedByUs.current = true;
+            el.pause();
+            setPhase("idle");
+            setError("원본이 중간에 멈췄어. 한 번 더 눌러줄래?");
+          }
         }
       } else {
         setRemain(Math.max(0, 1 - (now - startedAt) / windowMs.current));
 
         const node = analyser.current;
-        if (node && now - lastLevel > 42) {
-          lastLevel = now;
+        if (node) {
           node.getByteTimeDomainData(buffer);
           let sum = 0;
           for (let i = 0; i < buffer.length; i += 1) {
@@ -486,7 +530,8 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
             sum += v * v;
           }
           const rms = Math.min(1, Math.sqrt(sum / buffer.length) * 3.4);
-          setLevels((prev) => [...prev.slice(1), rms]);
+          mouth = followMouth(mouth, rms, dt);
+          setMicLevel(mouth);
         }
       }
       raf = requestAnimationFrame(loop);
@@ -500,6 +545,7 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
     (which: "ref" | "user") => {
       const el = which === "ref" ? refAudio.current : userAudio.current;
       const other = which === "ref" ? userAudio.current : refAudio.current;
+      pausedByUs.current = true;
       other?.pause();
       if (!el) return;
       if (playing === which) {
@@ -518,6 +564,7 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
   const onRefEnded = useCallback(() => {
     setPlaying(null);
     if (phaseRef.current === "listening") {
+      pausedByUs.current = true;
       if (chain.current) beginCountdown();
       else setPhase("idle");
       return;
@@ -761,7 +808,7 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
               />
             </svg>
             {/* 레벨 미터 대신 캐릭터가 입을 연다 — 소리가 잡히는지 보여주는 일은 같다. */}
-            <VoiceAvatar avatar={avatar} level={levels[levels.length - 1]} size={168} />
+            <VoiceAvatar avatar={avatar} level={micLevel} size={168} />
           </div>
           <h2
             className={meme.line ? styles.cueSmallLoud : styles.cueLoud}

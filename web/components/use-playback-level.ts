@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type RefObject } from "react";
+import { followMouth } from "@/lib/mouth";
 
 /**
  * 재생 중인 <audio> 의 지금 소리 크기(0~1). 캐릭터 입 모양을 여기서 받는다.
@@ -35,15 +36,26 @@ export function usePlaybackLevel(
   useEffect(() => {
     if (!active) return;
     let raf = 0;
-    const loop = () => {
+    let mouth = 0;
+    let last = performance.now();
+    const loop = (now: number) => {
+      const dt = now - last;
+      last = now;
       const t = audio.current?.currentTime ?? 0;
       const env = envelope.current;
+      let target: number;
       if (env) {
-        setLevel(env[Math.min(env.length - 1, Math.floor(t * FPS))] ?? 0);
+        // 1/30초 계단 사이를 이어서 읽는다. 계단째로 읽으면 입이 30fps 로 딱딱 끊긴다.
+        const x = Math.max(0, t * FPS);
+        const i = Math.min(env.length - 1, Math.floor(x));
+        const j = Math.min(env.length - 1, i + 1);
+        target = env[i] + (env[j] - env[i]) * (x - i);
       } else {
         // 포락선을 못 만들었을 때(디코드 불가 형식 등) — 말하는 척이라도 한다.
-        setLevel(0.3 + 0.25 * Math.abs(Math.sin(t * 9)));
+        target = 0.3 + 0.25 * Math.abs(Math.sin(t * 9));
       }
+      mouth = followMouth(mouth, target, dt);
+      setLevel(mouth);
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);

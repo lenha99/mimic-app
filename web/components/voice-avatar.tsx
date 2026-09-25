@@ -400,18 +400,40 @@ function Mustache({ on, color }: { on: boolean; color: string }) {
 
 /* ── 입 ─────────────────────────────────────────────────────────────── */
 
+/**
+ * 다문 입(표정 선)과 벌린 입(타원) 사이를 끊지 않고 넘어간다.
+ *
+ * 예전엔 level 0.06 을 경계로 선이 타원으로 뚝 바뀌어서, 작은 소리에서 입이
+ * 깜빡거렸다. 이제 0.03~0.13 구간에서 선은 서서히 사라지고 타원은 작게 시작해
+ * 서서히 커진다. 크기도 제곱근 곡선이라 작은 소리에 살짝 열리고 큰 소리에 쫙 벌어진다.
+ */
 function Mouth({ level, eyes }: { level: number; eyes: Avatar["eyes"] }) {
-  if (level < 0.06) {
-    // 가만히 있을 때 입 모양이 표정의 절반이다.
-    const d = eyes === "angry" ? "M52 84 q8 -5 16 0" : eyes === "sad" ? "M53 85 q7 -5 14 0" : "M54 81 q6 5 12 0";
-    return <path d={d} stroke={INK} strokeWidth="3" strokeLinecap="round" fill="none" />;
-  }
-  const rx = 5 + level * 6;
-  const ry = 2 + level * 12;
+  const open = Math.max(0, Math.min(1, (level - 0.03) / 0.1));
+  const amt = Math.sqrt(level);
+  const closed = eyes === "angry" ? "M52 84 q8 -5 16 0" : eyes === "sad" ? "M53 85 q7 -5 14 0" : "M54 81 q6 5 12 0";
+  const rx = 4.5 + amt * 6.5;
+  const ry = 1.5 + amt * 12.5 * open;
+  const tongue = Math.max(0, Math.min(1, (ry - 6) / 4));
   return (
     <>
-      <ellipse cx="60" cy={82 + ry * 0.35} rx={rx} ry={ry} fill={INK} />
-      {ry > 7 && <ellipse cx="60" cy={82 + ry * 1.05} rx={rx * 0.55} ry={ry * 0.28} fill="#ff5d98" />}
+      {open < 1 && (
+        <path d={closed} stroke={INK} strokeWidth="3" strokeLinecap="round" fill="none" opacity={1 - open} />
+      )}
+      {open > 0 && (
+        <g opacity={open}>
+          <ellipse cx="60" cy={82 + ry * 0.35} rx={rx} ry={ry} fill={INK} />
+          {tongue > 0 && (
+            <ellipse
+              cx="60"
+              cy={82 + ry * 1.05}
+              rx={rx * 0.55}
+              ry={ry * 0.28}
+              fill="#ff5d98"
+              opacity={tongue}
+            />
+          )}
+        </g>
+      )}
     </>
   );
 }
