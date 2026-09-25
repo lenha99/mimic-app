@@ -70,6 +70,10 @@ export interface Database {
           is_public: boolean;
           /** 신고로 숨김. 주인이 is_public 을 켜도 안 보인다. service_role 만 푼다. */
           hidden: boolean;
+          /** 링크를 가진 사람만 듣는 녹음 (/p/{id}). 투표·랭킹엔 안 오른다. */
+          shared: boolean;
+          /** 녹음할 때의 캐릭터. 게스트도 링크에서 자기 캐릭터로 나오게. */
+          avatar: AvatarJson | null;
           // service_role 전용 — anon/authenticated 키는 이 컬럼의 SELECT 권한이
           // 없다(마이그레이션 …0011). 게스트 귀속은 claim_recording() RPC로 한다.
           claim_token: string | null;
@@ -93,6 +97,8 @@ export interface Database {
           elo_rating?: number;
           is_public?: boolean;
           hidden?: boolean;
+          shared?: boolean;
+          avatar?: AvatarJson | null;
           claim_token?: string;
           created_at?: string;
         };

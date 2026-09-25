@@ -13,6 +13,7 @@ import { clientId } from "./client-id";
  * 점수(score)는 채점 서버가 직접 남긴다. 여기서 또 보내면 두 번 센다.
  */
 export type TrackKind =
+  | "view_share"
   | "view_home"
   | "view_record"
   | "play_ref"

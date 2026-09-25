@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { normalizeAvatar } from "@/lib/avatar";
 import { config } from "@/lib/config";
 import { getMemes } from "@/lib/memes";
 import { createClient } from "@/lib/supabase/server";
@@ -12,8 +13,13 @@ import { createServiceClient } from "@/lib/supabase/service";
  * 랭킹에 올라가는 걸 막기 위한 유일한 방법이다.
  *
  * 로그인 유저면 user_id로, 게스트면 user_id null + claim_token 발급(이슈 #19).
- * 게스트는 비공개 저장만 된다 — 신고는 로그인해야 할 수 있는데, 공개는 아무나
- * 할 수 있으면 익명 게시판이 된다.
+ *
+ * 공개 범위(visibility):
+ *   private — 나만 (기본)
+ *   link    — 링크를 가진 사람만 (/p/{id}). 투표·랭킹엔 안 오른다. 게스트도 된다 —
+ *             친구한테 "내 목소리로" 도발하는 게 이 앱이 퍼지는 길이라서.
+ *   public  — 투표·랭킹까지. 로그인해야 한다. 신고는 로그인해야 할 수 있는데 공개는
+ *             아무나 할 수 있으면 익명 게시판이 된다.
  */
 const MAX_BYTES = 10 * 1024 * 1024;
 
@@ -30,7 +36,18 @@ export async function POST(req: Request) {
 
   const form = await req.formData();
   const file = form.get("file");
-  const isPublic = form.get("is_public") === "true";
+  const raw = form.get("visibility") ?? (form.get("is_public") === "true" ? "public" : "private");
+  const visibility = raw === "public" || raw === "link" ? raw : "private";
+  const isPublic = visibility === "public";
+  const avatarRaw = form.get("avatar");
+  let avatar = null;
+  if (typeof avatarRaw === "string") {
+    try {
+      avatar = normalizeAvatar(JSON.parse(avatarRaw));
+    } catch {
+      avatar = null;
+    }
+  }
 
   if (!(file instanceof Blob) || file.size === 0) {
     return Response.json({ error: "녹음이 비어 있습니다" }, { status: 400 });
@@ -121,6 +138,8 @@ export async function POST(req: Request) {
       tone: scoreResult.breakdown.tone,
       timing: scoreResult.breakdown.timing,
       is_public: isPublic,
+      shared: visibility !== "private",
+      avatar,
       ...(claimToken ? { claim_token: claimToken } : {}),
     })
     .select("id")

@@ -288,7 +288,7 @@ def _people(events) -> int:
 # 퍼널 순서. 이 앱이 퍼지는 길은 이것 하나다 — 들어와서, 듣고, 외치고, 점수 받고,
 # 던지고, 받은 사람이 다시 들어온다. 어디서 새는지 모르면 고칠 곳도 모른다.
 FUNNEL = ("view_home", "view_record", "play_ref", "record_start", "score", "share",
-          "arrive_challenge")
+          "view_share", "arrive_challenge")
 
 
 @app.function(image=slim_image, volumes={REF_DIR: volume})
@@ -418,11 +418,12 @@ async def submit(title: str, file: UploadFile, source: str = "친구", emoji: st
         f.write(data)
     volume.commit()
     cat = _load_catalog()
+    # 인증 없이 누구나 부를 수 있는 곳이라 목록에 바로 올리지 않는다(draft).
+    # 예전엔 홈 두 번째 칸에 꽂혀서, 아무 소리나 올리면 모든 사람 홈에 떴다.
+    # 직링크(/record/{id})로만 열리고, 목록에 올릴지는 운영자가 정한다.
     entry = {"id": mid, "title": (title or "내 소리")[:20], "source": source,
-             "emoji": emoji, "plays": 0, "ugc": True}
-    # 맨 앞(0)은 홈 히어로("오늘의 소리") 자리라 편집 영역으로 남긴다.
-    # 무인증 업로드가 히어로를 가져가면 안 되므로 바로 다음 칸에 꽂는다.
-    cat.insert(min(1, len(cat)), entry)
+             "emoji": emoji, "plays": 0, "ugc": True, "draft": True}
+    cat.append(entry)
     _save_catalog(cat)
     return entry
 

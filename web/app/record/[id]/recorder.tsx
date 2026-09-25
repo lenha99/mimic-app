@@ -8,6 +8,7 @@ import { VoiceAvatar } from "@/components/voice-avatar";
 import type { Avatar } from "@/lib/avatar";
 import { clientId } from "@/lib/client-id";
 import { addGuestClaim } from "@/lib/guest-claims";
+import { createClient } from "@/lib/supabase/client";
 import { extraLine, type Meme } from "@/lib/memes";
 import { followMouth } from "@/lib/mouth";
 import { track } from "@/lib/track";
@@ -163,6 +164,11 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
   const [wantsPublic, setWantsPublic] = useState(false); // 공개는 opt-in (이슈 #16)
   const [publishedPublic, setPublishedPublic] = useState(false);
   const [adjusted, setAdjusted] = useState<{ from: number; to: number } | null>(null);
+  /** 서버에 저장된 이번 녹음. 링크 공유는 이걸 켜기만 한다 (두 번 올리지 않게). */
+  const [savedRec, setSavedRec] = useState<{ id: string; claimToken: string | null } | null>(null);
+  /** 목소리 링크: 만드는 중 → 준비됨(보내기). 아이폰은 몇 초 기다린 뒤엔 공유 시트를 안 열어줘서 두 번 누르게 한다. */
+  const [linkState, setLinkState] = useState<"idle" | "making" | "ready">("idle");
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
 
   const refAudio = useRef<HTMLAudioElement>(null);
   const userAudio = useRef<HTMLAudioElement>(null);
@@ -258,6 +264,9 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
       setWantsPublic(false);
       setPublishedPublic(false);
       setAdjusted(null);
+      setSavedRec(null);
+      setLinkState("idle");
+      setShareUrl(null);
       setPhase("scoring");
       setSlow(false);
       abPlayed.current = false;
@@ -583,37 +592,52 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
-  const share = useCallback(async () => {
-    if (!result) return;
-    const url = new URL(window.location.href);
-    url.searchParams.set("s", String(result.score));
-    const link = url.toString();
-    // 도전장을 받고 왔으면 고리가 거기서 끊기면 안 된다. 이겼으면 되갚는 말이,
-    // 졌으면 다시 부르는 말이 나가야 그 사람이 또 던진다.
-    const text =
-      beat === null
-        ? `${meme.title} ${result.score}점 (${result.grade}). 넘어봐.`
+  /**
+   * 도전장 문구. 도전장을 받고 왔으면 고리가 거기서 끊기면 안 된다 — 이겼으면
+   * 되갚는 말이, 졌으면 다시 부르는 말이 나가야 그 사람이 또 던진다.
+   */
+  const challengeText = useCallback(
+    (voice: boolean) => {
+      if (!result) return "";
+      const hook = voice ? " 내 목소리 들어봐." : "";
+      return beat === null
+        ? `${meme.title} ${result.score}점 (${result.grade}). 넘어봐.${hook}`
         : result.score > beat
-          ? `${meme.title} ${result.score}점. 니 ${beat}점 넘었다. 다시 해봐.`
+          ? `${meme.title} ${result.score}점. 니 ${beat}점 넘었다.${hook}`
           : `${meme.title} ${result.score}점. ${beat}점 아직 못 넘었어. 한 번 더 간다.`;
+    },
+    [beat, meme.title, result],
+  );
 
-    track("share", { meme_id: meme.id, via: "share" in navigator ? "sheet" : "copy" });
+  /** 공유 시트(없으면 복사). 제스처가 식어 막혔으면 false — 버튼을 한 번 더 누르면 된다. */
+  const sendLink = useCallback(async (link: string, text: string) => {
     if (navigator.share) {
       try {
         await navigator.share({ title: "MIMIC", text, url: link });
-      } catch {
-        // 공유 시트를 닫은 것뿐이다.
+        return true;
+      } catch (e) {
+        return !(e instanceof DOMException && e.name === "NotAllowedError");
       }
-      return;
     }
     try {
       await navigator.clipboard.writeText(`${text}\n${link}`);
       setCopied(true);
       timers.current.push(window.setTimeout(() => setCopied(false), 2400));
+      return true;
     } catch {
-      setError("공유가 안 됐어. 주소창 링크를 직접 보내줘.");
+      setError("공유가 안 됐어. 링크를 길게 눌러 복사해줘.");
+      return false;
     }
-  }, [meme.id, meme.title, result, beat]);
+  }, []);
+
+  /** 점수만 보내기 — 녹음은 안 나간다. */
+  const shareScore = useCallback(async () => {
+    if (!result) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set("s", String(result.score));
+    track("share", { meme_id: meme.id, via: "score" });
+    await sendLink(url.toString(), challengeText(false));
+  }, [challengeText, meme.id, result, sendLink]);
 
   /**
    * 결과를 서버에 저장한다 (이슈 #23).
@@ -622,43 +646,124 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
    * 기록한다. 그래서 화면 점수와 확정 점수가 미세하게 다를 수 있고, 다르면
    * 확정값으로 바꿔 보여준다 (랭킹에 올라가는 건 확정값이라 속이면 안 된다).
    */
-  const publish = useCallback(async () => {
-    const blob = blobRef.current;
-    if (!blob || !result) return;
-    const makePublic = loggedIn && wantsPublic;
-    const mine = attempt.current;
-
-    setPublishPhase("publishing");
-    setError(null);
-    try {
+  /** 이번 녹음을 서버에 올린다. 점수는 보내지 않는다 — 서버가 다시 채점한다. */
+  const upload = useCallback(
+    async (visibility: "private" | "link" | "public") => {
+      const blob = blobRef.current;
+      if (!blob || !result) return null;
       const body = new FormData();
       body.append("file", blob, "recording.webm");
-      body.append("is_public", String(makePublic));
-
+      body.append("visibility", visibility);
+      body.append("avatar", JSON.stringify(avatar));
       const res = await fetch(
         `/api/publish-recording?meme_id=${encodeURIComponent(meme.id)}` +
           `&client=${encodeURIComponent(clientId())}`,
         { method: "POST", body },
       );
       const data = await res.json();
-
       // 비로그인이면 1회용 토큰이 온다. 로그인 후 /profile 에서 귀속시킨다.
       // 그 사이 다시 녹음했더라도 이 녹음은 저장됐으니 토큰은 챙긴다.
       if (data.claimToken) addGuestClaim(data.claimToken);
-      if (mine !== attempt.current) return;
+      return { ok: res.ok && !data.error, data };
+    },
+    [avatar, meme.id, result],
+  );
 
-      if (!res.ok || data.error) {
-        setError(data.error ?? "저장이 안 됐어. 다시 눌러줄래?");
+  /** 서버가 다시 채점한 확정 점수로 화면을 맞춘다 (랭킹·링크에 올라가는 건 확정값이다). */
+  const applyConfirmed = useCallback(
+    (data: { score?: number; grade?: string; breakdown?: Score["breakdown"] }) => {
+      if (!result || typeof data.score !== "number") return;
+      if (data.score !== result.score) setAdjusted({ from: result.score, to: data.score });
+      setResult((prev) =>
+        prev && data.breakdown
+          ? { ...prev, score: data.score!, grade: data.grade ?? prev.grade, breakdown: data.breakdown }
+          : prev,
+      );
+    },
+    [result],
+  );
+
+  /**
+   * 내 목소리로 도발하기 — 이번 녹음을 링크로 들을 수 있게 하고 보낸다.
+   * 이미 저장했으면 공유만 켜고, 아니면 "링크 공개"로 저장한다.
+   */
+  const makeLink = useCallback(async () => {
+    if (!result || linkState === "making") return;
+    const mine = attempt.current;
+    setLinkState("making");
+    setError(null);
+    try {
+      let rec = savedRec;
+      if (rec) {
+        const res = await fetch(`/api/recordings/${rec.id}/share`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ claimToken: rec.claimToken, avatar }),
+        });
+        if (!res.ok) throw new Error();
+      } else {
+        const out = await upload("link");
+        if (!out?.ok) {
+          if (mine === attempt.current) {
+            setLinkState("idle");
+            setError(out?.data?.error ?? "링크를 못 만들었어. 다시 눌러줄래?");
+          }
+          return;
+        }
+        rec = { id: out.data.recordingId, claimToken: out.data.claimToken ?? null };
+        if (mine !== attempt.current) return;
+        setSavedRec(rec);
+        applyConfirmed(out.data);
+        setPublishedPublic(false);
+        setPublishPhase("done");
+      }
+      if (mine !== attempt.current) return;
+      const link = `${window.location.origin}/p/${rec.id}`;
+      setShareUrl(link);
+      setLinkState("ready");
+      track("share", { meme_id: meme.id, via: "voice" });
+      // 기다리는 사이 제스처가 식었으면 여기서 막힌다 — 그땐 "보내기"를 한 번 더 누르면 된다.
+      await sendLink(link, challengeText(true));
+    } catch {
+      if (mine !== attempt.current) return;
+      setLinkState("idle");
+      setError("링크를 못 만들었어. 다시 눌러줄래?");
+    }
+  }, [applyConfirmed, avatar, challengeText, linkState, meme.id, result, savedRec, sendLink, upload]);
+
+  /**
+   * 결과를 서버에 저장한다 (저장하기 버튼).
+   * 링크로 이미 저장됐으면 다시 올리지 않고 공개 여부만 바꾼다.
+   */
+  const publish = useCallback(async () => {
+    if (!result) return;
+    const makePublic = loggedIn && wantsPublic;
+    const mine = attempt.current;
+
+    setPublishPhase("publishing");
+    setError(null);
+    try {
+      if (savedRec) {
+        if (makePublic) {
+          const { error: e } = await createClient()
+            .from("recordings")
+            .update({ is_public: true })
+            .eq("id", savedRec.id);
+          if (e) throw e;
+        }
+        setPublishedPublic(makePublic);
+        setPublishPhase("done");
+        return;
+      }
+      const out = await upload(makePublic ? "public" : "private");
+      if (!out || mine !== attempt.current) return;
+      if (!out.ok) {
+        setError(out.data.error ?? "저장이 안 됐어. 다시 눌러줄래?");
         setPublishPhase("idle");
         return;
       }
-
-      if (typeof data.score === "number" && data.score !== result.score) {
-        setAdjusted({ from: result.score, to: data.score });
-      }
-      setResult((prev) =>
-        prev ? { ...prev, score: data.score, grade: data.grade, breakdown: data.breakdown } : prev,
-      );
+      setSavedRec({ id: out.data.recordingId, claimToken: out.data.claimToken ?? null });
+      applyConfirmed(out.data);
       setPublishedPublic(makePublic);
       setPublishPhase("done");
     } catch {
@@ -666,7 +771,7 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
       setError("네트워크가 끊겼어. 다시 저장해줄래?");
       setPublishPhase("idle");
     }
-  }, [loggedIn, meme.id, result, wantsPublic]);
+  }, [applyConfirmed, loggedIn, result, savedRec, upload, wantsPublic]);
 
   const ringOffset = RING_C * (1 - remain);
 
@@ -1062,9 +1167,32 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
           )}
 
           <div className={styles.dock}>
-            <button className={styles.go} onClick={share}>
-              {copied ? "링크 복사됨" : "친구한테 던지기"}
+            <button
+              className={styles.go}
+              onClick={
+                linkState === "ready" && shareUrl
+                  ? () => void sendLink(shareUrl, challengeText(true))
+                  : makeLink
+              }
+              disabled={linkState === "making"}
+            >
+              {linkState === "making"
+                ? "링크 만드는 중…"
+                : linkState === "ready"
+                  ? copied
+                    ? "링크 복사됨"
+                    : "보내기 ↗"
+                  : "내 목소리로 도발하기"}
             </button>
+            <p className={styles.shareNote}>
+              {linkState === "ready"
+                ? "링크를 연 친구는 네 캐릭터가 네 목소리로 외치는 걸 들어"
+                : "링크를 받은 사람만 이 녹음을 들을 수 있어"}
+              {" · "}
+              <button type="button" className={styles.textBtn} onClick={shareScore}>
+                점수만 보내기
+              </button>
+            </p>
             <div className={styles.secondary}>
               <button
                 className={styles.ghost}
