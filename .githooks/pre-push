@@ -1,31 +1,44 @@
 #!/bin/sh
-# main 브랜치로 직접 push하는 것을 막는다.
-# (무료 플랜 private 저장소는 서버측 브랜치 보호를 못 걸어서 로컬에서 막음)
+# main 에 올리기 전 검사.
 #
-# 설치: git config core.hooksPath .githooks
-# 정말 필요하면 우회: git push --no-verify
+# main 에 바로 작업한다(PR·프리뷰 없이). 그 대신 CI 가 하던 검사를 push 직전에
+# 여기서 돌린다 — 깨진 코드가 main 에 올라가면 Vercel 이 그대로 프로덕션에 낸다.
+#
+# 설치: git config core.hooksPath .githooks   (setup.sh 가 해준다)
+# 정말 급하면 우회: git push --no-verify
 
-protected="main"
+root="$(git rev-parse --show-toplevel)"
+fail=0
 
-while read -r _local_ref _local_sha remote_ref _remote_sha; do
-  branch="${remote_ref#refs/heads/}"
-  if [ "$branch" = "$protected" ]; then
-    cat >&2 <<'MSG'
+while read -r _local_ref local_sha _remote_ref remote_sha; do
+  # 브랜치 삭제 push 는 검사할 게 없다.
+  [ "$local_sha" = "0000000000000000000000000000000000000000" ] && continue
 
-  ✋ main 에 직접 push 하려고 합니다.
+  if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+    changed="$(git diff --name-only origin/main "$local_sha" 2>/dev/null)"
+  else
+    changed="$(git diff --name-only "$remote_sha" "$local_sha" 2>/dev/null)"
+  fi
 
-  대신 이렇게 하세요:
+  if echo "$changed" | grep -q '^web/'; then
+    echo "▶ 웹 검사 (lint · 타입)" >&2
+    (cd "$root/web" && npm run -s lint && npx tsc --noEmit) || fail=1
+  fi
 
-      git checkout -b feat/작업이름
-      git push -u origin feat/작업이름
-      gh pr create --fill
-
-  자세한 규칙: CONTRIBUTING.md
-  (정말 예외가 필요하면: git push --no-verify)
-
-MSG
-    exit 1
+  if echo "$changed" | grep -qE '\.py$|^test/'; then
+    echo "▶ 채점 엔진 검사 (pytest)" >&2
+    (cd "$root" && python -m pytest test/ -q) || fail=1
   fi
 done
+
+if [ "$fail" -ne 0 ]; then
+  cat >&2 <<'MSG'
+
+  ✋ 검사가 실패해서 push 를 멈췄어요. 위 오류를 고친 뒤 다시 push 하세요.
+  (정말 급하면: git push --no-verify)
+
+MSG
+  exit 1
+fi
 
 exit 0

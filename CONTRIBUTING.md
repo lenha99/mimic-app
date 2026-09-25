@@ -13,9 +13,9 @@ sh setup.sh          # 훅 등록 + pub get (Windows는 Git Bash에서)
 cd web && npm run dev   # http://localhost:3000
 ```
 
-`setup.sh`가 `main` 직접 push를 막는 훅을 깔아준다. **이걸 안 돌리면 실수로
-main에 밀어넣게 된다.** (무료 플랜 private 저장소라 GitHub 서버쪽 보호를
-못 걸어서 로컬에서 막는 방식)
+`setup.sh`가 push 직전 검사 훅을 깔아준다 — 웹을 고쳤으면 lint·타입 검사,
+파이썬을 고쳤으면 pytest 를 돌리고, 실패하면 push 를 멈춘다. **이걸 안 돌리면
+깨진 코드가 그대로 main 에, 곧 프로덕션에 올라간다.**
 
 Node 와 Python 만 있으면 된다. 구조는 `CLAUDE.md` 참고.
 서버(Modal) 없이도 앱은 뜬다. 채점만 안 될 뿐.
@@ -46,8 +46,10 @@ Node 와 Python 만 있으면 된다. 구조는 `CLAUDE.md` 참고.
 
 ## 1. 절대 규칙 (이것만 지키면 됨)
 
-1. **`main`에 직접 push 하지 않는다.** 항상 브랜치 → PR → merge.
-   (`setup.sh`를 돌렸으면 훅이 알아서 막아준다)
+1. **`main`에서 바로 작업하고 push 한다.** 지금 규모에선 브랜치·PR·프리뷰가
+   얻는 것보다 느린 게 크다(2026-09 결정). 대신 push 직전 검사를 통과해야 한다
+   (`setup.sh`를 돌렸으면 훅이 알아서 돌린다). 큰 작업이나 같이 봐야 할 변경만
+   브랜치 → PR 로 간다.
 2. **작업 시작 전에 `git pull`** 한다. 안 하면 충돌난다.
 3. **`.env`·토큰·키는 커밋하지 않는다.** (`.gitignore`에 이미 막아둠)
 4. **서로 같은 파일을 동시에 만지지 않는다.** 만질 거면 먼저 말한다.
@@ -61,23 +63,24 @@ Node 와 Python 만 있으면 된다. 구조는 `CLAUDE.md` 참고.
 git checkout main
 git pull
 
-# 2) 브랜치 파기
-git checkout -b feat/record-retry
-
-# 3) 작업 → 커밋 (작게 자주)
+# 2) 작업 → 커밋 (작게 자주)
 git add -A
 git commit -m "feat: 녹음 실패 시 재시도 버튼 추가"
 
-# 4) 올리고 PR 만들기
-git push -u origin feat/record-retry
-gh pr create --fill          # 또는 GitHub 웹에서 'Compare & pull request'
-
-# 5) 상대가 리뷰 → merge → 브랜치 자동 삭제
+# 3) 올리기 — 훅이 검사를 돌리고, 통과하면 올라간다. main 은 곧 프로덕션이다.
+git push
 ```
 
-merge된 뒤 로컬 정리:
+push 가 "이미 앞서 있다"며 거절되면 상대가 먼저 올린 것이다:
 ```bash
-git checkout main && git pull && git branch -d feat/record-retry
+git pull --rebase && git push
+```
+
+큰 작업이라 같이 봐야 하면 그때만 브랜치 → PR:
+```bash
+git checkout -b feat/record-retry
+git push -u origin feat/record-retry
+gh pr create --fill
 ```
 
 ---
