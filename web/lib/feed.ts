@@ -79,16 +79,25 @@ export type FeedPage = {
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
+/**
+ * DB 왕복을 두 번으로 묶는다. 한 번씩 차례로 기다리면 왕복마다 수백 ms 가 쌓여
+ * 첫 화면이 3초 가까이 걸렸다. 서로 기다릴 이유가 없는 건 전부 한꺼번에 보낸다:
+ *   1차 — 피드 조회 · 카탈로그 · 대사별 녹음 수(원본 카드용) · 보는 사람
+ *   2차 — 재생 URL 서명 · 사용자 챌린지 이름 (1차 결과가 있어야 한다)
+ * 녹음 수는 원본 카드가 필요 없는 페이지에서도 미리 센다 — 가벼운 쿼리 하나를
+ * 헛되이 쓰는 게 필요할 때 한 번 더 왕복하는 것보다 싸다.
+ */
 export async function loadFeed(
   supabase: Supabase,
-  { sort, offset = 0, pin = null, viewerId = null }: {
+  { sort, offset = 0, pin = null, viewer = null }: {
     sort: FeedSort;
     offset?: number;
     pin?: string | null;
-    viewerId?: string | null;
+    /** 보는 사람 id. 조회와 동시에 알아내도록 약속으로 받는다. */
+    viewer?: Promise<string | null> | string | null;
   },
 ): Promise<FeedPage> {
-  const [{ data: rows, error }, catalog] = await Promise.all([
+  const [{ data: rows, error }, catalog, takeCounts, viewerId] = await Promise.all([
     supabase.rpc("feed_page", {
       p_sort: sort,
       p_offset: offset,
@@ -96,12 +105,16 @@ export async function loadFeed(
       p_pin: pin && isUuid(pin) ? pin : null,
     }),
     getMemes(),
+    countTakes(),
+    viewer,
   ]);
   // 피드 조회가 실패해도 원본 카드로는 뜬다 — 첫 화면이 에러면 그냥 닫는다.
   const list = error ? [] : (rows ?? []);
 
-  const memes = await resolveMemes(catalog.memes, list.map((r) => r.meme_id));
-  const urls = await signAudio(list.map((r) => r.audio_path));
+  const [memes, urls] = await Promise.all([
+    resolveMemes(catalog.memes, list.map((r) => r.meme_id)),
+    signAudio(list.map((r) => r.audio_path)),
+  ]);
 
   const takes: FeedTake[] = [];
   for (const r of list) {
@@ -135,8 +148,7 @@ export async function loadFeed(
   }
 
   // 녹음이 바닥났다 — 원본 카드를 붙이고 끝낸다.
-  const tail = await challengeTail(catalog.memes);
-  return { items: [...takes, ...tail], nextOffset: null };
+  return { items: [...takes, ...challengeTail(catalog.memes, takeCounts)], nextOffset: null };
 }
 
 /** 녹음 하나만 다시 — 서명 URL 이 만료됐을 때. 공개가 풀렸으면 null. */
@@ -146,7 +158,7 @@ export async function loadTake(
   viewerId: string | null,
 ): Promise<FeedTake | null> {
   if (!isUuid(id)) return null;
-  const { items } = await loadFeed(supabase, { sort: "new", pin: id, viewerId });
+  const { items } = await loadFeed(supabase, { sort: "new", pin: id, viewer: viewerId });
   const hit = items[0];
   return hit?.kind === "take" && hit.id === id ? hit : null;
 }
@@ -197,20 +209,7 @@ async function resolveMemes(catalog: Meme[], ids: string[]): Promise<Map<string,
  * 원본 카드 — 공개 녹음이 적은 대사부터. 아무도 안 한 대사가 "첫 번째" 자리를
  * 제일 많이 남겨두고 있다. 명대사를 동물 소리보다 앞에 둔다(피드는 말소리가 재밌다).
  */
-async function challengeTail(catalog: Meme[]): Promise<FeedChallenge[]> {
-  const takes = new Map<string, number>();
-  try {
-    const { data } = await createPublicClient()
-      .from("recordings")
-      .select("meme_id")
-      .eq("is_public", true)
-      .eq("hidden", false)
-      .limit(2000);
-    for (const r of data ?? []) takes.set(r.meme_id, (takes.get(r.meme_id) ?? 0) + 1);
-  } catch {
-    // 개수를 몰라도 카드는 붙인다 — 전부 "첫 번째"로 보일 뿐이다.
-  }
-
+function challengeTail(catalog: Meme[], takes: Map<string, number>): FeedChallenge[] {
   return catalog
     .map((m, i) => ({ m, i, n: takes.get(m.id) ?? 0 }))
     .sort((a, b) => a.n - b.n || Number(!a.m.line) - Number(!b.m.line) || a.i - b.i)
@@ -222,6 +221,21 @@ async function challengeTail(catalog: Meme[]): Promise<FeedChallenge[]> {
       refUrl: refAudio(m.id),
       takes: n,
     }));
+}
+
+/** 대사별 공개 녹음 수. 못 세도 카드는 붙인다 — 전부 "첫 번째"로 보일 뿐이다. */
+async function countTakes(): Promise<Map<string, number>> {
+  const takes = new Map<string, number>();
+  try {
+    const { data } = await createPublicClient()
+      .from("recordings")
+      .select("meme_id")
+      .eq("is_public", true)
+      .eq("hidden", false)
+      .limit(2000);
+    for (const r of data ?? []) takes.set(r.meme_id, (takes.get(r.meme_id) ?? 0) + 1);
+  } catch {}
+  return takes;
 }
 
 function isUuid(s: string): boolean {

@@ -25,12 +25,12 @@ export default async function FeedPage({ searchParams }: Props) {
   const pin = r ?? null;
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const viewerId = user?.id ?? null;
-
-  const page = await loadFeed(supabase, { sort, pin, viewerId });
+  // 누가 보는지는 피드 조회와 동시에 알아낸다 — 기다렸다 조회하면 왕복이 하나 는다.
+  const viewer = supabase.auth
+    .getUser()
+    .then(({ data }) => data.user?.id ?? null)
+    .catch(() => null);
+  const [page, viewerId] = await Promise.all([loadFeed(supabase, { sort, pin, viewer }), viewer]);
 
   return (
     <Feed

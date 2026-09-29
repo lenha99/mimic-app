@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import {
+  memo,
   useCallback,
   useEffect,
   useRef,
@@ -9,6 +10,7 @@ import {
   useSyncExternalStore,
   type CSSProperties,
   type Ref,
+  type RefObject,
 } from "react";
 import { usePlaybackLevel } from "@/components/use-playback-level";
 import { VoiceAvatar } from "@/components/voice-avatar";
@@ -288,15 +290,21 @@ export function Feed({
   }, []);
 
   // 다음 사람 녹음을 미리 받아 둔다 — 넘기자마자 나와야 넘기는 맛이 난다.
-  const preloader = useRef<HTMLAudioElement | null>(null);
+  // 원본만 받아두면 원본이 끝나는 순간 그 사람 목소리에서 또 멈춘다. 둘 다 받는다.
+  const preloader = useRef<HTMLAudioElement[]>([]);
   useEffect(() => {
     const next = items[active + 1];
-    const url = next ? (next.kind === "take" && !refFirst ? next.audioUrl : next.refUrl) : null;
-    if (!url) return;
-    const a = new Audio();
-    a.preload = "auto";
-    a.src = url;
-    preloader.current = a;
+    if (!next) return;
+    const urls = [
+      next.kind === "take" && !refFirst ? null : next.refUrl,
+      next.kind === "take" ? next.audioUrl : null,
+    ].filter((u): u is string => !!u);
+    preloader.current = urls.map((url) => {
+      const a = new Audio();
+      a.preload = "auto";
+      a.src = url;
+      return a;
+    });
   }, [active, items, refFirst]);
 
   // ── 다음 페이지 ─────────────────────────────────────────────────────────
@@ -442,11 +450,23 @@ export function Feed({
     flash("피드에서 내렸어. 프로필엔 그대로 있어");
   };
 
+  // ── 카드에 넘기는 손잡이 ───────────────────────────────────────────────
+  // 카드는 memo 로 감싸서 "지금 재생 중인 한 장"만 다시 그린다. 그러려면 넘기는
+  // 함수가 렌더마다 새로 만들어지면 안 된다 — 최신 구현은 ref 에 두고, 카드에는
+  // 절대 바뀌지 않는 껍데기를 준다.
+  const handlers = useRef({ togglePlay, skipRef, react, openMenu: (t: FeedTake) => setSheet({ type: "menu", item: t }) });
+  useEffect(() => {
+    handlers.current = { togglePlay, skipRef, react, openMenu: (t) => setSheet({ type: "menu", item: t }) };
+  });
+  const onTap = useCallback(() => handlers.current.togglePlay(), []);
+  const onSkipRef = useCallback(() => handlers.current.skipRef(), []);
+  const onReact = useCallback((t: FeedTake, k: "same" | "funny") => void handlers.current.react(t, k), []);
+  const onMenu = useCallback((t: FeedTake) => handlers.current.openMenu(t), []);
+
   // ── 그리기 ──────────────────────────────────────────────────────────────
   const cur = play ? items[play.index] : null;
   const phase = play ? play.phases[play.step] : null;
   const src = cur && phase ? (phase === "ref" ? cur.refUrl : cur.kind === "take" ? cur.audioUrl : null) : null;
-  const level = usePlaybackLevel(audio, src, play?.state === "playing");
   const ended = nextOffset === null;
 
   return (
@@ -501,14 +521,16 @@ export function Feed({
             accent={ACCENTS[i % ACCENTS.length]}
             isActive={i === active}
             unlocked={unlocked}
-            phases={item.kind === "take" ? (refFirst ? ["ref", "take"] : ["take"]) : ["ref"]}
+            refFirst={refFirst}
+            // 재생 상태는 그 장에만. 나머지 장은 props 가 그대로라 다시 그려지지 않는다.
             play={play?.index === i ? play : null}
-            progress={progress}
-            level={play?.index === i ? level : 0}
-            onTap={togglePlay}
-            onSkipRef={skipRef}
-            onReact={react}
-            onMenu={(t) => setSheet({ type: "menu", item: t })}
+            progress={play?.index === i ? progress : 0}
+            audio={audio}
+            src={play?.index === i ? src : null}
+            onTap={onTap}
+            onSkipRef={onSkipRef}
+            onReact={onReact}
+            onMenu={onMenu}
           />
         ))}
 
@@ -560,17 +582,18 @@ export function Feed({
 // 한 장
 // ─────────────────────────────────────────────────────────────────────────
 
-function Slide({
+const Slide = memo(function Slide({
   item,
   index,
   total,
   accent,
   isActive,
   unlocked,
-  phases,
+  refFirst,
   play,
   progress,
-  level,
+  audio,
+  src,
   onTap,
   onSkipRef,
   onReact,
@@ -582,15 +605,18 @@ function Slide({
   accent: (typeof ACCENTS)[number];
   isActive: boolean;
   unlocked: boolean;
-  phases: Phase[];
+  refFirst: boolean;
   play: Play | null;
   progress: number;
-  level: number;
+  audio: RefObject<HTMLAudioElement | null>;
+  /** 이 장에서 지금 나오는 소리. 이 장이 재생 중이 아니면 null. */
+  src: string | null;
   onTap: () => void;
   onSkipRef: () => void;
   onReact: (item: FeedTake, kind: "same" | "funny") => void;
   onMenu: (item: FeedTake) => void;
 }) {
+  const phases: Phase[] = item.kind === "take" ? (refFirst ? ["ref", "take"] : ["take"]) : ["ref"];
   const take = item.kind === "take" ? item : null;
   const takes = item.kind === "challenge" ? item.takes : 0;
   const phase = play ? play.phases[play.step] : null;
@@ -628,7 +654,7 @@ function Slide({
               <span key={i} className={styles.seg}>
                 <span
                   className={`${styles.segFill} ${fill < 0 ? styles.segFlow : ""} ${p === "ref" ? styles.segRef : ""}`}
-                  style={{ width: fill < 0 ? "100%" : `${fill * 100}%` }}
+                  style={{ transform: `scaleX(${fill < 0 ? 1 : fill})` }}
                 />
               </span>
             );
@@ -649,22 +675,16 @@ function Slide({
           </span>
 
           {take ? (
-            <span className={`${styles.performer} ${hearingRef ? styles.performerWait : ""}`}>
-              <VoiceAvatar avatar={take.avatar} level={hearingRef ? 0 : level} size={196} />
-              {hearingRef && (
-                <span className={styles.refBadge}>
-                  <span style={{ transform: `scale(${1 + level * 0.45})` }}>{item.meme.emoji}</span>
-                  원본 듣는 중
-                </span>
-              )}
-            </span>
+            <Performer
+              avatar={take.avatar}
+              emoji={item.meme.emoji}
+              hearingRef={hearingRef}
+              audio={audio}
+              src={src}
+              playing={state === "playing"}
+            />
           ) : (
-            <span
-              className={styles.origin}
-              style={{ "--lv": state === "playing" ? level : 0 } as CSSProperties}
-            >
-              <span>{item.meme.emoji}</span>
-            </span>
+            <Origin emoji={item.meme.emoji} audio={audio} src={src} playing={state === "playing"} />
           )}
 
           {isActive && !unlocked && (
@@ -756,6 +776,60 @@ function Slide({
         </footer>
       </div>
     </section>
+  );
+});
+
+/**
+ * 입 모양은 매 프레임 바뀐다. 그 값을 위에서 들고 있으면 피드 전체가 1초에 60번
+ * 다시 그려진다(폰에서 버벅인 원인). 소리 크기는 여기서 읽고, 다시 그려지는 것도
+ * 이 캐릭터 하나뿐이다.
+ */
+function Performer({
+  avatar,
+  emoji,
+  hearingRef,
+  audio,
+  src,
+  playing,
+}: {
+  avatar: FeedTake["avatar"];
+  emoji: string;
+  hearingRef: boolean;
+  audio: RefObject<HTMLAudioElement | null>;
+  src: string | null;
+  playing: boolean;
+}) {
+  const level = usePlaybackLevel(audio, src, playing);
+  return (
+    <span className={`${styles.performer} ${hearingRef ? styles.performerWait : ""}`}>
+      <VoiceAvatar avatar={avatar} level={hearingRef ? 0 : level} size={196} />
+      {hearingRef && (
+        <span className={styles.refBadge}>
+          <span style={{ transform: `scale(${1 + level * 0.45})` }}>{emoji}</span>
+          원본 듣는 중
+        </span>
+      )}
+    </span>
+  );
+}
+
+/** 원본 카드의 얼굴 — 이모지가 소리에 맞춰 뛴다. */
+function Origin({
+  emoji,
+  audio,
+  src,
+  playing,
+}: {
+  emoji: string;
+  audio: RefObject<HTMLAudioElement | null>;
+  src: string | null;
+  playing: boolean;
+}) {
+  const level = usePlaybackLevel(audio, src, playing);
+  return (
+    <span className={styles.origin} style={{ "--lv": level } as CSSProperties}>
+      <span>{emoji}</span>
+    </span>
   );
 }
 

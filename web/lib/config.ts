@@ -38,6 +38,11 @@ function resolveSiteUrl(): string {
   return "http://localhost:3000";
 }
 
+/**
+ * 브라우저가 원본 소리를 받는 주소. Modal 을 직접 부르지 않고 우리 도메인의
+ * /api/ref 를 거친다 — 거기서 CDN 에 캐시돼 두 번째부터는 가까운 엣지가 준다
+ * (app/api/ref/[id]/route.ts). 같은 출처라 입 모양 계산용 fetch 도 캐시를 탄다.
+ */
 export function refAudio(memeId: string): string {
-  return `${config.referenceUrl}?meme_id=${encodeURIComponent(memeId)}`;
+  return `/api/ref/${encodeURIComponent(memeId)}`;
 }
