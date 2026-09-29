@@ -44,6 +44,86 @@
       "draft": true
     },
     {
+      "id": "galbi_tongdak",
+      "title": "이것은 갈비인가 통닭인가",
+      "source": "극한직업",
+      "emoji": "🍗",
+      "plays": 0,
+      "line": "지금까지 이런 맛은 없었다. 이것은 갈비인가, 통닭인가"
+    },
+    {
+      "id": "mohito",
+      "title": "모히또 가서 몰디브 한 잔",
+      "source": "내부자들",
+      "emoji": "🍹",
+      "plays": 0,
+      "line": "모히또 가서 몰디브나 한 잔 할라니까"
+    },
+    {
+      "id": "choeseon",
+      "title": "이게 최선입니까?",
+      "source": "시크릿가든",
+      "emoji": "🧐",
+      "plays": 0,
+      "line": "이게 최선입니까? 확실해요?"
+    },
+    {
+      "id": "neona_jal",
+      "title": "너나 잘하세요",
+      "source": "친절한 금자씨",
+      "emoji": "💅",
+      "plays": 0,
+      "line": "너나 잘하세요"
+    },
+    {
+      "id": "huryeon",
+      "title": "속이 후련했냐",
+      "source": "해바라기",
+      "emoji": "🌻",
+      "plays": 0,
+      "line": "꼭 그렇게 다 가져가야만 속이 후련했냐!"
+    },
+    {
+      "id": "gyehoek",
+      "title": "너는 계획이 다 있구나",
+      "source": "기생충",
+      "emoji": "🪨",
+      "plays": 0,
+      "line": "너는 계획이 다 있구나"
+    },
+    {
+      "id": "neugeu_seojang",
+      "title": "느그 서장 남천동 살제",
+      "source": "범죄와의 전쟁",
+      "emoji": "🚔",
+      "plays": 0,
+      "line": "느그 서장 남천동 살제?"
+    },
+    {
+      "id": "idae",
+      "title": "나 이대 나온 여자야",
+      "source": "타짜",
+      "emoji": "💄",
+      "plays": 0,
+      "line": "나 이대 나온 여자야"
+    },
+    {
+      "id": "sara_itne",
+      "title": "살아있네",
+      "source": "범죄와의 전쟁",
+      "emoji": "🔥",
+      "plays": 0,
+      "line": "살아있네~"
+    },
+    {
+      "id": "deuruwa",
+      "title": "드루와",
+      "source": "신세계",
+      "emoji": "🚪",
+      "plays": 0,
+      "line": "드루와"
+    },
+    {
       "id": "rooster",
       "title": "꼬끼오",
       "source": "수탉",
