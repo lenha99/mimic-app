@@ -1108,7 +1108,7 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
               <p className={styles.publishDone}>
                 저장 완료 ✓{" "}
                 {publishedPublic
-                  ? "이제 다른 사람들이 듣고 투표할 수 있어."
+                  ? "피드에 올라갔어. 사람들이 원본이랑 나란히 듣고 반응할 거야."
                   : loggedIn
                     ? "나만 들을 수 있게 저장했어."
                     : "로그인하면 내 녹음으로 가져올 수 있어."}
@@ -1118,9 +1118,9 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
                   서버가 다시 채점해서 점수가 확정됐어 ({adjusted.from} → {adjusted.to}점)
                 </p>
               )}
-              {publishedPublic ? (
-                <Link href="/vote" className={styles.publishLink}>
-                  투표하러 가기 →
+              {publishedPublic && savedRec ? (
+                <Link href={`/feed?r=${savedRec.id}`} className={styles.publishLink}>
+                  피드에서 내 녹음 보기 →
                 </Link>
               ) : (
                 !loggedIn && (
@@ -1140,11 +1140,11 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
                     onChange={(e) => setWantsPublic(e.target.checked)}
                     disabled={publishPhase === "publishing"}
                   />
-                  <span>다른 사람이 듣고 투표할 수 있게 공개</span>
+                  <span>피드에 올리기 · 다른 사람이 듣고 반응할 수 있어</span>
                 </label>
               ) : (
                 <p className={styles.publishNote}>
-                  저장해두면 로그인한 뒤 내 캐릭터로 공개하고 투표받을 수 있어
+                  저장해두면 로그인한 뒤 내 캐릭터로 피드에 올릴 수 있어
                 </p>
               )}
               {loggedIn && (
@@ -1160,7 +1160,7 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
                 {publishPhase === "publishing"
                   ? "저장 중… 서버가 한 번 더 채점해"
                   : loggedIn && wantsPublic
-                    ? "공개하고 저장"
+                    ? "피드에 올리고 저장"
                     : "저장하기"}
               </button>
             </div>

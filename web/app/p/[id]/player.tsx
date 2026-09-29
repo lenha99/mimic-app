@@ -103,8 +103,8 @@ export function SharePlayer({
         나도 해보기 · {score}점 넘어봐
       </Link>
       <p className={styles.note}>설치 없이 · 로그인 없이 · 탭 한 번이면 시작</p>
-      <Link href="/" className={styles.home}>
-        다른 소리 구경하기 →
+      <Link href="/feed" className={styles.home}>
+        다른 사람들 따라한 거 구경하기 →
       </Link>
     </>
   );

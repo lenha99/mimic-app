@@ -147,6 +147,26 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["reports"]["Insert"]>;
         Relationships: [];
       };
+      /**
+       * 피드 반응. 행은 본인 것만 읽힌다(개수는 feed_page 가 센다).
+       * 공개된 남의 녹음에만 누를 수 있다 — RLS 가 막는다.
+       */
+      reactions: {
+        Row: {
+          recording_id: string;
+          user_id: string;
+          kind: "same" | "funny";
+          created_at: string;
+        };
+        Insert: {
+          recording_id: string;
+          user_id: string;
+          kind: "same" | "funny";
+          created_at?: string;
+        };
+        Update: never;
+        Relationships: [];
+      };
       /** 사용자 챌린지. 기준 음성은 Modal 볼륨 {id}.wav. 쓰기는 서버(service_role)만. */
       challenges: {
         Row: {
@@ -194,6 +214,31 @@ export interface Database {
       get_vote_matchup: {
         Args: { p_exclude_user?: string | null };
         Returns: { meme_id: string; id: string; audio_path: string; user_id: string | null }[];
+      };
+      /** 피드 한 페이지 — 공개 녹음 + 반응 개수 + 내가 누른 반응. p_pin 은 첫 장 고정. */
+      feed_page: {
+        Args: {
+          p_sort?: "hot" | "new" | "funny";
+          p_offset?: number;
+          p_limit?: number;
+          p_pin?: string | null;
+        };
+        Returns: {
+          id: string;
+          meme_id: string;
+          audio_path: string;
+          score: number | null;
+          grade: string | null;
+          created_at: string;
+          user_id: string | null;
+          nickname: string | null;
+          avatar: AvatarJson | null;
+          same_count: number;
+          funny_count: number;
+          my_same: boolean;
+          my_funny: boolean;
+          pinned: boolean;
+        }[];
       };
       /** 게스트 녹음을 로그인 계정에 귀속. 토큰은 1회용이라 성공 시 소각된다. */
       claim_recording: {

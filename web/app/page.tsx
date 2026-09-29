@@ -62,6 +62,10 @@ export default async function Home() {
       <header className={styles.head}>
         <span className={styles.logo}>MIMIC</span>
         <nav className={styles.nav}>
+          {/* 피드는 공개 녹음이 없어도 원본 카드로 채워지므로 늘 보인다. */}
+          <Link href="/feed" className={`${styles.navPill} ${styles.navFeed}`}>
+            ▶ 피드
+          </Link>
           {/* 카탈로그 서버가 늦으면 내장 목록(FALLBACK)으로 그린다. 사용자에겐 의미 없는 말이라 안 보인다. */}
           {social && (
             <Link href="/rank" className={styles.navPill}>
@@ -126,6 +130,20 @@ export default async function Home() {
           <b>3</b> 친구한테 던지기
         </li>
       </ol>
+
+      {/* 하기 전에 남이 한 걸 보면 "나도 저 정도는" 이 생긴다. 녹음 버튼 바로 아래 둔다. */}
+      <Link href="/feed" className={styles.feedBanner}>
+        <span className={styles.feedPlay} aria-hidden="true">
+          ▶
+        </span>
+        <span className={styles.feedText}>
+          <b>다른 사람들은 어떻게 했나</b>
+          <span>원본 한 번, 그 사람 목소리 한 번 · 위로 넘기면 다음</span>
+        </span>
+        <span className={styles.feedGo} aria-hidden="true">
+          →
+        </span>
+      </Link>
 
       {lines.length > 0 && (
         <section className={styles.section}>

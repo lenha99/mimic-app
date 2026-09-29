@@ -36,6 +36,11 @@ function LoginForm() {
   const params = useSearchParams();
   const oauthError = params.get("error");
   const reason = params.get("reason");
+  // 피드에서 반응하려다 온 사람은 보던 장으로 돌려보낸다. 내부 경로만 — "//evil.com" 은
+  // 브라우저가 다른 사이트로 읽는다 (auth/callback 의 safeNext 와 같은 규칙).
+  const rawNext = params.get("next");
+  // "/\evil.com" 도 브라우저는 "//evil.com" 으로 읽는다.
+  const next = rawNext && /^\/(?![/\\])/.test(rawNext) ? rawNext : null;
 
   const [mode, setMode] = useState<Mode>("login");
   const [username, setUsername] = useState("");
@@ -92,9 +97,9 @@ function LoginForm() {
         return;
       }
 
-      // 홈으로 — 로그인한 홈 맨 위에 "오늘은 뭐 해볼까?"와 할 일이 뜨고, 로그인 전에
+      // 기본은 홈 — 로그인한 홈 맨 위에 "오늘은 뭐 해볼까?"와 할 일이 뜨고, 로그인 전에
       // 저장한 녹음도 거기서 이 계정으로 가져온다 (components/viewer-welcome).
-      router.replace("/");
+      router.replace(next ?? "/");
       router.refresh();
     } catch {
       setError("네트워크가 끊겼어요. 다시 시도해주세요.");
@@ -106,7 +111,9 @@ function LoginForm() {
   const signInWith = (provider: "kakao" | "google") =>
     supabase.auth.signInWithOAuth({
       provider,
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback${next ? `?next=${encodeURIComponent(next)}` : ""}`,
+      },
     });
 
   const signup = mode === "signup";

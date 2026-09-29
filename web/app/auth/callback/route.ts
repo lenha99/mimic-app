@@ -49,7 +49,8 @@ function resolveOrigin(request: Request): string {
  * ("//evil.com" 은 브라우저가 프로토콜 상대 URL로 읽는다). 내부 경로만 허용.
  */
 function safeNext(raw: string | null): string {
-  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return "/profile";
+  // "/\evil.com" 도 브라우저는 "//evil.com" 으로 읽는다.
+  if (!raw || !/^\/(?![/\\])/.test(raw)) return "/profile";
   return raw;
 }
 

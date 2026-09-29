@@ -1,0 +1,773 @@
+/*
+ * 피드 — 한 화면에 한 사람. 위로 넘기면 다음.
+ * 화면 전체를 쓰고(홈의 .shell 여백 없음), 데스크톱에선 폰 폭 기둥으로 가운데 선다.
+ * 위: 정렬 탭 · 가운데: 무대(캐릭터 + 대사) · 오른쪽: 반응 · 아래: 누구 · 나도 해보기.
+ */
+
+.root {
+  position: fixed;
+  inset: 0;
+  background: var(--stage);
+  overflow: hidden;
+}
+
+/* 위 막대 ---------------------------------------------------------------- */
+
+.top {
+  position: absolute;
+  z-index: 5;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  padding: max(10px, env(safe-area-inset-top)) 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(to bottom, rgba(10, 10, 11, 0.92), rgba(10, 10, 11, 0));
+  pointer-events: none;
+}
+
+.top > * {
+  pointer-events: auto;
+}
+
+.home {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--white);
+  font-size: 18px;
+  font-weight: 800;
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.tabs {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+}
+
+.tab {
+  padding: 6px 11px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ash);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 120ms ease, background 120ms ease;
+}
+
+.tab:hover {
+  color: var(--white);
+}
+
+.tabOn {
+  color: var(--stage);
+  background: var(--white);
+}
+
+.tabOn:hover {
+  color: var(--stage);
+}
+
+.refToggle {
+  flex: none;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--rule);
+  background: transparent;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ash);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.refToggle::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 5px;
+  border-radius: 50%;
+  vertical-align: 1px;
+  background: var(--ash-dim);
+}
+
+.refToggleOn {
+  color: var(--white);
+  border-color: rgba(0, 229, 255, 0.45);
+}
+
+.refToggleOn::before {
+  background: var(--cyan);
+  box-shadow: 0 0 6px var(--cyan);
+}
+
+/* 스크롤 ---------------------------------------------------------------- */
+
+.scroller {
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+}
+
+.scroller::-webkit-scrollbar {
+  display: none;
+}
+
+.slide {
+  position: relative;
+  height: 100dvh;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  display: flex;
+  justify-content: center;
+}
+
+/* 장마다 조명 색이 바뀐다 — 넘겼다는 게 색으로도 느껴진다. */
+.volt {
+  --accent: 232, 255, 58;
+}
+.cyan {
+  --accent: 0, 229, 255;
+}
+.pink {
+  --accent: 255, 45, 120;
+}
+.lime {
+  --accent: 124, 255, 107;
+}
+
+.slide.volt,
+.slide.cyan,
+.slide.pink,
+.slide.lime {
+  background:
+    radial-gradient(90% 50% at 50% 38%, rgba(var(--accent), 0.16), transparent 70%),
+    radial-gradient(70% 40% at 50% 100%, rgba(var(--accent), 0.08), transparent 70%),
+    var(--stage);
+}
+
+.frame {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: calc(max(10px, env(safe-area-inset-top)) + 52px) 16px
+    calc(env(safe-area-inset-bottom) + 18px);
+}
+
+/* 진행 막대 — 원본 칸(시안)과 그 사람 칸(흰색) ------------------------------ */
+
+.progress {
+  display: flex;
+  gap: 4px;
+  height: 3px;
+}
+
+.seg {
+  flex: 1;
+  overflow: hidden;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.segFill {
+  display: block;
+  height: 100%;
+  background: var(--white);
+  transition: width 250ms linear;
+}
+
+.segRef {
+  background: var(--cyan);
+}
+
+/* 길이를 모르는 녹음 — 가짜 퍼센트 대신 흐르는 빛. */
+.segFlow {
+  background: linear-gradient(90deg, transparent, var(--white), transparent);
+  background-size: 50% 100%;
+  background-repeat: no-repeat;
+  animation: flow 1.1s linear infinite;
+}
+
+.segRef.segFlow {
+  background-image: linear-gradient(90deg, transparent, var(--cyan), transparent);
+}
+
+@keyframes flow {
+  from {
+    background-position: -100% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+
+/* 무대 ------------------------------------------------------------------ */
+
+.stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.stage:focus-visible {
+  outline-offset: -6px;
+  border-radius: 24px;
+}
+
+.now {
+  position: absolute;
+  top: 14px;
+  left: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--white);
+  background: rgba(255, 255, 255, 0.1);
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nowRef {
+  color: var(--stage);
+  background: var(--cyan);
+}
+
+.bubble {
+  max-width: min(320px, 82%);
+  padding: 9px 16px;
+  border-radius: 18px;
+  background: var(--white);
+  color: var(--stage);
+  font-family: var(--display);
+  font-size: 20px;
+  line-height: 1.3;
+  text-align: center;
+  word-break: keep-all;
+  transform: rotate(-3deg);
+  transition: transform 140ms ease;
+}
+
+.bubbleOn {
+  transform: rotate(-2deg) scale(1.06);
+}
+
+.performer {
+  position: relative;
+  display: flex;
+  transition: opacity 200ms ease, filter 200ms ease;
+}
+
+/* 원본이 나오는 동안 캐릭터는 숨죽이고 기다린다 — 곧 자기 차례라는 게 보인다. */
+.performerWait > svg {
+  opacity: 0.55;
+  filter: saturate(0.6);
+}
+
+.refBadge {
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px 5px 8px;
+  border-radius: 999px;
+  background: var(--cyan);
+  color: var(--stage);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.refBadge span {
+  display: inline-block;
+  font-size: 16px;
+  transition: transform 60ms linear;
+}
+
+/* 원본 카드 — 캐릭터 대신 그 소리의 얼굴(이모지)이 소리에 맞춰 뛴다. */
+.origin {
+  --lv: 0;
+  width: 188px;
+  height: 188px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(var(--accent), 0.22), rgba(var(--accent), 0.04) 70%);
+  border: 2px dashed rgba(var(--accent), 0.5);
+  box-shadow: 0 0 calc(var(--lv) * 60px) rgba(var(--accent), 0.45);
+  transition: box-shadow 60ms linear;
+}
+
+.origin span {
+  font-size: 88px;
+  line-height: 1;
+  transform: scale(calc(1 + var(--lv) * 0.3));
+  transition: transform 60ms linear;
+}
+
+.unlock {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--white);
+  background: rgba(10, 10, 11, 0.55);
+  border-radius: 24px;
+  backdrop-filter: blur(2px);
+}
+
+.unlock b {
+  width: 76px;
+  height: 76px;
+  display: grid;
+  place-items: center;
+  padding-left: 6px;
+  border-radius: 50%;
+  background: var(--volt);
+  color: var(--stage);
+  font-size: 30px;
+  box-shadow: 0 0 0 0 rgba(232, 255, 58, 0.5);
+  animation: ping 1.8s ease-out infinite;
+}
+
+@keyframes ping {
+  to {
+    box-shadow: 0 0 0 22px rgba(232, 255, 58, 0);
+  }
+}
+
+.pauseMark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  padding-left: 5px;
+  border-radius: 50%;
+  background: rgba(10, 10, 11, 0.6);
+  font-size: 26px;
+  color: var(--white);
+  pointer-events: none;
+}
+
+.again {
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--rule);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--white);
+}
+
+.skip {
+  align-self: center;
+  margin-top: -6px;
+  margin-bottom: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 229, 255, 0.4);
+  background: rgba(0, 229, 255, 0.08);
+  color: var(--cyan);
+  font-size: 12.5px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* 오른쪽 반응 줄 -------------------------------------------------------- */
+
+.rail {
+  position: absolute;
+  right: 10px;
+  bottom: calc(env(safe-area-inset-bottom) + 150px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.railBtn {
+  width: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.railIcon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 22px;
+  letter-spacing: -1px;
+  transition: transform 120ms ease, background 120ms ease;
+}
+
+.railBtn:active .railIcon {
+  transform: scale(0.9);
+}
+
+.railOn .railIcon {
+  background: rgba(var(--accent, 232, 255, 58), 0.22);
+  border-color: rgba(var(--accent, 232, 255, 58), 0.7);
+  animation: pop 260ms ease;
+}
+
+@keyframes pop {
+  50% {
+    transform: scale(1.18);
+  }
+}
+
+.railBtn[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.railLabel {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--white);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+
+/* 아래 정보 ------------------------------------------------------------- */
+
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  /* 오른쪽 반응 줄과 겹치지 않게 — 줄이 긴 제목은 두 줄로 내려간다. */
+  padding-right: 64px;
+}
+
+.meme {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 19px;
+  line-height: 1.3;
+  color: var(--white);
+  word-break: keep-all;
+}
+
+/* 출처는 늘 제 줄에. 제목 옆에 붙이면 좁은 폰에서 "·" 만 남고 줄이 갈린다. */
+.source {
+  display: block;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ash);
+}
+
+.byline {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  font-size: 13.5px;
+  color: var(--ash);
+}
+
+.byline b {
+  color: var(--white);
+  font-weight: 800;
+}
+
+.mineTag {
+  padding: 1px 7px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--stage);
+  background: var(--lime);
+}
+
+.score {
+  font-family: var(--display);
+  font-size: 18px;
+  color: var(--volt);
+}
+
+.score small {
+  font-size: 12px;
+  color: var(--ash);
+}
+
+.grade {
+  font-style: normal;
+  font-size: 11.5px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--cyan);
+  color: var(--stage);
+}
+
+.ago {
+  font-size: 12px;
+}
+
+.first {
+  color: var(--volt);
+  font-weight: 700;
+}
+
+.cta {
+  margin-top: 8px;
+  width: 100%;
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 27px;
+  background: var(--volt);
+  color: var(--stage);
+  font-family: var(--display);
+  font-size: 18px;
+  text-decoration: none;
+  box-shadow: 0 8px 28px rgba(232, 255, 58, 0.25);
+}
+
+.info .cta {
+  /* 정보 칸은 반응 줄 자리를 비워 두지만 버튼은 끝까지 편다. */
+  width: calc(100% + 64px);
+}
+
+/* 끝 ------------------------------------------------------------------- */
+
+.endSlide {
+  align-items: center;
+}
+
+.end {
+  width: 100%;
+  max-width: 400px;
+  padding: 0 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.endEmoji {
+  margin: 0;
+  font-size: 56px;
+}
+
+.endTitle {
+  margin: 8px 0 4px;
+  font-family: var(--display);
+  font-size: 28px;
+  font-weight: 400;
+}
+
+.endText {
+  margin: 0 0 18px;
+  color: var(--ash);
+  font-size: 14px;
+}
+
+.endLink {
+  margin-top: 16px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--white);
+  text-decoration: none;
+}
+
+.loading {
+  align-self: center;
+  color: var(--ash);
+  font-size: 14px;
+}
+
+/* 알림 · 시트 ----------------------------------------------------------- */
+
+.toast {
+  position: absolute;
+  z-index: 8;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom) + 96px);
+  transform: translateX(-50%);
+  margin: 0;
+  max-width: calc(100% - 32px);
+  padding: 10px 16px;
+  border-radius: 14px;
+  background: var(--white);
+  color: var(--stage);
+  font-size: 13.5px;
+  font-weight: 700;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  animation: rise 180ms ease;
+}
+
+.backdrop {
+  position: absolute;
+  z-index: 10;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  animation: fade 160ms ease;
+}
+
+.sheet {
+  width: 100%;
+  max-width: 480px;
+  padding: 10px 16px calc(env(safe-area-inset-bottom) + 16px);
+  border-radius: 24px 24px 0 0;
+  background: var(--panel);
+  border-top: 1px solid var(--rule);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: rise 200ms ease;
+}
+
+.grip {
+  align-self: center;
+  width: 36px;
+  height: 4px;
+  margin-bottom: 6px;
+  border-radius: 2px;
+  background: var(--rule);
+}
+
+.sheetTitle {
+  margin: 0 4px;
+  font-family: var(--display);
+  font-size: 19px;
+}
+
+.sheetSub {
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ash);
+}
+
+.sheetText {
+  margin: 0 4px 6px;
+  font-size: 13.5px;
+  color: var(--ash);
+  word-break: keep-all;
+}
+
+.sheetBtn {
+  min-height: 50px;
+  padding: 10px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--rule);
+  background: var(--panel-hi);
+  font-size: 15px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.sheetBtn small {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ash);
+}
+
+.sheetDanger {
+  color: var(--pink);
+}
+
+.sheet .cta {
+  margin-top: 4px;
+}
+
+@keyframes rise {
+  from {
+    transform: translate(var(--tx, 0), 12px);
+    opacity: 0;
+  }
+}
+
+.toast {
+  --tx: -50%;
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* 낮은 화면(가로 폰·작은 창) — 캐릭터를 줄이지 않으면 버튼이 밀려난다. */
+@media (max-height: 640px) {
+  .bubble {
+    font-size: 17px;
+  }
+  .performer svg,
+  .origin {
+    width: 140px;
+    height: 140px;
+  }
+  .origin span {
+    font-size: 64px;
+  }
+  .rail {
+    bottom: calc(env(safe-area-inset-bottom) + 130px);
+    gap: 8px;
+  }
+  .railIcon {
+    width: 42px;
+    height: 42px;
+  }
+}

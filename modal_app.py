@@ -289,6 +289,8 @@ def _people(events) -> int:
 # 던지고, 받은 사람이 다시 들어온다. 어디서 새는지 모르면 고칠 곳도 모른다.
 FUNNEL = ("view_home", "view_record", "play_ref", "record_start", "score", "share",
           "view_share", "arrive_challenge")
+# 피드는 퍼널 옆길이다 — 보러 와서, 듣고, 반응하고, "나도 해보기"로 퍼널에 합류한다.
+FEED = ("view_feed", "feed_play", "feed_react", "feed_try")
 
 
 @app.function(image=slim_image, volumes={REF_DIR: volume})
@@ -323,12 +325,14 @@ def stats(days: int = 7):
         })
     out.sort(key=lambda r: -r["plays"])
 
-    funnel = []
-    for kind in FUNNEL:
-        es = [e for e in events if e.get("kind") == kind]
-        funnel.append({"step": kind, "events": len(es), "people": _people(es)})
+    def steps(kinds):
+        rows = []
+        for kind in kinds:
+            es = [e for e in events if e.get("kind") == kind]
+            rows.append({"step": kind, "events": len(es), "people": _people(es)})
+        return rows
 
-    return {"days": days, "memes": out, "funnel": funnel}
+    return {"days": days, "memes": out, "funnel": steps(FUNNEL), "feed": steps(FEED)}
 
 
 @app.function(image=slim_image, volumes={REF_DIR: volume})
@@ -346,7 +350,7 @@ async def track(request: Request):
     except Exception:
         return Response(status_code=204)
     kind = body.get("kind")
-    if kind not in FUNNEL or kind == "score":   # score 는 채점 서버가 직접 남긴다
+    if kind not in FUNNEL + FEED or kind == "score":   # score 는 채점 서버가 직접 남긴다
         return Response(status_code=204)
     rec = {}
     for k in ("meme_id", "client"):

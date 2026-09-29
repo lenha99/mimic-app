@@ -19,7 +19,12 @@ export type TrackKind =
   | "play_ref"
   | "record_start"
   | "share"
-  | "arrive_challenge";
+  | "arrive_challenge"
+  // 피드 — 보러 와서(view) → 끝까지 듣고(play) → 반응하고(react) → 나도 해본다(try)
+  | "view_feed"
+  | "feed_play"
+  | "feed_react"
+  | "feed_try";
 
 const URL_ =
   process.env.NEXT_PUBLIC_TRACK_URL ?? "https://lenha99--meme-scoring-track.modal.run";
