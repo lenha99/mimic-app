@@ -2,21 +2,6 @@
 # 월 1회, 묶어서 — 알림이 많으면 아무도 안 보게 되므로 일부러 뜸하게.
 version: 2
 updates:
-  - package-ecosystem: pub          # Flutter / Dart (pubspec.yaml)
-    directory: /
-    schedule: { interval: monthly }
-    open-pull-requests-limit: 3
-    groups:
-      dart-deps:
-        patterns: ["*"]
-        update-types: [minor, patch]
-    commit-message: { prefix: "chore" }
-    ignore:
-      # intl 은 반드시 'any' 로 둔다. flutter_localizations 가 Flutter SDK
-      # 버전마다 특정 intl 을 요구해서, 고정하면 SDK 버전이 다른 사람의
-      # 로컬에서 pub get 이 아예 실패한다. (실제로 한 번 터졌음)
-      - dependency-name: intl
-
   - package-ecosystem: pip          # 채점 서버 (requirements.txt)
     directory: /
     schedule: { interval: monthly }
