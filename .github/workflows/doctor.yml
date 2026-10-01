@@ -24,7 +24,7 @@ jobs:
 
       # 실패를 초록 체크 옆에 묻어두면 아무도 안 본다. 이슈로 올린다.
       - if: failure()
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const title = "doctor: 프로덕션이 레지스트리와 어긋났다";
