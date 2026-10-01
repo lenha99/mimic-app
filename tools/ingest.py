@@ -815,8 +815,17 @@ def cmd_doctor(a):
         if served == "unknown":
             notes.append("배포 서버가 커밋을 모른다 (git 없는 환경에서 배포됨)")
         elif served != local:
-            problems.append(f"배포본이 로컬과 다르다 (서버 {served} / 로컬 {local})."
-                            " modal deploy modal_app.py")
+            # HEAD 와 같기를 요구하면 웹만 고친 커밋마다 "낡았다"가 뜬다. 그러면
+            # 매일 빨간불이 켜지고 아무도 안 보게 된다. 배포되는 건 modal_app.py
+            # 하나뿐이니, 배포된 커밋 이후 그 파일이 바뀌었는지만 본다.
+            diff = subprocess.run(["git", "diff", "--quiet", served, "HEAD", "--", "modal_app.py"],
+                                  capture_output=True, cwd=str(ROOT))
+            if diff.returncode == 1:
+                problems.append(f"배포본이 낡았다 — 서버 {served} 이후 modal_app.py 가 바뀌었다."
+                                " modal deploy modal_app.py")
+            elif diff.returncode != 0:
+                problems.append(f"서버 커밋 {served} 를 로컬 git 에서 못 찾는다"
+                                " (main 에 없는 브랜치에서 배포했거나 fetch 가 얕다)")
     except Exception as e:
         problems.append(f"/version 을 못 읽었다 ({e}) — 배포가 이 기능보다 낡았다")
 
@@ -842,9 +851,10 @@ def cmd_doctor(a):
     print("· 기준 음성")
     for m in cat:
         mid = m["id"]
+        # 서버에 올라가는 건 정규화된 refs_kr 클립이다. refs_animals 는 그 전의
+        # 원본이라 바이트가 다를 수밖에 없다 — 거기와 대조하면 CI(refs_kr 이
+        # gitignore 라 없음)에서 동물 소리마다 "옛 버전" 오경보가 뜬다.
         wav = CLIP_DIR / f"{mid}.wav"
-        if not wav.exists():
-            wav = ROOT / "refs_animals" / f"{mid}.wav"
         try:
             data = get(f"{BASE}-reference.modal.run?meme_id={mid}")
         except Exception:

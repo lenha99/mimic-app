@@ -9,12 +9,21 @@ on:
     - cron: "0 22 * * *"   # 매일 07:00 KST
   workflow_dispatch:
 
+# 실패하면 이슈를 연다. 기본 GITHUB_TOKEN 은 읽기 전용이라 이게 없으면
+# 점검 결과를 알리는 단계가 403 으로 죽어서, 정작 무엇이 어긋났는지보다
+# "run failed" 만 남는다.
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   doctor:
     name: 프로덕션이 레지스트리와 맞는가
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0   # doctor 가 배포본 이후 서버 코드가 바뀌었는지 git 으로 본다
       - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
