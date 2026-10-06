@@ -116,7 +116,7 @@ export async function POST(req: Request) {
   const path = `${folder}/${randomUUID()}.webm`;
 
   const { error: uploadError } = await service.storage.from("recordings").upload(path, file, {
-    contentType: file.type || "audio/webm",
+    contentType: "audio/webm",
   });
   if (uploadError) {
     return Response.json({ error: "파일 저장에 실패했습니다." }, { status: 500 });
