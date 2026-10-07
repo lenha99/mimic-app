@@ -650,6 +650,29 @@ def _timing_from_path(wp, n_ref, n_usr):
     return 100.0 * float(np.exp(-dev / 0.25))
 
 
+def _timing_envelope(ref, usr):
+    """에너지 포락선 상관 × 길이 비율 (0~100).
+
+    길이만 재면 '길이만 맞으면 100점'이 된다 — 거꾸로 말해도, 잡음을 넣어도 길이가
+    같으면 만점이었다. 포락선 상관을 곱해 '언제 세고 언제 약한가' 모양까지 본다.
+    (test/calibration_test.py)
+    """
+    import numpy as np
+
+    def envelope(y, n=64):
+        rms = librosa.feature.rms(y=y, frame_length=1024, hop_length=256)[0]
+        if len(rms) < 2:
+            return np.zeros(n)
+        e = np.interp(np.linspace(0, 1, n), np.linspace(0, 1, len(rms)), rms)
+        return e / (e.max() + 1e-9)
+
+    shape = float(np.corrcoef(envelope(ref), envelope(usr))[0, 1])
+    if not np.isfinite(shape):
+        shape = 0.0
+    dur = min(len(ref), len(usr)) / max(len(ref), len(usr))
+    return 100.0 * max(0.0, shape) * dur
+
+
 def _score(reference_path, user_path):
     SR = 22050
 
@@ -694,15 +717,16 @@ def _score(reference_path, user_path):
         tone_cost = 1.0
     tone = 100.0 * float(np.clip(1.0 - tone_cost, 0.0, 1.0))
 
-    # 타이밍: 리듬이 얼마나 어긋났는가 (MFCC 정렬 경로에서 읽는다)
-    timing = _timing_from_path(wpm, ma.shape[1], mb.shape[1])
+    # 타이밍: 에너지 포락선 상관 × 길이 비율
+    timing = _timing_envelope(ref, usr)
 
     # 가중 합 (억양 없으면 그 가중치를 음색/타이밍에 재분배)
+    # 가중치 근거: test/calibration_test.py 의 변형 사다리로 격자탐색한 값.
     comps = []
     if pitch is not None:
-        comps.append((pitch, 0.40))
-    comps.append((tone, 0.40))
-    comps.append((timing, 0.20))
+        comps.append((pitch, 0.15))
+    comps.append((tone, 0.50))
+    comps.append((timing, 0.35))
     wsum = sum(w for _, w in comps)
     total = round(sum(v * w for v, w in comps) / wsum)
 
