@@ -10,7 +10,11 @@ export type Meme = {
   line?: string;
   /** 미공개. 목록에는 안 뜨고 직링크로만 열린다 (실기기 확인용). */
   draft?: boolean;
+  /** 유튜브 영상을 구간으로 보여준다. 채점 기준이 아니라 화면 재생용이다. */
+  youtube?: YoutubeClip;
 };
+
+export type YoutubeClip = { id: string; start: number; end: number };
 
 /**
  * 서버가 응답하지 않을 때 쓰는 폴백. 카탈로그와 같은 내용이다.
@@ -86,6 +90,7 @@ function normalizeMeme(raw: unknown): Meme | null {
   if (!id || !title) return null;
 
   const plays = typeof r.plays === "number" && Number.isFinite(r.plays) ? r.plays : undefined;
+  const youtube = normalizeYoutube(r.youtube);
   return {
     id,
     title,
@@ -94,7 +99,19 @@ function normalizeMeme(raw: unknown): Meme | null {
     ...(plays !== undefined ? { plays } : {}),
     ...(str(r.line) ? { line: str(r.line) } : {}),
     ...(r.draft === true ? { draft: true as const } : {}),
+    ...(youtube ? { youtube } : {}),
   };
+}
+
+/** 영상 ID는 11자 고정, 구간은 0 이상 정수이고 끝이 시작보다 뒤여야 한다. */
+function normalizeYoutube(raw: unknown): YoutubeClip | undefined {
+  if (typeof raw !== "object" || raw === null) return undefined;
+  const y = raw as Record<string, unknown>;
+  const id = typeof y.id === "string" && /^[A-Za-z0-9_-]{11}$/.test(y.id) ? y.id : null;
+  const start = Number.isInteger(y.start) && (y.start as number) >= 0 ? (y.start as number) : null;
+  const end = Number.isInteger(y.end) && (y.end as number) > (start ?? Infinity) ? (y.end as number) : null;
+  if (!id || start === null || end === null) return undefined;
+  return { id, start, end };
 }
 
 /**
