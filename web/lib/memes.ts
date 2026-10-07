@@ -10,7 +10,11 @@ export type Meme = {
   line?: string;
   /** 미공개. 목록에는 안 뜨고 직링크로만 열린다 (실기기 확인용). */
   draft?: boolean;
+  /** 유튜브 영상을 구간으로 보여준다. 채점 기준이 아니라 화면 재생용이다. */
+  youtube?: YoutubeClip;
 };
+
+export type YoutubeClip = { id: string; start: number; end: number };
 
 /**
  * 서버가 응답하지 않을 때 쓰는 폴백. 카탈로그와 같은 내용이다.
@@ -19,18 +23,18 @@ export type Meme = {
 // <generated:catalog> — content/registry.json 에서 생성. 직접 고치지 말 것.
 const FALLBACK: Meme[] = [
   { id: "muyaho", title: "무야호", source: "무한도전", emoji: "🎉", plays: 0, line: "무야호~!" },
-  { id: "eoiga_eopne", title: "어이가 없네", source: "베테랑", emoji: "😑", plays: 0, line: "어이가 없네" },
-  { id: "geoje_yaho", title: "거제 야호", source: "원이 · 리센느 미나미", emoji: "🏝️", plays: 0, line: "거제! 야호!" },
-  { id: "galbi_tongdak", title: "이것은 갈비인가 통닭인가", source: "극한직업", emoji: "🍗", plays: 0, line: "지금까지 이런 맛은 없었다. 이것은 갈비인가, 통닭인가" },
-  { id: "mohito", title: "모히또 가서 몰디브 한 잔", source: "내부자들", emoji: "🍹", plays: 0, line: "모히또 가서 몰디브나 한 잔 할라니까" },
-  { id: "choeseon", title: "이게 최선입니까?", source: "시크릿가든", emoji: "🧐", plays: 0, line: "이게 최선입니까? 확실해요?" },
-  { id: "neona_jal", title: "너나 잘하세요", source: "친절한 금자씨", emoji: "💅", plays: 0, line: "너나 잘하세요" },
-  { id: "huryeon", title: "속이 후련했냐", source: "해바라기", emoji: "🌻", plays: 0, line: "꼭 그렇게 다 가져가야만 속이 후련했냐!" },
-  { id: "gyehoek", title: "너는 계획이 다 있구나", source: "기생충", emoji: "🪨", plays: 0, line: "너는 계획이 다 있구나" },
-  { id: "neugeu_seojang", title: "느그 서장 남천동 살제", source: "범죄와의 전쟁", emoji: "🚔", plays: 0, line: "느그 서장 남천동 살제?" },
-  { id: "idae", title: "나 이대 나온 여자야", source: "타짜", emoji: "💄", plays: 0, line: "나 이대 나온 여자야" },
-  { id: "sara_itne", title: "살아있네", source: "범죄와의 전쟁", emoji: "🔥", plays: 0, line: "살아있네~" },
-  { id: "deuruwa", title: "드루와", source: "신세계", emoji: "🚪", plays: 0, line: "드루와" },
+  { id: "eoiga_eopne", title: "어이가 없네", source: "베테랑", emoji: "😑", plays: 0, line: "어이가 없네", youtube: {"id": "zASuuYQFht4", "start": 93, "end": 99} },
+  { id: "geoje_yaho", title: "거제 야호", source: "원이 · 리센느 미나미", emoji: "🏝️", plays: 0, line: "거제! 야호!", youtube: {"id": "OrCOflk2QmQ", "start": 1325, "end": 1329} },
+  { id: "galbi_tongdak", title: "이것은 갈비인가 통닭인가", source: "극한직업", emoji: "🍗", plays: 0, line: "지금까지 이런 맛은 없었다. 이것은 갈비인가, 통닭인가", youtube: {"id": "0gyXX7n5yK0", "start": 0, "end": 3} },
+  { id: "mohito", title: "모히또 가서 몰디브 한 잔", source: "내부자들", emoji: "🍹", plays: 0, line: "모히또 가서 몰디브나 한 잔 할라니까", youtube: {"id": "OKr3Ay1tPHo", "start": 19, "end": 23} },
+  { id: "choeseon", title: "이게 최선입니까?", source: "시크릿가든", emoji: "🧐", plays: 0, line: "이게 최선입니까? 확실해요?", youtube: {"id": "yxO-0H3ON94", "start": 0, "end": 4} },
+  { id: "neona_jal", title: "너나 잘하세요", source: "친절한 금자씨", emoji: "💅", plays: 0, line: "너나 잘하세요", youtube: {"id": "-FJ6SmTuEsg", "start": 23, "end": 26} },
+  { id: "huryeon", title: "속이 후련했냐", source: "해바라기", emoji: "🌻", plays: 0, line: "꼭 그렇게 다 가져가야만 속이 후련했냐!", youtube: {"id": "6YiptHanj8Q", "start": 0, "end": 7} },
+  { id: "gyehoek", title: "너는 계획이 다 있구나", source: "기생충", emoji: "🪨", plays: 0, line: "너는 계획이 다 있구나", youtube: {"id": "YhaYoV9YXXU", "start": 14, "end": 17} },
+  { id: "neugeu_seojang", title: "느그 서장 남천동 살제", source: "범죄와의 전쟁", emoji: "🚔", plays: 0, line: "느그 서장 남천동 살제?", youtube: {"id": "TJJWAe0xqVM", "start": 37, "end": 40} },
+  { id: "idae", title: "나 이대 나온 여자야", source: "타짜", emoji: "💄", plays: 0, line: "나 이대 나온 여자야", youtube: {"id": "mmBUUHwx1gk", "start": 3, "end": 6} },
+  { id: "sara_itne", title: "살아있네", source: "범죄와의 전쟁", emoji: "🔥", plays: 0, line: "살아있네~", youtube: {"id": "IPmazTWInbI", "start": 0, "end": 3} },
+  { id: "deuruwa", title: "드루와", source: "신세계", emoji: "🚪", plays: 0, line: "드루와", youtube: {"id": "nZ5aZAyB4m4", "start": 0, "end": 2} },
   { id: "rooster", title: "꼬끼오", source: "수탉", emoji: "🐓", plays: 0 },
   { id: "cat", title: "야오옹", source: "고양이", emoji: "🐱", plays: 0 },
   { id: "goat", title: "메에에", source: "염소", emoji: "🐐", plays: 0 },
@@ -86,6 +90,7 @@ function normalizeMeme(raw: unknown): Meme | null {
   if (!id || !title) return null;
 
   const plays = typeof r.plays === "number" && Number.isFinite(r.plays) ? r.plays : undefined;
+  const youtube = normalizeYoutube(r.youtube);
   return {
     id,
     title,
@@ -94,7 +99,19 @@ function normalizeMeme(raw: unknown): Meme | null {
     ...(plays !== undefined ? { plays } : {}),
     ...(str(r.line) ? { line: str(r.line) } : {}),
     ...(r.draft === true ? { draft: true as const } : {}),
+    ...(youtube ? { youtube } : {}),
   };
+}
+
+/** 영상 ID는 11자 고정, 구간은 0 이상 정수이고 끝이 시작보다 뒤여야 한다. */
+function normalizeYoutube(raw: unknown): YoutubeClip | undefined {
+  if (typeof raw !== "object" || raw === null) return undefined;
+  const y = raw as Record<string, unknown>;
+  const id = typeof y.id === "string" && /^[A-Za-z0-9_-]{11}$/.test(y.id) ? y.id : null;
+  const start = Number.isInteger(y.start) && (y.start as number) >= 0 ? (y.start as number) : null;
+  const end = Number.isInteger(y.end) && (y.end as number) > (start ?? Infinity) ? (y.end as number) : null;
+  if (!id || start === null || end === null) return undefined;
+  return { id, start, end };
 }
 
 /**

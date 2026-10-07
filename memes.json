@@ -15,7 +15,12 @@
       "source": "베테랑",
       "emoji": "😑",
       "plays": 0,
-      "line": "어이가 없네"
+      "line": "어이가 없네",
+      "youtube": {
+        "id": "zASuuYQFht4",
+        "start": 93,
+        "end": 99
+      }
     },
     {
       "id": "mitjang_ppaegi",
@@ -24,7 +29,12 @@
       "emoji": "🃏",
       "plays": 0,
       "line": "동작 그만, 밑장 빼기냐",
-      "draft": true
+      "draft": true,
+      "youtube": {
+        "id": "fJ20r7x2Kvg",
+        "start": 2,
+        "end": 8
+      }
     },
     {
       "id": "geoje_yaho",
@@ -32,7 +42,12 @@
       "source": "원이 · 리센느 미나미",
       "emoji": "🏝️",
       "plays": 0,
-      "line": "거제! 야호!"
+      "line": "거제! 야호!",
+      "youtube": {
+        "id": "OrCOflk2QmQ",
+        "start": 1325,
+        "end": 1329
+      }
     },
     {
       "id": "bap_meokgo",
@@ -41,7 +56,12 @@
       "emoji": "🍚",
       "plays": 0,
       "line": "밥은 먹고 다니냐",
-      "draft": true
+      "draft": true,
+      "youtube": {
+        "id": "i9jR6qmgaf4",
+        "start": 11,
+        "end": 14
+      }
     },
     {
       "id": "galbi_tongdak",
@@ -49,7 +69,12 @@
       "source": "극한직업",
       "emoji": "🍗",
       "plays": 0,
-      "line": "지금까지 이런 맛은 없었다. 이것은 갈비인가, 통닭인가"
+      "line": "지금까지 이런 맛은 없었다. 이것은 갈비인가, 통닭인가",
+      "youtube": {
+        "id": "0gyXX7n5yK0",
+        "start": 0,
+        "end": 3
+      }
     },
     {
       "id": "mohito",
@@ -57,7 +82,12 @@
       "source": "내부자들",
       "emoji": "🍹",
       "plays": 0,
-      "line": "모히또 가서 몰디브나 한 잔 할라니까"
+      "line": "모히또 가서 몰디브나 한 잔 할라니까",
+      "youtube": {
+        "id": "OKr3Ay1tPHo",
+        "start": 19,
+        "end": 23
+      }
     },
     {
       "id": "choeseon",
@@ -65,7 +95,12 @@
       "source": "시크릿가든",
       "emoji": "🧐",
       "plays": 0,
-      "line": "이게 최선입니까? 확실해요?"
+      "line": "이게 최선입니까? 확실해요?",
+      "youtube": {
+        "id": "yxO-0H3ON94",
+        "start": 0,
+        "end": 4
+      }
     },
     {
       "id": "neona_jal",
@@ -73,7 +108,12 @@
       "source": "친절한 금자씨",
       "emoji": "💅",
       "plays": 0,
-      "line": "너나 잘하세요"
+      "line": "너나 잘하세요",
+      "youtube": {
+        "id": "-FJ6SmTuEsg",
+        "start": 23,
+        "end": 26
+      }
     },
     {
       "id": "huryeon",
@@ -81,7 +121,12 @@
       "source": "해바라기",
       "emoji": "🌻",
       "plays": 0,
-      "line": "꼭 그렇게 다 가져가야만 속이 후련했냐!"
+      "line": "꼭 그렇게 다 가져가야만 속이 후련했냐!",
+      "youtube": {
+        "id": "6YiptHanj8Q",
+        "start": 0,
+        "end": 7
+      }
     },
     {
       "id": "gyehoek",
@@ -89,7 +134,12 @@
       "source": "기생충",
       "emoji": "🪨",
       "plays": 0,
-      "line": "너는 계획이 다 있구나"
+      "line": "너는 계획이 다 있구나",
+      "youtube": {
+        "id": "YhaYoV9YXXU",
+        "start": 14,
+        "end": 17
+      }
     },
     {
       "id": "neugeu_seojang",
@@ -97,7 +147,12 @@
       "source": "범죄와의 전쟁",
       "emoji": "🚔",
       "plays": 0,
-      "line": "느그 서장 남천동 살제?"
+      "line": "느그 서장 남천동 살제?",
+      "youtube": {
+        "id": "TJJWAe0xqVM",
+        "start": 37,
+        "end": 40
+      }
     },
     {
       "id": "idae",
@@ -105,7 +160,12 @@
       "source": "타짜",
       "emoji": "💄",
       "plays": 0,
-      "line": "나 이대 나온 여자야"
+      "line": "나 이대 나온 여자야",
+      "youtube": {
+        "id": "mmBUUHwx1gk",
+        "start": 3,
+        "end": 6
+      }
     },
     {
       "id": "sara_itne",
@@ -113,7 +173,12 @@
       "source": "범죄와의 전쟁",
       "emoji": "🔥",
       "plays": 0,
-      "line": "살아있네~"
+      "line": "살아있네~",
+      "youtube": {
+        "id": "IPmazTWInbI",
+        "start": 0,
+        "end": 3
+      }
     },
     {
       "id": "deuruwa",
@@ -121,7 +186,12 @@
       "source": "신세계",
       "emoji": "🚪",
       "plays": 0,
-      "line": "드루와"
+      "line": "드루와",
+      "youtube": {
+        "id": "nZ5aZAyB4m4",
+        "start": 0,
+        "end": 2
+      }
     },
     {
       "id": "rooster",

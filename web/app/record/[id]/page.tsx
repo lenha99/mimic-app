@@ -5,6 +5,7 @@ import { refAudio } from "@/lib/config";
 import { findMeme as findAnyMeme } from "@/lib/challenges";
 import { extraLine } from "@/lib/memes";
 import { getViewer } from "@/lib/viewer";
+import { YoutubeClip } from "@/components/youtube-clip";
 import Recorder from "./recorder";
 import styles from "./record.module.css";
 
@@ -96,6 +97,15 @@ export default async function RecordPage({ params, searchParams }: Props) {
           <p className={styles.source}>{meme.source}</p>
         </div>
       </header>
+
+      {meme.youtube && (
+        <YoutubeClip
+          id={meme.youtube.id}
+          start={meme.youtube.start}
+          end={meme.youtube.end}
+          title={meme.title}
+        />
+      )}
 
       <Recorder
         meme={meme}

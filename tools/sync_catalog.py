@@ -24,7 +24,7 @@ REGISTRY = ROOT / "content" / "registry.json"
 
 # 서버 카탈로그(= 앱이 받는 JSON)에 나가는 필드만. 나머지(origin/license/added…)는
 # 레포에만 남는 운영 기록이다.
-PUBLIC_FIELDS = ("id", "title", "source", "emoji", "plays", "line", "draft")
+PUBLIC_FIELDS = ("id", "title", "source", "emoji", "plays", "line", "draft", "youtube")
 
 CATALOG_COMMENT = (
     "이 파일은 content/registry.json 에서 생성된다. 직접 고치지 말고 "
