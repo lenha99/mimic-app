@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { HomeBeacon } from "@/components/home-beacon";
-import { MyShoutingAvatar, ViewerBadge } from "@/components/viewer";
+import { ViewerBadge } from "@/components/viewer";
+import { YoutubeClip } from "@/components/youtube-clip";
 import { ViewerWelcome } from "@/components/viewer-welcome";
 import { VoiceAvatar } from "@/components/voice-avatar";
 import { PRESETS } from "@/lib/avatar";
@@ -96,8 +97,18 @@ export default async function Home() {
           </div>
 
           <div className={styles.stage}>
-            <p className={styles.bubble}>{today.line ?? today.title}</p>
-            <MyShoutingAvatar size={148} />
+            {today.youtube ? (
+              <div className={styles.clip}>
+                <YoutubeClip
+                  id={today.youtube.id}
+                  start={today.youtube.start}
+                  end={today.youtube.end}
+                  title={today.title}
+                />
+              </div>
+            ) : (
+              <p className={styles.face} aria-hidden="true">😶</p>
+            )}
           </div>
 
           <h1 className={styles.heroTitle}>

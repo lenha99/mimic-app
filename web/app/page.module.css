@@ -109,6 +109,16 @@
   color: var(--volt);
 }
 
+.clip {
+  width: 100%;
+}
+
+.face {
+  margin: 0;
+  font-size: 120px;
+  line-height: 1.1;
+}
+
 .stage {
   position: relative;
   margin-top: 30px;

@@ -65,6 +65,11 @@
       "plays": 0,
       "line": "어이가 없네",
       "kind": "movie",
+      "youtube": {
+        "id": "zASuuYQFht4",
+        "start": 93,
+        "end": 99
+      },
       "origin": {
         "platform": "youtube",
         "video_id": "zASuuYQFht4",
@@ -109,6 +114,11 @@
       "plays": 0,
       "line": "동작 그만, 밑장 빼기냐",
       "kind": "movie",
+      "youtube": {
+        "id": "fJ20r7x2Kvg",
+        "start": 2,
+        "end": 8
+      },
       "origin": {
         "platform": "youtube",
         "video_id": "fJ20r7x2Kvg",
@@ -159,6 +169,11 @@
       "plays": 0,
       "line": "거제! 야호!",
       "kind": "shortform",
+      "youtube": {
+        "id": "OrCOflk2QmQ",
+        "start": 1325,
+        "end": 1329
+      },
       "origin": {
         "platform": "youtube",
         "video_id": "OrCOflk2QmQ",
@@ -203,6 +218,11 @@
       "plays": 0,
       "line": "밥은 먹고 다니냐",
       "kind": "movie",
+      "youtube": {
+        "id": "i9jR6qmgaf4",
+        "start": 11,
+        "end": 14
+      },
       "origin": {
         "platform": "youtube",
         "video_id": "i9jR6qmgaf4",
@@ -248,6 +268,11 @@
       "plays": 0,
       "line": "지금까지 이런 맛은 없었다. 이것은 갈비인가, 통닭인가",
       "kind": "movie",
+      "youtube": {
+        "id": "0gyXX7n5yK0",
+        "start": 0,
+        "end": 3
+      },
       "origin": {
         "platform": "youtube",
         "video_id": "0gyXX7n5yK0",
@@ -292,6 +317,11 @@
       "plays": 0,
       "line": "모히또 가서 몰디브나 한 잔 할라니까",
       "kind": "movie",
+      "youtube": {
+        "id": "OKr3Ay1tPHo",
+        "start": 19,
+        "end": 23
+      },
       "origin": {
         "platform": "youtube",
         "video_id": "OKr3Ay1tPHo",
@@ -336,6 +366,11 @@
       "plays": 0,
       "line": "이게 최선입니까? 확실해요?",
       "kind": "drama",
+      "youtube": {
+        "id": "yxO-0H3ON94",
+        "start": 0,
+        "end": 4
+      },
       "origin": {
         "platform": "youtube",
         "video_id": "yxO-0H3ON94",
@@ -380,6 +415,11 @@
       "plays": 0,
       "line": "너나 잘하세요",
       "kind": "movie",
+      "youtube": {
+        "id": "-FJ6SmTuEsg",
+        "start": 23,
+        "end": 26
+      },
       "origin": {
         "platform": "youtube",
         "video_id": "-FJ6SmTuEsg",
@@ -424,6 +464,11 @@
       "plays": 0,
       "line": "꼭 그렇게 다 가져가야만 속이 후련했냐!",
       "kind": "movie",
+      "youtube": {
+        "id": "6YiptHanj8Q",
+        "start": 0,
+        "end": 7
+      },
       "origin": {
         "platform": "youtube",
         "video_id": "6YiptHanj8Q",
@@ -468,6 +513,11 @@
       "plays": 0,
       "line": "너는 계획이 다 있구나",
       "kind": "movie",
+      "youtube": {
+        "id": "YhaYoV9YXXU",
+        "start": 14,
+        "end": 17
+      },
       "origin": {
         "platform": "youtube",
         "video_id": "YhaYoV9YXXU",
@@ -512,6 +562,11 @@
       "plays": 0,
       "line": "느그 서장 남천동 살제?",
       "kind": "movie",
+      "youtube": {
+        "id": "TJJWAe0xqVM",
+        "start": 37,
+        "end": 40
+      },
       "origin": {
         "platform": "youtube",
         "video_id": "TJJWAe0xqVM",
@@ -556,6 +611,11 @@
       "plays": 0,
       "line": "나 이대 나온 여자야",
       "kind": "movie",
+      "youtube": {
+        "id": "mmBUUHwx1gk",
+        "start": 3,
+        "end": 6
+      },
       "origin": {
         "platform": "youtube",
         "video_id": "mmBUUHwx1gk",
@@ -600,6 +660,11 @@
       "plays": 0,
       "line": "살아있네~",
       "kind": "movie",
+      "youtube": {
+        "id": "IPmazTWInbI",
+        "start": 0,
+        "end": 3
+      },
       "origin": {
         "platform": "youtube",
         "video_id": "IPmazTWInbI",
@@ -647,6 +712,11 @@
       "plays": 0,
       "line": "드루와",
       "kind": "movie",
+      "youtube": {
+        "id": "nZ5aZAyB4m4",
+        "start": 0,
+        "end": 2
+      },
       "origin": {
         "platform": "youtube",
         "video_id": "nZ5aZAyB4m4",
