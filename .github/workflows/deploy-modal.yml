@@ -1,0 +1,35 @@
+name: Deploy Modal
+
+# main 에 modal_app.py 가 바뀌어 머지되면 lenha99 워크스페이스로 자동 배포.
+# 토큰은 저장소 Secret(MODAL_TOKEN_ID / MODAL_TOKEN_SECRET)에만 있다 — 협업자에게 Modal 계정이 필요 없다.
+# 수동 재배포: Actions 탭 → Deploy Modal → Run workflow
+on:
+  push:
+    branches: [main]
+    paths:
+      - modal_app.py
+      - .github/workflows/deploy-modal.yml
+  workflow_dispatch:
+
+# 배포가 겹치면 나중 것만 남긴다
+concurrency:
+  group: deploy-modal
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: pip
+      # 채점 테스트가 깨진 채로 배포되지 않게 먼저 돌린다
+      - run: sudo apt-get install -y --no-install-recommends ffmpeg
+      - run: pip install -r requirements.txt
+      - run: pytest test/ -q
+      - run: modal deploy modal_app.py
+        env:
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}

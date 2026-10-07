@@ -45,8 +45,11 @@ refs_animals/        # CC0 동물 소리 원본 (제자리 수정 금지)
 - 프로덕션이 레지스트리와 맞는지: `python tools/ingest.py doctor`
 
 ## 배포
+서버는 `modal_app.py` 가 바뀐 채 main 에 머지되면 GitHub Actions(`deploy-modal.yml`)가
+테스트 후 자동 배포한다. 토큰은 저장소 Secret 에만 있어 협업자는 Modal 계정이 필요 없다.
 ```bash
-modal deploy modal_app.py     # 서버
+gh workflow run deploy-modal.yml   # 수동 재배포
+modal deploy modal_app.py          # 로컬에서 직접 (토큰 있는 사람만)
 # 웹은 main 에 머지되면 Vercel 이 자동 배포한다
 ```
 
