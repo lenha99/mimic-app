@@ -17,10 +17,13 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      await ensureProfile(supabase);
-      return NextResponse.redirect(`${origin}${next}`);
+      if (await ensureProfile(supabase)) {
+        return NextResponse.redirect(`${origin}${next}`);
+      }
+      reason = "profile_create_failed";
+    } else {
+      reason = error.message;
     }
-    reason = error.message;
   }
 
   const q = new URLSearchParams({ error: "auth_failed" });
@@ -62,24 +65,29 @@ async function ensureProfile(supabase: Awaited<ReturnType<typeof createClient>>)
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return;
+  if (!user) return false;
 
   const { data: existing } = await supabase
     .from("profiles")
     .select("id")
     .eq("id", user.id)
     .maybeSingle();
-  if (existing) return;
+  if (existing) return true;
 
   const meta = user.user_metadata ?? {};
   const displayName: string =
     meta.name ?? meta.full_name ?? meta.nickname ?? user.email?.split("@")[0] ?? "익명유저";
   const provider = user.app_metadata?.provider ?? "unknown";
 
-  await supabase.from("profiles").insert({
-    id: user.id,
-    // 닉네임 유니크 제약 충돌을 피하려고 유저 id 앞 4자리를 붙여둠.
-    nickname: `${displayName}-${user.id.slice(0, 4)}`,
-    provider,
-  });
+  // 닉네임은 유니크다. 같은 이름이 있으면 id 앞 4자리, 그래도 충돌하면 8자리로 늘린다.
+  for (const len of [4, 8, 36]) {
+    const { error } = await supabase.from("profiles").insert({
+      id: user.id,
+      nickname: `${displayName}-${user.id.slice(0, len)}`,
+      provider,
+    });
+    if (!error) return true;
+    if (error.code !== "23505") break;
+  }
+  return false;
 }

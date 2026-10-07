@@ -33,10 +33,11 @@ export default async function RankPage({
   const { meme: selectedMeme } = await searchParams;
   const supabase = await createClient();
 
-  const [{ data: memes }, { data: rankings, error }] = await Promise.all([
+  const [{ data: memes }, rankingsResult] = await Promise.all([
     supabase.from("memes").select("id, title, emoji").order("title"),
-    supabase.from("rankings").select("*"),
+    fetchAllRankings(supabase),
   ]);
+  const { rows: rankings, error } = rankingsResult;
 
   // 판 수는 밈별 녹음 단위로 센다. 전체 순위에서 밈 세 개에 한 판씩 붙은 사람이
   // 합쳐서 세 판이 됐다고 올라가면, 결국 한 판짜리 Elo 가 순위를 정한다.
@@ -71,7 +72,7 @@ export default async function RankPage({
         ))}
       </div>
 
-      {error && <p className={styles.warn}>랭킹을 불러오지 못했어요 ({error.message}).</p>}
+      {error && <p className={styles.warn}>랭킹을 불러오지 못했어요 ({error}).</p>}
 
       {!error && all.length === 0 && (
         <p className={styles.empty}>아직 집계된 투표가 없어요. 투표가 쌓이면 여기 순위가 나타나요.</p>
@@ -112,6 +113,25 @@ export default async function RankPage({
 }
 
 /** 밈이 선택되어 있으면 그 밈만(elo 순), 아니면 유저별 최고 elo로 전체 집계. */
+/** PostgREST 는 한 번에 1000행까지만 준다. 그 이상은 끝까지 넘기며 모은다. */
+async function fetchAllRankings(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+): Promise<{ rows: RankRow[]; error: string | null }> {
+  const PAGE = 1000;
+  const rows: RankRow[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from("rankings")
+      .select("*")
+      .order("user_id")
+      .order("meme_id")
+      .range(from, from + PAGE - 1);
+    if (error) return { rows, error: error.message };
+    rows.push(...((data ?? []) as RankRow[]));
+    if (!data || data.length < PAGE) return { rows, error: null };
+  }
+}
+
 function aggregate(rankings: RankRow[], meme?: string): RankRow[] {
   if (meme) {
     return rankings.filter((r) => r.meme_id === meme).sort((a, b) => b.elo_rating - a.elo_rating);
