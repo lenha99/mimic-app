@@ -127,9 +127,9 @@ def _decode_upload(raw: bytes):
 # 콜드 스타트 최소화:
 #  - enable_memory_snapshot: librosa 임포트 + JIT 워밍이 끝난 상태를 스냅샷으로
 #    저장 → 콜드 복원이 수십 초 → 수 초로 단축
-#  - scaledown_window=300: 첫 호출 이후 5분간 컨테이너 유지 → 연속 채점 ~2s
+#  - scaledown_window=90: 첫 호출 이후 90초간 컨테이너 유지.
 @app.function(image=score_image, volumes={REF_DIR: volume},
-              scaledown_window=300, enable_memory_snapshot=True)
+              scaledown_window=90, enable_memory_snapshot=True)
 @modal.fastapi_endpoint(method="POST", docs=True)
 async def score(meme_id: str, file: UploadFile, client: str = "", rescore: int = 0):
     """
@@ -162,7 +162,7 @@ async def score(meme_id: str, file: UploadFile, client: str = "", rescore: int =
     return result
 
 
-@app.function(image=slim_image, volumes={REF_DIR: volume}, scaledown_window=300)
+@app.function(image=slim_image, volumes={REF_DIR: volume}, scaledown_window=90)
 @modal.fastapi_endpoint(method="GET")
 def reference(meme_id: str):
     """기준 음성(wav) 스트리밍 — 앱의 '원본 듣기'용. query: meme_id"""
