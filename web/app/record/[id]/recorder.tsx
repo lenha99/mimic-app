@@ -28,7 +28,14 @@ import styles from "./record.module.css";
  * 재생 순서 주의: `play()` 는 사용자 제스처가 살아 있는 동안 불러야 한다.
  * 앞에 `await` 이 하나라도 끼면 제스처 유효기간이 끝나 자동재생 정책에 막힌다.
  * (실제로 그렇게 짰다가 원본이 안 들리고 바로 녹음으로 넘어가는 버그가 났다.)
- * 그래서 탭하면 재생을 먼저 걸고, 마이크 권한은 그 뒤에 병렬로 받는다.
+ *
+ * 마이크는 원본이 **끝난 뒤** 켠다. 예전엔 재생과 병렬로 받았는데, 폰은 마이크가
+ * 켜지는 순간 오디오를 통화 모드로 바꿔서 원본을 끊거나 소리를 확 줄였다 —
+ * "듣고 바로 따라하기"를 누르면 소리가 안 나던 원인이다. 첫 권한 창은 카운트다운
+ * 자리에서 뜨고, 녹음은 그 약속을 기다렸다가 시작한다.
+ *
+ * 원본은 화면이 열릴 때 미리 받아 메모리(blob)에서 튼다. 아이폰은 preload 를
+ * 무시해서 탭한 뒤에야 받기 시작했고, CDN 이 비어 있으면 2초 넘게 무음이었다.
  */
 
 /** 녹음 창 = 원본 길이 + 여유. 말이 늦게 시작돼도 잘리지 않을 만큼만 준다. */
@@ -235,6 +242,32 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
     return () => URL.revokeObjectURL(userUrl);
   }, [userUrl]);
 
+  /**
+   * 원본을 미리 받아 메모리에서 튼다 (맨 위 주석). 못 받으면 원래 주소 그대로 둔다.
+   * 이미 재생 중이면 소스를 바꾸지 않는다 — 바꾸는 순간 소리가 끊긴다.
+   */
+  const [refSrc, setRefSrc] = useState(refUrl);
+  useEffect(() => {
+    let blobUrl: string | null = null;
+    let cancelled = false;
+    void fetch(refUrl)
+      .then((res) => (res.ok ? res.arrayBuffer() : null))
+      .then((buf) => {
+        if (cancelled || !buf) return;
+        const seconds = wavSeconds(buf);
+        if (seconds) setRefSeconds((prev) => prev ?? seconds);
+        const el = refAudio.current;
+        if (el && !el.paused) return;
+        blobUrl = URL.createObjectURL(new Blob([buf], { type: "audio/wav" }));
+        setRefSrc(blobUrl);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
+    };
+  }, [refUrl]);
+
   /** 채점 서버 예열. 화면이 열리자마자 한 번 찌른다. */
   useEffect(() => {
     void fetch("/api/warm", { method: "POST" }).catch(() => {});
@@ -365,6 +398,18 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
     );
   }, [clearTimers, meme.id, releaseMic, submit]);
 
+  /**
+   * 마이크 요청. 기다리지 않고 약속만 들고 있는다 — 녹음 시작 직전에 기다린다.
+   * 이미 받아둔 게 있으면 그대로 쓴다.
+   */
+  const requestMic = useCallback(() => {
+    if (stream.current || micRequest.current) return;
+    if (!navigator.mediaDevices?.getUserMedia) return;
+    micRequest.current = navigator.mediaDevices.getUserMedia({ audio: true });
+    // 여기서 처리하지 않으면 거부 시 unhandled rejection 이 된다.
+    micRequest.current.catch(() => {});
+  }, []);
+
   const beginCountdown = useCallback(() => {
     if (advanced.current) return;
     advanced.current = true;
@@ -382,6 +427,8 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
 
     pausedByUs.current = true;
     refAudio.current?.pause();
+    // 원본이 끝난 지금 마이크를 켠다 (맨 위 주석 — 재생 중에 켜면 원본이 죽는다).
+    requestMic();
     setPhase("countdown");
     setCount(3);
     timers.current.push(window.setTimeout(() => setCount(2), COUNT_STEP_MS));
@@ -389,23 +436,11 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
     timers.current.push(
       window.setTimeout(() => void beginRecording(), COUNT_STEP_MS * 3),
     );
-  }, [beginRecording, clearTimers]);
+  }, [beginRecording, clearTimers, requestMic]);
 
   useEffect(() => {
     countdownRef.current = beginCountdown;
   }, [beginCountdown]);
-
-  /**
-   * 마이크 요청. 재생을 막지 않도록 await 하지 않고 약속만 들고 있는다.
-   * 이미 받아둔 게 있으면 그대로 쓴다.
-   */
-  const requestMic = useCallback(() => {
-    if (stream.current || micRequest.current) return;
-    if (!navigator.mediaDevices?.getUserMedia) return;
-    micRequest.current = navigator.mediaDevices.getUserMedia({ audio: true });
-    // 여기서 처리하지 않으면 거부 시 unhandled rejection 이 된다.
-    micRequest.current.catch(() => {});
-  }, []);
 
   /**
    * 원본 재생. **반드시 클릭 핸들러에서 동기적으로 호출해야 한다** — 앞에 await 이
@@ -456,9 +491,8 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
       setError("이 브라우저에선 녹음이 안 돼. 크롬이나 사파리로 열어줘.");
       return;
     }
-    playRef(true); // 제스처가 살아 있는 동안 재생 먼저
-    requestMic(); // 마이크는 병렬로
-  }, [playRef, requestMic]);
+    playRef(true); // 마이크는 원본이 끝나고 beginCountdown 에서 켠다
+  }, [playRef]);
 
   /** 원본만 듣기 — 녹음으로 이어지지 않는다. */
   const listenOnly = useCallback(() => {
@@ -477,9 +511,8 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
     chain.current = false;
     setChaining(false);
     refAudio.current?.pause();
-    requestMic();
     beginCountdown();
-  }, [beginCountdown, requestMic]);
+  }, [beginCountdown]);
 
   // 링 진행도 · 원본 재생 감시 · 마이크 크기.
   useEffect(() => {
@@ -779,7 +812,7 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
     <>
       <audio
         ref={refAudio}
-        src={refUrl}
+        src={refSrc}
         preload="auto"
         onLoadedMetadata={(e) => {
           const d = e.currentTarget.duration;
@@ -1263,4 +1296,28 @@ function Wave({ data, tone }: { data: number[]; tone: "ref" | "user" }) {
       ))}
     </div>
   );
+}
+
+/**
+ * WAV 헤더에서 길이(초)를 읽는다. 아이폰은 재생 전엔 메타데이터를 안 읽어서
+ * 긴 원본인지(듣기/따라하기 분리)를 첫 탭 전에 알 수 없었다. WAV 가 아니면 null.
+ */
+function wavSeconds(buf: ArrayBuffer): number | null {
+  if (buf.byteLength < 44) return null;
+  const v = new DataView(buf);
+  const tag = (at: number) =>
+    String.fromCharCode(v.getUint8(at), v.getUint8(at + 1), v.getUint8(at + 2), v.getUint8(at + 3));
+  if (tag(0) !== "RIFF" || tag(8) !== "WAVE") return null;
+  let byteRate = 0;
+  for (let at = 12; at + 8 <= buf.byteLength; ) {
+    const id = tag(at);
+    const size = v.getUint32(at + 4, true);
+    if (id === "fmt ") byteRate = v.getUint32(at + 16, true);
+    if (id === "data") {
+      const bytes = Math.min(size, buf.byteLength - at - 8);
+      return byteRate > 0 ? bytes / byteRate : null;
+    }
+    at += 8 + size + (size % 2);
+  }
+  return null;
 }
