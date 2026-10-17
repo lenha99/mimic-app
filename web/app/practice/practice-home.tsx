@@ -75,7 +75,7 @@ export default function PracticeHome({ scripts, lines }: { scripts: Script[]; li
         <h1 className={styles.h1}>읽고, 듣고, 다시 읽기</h1>
         <p className={styles.lede}>
           성우·아나운서 준비생을 위한 대본 {scripts.length}편. 녹음하면 속도·쉼·억양·말끝을
-          바로 짚어줘요. 대본 녹음은 서버로 안 가고 이 폰에만 남아요.
+          바로 짚어주고, 대본대로 읽었는지도 확인해줘요. 녹음은 이 폰에만 남아요.
         </p>
       </header>
 

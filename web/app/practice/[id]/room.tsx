@@ -15,6 +15,7 @@ import {
   type Script,
 } from "@/lib/practice";
 import { judge, passCount, warnings, type Check, type Target } from "@/lib/practice-feedback";
+import { matchScript, type MatchResult } from "@/lib/script-match";
 import { deleteTake, listTakes, newTakeId, saveTake, updateTake, type Take } from "@/lib/take-store";
 import { track } from "@/lib/track";
 import { analyze, analyzeBlob, decodeMono, type Analysis } from "@/lib/voice-analysis";
@@ -47,6 +48,8 @@ const MAX_SCRIPT_MS = 120_000;
 const LINE_TAIL_MS = 2_500;
 const COUNT_MS = 380;
 const SIZE_KEY = "mimic.practice.size";
+/** 대본 확인을 매번 자동으로 할지 — 처음 한 번은 직접 누르게 하고, 그때 고른다. */
+const CHECK_KEY = "mimic.practice.check";
 const MARKS_KEY = "mimic.practice.marks";
 
 type Score = { score: number; grade?: string; breakdown: { pitch: number; tone: number; timing: number } };
@@ -69,6 +72,10 @@ export default function Room({ item }: { item: RoomItem }) {
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
   const [refAnalysis, setRefAnalysis] = useState<Analysis | null>(null);
   const [scoring, setScoring] = useState(false);
+  const [checking, setChecking] = useState<string | null>(null);
+  const [autoCheck, setAutoCheck] = useState(false);
+  /** 대본 위에 확인 결과(빠뜨림·바꿈·덧붙임)를 겹쳐 보일지 */
+  const [overlay, setOverlay] = useState(true);
 
   const recorder = useRef<MediaRecorder | null>(null);
   const stream = useRef<MediaStream | null>(null);
@@ -89,6 +96,7 @@ export default function Room({ item }: { item: RoomItem }) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       if ([0, 1, 2].includes(s)) setSize(s);
       if (m === "0") setMarks(false);
+      if (localStorage.getItem(CHECK_KEY) === "1") setAutoCheck(true);
     } catch {}
   }, []);
 
@@ -176,6 +184,44 @@ export default function Room({ item }: { item: RoomItem }) {
     };
   }, [item, refAnalysis]);
 
+  /**
+   * 대본 확인 — 녹음을 받아써서 대본과 맞춰본다. 대본 녹음이 서버로 가는 유일한 길이라
+   * 사용자가 누를 때(또는 "매번"을 골랐을 때)만 돈다. 지난 테이크에도 누를 수 있다.
+   */
+  const check = useCallback(
+    async (t: Take, always?: boolean) => {
+      if (always !== undefined) {
+        setAutoCheck(always);
+        try {
+          localStorage.setItem(CHECK_KEY, always ? "1" : "0");
+        } catch {}
+      }
+      setChecking(t.id);
+      setError(null);
+      try {
+        const body = new FormData();
+        body.append("file", t.blob, "recording.webm");
+        const res = await fetch(`/api/transcribe?client=${encodeURIComponent(clientId())}`, {
+          method: "POST",
+          body,
+        });
+        const data = (await res.json()) as { text?: string; error?: string };
+        if (!res.ok || typeof data.text !== "string") {
+          setError(data.error ?? "대본 확인이 안 됐어. 잠시 뒤 다시 눌러줄래?");
+          return;
+        }
+        await updateTake(t.id, { transcript: { text: data.text } });
+        await refresh();
+        setOverlay(true);
+      } catch {
+        setError("받아쓰기 서버에 못 닿았어. 잠시 뒤 다시 눌러줄래?");
+      } finally {
+        setChecking(null);
+      }
+    },
+    [refresh],
+  );
+
   const finish = useCallback(
     async (blob: Blob) => {
       setPhase("analyzing");
@@ -193,6 +239,8 @@ export default function Room({ item }: { item: RoomItem }) {
       requestAnimationFrame(() =>
         resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
       );
+
+      if (autoCheck) void check(take);
 
       if (item.kind === "line") {
         setScoring(true);
@@ -216,7 +264,7 @@ export default function Room({ item }: { item: RoomItem }) {
         }
       }
     },
-    [item.kind, itemId, refresh, syl],
+    [autoCheck, check, item.kind, itemId, refresh, syl],
   );
 
   const stop = useCallback(() => {
@@ -402,6 +450,11 @@ export default function Room({ item }: { item: RoomItem }) {
     [...takes].sort((a, b) => a.at - b.at).forEach((t, i) => m.set(t.id, i + 1));
     return m;
   }, [takes]);
+  const match: MatchResult | null = useMemo(
+    () => (open?.transcript ? matchScript(text, open.transcript.text) : null),
+    [open, text],
+  );
+  const showMatch = overlay && phase !== "recording" && phase !== "count" ? match : null;
   const before = open ? takes.find((t) => t.at < open.at && t.analysis) ?? null : null;
 
   const head =
@@ -515,6 +568,16 @@ export default function Room({ item }: { item: RoomItem }) {
             >
               가+
             </button>
+            {match && (
+              <button
+                type="button"
+                onClick={() => setOverlay((v) => !v)}
+                aria-pressed={overlay}
+                className={overlay ? styles.toolOn : undefined}
+              >
+                확인
+              </button>
+            )}
             {item.kind === "script" && (
               <button
                 type="button"
@@ -527,7 +590,13 @@ export default function Room({ item }: { item: RoomItem }) {
             )}
           </div>
         </div>
-        <ScriptText text={text} marks={marks && item.kind === "script"} />
+        {showMatch && open && (
+          <p className={styles.overlayNote}>
+            테이크 #{order.get(open.id)} 확인 결과 · <s>빠뜨림</s>{" "}
+            <span className={styles.changedKey}>바꿈</span> <ins>+덧붙임</ins>
+          </p>
+        )}
+        <ScriptText text={text} marks={marks && item.kind === "script"} match={showMatch} />
         {item.kind === "script" && marks && (
           <p className={styles.legend}>
             <span className={styles.pauseMark}>/</span> 쉼 &nbsp; <u>밑줄</u> 강조
@@ -556,6 +625,10 @@ export default function Room({ item }: { item: RoomItem }) {
             onRef={item.kind === "line" ? playRef : undefined}
             refPlaying={playing === "ref"}
             onStar={() => void toggleStar(open)}
+            match={match}
+            checking={checking === open.id}
+            autoCheck={autoCheck}
+            onCheck={(always) => void check(open, always)}
           />
         )}
         {phase !== "analyzing" && !open && (
@@ -672,27 +745,91 @@ export default function Room({ item }: { item: RoomItem }) {
   );
 }
 
-function ScriptText({ text, marks }: { text: string; marks: boolean }) {
+function ScriptText({
+  text,
+  marks,
+  match,
+}: {
+  text: string;
+  marks: boolean;
+  match: MatchResult | null;
+}) {
   const paras = useMemo(() => parseScript(text), [text]);
+
+  // 어절 번호는 lib/script-match 의 scriptWords 와 같은 규칙으로 센다(표시를 뺀 공백 단위,
+  // 한글·숫자가 있는 조각만). 그래야 확인 결과가 제자리에 붙는다.
+  const numbered = useMemo(() => {
+    let wi = 0;
+    return paras.map((para) =>
+      para.map((p) =>
+        p.kind === "pause"
+          ? p
+          : {
+              ...p,
+              parts: p.text.split(/(\s+)/).map((part) => ({
+                part,
+                idx: /[가-힣0-9]/.test(part) ? wi++ : -1,
+              })),
+            },
+      ),
+    );
+  }, [paras]);
+
+  const addedAt = (after: number) =>
+    match?.added
+      .filter((a) => a.after === after)
+      .map((a, k) => (
+        <ins key={`a${after}-${k}`} className={styles.added}>
+          +{a.text}
+        </ins>
+      ));
+
   return (
     <div className={styles.script}>
-      {paras.map((para, i) => (
+      {match && addedAt(-1)}
+      {numbered.map((para, i) => (
         <p key={i}>
-          {para.map((p, j) =>
-            p.kind === "pause" ? (
-              marks ? (
+          {para.map((p, j) => {
+            if (p.kind === "pause") {
+              return marks ? (
                 <span key={j} className={styles.pauseMark} aria-hidden="true">
                   {" / "}
                 </span>
               ) : (
                 <span key={j}> </span>
-              )
-            ) : p.strong && marks ? (
-              <u key={j}>{p.text}</u>
-            ) : (
-              <span key={j}>{p.text}</span>
-            ),
-          )}
+              );
+            }
+            const strong = p.strong && marks;
+            if (!match) return strong ? <u key={j}>{p.text}</u> : <span key={j}>{p.text}</span>;
+            return (
+              <span key={j}>
+                {p.parts.map(({ part, idx }, k) => {
+                  if (idx < 0) return <span key={k}>{part}</span>;
+                  const r = match.words[idx];
+                  const body = strong ? <u>{part}</u> : part;
+                  const word =
+                    !r || r.status === "ok" ? (
+                      body
+                    ) : r.status === "missed" ? (
+                      <s className={styles.missed} title="빠뜨림">
+                        {body}
+                      </s>
+                    ) : (
+                      <span className={styles.changed} title={`들린 말: ${r.heard ?? ""}`}>
+                        {body}
+                        {r.heard && <small>{r.heard}</small>}
+                      </span>
+                    );
+                  return (
+                    <span key={k}>
+                      {word}
+                      {addedAt(idx)}
+                    </span>
+                  );
+                })}
+              </span>
+            );
+          })}
         </p>
       ))}
     </div>
@@ -711,6 +848,10 @@ function TakeReport({
   onRef,
   refPlaying,
   onStar,
+  match,
+  checking,
+  autoCheck,
+  onCheck,
 }: {
   take: Take;
   n: number;
@@ -723,6 +864,10 @@ function TakeReport({
   onRef?: () => void;
   refPlaying: boolean;
   onStar: () => void;
+  match: MatchResult | null;
+  checking: boolean;
+  autoCheck: boolean;
+  onCheck: (always?: boolean) => void;
 }) {
   const a = take.analysis;
   const checks = a ? judge(a, target) : [];
@@ -802,6 +947,14 @@ function TakeReport({
           ))}
         </dl>
       )}
+
+      <ScriptCheck
+        match={match}
+        heardEmpty={!!take.transcript && !take.transcript.text.trim()}
+        checking={checking}
+        autoCheck={autoCheck}
+        onCheck={onCheck}
+      />
 
       {checks.length > 0 && (
         <ul className={styles.checks}>
@@ -891,4 +1044,103 @@ function takeLine(t: Take): string {
 function clock(ms: number): string {
   const s = Math.floor(ms / 1000);
   return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+}
+
+/**
+ * 대본 확인 결과 요약 — 또는 확인하기 버튼. 녹음이 서버로 가는 일이라 처음엔
+ * 무엇이 어디로 가는지 말하고, 그 자리에서 "매번 할지"를 고르게 한다.
+ */
+function ScriptCheck({
+  match,
+  heardEmpty,
+  checking,
+  autoCheck,
+  onCheck,
+}: {
+  match: MatchResult | null;
+  heardEmpty: boolean;
+  checking: boolean;
+  autoCheck: boolean;
+  onCheck: (always?: boolean) => void;
+}) {
+  if (checking) {
+    return <p className={styles.checkBusy}>대본이랑 맞춰보는 중… 처음 한 번은 10초쯤 걸려</p>;
+  }
+
+  if (heardEmpty) {
+    return (
+      <div className={styles.scriptCheck}>
+        <p className={styles.scriptCheckHead}>말소리를 못 알아들었어</p>
+        <p className={styles.checkNote}>마이크 가까이에서 또박또박 다시 읽어볼래?</p>
+      </div>
+    );
+  }
+
+  if (!match) {
+    return (
+      <div className={styles.scriptCheck}>
+        <p className={styles.scriptCheckHead}>대본대로 읽었는지 확인</p>
+        <p className={styles.checkNote}>
+          빠뜨린 말·바꾼 말·덧붙인 말을 대본 위에 표시해줘. 이 테이크를 잠깐 서버로 보내 글자로
+          바꾸고, 녹음도 글자도 바로 지워.
+        </p>
+        <div className={styles.checkBtns}>
+          <button type="button" className={styles.pillOn} onClick={() => onCheck()}>
+            이번 테이크 확인
+          </button>
+          {!autoCheck && (
+            <button type="button" className={styles.pill} onClick={() => onCheck(true)}>
+              앞으로 매번 확인
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  const pct = Math.round(match.accuracy * 100);
+  const missed = match.words.filter((w) => w.status === "missed").map((w) => clean(w.word));
+  const changed = match.words.filter((w) => w.status === "changed");
+  const perfect = !missed.length && !changed.length && !match.added.length;
+  const parts = [
+    missed.length
+      ? `빠뜨림 ${missed.length} (${missed.slice(0, 3).join(", ")}${missed.length > 3 ? " …" : ""})`
+      : "",
+    changed.length
+      ? `바꿈 ${changed.length} (${changed
+          .slice(0, 2)
+          .map((w) => `${clean(w.word)}→${w.heard ?? "?"}`)
+          .join(", ")}${changed.length > 2 ? " …" : ""})`
+      : "",
+    match.added.length
+      ? `덧붙임 ${match.added.length} (${match.added
+          .slice(0, 2)
+          .map((a) => a.text)
+          .join(", ")})`
+      : "",
+  ].filter(Boolean);
+
+  return (
+    <div className={styles.scriptCheck}>
+      <div className={styles.checkTop}>
+        <span className={styles.checkLabel}>대본</span>
+        <span className={styles.checkValue}>{pct}%</span>
+        <span className={perfect ? styles.badgeOk : styles.badgeOff}>
+          {perfect ? "그대로" : "어긋남"}
+        </span>
+      </div>
+      <p className={styles.tip}>
+        {perfect
+          ? "한 마디도 안 빼고 대본대로 읽었어."
+          : `${parts.join(" · ")} — 대본 위에 표시해 뒀어.`}
+      </p>
+      <p className={styles.checkFine}>
+        받아쓰기라 살짝 뭉개진 발음까지는 못 잡아. 빠뜨리거나 바꾼 말을 잡는 용도야.
+      </p>
+    </div>
+  );
+}
+
+function clean(w: string): string {
+  return w.replace(/[.,!?…·"'“”‘’]/g, "");
 }

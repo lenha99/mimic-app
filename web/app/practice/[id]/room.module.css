@@ -823,3 +823,113 @@
     margin-left: 0;
   }
 }
+
+/* 대본 확인 ------------------------------------------------------------ */
+/* 종이 위 표시는 선생님이 빨간 펜으로 고쳐준 원고처럼 — 지운 줄, 물결, 끼워 넣기. */
+
+.overlayNote {
+  margin: -4px 0 12px;
+  font-size: 12px;
+  color: #8a8578;
+}
+
+.overlayNote s {
+  color: var(--pencil);
+}
+
+.overlayNote ins {
+  text-decoration: none;
+  color: #2563eb;
+  font-weight: 700;
+}
+
+.changedKey {
+  text-decoration: underline wavy #d97706;
+  text-underline-offset: 4px;
+}
+
+.missed {
+  color: #a8a294;
+  text-decoration-color: var(--pencil);
+  text-decoration-thickness: 2px;
+}
+
+.changed {
+  text-decoration: underline wavy #d97706;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 6px;
+}
+
+.changed small {
+  margin-left: 3px;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: #fde7c4;
+  color: #92400e;
+  font-size: 0.62em;
+  font-weight: 700;
+  vertical-align: 0.35em;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.added {
+  margin: 0 2px;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: #dbe6ff;
+  color: #1d4ed8;
+  font-size: 0.7em;
+  font-weight: 700;
+  text-decoration: none;
+  vertical-align: 0.2em;
+}
+
+.scriptCheck {
+  margin-top: 14px;
+  padding-top: 13px;
+  border-top: 1px solid var(--rule);
+}
+
+.scriptCheckHead {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--white);
+}
+
+.checkNote {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--ash);
+  word-break: keep-all;
+}
+
+.checkBtns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.checkBusy {
+  margin: 14px 0 0;
+  padding-top: 13px;
+  border-top: 1px solid var(--rule);
+  font-size: 13px;
+  color: var(--ash);
+}
+
+.checkFine {
+  margin: 6px 0 0 66px;
+  font-size: 11.5px;
+  color: var(--ash-dim);
+  word-break: keep-all;
+}
+
+@media (max-width: 380px) {
+  .checkFine {
+    margin-left: 0;
+  }
+}

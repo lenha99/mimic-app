@@ -27,6 +27,27 @@ score_image = (
     .pip_install("librosa", "numpy", "scipy", "soundfile", "fastapi[standard]")
 )
 
+# 받아쓰기 전용 이미지 — 연습실 "대본대로 읽었나" (web/lib/script-match.ts 가 비교한다).
+#
+# Whisper small (int8, CPU). 한국어 낭독 10초를 2초 안팎에 받아쓰고, base 는 멀쩡히
+# 읽은 말을 틀린 말로 받아써서("나 못 참아" → "나뭇 차나") 대본 확인에 못 쓴다.
+# 모델은 이미지에 구워 넣는다 — 요청마다 내려받으면 첫 확인이 수십 초가 된다.
+WHISPER_SIZE = "small"
+WHISPER_DIR = "/whisper"
+
+
+def _download_whisper():
+    from huggingface_hub import snapshot_download
+    snapshot_download(f"Systran/faster-whisper-{WHISPER_SIZE}", local_dir=WHISPER_DIR)
+
+
+transcribe_image = (
+    modal.Image.debian_slim()
+    .apt_install("ffmpeg")
+    .pip_install("faster-whisper==1.2.1", "fastapi[standard]")
+    .run_function(_download_whisper)
+)
+
 # 기준 음성 스트리밍 전용 경량 이미지 (librosa 없음 → 콜드 스타트 빠름)
 slim_image = modal.Image.debian_slim().pip_install("fastapi[standard]")
 
@@ -56,6 +77,9 @@ with score_image.imports():
 # slim 컨테이너에서도 fastapi 심볼이 모듈 전역에 있어야 UploadFile/Response
 # 어노테이션을 해석할 수 있다 (image.imports는 heavy 이미지 컨테이너에서만 실행됨).
 with slim_image.imports():
+    from fastapi import UploadFile, Response, Request
+
+with transcribe_image.imports():
     from fastapi import UploadFile, Response, Request
 
 
@@ -160,6 +184,58 @@ async def score(meme_id: str, file: UploadFile, client: str = "", rescore: int =
             **({"client": client[:64]} if client else {}),
         })
     return result
+
+
+# ---- 받아쓰기 (연습실 대본 확인) ----
+# 사용자가 "대본 확인"을 누른 테이크만 온다. 녹음은 받아쓴 뒤 바로 지우고, 글자도
+# 남기지 않는다 — 이벤트에는 길이만 남겨 비용을 본다.
+MAX_TRANSCRIBE_S = 150   # 연습 대본은 길어야 1분 남짓. 이보다 길면 잘못 들어온 것
+_whisper = None
+
+
+def _whisper_model():
+    global _whisper
+    if _whisper is None:
+        from faster_whisper import WhisperModel
+        _whisper = WhisperModel(WHISPER_DIR, device="cpu", compute_type="int8", cpu_threads=2)
+    return _whisper
+
+
+@app.function(image=transcribe_image, volumes={REF_DIR: volume}, cpu=2.0, memory=2048,
+              scaledown_window=120, timeout=120)
+@modal.fastapi_endpoint(method="POST")
+async def transcribe(file: UploadFile, client: str = ""):
+    """녹음 → 글자. 비교는 브라우저가 한다(대본은 서버가 모른다).
+
+    vad_filter: 무음 구간을 건너뛴다. Whisper 는 조용한 구간에 "시청해 주셔서
+    감사합니다" 같은 말을 지어내는데, 대본 확인에선 그게 "덧붙인 말"로 찍힌다.
+    condition_on_previous_text=False: 앞 문장을 보고 뒷문장을 '고쳐 쓰는' 걸 막는다.
+    대본을 initial_prompt 로 주지 않는 것도 같은 이유다 — 주면 틀리게 읽어도
+    대본대로 받아써서 확인이 무의미해진다.
+    """
+    path = _decode_upload(await file.read())
+    if path is None:
+        return {"error": "녹음 파일을 읽을 수 없어요"}
+    try:
+        # _decode_upload 가 이미 16k mono wav 로 만들어 뒀다. 파일 경로를 넘기면
+        # faster-whisper 가 PyAV 로 다시 디코딩하는데, PyAV 최신판과 인자가 안 맞아
+        # 터진다 — 샘플을 직접 넘겨 그 경로를 아예 안 탄다.
+        import wave
+        import numpy as np
+        with wave.open(path, "rb") as w:
+            pcm = np.frombuffer(w.readframes(w.getnframes()), dtype=np.int16)
+        audio = pcm.astype(np.float32) / 32768.0
+        segments, info = _whisper_model().transcribe(
+            audio, language="ko", beam_size=1, vad_filter=True,
+            condition_on_previous_text=False, without_timestamps=True)
+        if info.duration > MAX_TRANSCRIBE_S:
+            return {"error": "녹음이 너무 길어요"}
+        text = " ".join(seg.text.strip() for seg in segments).strip()
+    finally:
+        os.unlink(path)
+    _log_event("transcribe", {"seconds": round(info.duration, 1),
+                              **({"client": client[:64]} if client else {})})
+    return {"text": text, "duration": round(info.duration, 2)}
 
 
 @app.function(image=slim_image, volumes={REF_DIR: volume}, scaledown_window=90)
