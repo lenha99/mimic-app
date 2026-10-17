@@ -65,7 +65,7 @@ export function InstallGuide() {
         </p>
         {canJump ? (
           <button type="button" className={styles.primary} onClick={() => openInBrowser(env)}>
-            {env.os === "ios" ? "Safari" : "브라우저"}로 열기 · Open in browser
+            {env.os === "ios" ? "Safari로 열기" : "Chrome으로 열기"}
           </button>
         ) : (
           <ol className={styles.steps}>
@@ -110,6 +110,25 @@ export function InstallGuide() {
     );
   }
 
+  // 삼성 인터넷 등도 자기 설치 버튼을 띄우지만, 그렇게 만든 설치 파일은 Play 프로텍트가
+  // "이전 버전 Android용"이라며 막는 일이 있다. 설치 창보다 먼저 크롬으로 보낸다.
+  if (env.kind === "android" && !env.chrome) {
+    return (
+      <div className={styles.card}>
+        <p className={styles.title}>Chrome에서 설치해 주세요</p>
+        <p className={styles.sub}>
+          지금 브라우저로 설치하면 &ldquo;이전 버전의 Android용으로 개발되어 차단됨&rdquo; 경고가 뜰 수 있어요.
+          Chrome으로 설치하면 안 떠요.
+        </p>
+        <p className={styles.en}>Install from Chrome — other browsers may get blocked by Play Protect.</p>
+        <button type="button" className={styles.primary} onClick={() => openInBrowser(env)}>
+          Chrome으로 열기
+        </button>
+        <p className={styles.hint}>경고가 이미 떴다면 그 설치는 취소하고 Chrome에서 다시 해 주세요</p>
+      </div>
+    );
+  }
+
   if (canPrompt) {
     const install = async () => {
       const outcome = await promptInstall();
@@ -134,11 +153,11 @@ export function InstallGuide() {
         <p className={styles.en}>Install from the browser menu</p>
         <ol className={styles.steps}>
           <li>
-            오른쪽 위 <b>⋮</b> (삼성 인터넷은 아래 <b>≡</b>)
+            오른쪽 위 <b>⋮</b> 메뉴
             <span className={styles.en}>Open the menu</span>
           </li>
           <li>
-            <b>앱 설치</b> 또는 <b>홈 화면에 추가</b>
+            <b>앱 설치</b> (없으면 <b>홈 화면에 추가</b>)
             <span className={styles.en}>Install app / Add to Home screen</span>
           </li>
         </ol>

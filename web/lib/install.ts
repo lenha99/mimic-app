@@ -6,6 +6,9 @@
  *   이미 설치됨 → 아무것도 안 보인다
  *   인앱(카톡·인스타 등) → 먼저 진짜 브라우저로 내보낸다
  *   안드로이드 크롬 → 설치 버튼 한 번 (beforeinstallprompt)
+ *   안드로이드 다른 브라우저(삼성 인터넷 등) → 크롬으로 보낸다. 그 브라우저들이 만드는
+ *     설치 파일은 Play 프로텍트가 "이전 버전 Android용 앱"이라며 막는 일이 있다.
+ *     크롬은 구글이 최신 기준으로 설치 파일(WebAPK)을 만들어 줘서 안 막힌다.
  *   아이폰 → 공유 → 홈 화면에 추가 (자동 설치 API 가 없다)
  */
 
@@ -13,7 +16,7 @@ export type InstallEnv =
   | { kind: "installed" }
   | { kind: "inapp"; app: "kakao" | "other"; os: "ios" | "android" | "other" }
   | { kind: "ios" }
-  | { kind: "android" }
+  | { kind: "android"; chrome: boolean }
   | { kind: "desktop" };
 
 type PromptEvent = Event & {
@@ -45,27 +48,40 @@ export function detectInstallEnv(): InstallEnv {
     return { kind: "inapp", app: "other", os };
   }
   if (ios) return { kind: "ios" };
-  if (android) return { kind: "android" };
+  if (android) {
+    const other = /SamsungBrowser|EdgA|OPR\/|Whale|YaBrowser|MiuiBrowser|HuaweiBrowser|Firefox|UCBrowser|DuckDuckGo|VivoBrowser|HeyTap/i;
+    return { kind: "android", chrome: /Chrome\//.test(ua) && !other.test(ua) };
+  }
   return { kind: "desktop" };
 }
 
 /**
  * 인앱 브라우저에서 바깥 브라우저로 같은 주소를 연다. 열 수 없으면 false.
- * 카톡은 자체 스킴이 안드로이드·아이폰 둘 다 된다. 다른 앱은 안드로이드에서만
- * 크롬 인텐트로 뺄 수 있고, 아이폰은 사용자가 메뉴에서 "Safari로 열기"를 눌러야 한다.
+ *
+ * 안드로이드는 카톡이든 다른 앱이든 크롬을 콕 집어 연다. 카톡의 "바깥 브라우저로 열기"는
+ * 기본 브라우저로 가는데, 삼성 폰은 그게 대개 삼성 인터넷이라 설치가 막힐 수 있다.
+ * 크롬이 없으면 인텐트의 대체 주소로 같은 페이지가 열린다.
+ * 아이폰 카톡은 자체 스킴으로 Safari 에 넘긴다. 다른 앱은 사용자가 "Safari로 열기"를 눌러야 한다.
  */
 export function openInBrowser(env: InstallEnv, url = location.href): boolean {
-  if (env.kind !== "inapp") return false;
-  if (env.app === "kakao") {
+  const android = env.kind === "android" || (env.kind === "inapp" && env.os === "android");
+  if (android) {
+    location.href = chromeIntent(url);
+    return true;
+  }
+  if (env.kind === "inapp" && env.app === "kakao") {
     location.href = `kakaotalk://web/openExternal?url=${encodeURIComponent(url)}`;
     return true;
   }
-  if (env.os === "android") {
-    const u = new URL(url);
-    location.href = `intent://${u.host}${u.pathname}${u.search}#Intent;scheme=https;package=com.android.chrome;end`;
-    return true;
-  }
   return false;
+}
+
+function chromeIntent(url: string): string {
+  const u = new URL(url);
+  return (
+    `intent://${u.host}${u.pathname}${u.search}#Intent;scheme=https;package=com.android.chrome;` +
+    `S.browser_fallback_url=${encodeURIComponent(url)};end`
+  );
 }
 
 /** 크롬의 설치 창을 띄울 수 있는지 구독한다. 이벤트가 늦게 오기도 해서 듣고 있어야 한다. */
