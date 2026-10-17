@@ -1,4 +1,6 @@
 import { config } from "@/lib/config";
+import { proxyHeaders } from "@/lib/modal-proxy";
+import { allow, clientIp, tooMany } from "@/lib/rate-limit";
 
 /**
  * 채점 프록시.
@@ -17,6 +19,8 @@ const MAX_BYTES = 10 * 1024 * 1024; // modal_app._decode_upload 와 같은 상�
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
+  // 한 번 채점에 원본 듣기·카운트다운까지 10초는 걸린다. 분당 20번이면 사람은 안 걸린다.
+  if (!allow(`score:${clientIp(req)}`, 20, 60_000)) return tooMany();
   const q = new URL(req.url).searchParams;
   const memeId = q.get("meme_id");
   if (!memeId) {
@@ -42,7 +46,7 @@ export async function POST(req: Request) {
     const res = await fetch(
       `${config.scoreUrl}?meme_id=${encodeURIComponent(memeId)}` +
         (client ? `&client=${encodeURIComponent(client)}` : ""),
-      { method: "POST", body, signal: AbortSignal.timeout(55_000) },
+      { method: "POST", body, headers: proxyHeaders(), signal: AbortSignal.timeout(55_000) },
     );
     // 서버가 JSON 이 아닌 걸 뱉으면 그대로 흘리지 않고 에러로 바꾼다.
     const text = await res.text();

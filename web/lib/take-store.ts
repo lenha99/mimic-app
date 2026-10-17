@@ -169,3 +169,8 @@ export async function summaries(): Promise<Map<string, ItemSummary>> {
 export function newTakeId(): string {
   return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
 }
+
+/** 대본 하나의 테이크를 전부 지운다 — 내 대본을 지울 때. 별표 친 것도 같이 간다. */
+export async function deleteItemTakes(itemId: string): Promise<void> {
+  for (const t of await listTakes(itemId)) await deleteTake(t.id);
+}

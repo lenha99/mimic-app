@@ -1,0 +1,220 @@
+.page {
+  max-width: 560px;
+  padding-top: 14px;
+  padding-bottom: calc(110px + env(safe-area-inset-bottom));
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 16px 0 12px;
+  border-radius: 999px;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  color: var(--white);
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.h1 {
+  margin: 22px 0 6px;
+  font-family: var(--display);
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1.15;
+}
+
+.lede {
+  margin: 0 0 20px;
+  font-size: 14px;
+  color: var(--ash);
+  word-break: keep-all;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 18px;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.field > span,
+.field legend,
+.textHead > span:first-child {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--white);
+  padding: 0;
+  margin-bottom: 8px;
+}
+
+.field legend {
+  margin-bottom: 8px;
+}
+
+.field small {
+  margin-left: 4px;
+  font-weight: 600;
+  color: var(--ash-dim);
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  padding: 13px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--rule);
+  background: var(--panel);
+  color: var(--white);
+  font: inherit;
+  font-size: 16px;
+}
+
+.field textarea {
+  resize: vertical;
+  min-height: 220px;
+  line-height: 1.8;
+  /* 연습 화면의 대본 종이와 같은 느낌 — 넣는 순간부터 읽을 글로 보이게 */
+  background: #f4f1ea;
+  color: #18181b;
+  border-color: transparent;
+}
+
+.field input:focus,
+.field textarea:focus {
+  outline: 2px solid var(--volt);
+  outline-offset: 1px;
+}
+
+.textHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.textHead > span:first-child {
+  margin-bottom: 0;
+}
+
+.tools {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.tools button {
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--rule);
+  background: var(--panel-hi);
+  color: var(--white);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tools b {
+  color: #ff6b9a;
+}
+
+.count,
+.countOver {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ash);
+}
+
+.countOver {
+  color: var(--pink);
+}
+
+.note {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(0, 229, 255, 0.08);
+  color: var(--cyan);
+  font-size: 12.5px;
+  word-break: keep-all;
+}
+
+.segment {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+}
+
+.seg,
+.segOn {
+  min-height: 42px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ash);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.segOn {
+  background: var(--volt);
+  color: var(--stage);
+}
+
+.error {
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 45, 120, 0.12);
+  color: #ff8fb3;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  padding: 12px var(--gutter) calc(12px + env(safe-area-inset-bottom));
+  background: linear-gradient(to top, var(--stage) 70%, transparent);
+}
+
+.save {
+  display: block;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  min-height: 56px;
+  border: 0;
+  border-radius: 28px;
+  background: var(--volt);
+  color: var(--stage);
+  font-family: var(--display);
+  font-size: 19px;
+  cursor: pointer;
+}
+
+.remove {
+  display: block;
+  margin: 8px auto 0;
+  padding: 10px;
+  border: 0;
+  background: none;
+  color: var(--ash-dim);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}

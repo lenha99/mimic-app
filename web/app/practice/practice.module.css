@@ -336,3 +336,165 @@
 .foot a {
   color: var(--ash);
 }
+
+/* 찾기 · 좁히기 · 접기 — 대본이 늘어도 한 화면에 들어오게 --------------- */
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 22px;
+  padding: 0 14px;
+  min-height: 48px;
+  border-radius: 14px;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  color: var(--ash);
+}
+
+.search:focus-within {
+  border-color: var(--volt);
+}
+
+.search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  color: var(--white);
+  font: inherit;
+  font-size: 16px;
+  outline: none;
+}
+
+.search + .tabs {
+  margin-top: 12px;
+}
+
+.chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding-bottom: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.chips::-webkit-scrollbar {
+  display: none;
+}
+
+.chip,
+.chipOn {
+  flex-shrink: 0;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: var(--panel);
+  color: var(--ash);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.chipOn {
+  border-color: var(--volt);
+  background: rgba(232, 255, 58, 0.1);
+  color: var(--volt);
+}
+
+.chipRule {
+  flex-shrink: 0;
+  width: 1px;
+  height: 18px;
+  background: var(--rule);
+}
+
+.clear {
+  margin-left: 10px;
+  padding: 2px 4px;
+  border: 0;
+  background: none;
+  color: var(--cyan);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.more {
+  display: block;
+  width: 100%;
+  margin-top: 2px;
+  padding: 12px 0;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  background: none;
+  color: var(--ash);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.more:hover {
+  color: var(--white);
+}
+
+.empty {
+  margin: 14px 0 0;
+  padding: 18px 16px;
+  border-radius: 16px;
+  background: var(--panel);
+  color: var(--ash);
+  font-size: 13.5px;
+  line-height: 1.6;
+  word-break: keep-all;
+}
+
+.addMine {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px dashed var(--ash-dim);
+  color: var(--white);
+  text-decoration: none;
+}
+
+.addMine:hover {
+  border-color: var(--volt);
+}
+
+.addMine > span:last-child {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.addMine b {
+  font-size: 15px;
+}
+
+.addMine small {
+  font-size: 12px;
+  color: var(--ash);
+  word-break: keep-all;
+}
+
+.addPlus {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--volt);
+  color: var(--stage);
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+}

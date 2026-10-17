@@ -22,6 +22,7 @@ web/                 # Next.js 웹앱 (유일한 클라이언트)
   components/bottom-nav.tsx  # 하단 탭(홈·챌린지·연습실·나). 몰입 화면에선 숨긴다
   app/record/[id]/   # 듣기 → 카운트다운 → 녹음 → 채점 → 결과
   app/practice/      # 연습실 — 대본(기준 음성 없음)·명대사 반복 연습, 기록은 기기 IndexedDB
+  app/practice/new/  # 내 대본 넣기·고치기 — 대본은 기기 localStorage 에만 (lib/my-scripts.ts)
   app/probe/         # 마이크 진단
   lib/memes.ts       # 카탈로그 조회 + 폴백 (생성됨)
   lib/config.ts      # 엔드포인트 한 곳
@@ -65,6 +66,12 @@ modal deploy modal_app.py          # 로컬에서 직접 (토큰 있는 사람�
 서버 배포가 코드보다 낡으면 조용히 기능이 사라진다 — 실제로 대사(`line`)가
 7시간 동안 통째로 버려진 적이 있다. `/version` 이 배포된 커밋을 돌려주고
 `doctor` 가 main 과 대조한다.
+
+## 비용 가드 (Modal)
+- 채점·받아쓰기는 웹앱 서버만 부른다 — `x-mimic-proxy` 헤더(Vercel `PROXY_TOKEN` = Modal Secret
+  `mimic-proxy`). Secret 에 `PROXY_ENFORCE=1` 이 있어야 실제로 막는다
+- 업로드는 디코딩 단계에서 길이를 자른다(`_decode_upload(max_s=)`). 다 처리한 뒤에 길이를 보면 이미 CPU 를 쓴 뒤다
+- `max_containers` 가 최악의 시간당 비용 상한이다. 늘리기 전에 계산부터
 
 ## 테스트
 ```bash
