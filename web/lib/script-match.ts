@@ -273,7 +273,7 @@ export function matchScript(script: string, heardText: string): MatchResult {
     else if (status === "missed") missed += 1;
     else {
       changed += 1;
-      good += Math.max(0, p.eq - p.sub);
+      good += p.eq; // 바꾼 어절이라도 맞게 읽은 음절은 맞게 읽은 것이다
     }
     return status === "changed"
       ? { index, word, status, heard: p.heard.replace(/\s+/g, "") }
