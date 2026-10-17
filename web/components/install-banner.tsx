@@ -52,7 +52,8 @@ export function InstallBanner() {
 
   return (
     <div className={styles.bar}>
-      {canPrompt ? (
+      {/* 크롬이 아닌 안드로이드 브라우저는 그 자리에서 설치시키지 않는다 — /install 이 크롬으로 보낸다. */}
+      {canPrompt && !(env.kind === "android" && !env.chrome) ? (
         <button
           type="button"
           className={styles.main}
