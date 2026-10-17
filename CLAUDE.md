@@ -24,6 +24,7 @@ web/                 # Next.js 웹앱 (유일한 클라이언트)
   lib/config.ts      # 엔드포인트 한 곳
   lib/scripts.ts     # 연습실 대본 (생성됨 — registry.json 의 scripts)
   lib/voice-analysis.ts  # 브라우저 측정: 말 속도·쉼·억양 폭·문장 끝 처짐
+  lib/script-match.ts    # 대본 ↔ 받아쓰기 비교 (빠뜨림·바꿈·덧붙임). 받아쓰기는 modal_app.transcribe
 
 modal_app.py         # 서버 API (채점 + 카탈로그 + 운영자 엔드포인트 + 이벤트 로그)
 scoring_engine.py    # 채점 엔진 사본 — 테스트 전용. 배포되는 건 modal_app._score 다
