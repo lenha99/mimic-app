@@ -10,6 +10,8 @@ import Link from "next/link";
 import { VoiceAvatar } from "@/components/voice-avatar";
 import { MyChallenges, type MyChallenge } from "./my-challenges";
 import { MyRecordings, type MyRecording } from "./my-recordings";
+import { MyPracticePosts } from "./my-practice-posts";
+import { myPosts } from "@/lib/board-server";
 import styles from "./profile.module.css";
 
 /**
@@ -41,6 +43,8 @@ export default async function ProfilePage() {
     .eq("creator_id", user.id)
     .order("created_at", { ascending: false })
     .limit(30);
+
+  const practicePosts = await myPosts(user.id).catch(() => []);
 
   // 내 녹음만 조회했으니(user_id 조건 + RLS) 서명해도 된다.
   const urls = await signAudio((recordings ?? []).map((r) => r.audio_path));
@@ -85,6 +89,7 @@ export default async function ProfilePage() {
               <em>버럭이·할머니·MZ… 꾸미러 가기 →</em>
             </span>
           </Link>
+          <MyPracticePosts items={practicePosts} />
           <MyChallenges items={(challenges ?? []) as MyChallenge[]} />
           <MyRecordings items={items} />
           <DeleteAccount />

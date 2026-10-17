@@ -194,6 +194,94 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["challenges"]["Insert"]>;
         Relationships: [];
       };
+      /** 연습 피드백 게시판 — 본인이 골라 올린 연습 테이크. 쓰기·읽기는 서버(service_role)만. */
+      practice_posts: {
+        Row: {
+          id: string;
+          user_id: string;
+          script_id: string;
+          title: string;
+          script_text: string;
+          track: "voice" | "anchor" | "line";
+          ask: string | null;
+          audio_path: string;
+          hidden: boolean;
+          reports: number;
+          created_at: string;
+          expires_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          script_id: string;
+          title: string;
+          script_text: string;
+          track: "voice" | "anchor" | "line";
+          ask?: string | null;
+          audio_path: string;
+          hidden?: boolean;
+          reports?: number;
+          created_at?: string;
+          expires_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["practice_posts"]["Insert"]>;
+        Relationships: [];
+      };
+      practice_notes: {
+        Row: {
+          id: string;
+          post_id: string;
+          user_id: string;
+          tags: string[];
+          body: string;
+          hidden: boolean;
+          reports: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          post_id: string;
+          user_id: string;
+          tags?: string[];
+          body: string;
+          hidden?: boolean;
+          reports?: number;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["practice_notes"]["Insert"]>;
+        Relationships: [];
+      };
+      practice_reports: {
+        Row: { user_id: string; post_id: string | null; note_id: string | null; created_at: string };
+        Insert: { user_id: string; post_id?: string | null; note_id?: string | null; created_at?: string };
+        Update: never;
+        Relationships: [];
+      };
+      /** 결과 화면 한 줄 피드백. 로그인 없이도 남는다. */
+      app_feedback: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          client_id: string | null;
+          page: "record" | "practice" | "board";
+          item_id: string | null;
+          rating: -1 | 1;
+          message: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          client_id?: string | null;
+          page: "record" | "practice" | "board";
+          item_id?: string | null;
+          rating: -1 | 1;
+          message?: string | null;
+          created_at?: string;
+        };
+        Update: never;
+        Relationships: [];
+      };
     };
     Views: {
       rankings: {

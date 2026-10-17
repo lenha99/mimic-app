@@ -498,3 +498,45 @@
   font-weight: 800;
   line-height: 1;
 }
+
+/* 연습 피드백 게시판 입구 */
+.board {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  background: linear-gradient(120deg, rgba(0, 229, 255, 0.1), transparent 70%), var(--panel);
+  color: var(--white);
+  text-decoration: none;
+}
+
+.boardIcon {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--panel-hi);
+  font-size: 20px;
+}
+
+.boardText {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.boardText b {
+  font-size: 15px;
+}
+
+.boardText small {
+  font-size: 12px;
+  color: var(--cyan);
+  word-break: keep-all;
+}
