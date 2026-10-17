@@ -75,7 +75,7 @@ export default function PracticeHome({ scripts, lines }: { scripts: Script[]; li
         <h1 className={styles.h1}>읽고, 듣고, 다시 읽기</h1>
         <p className={styles.lede}>
           성우·아나운서 준비생을 위한 대본 {scripts.length}편. 녹음하면 속도·쉼·억양·말끝을
-          바로 짚어줘요. 녹음은 이 폰에만 남아요.
+          바로 짚어줘요. 대본 녹음은 서버로 안 가고 이 폰에만 남아요.
         </p>
       </header>
 
@@ -184,7 +184,8 @@ export default function PracticeHome({ scripts, lines }: { scripts: Script[]; li
               원본 따라 말하기 <span>{lines.length}</span>
             </h3>
             <p className={styles.groupNote}>
-              원본 음성이 있어서 억양·타이밍을 원본과 직접 비교해 채점해요.
+              원본 음성이 있어서 억양·타이밍을 원본과 직접 비교해 채점해요. 채점하려고
+              녹음을 잠깐 서버로 보내고, 점수만 낸 뒤 바로 지워요.
             </p>
             <ol className={styles.rows}>
               {lines.map((l, i) => (

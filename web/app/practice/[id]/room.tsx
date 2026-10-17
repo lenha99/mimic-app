@@ -288,10 +288,13 @@ export default function Room({ item }: { item: RoomItem }) {
         track("practice_take", { meme_id: itemId });
         setPhase("recording");
 
+        // 원본 길이를 아직 모르면(메타데이터 전이면 duration 이 NaN) 5초로 본다.
+        // NaN 이 섞이면 아래 비교가 영원히 거짓이 돼서 녹음이 안 멈춘다.
+        const refSec = [refAnalysis?.duration, refEl.current?.duration].find(
+          (v): v is number => typeof v === "number" && Number.isFinite(v) && v > 0,
+        );
         const max =
-          item.kind === "line"
-            ? Math.max(3000, (refAnalysis?.duration ?? refEl.current?.duration ?? 5) * 1000 + LINE_TAIL_MS)
-            : MAX_SCRIPT_MS;
+          item.kind === "line" ? Math.max(3000, (refSec ?? 5) * 1000 + LINE_TAIL_MS) : MAX_SCRIPT_MS;
         const t0 = performance.now();
         const buf = new Uint8Array(analyser?.fftSize ?? 1024);
         let smooth = 0;
@@ -482,6 +485,9 @@ export default function Room({ item }: { item: RoomItem }) {
               title={item.meme.title}
             />
           )}
+          <p className={styles.privacy}>
+            채점하려고 녹음을 잠깐 서버로 보내요. 점수만 내고 바로 지우고, 기록은 이 폰에만 남아요.
+          </p>
           <button type="button" className={styles.refBtn} onClick={playRef}>
             {playing === "ref" ? "■ 원본 멈춤" : "▶ 채점 기준 음성 듣기"}
             {refAnalysis && <small>{refAnalysis.span.toFixed(1)}초</small>}
