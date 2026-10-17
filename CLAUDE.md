@@ -18,15 +18,18 @@ Flutter 클라이언트와 공유 영상 생성기가 있었으나 둘 다 걷�
 web/                 # Next.js 웹앱 (유일한 클라이언트)
   app/page.tsx       # 홈 — 맨 위 하나가 곧 첫 챌린지
   app/record/[id]/   # 듣기 → 카운트다운 → 녹음 → 채점 → 결과
+  app/practice/      # 연습실 — 대본(기준 음성 없음)·명대사 반복 연습, 기록은 기기 IndexedDB
   app/probe/         # 마이크 진단
   lib/memes.ts       # 카탈로그 조회 + 폴백 (생성됨)
   lib/config.ts      # 엔드포인트 한 곳
+  lib/scripts.ts     # 연습실 대본 (생성됨 — registry.json 의 scripts)
+  lib/voice-analysis.ts  # 브라우저 측정: 말 속도·쉼·억양 폭·문장 끝 처짐
 
 modal_app.py         # 서버 API (채점 + 카탈로그 + 운영자 엔드포인트 + 이벤트 로그)
 scoring_engine.py    # 채점 엔진 사본 — 테스트 전용. 배포되는 건 modal_app._score 다
 
 content/
-  registry.json      # 밈 콘텐츠의 단일 진실 소스 (출처·라이선스·QA 수치 포함)
+  registry.json      # 밈·대본의 단일 진실 소스 (출처·라이선스·권리 상태·QA 수치 포함)
   TAKEDOWNS.md       # 내린 콘텐츠 기록
 tools/
   ingest.py          # 인제스트: 받기 → 구간 선택 → 정규화 → 게이트 → 업로드 → 검증
@@ -41,6 +44,8 @@ refs_animals/        # CC0 동물 소리 원본 (제자리 수정 금지)
 - 밈 추가: `python tools/ingest.py pick ...` → `publish` (README §8)
 - 콘텐츠 순서·문구: `content/registry.json` 만 고치고 `sync_catalog.py`.
   `catalog.json`·`memes.json`·웹 `FALLBACK` 은 **생성물이라 직접 고치면 CI 가 막는다**
+- 연습실 대본: `registry.json` 의 `scripts` 에 쓰고 `sync_catalog.py`. 숫자·영문은 한글로
+  풀어 쓴다(속도를 음절로 잰다). 권리 상태(`rights`)가 `clip` 인 콘텐츠는 유료 기능에 쓰지 않는다
 - 정규화 규칙을 바꿨으면 `python tools/ingest.py renorm` 으로 전체 재생성
 - 프로덕션이 레지스트리와 맞는지: `python tools/ingest.py doctor`
 

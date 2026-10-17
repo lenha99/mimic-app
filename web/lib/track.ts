@@ -24,7 +24,10 @@ export type TrackKind =
   | "view_feed"
   | "feed_play"
   | "feed_react"
-  | "feed_try";
+  | "feed_try"
+  // 연습실 — 퍼널(도전장)과 섞지 않는다. 연습은 퍼지는 길이 아니라 다시 오는 길이다.
+  | "practice_view"
+  | "practice_take";
 
 const URL_ =
   process.env.NEXT_PUBLIC_TRACK_URL ?? "https://lenha99--meme-scoring-track.modal.run";
