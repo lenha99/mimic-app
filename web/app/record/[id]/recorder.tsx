@@ -244,9 +244,12 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
 
   /**
    * 원본을 미리 받아 메모리에서 튼다 (맨 위 주석). 못 받으면 원래 주소 그대로 둔다.
-   * 이미 재생 중이면 소스를 바꾸지 않는다 — 바꾸는 순간 소리가 끊긴다.
+   * 소스는 대기 화면에서만 바꾼다 — 듣는 중에 바꾸면, 전화·알림으로 잠깐 멈췄던
+   * 원본이 이어지지 않고 처음부터 다시 나온다. 그땐 받아둔 걸 들고 있다가 다음에
+   * 처음부터 틀 때(playRef) 바꾼다.
    */
   const [refSrc, setRefSrc] = useState(refUrl);
+  const pendingSrc = useRef<string | null>(null);
   useEffect(() => {
     let blobUrl: string | null = null;
     let cancelled = false;
@@ -256,10 +259,9 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
         if (cancelled || !buf) return;
         const seconds = wavSeconds(buf);
         if (seconds) setRefSeconds((prev) => prev ?? seconds);
-        const el = refAudio.current;
-        if (el && !el.paused) return;
         blobUrl = URL.createObjectURL(new Blob([buf], { type: "audio/wav" }));
-        setRefSrc(blobUrl);
+        if (phaseRef.current === "idle" && refAudio.current?.paused !== false) setRefSrc(blobUrl);
+        else pendingSrc.current = blobUrl;
       })
       .catch(() => {});
     return () => {
@@ -461,6 +463,13 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
       chain.current = thenRecord;
       setChaining(thenRecord);
       clearTimers();
+
+      // 듣는 중에 받아진 원본은 처음부터 다시 트는 지금 갈아끼운다 (위 refSrc 주석).
+      if (pendingSrc.current) {
+        el.src = pendingSrc.current;
+        setRefSrc(pendingSrc.current);
+        pendingSrc.current = null;
+      }
 
       try {
         el.currentTime = 0;
