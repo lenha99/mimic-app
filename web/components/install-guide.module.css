@@ -1,0 +1,136 @@
+.card {
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 20px 18px;
+  border-radius: 22px;
+  background: var(--panel);
+  border: 1px solid rgba(232, 255, 58, 0.22);
+  text-align: left;
+}
+
+.title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.4;
+  word-break: keep-all;
+}
+
+.sub {
+  margin: 2px 0 0;
+  font-size: 14px;
+  color: var(--white);
+  opacity: 0.86;
+  word-break: keep-all;
+}
+
+.en {
+  display: block;
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ash);
+}
+
+.hint {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--ash);
+  text-align: center;
+}
+
+.primary,
+.ghost {
+  margin-top: 14px;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 28px;
+  font-family: var(--display);
+  font-size: 18px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.primary {
+  background: var(--volt);
+  color: var(--stage);
+  box-shadow: 0 8px 30px rgba(232, 255, 58, 0.28);
+}
+
+.primary:active,
+.ghost:active {
+  transform: scale(0.98);
+}
+
+.ghost {
+  margin-top: 8px;
+  min-height: 48px;
+  background: transparent;
+  border: 1px solid var(--rule);
+  color: var(--ash);
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.steps {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+  display: grid;
+  gap: 8px;
+}
+
+.steps li {
+  counter-increment: step;
+  position: relative;
+  padding: 11px 12px 11px 46px;
+  border-radius: 14px;
+  background: var(--panel-hi);
+  font-size: 15px;
+  line-height: 1.5;
+  word-break: keep-all;
+}
+
+.steps li::before {
+  content: counter(step);
+  position: absolute;
+  left: 12px;
+  top: 11px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--volt);
+  color: var(--stage);
+  font-family: var(--display);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.steps b {
+  color: var(--volt);
+}
+
+.icon {
+  vertical-align: -3px;
+  color: var(--cyan);
+}
+
+.url {
+  margin: 12px 0 0;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--panel-hi);
+  font-family: var(--mono);
+  font-size: 14px;
+  text-align: center;
+  user-select: all;
+}

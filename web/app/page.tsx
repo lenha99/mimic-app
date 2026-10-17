@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ClaimPending } from "@/app/profile/claim-pending";
 import { HomeBeacon } from "@/components/home-beacon";
+import { InstallBanner } from "@/components/install-banner";
 import { ViewerBadge } from "@/components/viewer";
 import { YoutubeClip } from "@/components/youtube-clip";
 import { extraLine, getMemes, playCount, type Meme } from "@/lib/memes";
@@ -38,6 +39,8 @@ export default async function Home() {
         <span className={styles.logo}>MIMIC</span>
         <ViewerBadge />
       </header>
+
+      <InstallBanner />
 
       {/* 로그인 전에 저장한 녹음을 계정으로 가져온다. 가져올 게 없으면 아무것도 안 그린다. */}
       <ClaimPending />
