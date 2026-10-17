@@ -1,7 +1,6 @@
 /*
- * 홈. 맨 위 하나가 곧 첫 챌린지이고, 그 주인공은 외치는 캐릭터다.
- * 명대사는 옆으로 넘기는 카드, 동물 소리는 타일 — 고르는 마음이 달라서 모양도 다르다.
- * 진단 도구(/probe)는 바닥에 둔다. 필요한 사람만 찾으면 된다.
+ * 홈. 오늘의 명대사 하나와 입구 둘(명대사 챌린지 · 연습실)이 전부다.
+ * 고르는 일은 챌린지 탭이, 이동은 하단 탭이 맡는다 — 홈은 "뭐부터 하지"에만 답한다.
  */
 
 .head {
@@ -19,60 +18,6 @@
   color: var(--volt);
   text-shadow: 0 0 18px rgba(232, 255, 58, 0.35);
 }
-
-.nav {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.navPill {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--white);
-  text-decoration: none;
-  background: var(--panel);
-  border: 1px solid var(--rule);
-  border-radius: 999px;
-  padding: 7px 13px;
-}
-
-.navPill:hover {
-  border-color: var(--ash-dim);
-}
-
-/* 필이 넷이라 좁은 폰(360px)에서 한 줄에 안 들어간다. 글자가 꺾이면("피/드") 메뉴로
-   안 읽힌다 — 줄바꿈을 막고, 좁으면 로고와 필을 같이 줄이고 이모지를 뗀다. */
-.navPill,
-.nav > a {
-  white-space: nowrap;
-}
-
-.navEmoji {
-  margin-right: 3px;
-}
-
-@media (max-width: 420px) {
-  .head {
-    gap: 8px;
-  }
-  .logo {
-    font-size: 20px;
-    letter-spacing: 0.04em;
-  }
-  .nav {
-    gap: 5px;
-  }
-  .navPill {
-    font-size: 12.5px;
-    padding: 6px 10px;
-  }
-  .navEmoji {
-    display: none;
-  }
-}
-
-/* 오늘의 소리 ---------------------------------------------------------- */
 
 .hero {
   position: relative;
@@ -280,433 +225,174 @@
   }
 }
 
-/* 세 단계 ------------------------------------------------------------- */
+/* 두 입구 — 놀이와 연습. 같은 크기로 나란히 ----------------------------- */
 
-.steps {
-  list-style: none;
-  margin: 14px 0 0;
-  padding: 0;
-  display: flex;
-  gap: 6px;
-}
-
-.steps li {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  padding: 9px 6px;
-  border-radius: 14px;
-  background: var(--panel);
-  font-size: clamp(10.5px, 3.1vw, 12px);
-  font-weight: 700;
-  color: var(--white);
-  white-space: nowrap;
-}
-
-.steps b {
+.doors {
   display: grid;
-  place-items: center;
-  flex: none;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: var(--volt);
-  color: var(--stage);
-  font-family: var(--mono);
-  font-size: 10px;
-}
-
-/* 섹션 ---------------------------------------------------------------- */
-
-/* 피드 입구 ------------------------------------------------------------- */
-
-.feedBanner {
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
   margin-top: 14px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  border-radius: 18px;
-  text-decoration: none;
-  color: var(--white);
-  background:
-    linear-gradient(100deg, rgba(0, 229, 255, 0.14), rgba(255, 45, 120, 0.1)),
-    var(--panel);
-  border: 1px solid rgba(0, 229, 255, 0.25);
 }
 
-.feedPlay {
-  flex: none;
-  width: 38px;
-  height: 38px;
-  display: grid;
-  place-items: center;
-  padding-left: 3px;
-  border-radius: 50%;
-  background: var(--cyan);
-  color: var(--stage);
-  font-size: 15px;
-}
-
-.feedText {
-  flex: 1;
-  min-width: 0;
+.door {
+  position: relative;
+  min-height: 178px;
   display: flex;
   flex-direction: column;
-  line-height: 1.35;
-}
-
-.feedText b {
-  font-size: 15px;
-  font-weight: 800;
-}
-
-.feedText span {
-  font-size: 12px;
-  color: var(--ash);
-}
-
-.feedGo {
-  flex: none;
-  font-weight: 800;
-  color: var(--cyan);
-}
-
-.navPractice {
-  border-color: rgba(232, 255, 58, 0.4);
-  color: var(--volt);
-}
-
-.practiceEntry {
-  margin-top: 10px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px 12px 12px;
-  border-radius: 18px;
+  gap: 4px;
+  padding: 16px 15px 15px;
+  border-radius: 22px;
+  overflow: hidden;
   text-decoration: none;
   color: var(--white);
   background: var(--panel);
   border: 1px solid var(--rule);
+  transition: transform 120ms ease;
 }
 
-.practiceEntry:hover {
-  border-color: var(--ash-dim);
+.door:active {
+  transform: scale(0.97);
 }
 
-/* 대본 한 귀퉁이 — 놀이 카드들 사이에서 "이건 읽는 곳"이라는 걸 모양으로 말한다. */
-.practicePaper {
-  flex: none;
-  width: 58px;
-  height: 46px;
-  padding: 6px 7px;
+.doorChallenge {
+  background:
+    linear-gradient(160deg, rgba(0, 229, 255, 0.16), transparent 60%),
+    var(--panel);
+  border-color: rgba(0, 229, 255, 0.28);
+}
+
+.doorPractice {
+  background:
+    linear-gradient(160deg, rgba(232, 255, 58, 0.13), transparent 60%),
+    var(--panel);
+  border-color: rgba(232, 255, 58, 0.28);
+}
+
+.doorKicker {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.doorChallenge .doorKicker {
+  color: var(--cyan);
+}
+
+.doorPractice .doorKicker {
+  color: var(--volt);
+}
+
+.doorTitle {
+  font-family: var(--display);
+  font-size: 24px;
+  line-height: 1.15;
+  word-break: keep-all;
+}
+
+.doorSub {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ash);
+  word-break: keep-all;
+}
+
+.doorArt {
+  margin-top: auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.doorGo {
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.doorChallenge .doorGo {
+  color: var(--cyan);
+}
+
+.doorPractice .doorGo {
+  color: var(--volt);
+}
+
+/* 명대사 쪽: 점수판 한 조각 */
+.doorScore {
+  font-family: var(--display);
+  font-size: 30px;
+  line-height: 1;
+  color: var(--white);
+}
+
+.doorScore small {
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ash);
+  margin-left: 2px;
+}
+
+/* 연습실 쪽: 대본 한 귀퉁이 */
+.doorPaper {
+  width: 76px;
+  padding: 7px 8px 0;
+  height: 44px;
   overflow: hidden;
-  border-radius: 4px 4px 9px 9px;
+  border-radius: 4px 4px 0 0;
   background: #f4f1ea;
   color: #18181b;
-  font-size: 8.5px;
+  font-size: 9px;
   font-weight: 700;
   line-height: 1.45;
   word-break: keep-all;
-  /* 종이가 아래로 이어지는 것처럼 흐리게 끊는다 — 잘린 글자로 안 보이게. */
-  -webkit-mask-image: linear-gradient(to bottom, #000 60%, transparent);
-  mask-image: linear-gradient(to bottom, #000 60%, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent);
+  mask-image: linear-gradient(to bottom, #000 55%, transparent);
 }
 
-.practiceEntry .feedText span {
-  word-break: keep-all;
-}
-
-.practicePaper i {
+.doorPaper i {
   font-style: normal;
   color: #c22d5f;
 }
 
-.practiceGo {
-  flex: none;
-  font-weight: 800;
-  color: var(--volt);
-}
+/* 내 챌린지 만들기 한 줄 -------------------------------------------------- */
 
-.navFeed {
-  border-color: rgba(0, 229, 255, 0.45);
-  color: var(--cyan);
-}
-
-.section {
-  margin-top: 30px;
-}
-
-.sectionHead {
+.create {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.sectionHead h2 {
-  margin: 0;
-  font-family: var(--display);
-  font-size: 22px;
-  font-weight: 400;
-  color: var(--white);
-}
-
-.sectionHead span {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ash);
-}
-
-/* 명대사 — 옆으로 넘기는 카드 ------------------------------------------ */
-
-.rail {
-  list-style: none;
-  margin: 0 calc(var(--gutter) * -1);
-  padding: 2px var(--gutter) 6px;
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scroll-padding-inline: var(--gutter);
-  scrollbar-width: none;
-}
-
-.rail::-webkit-scrollbar {
-  display: none;
-}
-
-.rail li {
-  flex: 0 0 min(62%, 220px);
-  scroll-snap-align: start;
-}
-
-.card {
-  --accent: var(--volt);
-  height: 100%;
-  min-height: 176px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 16px;
-  border-radius: 22px;
-  text-decoration: none;
-  background:
-    linear-gradient(160deg, color-mix(in srgb, var(--accent) 18%, transparent), transparent 55%),
-    var(--panel);
-  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--rule));
-  transition: transform 120ms ease;
-}
-
-.card:active {
-  transform: scale(0.97);
-}
-
-.volt {
-  --accent: var(--volt);
-}
-
-.cyan {
-  --accent: var(--cyan);
-}
-
-.pink {
-  --accent: var(--pink);
-}
-
-.lime {
-  --accent: var(--lime);
-}
-
-.cardFace {
-  font-size: 34px;
-  line-height: 1.1;
-}
-
-.cardTitle {
-  font-family: var(--display);
-  font-size: 21px;
-  line-height: 1.15;
-  color: var(--white);
-  word-break: keep-all;
-}
-
-.cardLine {
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.45;
-  color: var(--accent);
-  word-break: keep-all;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.cardFoot {
-  margin-top: auto;
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--ash);
-}
-
-.cardFoot span:first-child {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* 동물 소리 — 타일 ----------------------------------------------------- */
-
-.tiles {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-
-.tile {
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: 14px 6px 12px;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 14px 16px;
   border-radius: 18px;
-  background: var(--panel);
-  border: 1px solid var(--rule);
-  text-decoration: none;
-  transition: transform 120ms ease, border-color 120ms ease;
-}
-
-.tile:hover {
-  border-color: var(--ash-dim);
-}
-
-.tile:active {
-  transform: scale(0.95);
-}
-
-.tileFace {
-  font-size: 32px;
-  line-height: 1.2;
-}
-
-.tileTitle {
-  font-family: var(--display);
-  font-size: 16px;
-  line-height: 1.3;
+  border: 1px dashed var(--ash-dim);
   color: var(--white);
-}
-
-.tileMeta {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--ash);
-}
-
-/* 캐릭터 · 투표 소개 ---------------------------------------------------- */
-
-.promos {
-  margin-top: 30px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.promo {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 18px;
-  border-radius: 22px;
-  background: var(--panel);
-  border: 1px solid var(--rule);
   text-decoration: none;
 }
 
-.promoCreate {
-  background:
-    radial-gradient(90% 90% at 100% 0%, rgba(255, 45, 120, 0.2), transparent 60%),
-    var(--panel);
-  border-color: rgba(255, 45, 120, 0.3);
-}
-
-.promoCreate .promoGo {
-  color: var(--pink);
-}
-
-.sectionHead a {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--pink);
-  text-decoration: none;
-}
-
-.promoVote {
-  background:
-    radial-gradient(90% 90% at 100% 0%, rgba(0, 229, 255, 0.16), transparent 60%),
-    var(--panel);
-}
-
-.cast {
-  display: flex;
+.create span {
+  display: grid;
   gap: 2px;
-  margin: -4px 0 6px -4px;
 }
 
-.cast span {
-  display: flex;
-  animation: hop 1.8s ease-in-out infinite;
+.create b {
+  font-size: 15px;
 }
 
-@keyframes hop {
-  0%,
-  60%,
-  100% {
-    transform: translateY(0);
-  }
-  30% {
-    transform: translateY(-6px);
-  }
-}
-
-.promoTitle {
-  margin: 0;
-  font-family: var(--display);
-  font-size: 20px;
-  color: var(--white);
-}
-
-.promoText {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.55;
+.create small {
+  font-size: 12px;
   color: var(--ash);
   word-break: keep-all;
 }
 
-.promoGo {
-  margin-top: 6px;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--volt);
+.create i {
+  font-style: normal;
+  color: var(--ash);
 }
 
-.promoVote .promoGo {
-  color: var(--cyan);
+.create:hover {
+  border-color: var(--ash);
 }
 
-/* 바닥 ----------------------------------------------------------------- */
+/* 바닥 --------------------------------------------------------------- */
 
 .foot {
   margin-top: 34px;

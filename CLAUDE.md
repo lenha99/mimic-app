@@ -16,7 +16,10 @@ Flutter 클라이언트와 공유 영상 생성기가 있었으나 둘 다 걷�
 ## 파일 구조
 ```
 web/                 # Next.js 웹앱 (유일한 클라이언트)
-  app/page.tsx       # 홈 — 맨 위 하나가 곧 첫 챌린지
+  app/page.tsx       # 홈 — 오늘의 명대사 하나 + 입구 둘(챌린지 · 연습실)
+  app/challenges/    # 챌린지 목록 — 명대사 · 친구가 만든 · 몸풀기(동물 소리)
+  app/me/            # "나" 탭 — 로그인했으면 /profile, 아니면 손님 허브
+  components/bottom-nav.tsx  # 하단 탭(홈·챌린지·연습실·나). 몰입 화면에선 숨긴다
   app/record/[id]/   # 듣기 → 카운트다운 → 녹음 → 채점 → 결과
   app/practice/      # 연습실 — 대본(기준 음성 없음)·명대사 반복 연습, 기록은 기기 IndexedDB
   app/probe/         # 마이크 진단

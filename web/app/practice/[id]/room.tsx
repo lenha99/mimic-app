@@ -15,7 +15,7 @@ import {
   type Script,
 } from "@/lib/practice";
 import { judge, passCount, warnings, type Check, type Target } from "@/lib/practice-feedback";
-import { matchScript, type MatchResult } from "@/lib/script-match";
+import { fixesOf, matchScript, type MatchResult } from "@/lib/script-match";
 import { deleteTake, listTakes, newTakeId, saveTake, updateTake, type Take } from "@/lib/take-store";
 import { track } from "@/lib/track";
 import { analyze, analyzeBlob, decodeMono, type Analysis } from "@/lib/voice-analysis";
@@ -602,6 +602,12 @@ export default function Room({ item }: { item: RoomItem }) {
             <span className={styles.pauseMark}>/</span> 쉼 &nbsp; <u>밑줄</u> 강조
           </p>
         )}
+        {open?.transcript?.text && (
+          <details className={styles.heard}>
+            <summary>들린 그대로 보기 · 테이크 #{order.get(open.id)}</summary>
+            <p>{open.transcript.text}</p>
+          </details>
+        )}
       </section>
 
       {error && (
@@ -625,6 +631,7 @@ export default function Room({ item }: { item: RoomItem }) {
             onRef={item.kind === "line" ? playRef : undefined}
             refPlaying={playing === "ref"}
             onStar={() => void toggleStar(open)}
+            text={text}
             match={match}
             checking={checking === open.id}
             autoCheck={autoCheck}
@@ -848,6 +855,7 @@ function TakeReport({
   onRef,
   refPlaying,
   onStar,
+  text,
   match,
   checking,
   autoCheck,
@@ -864,6 +872,7 @@ function TakeReport({
   onRef?: () => void;
   refPlaying: boolean;
   onStar: () => void;
+  text: string;
   match: MatchResult | null;
   checking: boolean;
   autoCheck: boolean;
@@ -916,6 +925,15 @@ function TakeReport({
         </div>
       </header>
 
+      <ScriptCheck
+        text={text}
+        match={match}
+        heardEmpty={!!take.transcript && !take.transcript.text.trim()}
+        checking={checking}
+        autoCheck={autoCheck}
+        onCheck={onCheck}
+      />
+
       {a && <Wave a={a} />}
 
       {warn.map((w) => (
@@ -947,14 +965,6 @@ function TakeReport({
           ))}
         </dl>
       )}
-
-      <ScriptCheck
-        match={match}
-        heardEmpty={!!take.transcript && !take.transcript.text.trim()}
-        checking={checking}
-        autoCheck={autoCheck}
-        onCheck={onCheck}
-      />
 
       {checks.length > 0 && (
         <ul className={styles.checks}>
@@ -1047,22 +1057,29 @@ function clock(ms: number): string {
 }
 
 /**
- * 대본 확인 결과 요약 — 또는 확인하기 버튼. 녹음이 서버로 가는 일이라 처음엔
- * 무엇이 어디로 가는지 말하고, 그 자리에서 "매번 할지"를 고르게 한다.
+ * 대본 확인 — 결과는 "고칠 곳" 목록으로 준다. 틀린 말과 그 말이 든 구절을 같이 보여서
+ * 다음 테이크에 그 구절만 다시 읽으면 되게 한다.
+ *
+ * 녹음이 서버로 가는 일이라 처음 한 번은 묻는다. 기본 버튼이 "앞으로 자동"이다 —
+ * 연습할 때마다 누르게 하면 아무도 안 누른다.
  */
 function ScriptCheck({
+  text,
   match,
   heardEmpty,
   checking,
   autoCheck,
   onCheck,
 }: {
+  text: string;
   match: MatchResult | null;
   heardEmpty: boolean;
   checking: boolean;
   autoCheck: boolean;
   onCheck: (always?: boolean) => void;
 }) {
+  const fixes = useMemo(() => (match ? fixesOf(text, match) : []), [match, text]);
+
   if (checking) {
     return <p className={styles.checkBusy}>대본이랑 맞춰보는 중… 처음 한 번은 10초쯤 걸려</p>;
   }
@@ -1077,63 +1094,89 @@ function ScriptCheck({
   }
 
   if (!match) {
+    if (autoCheck) {
+      return (
+        <div className={styles.scriptCheck}>
+          <button type="button" className={styles.pill} onClick={() => onCheck()}>
+            이 테이크 대본 확인
+          </button>
+        </div>
+      );
+    }
     return (
       <div className={styles.scriptCheck}>
-        <p className={styles.scriptCheckHead}>대본대로 읽었는지 확인</p>
+        <p className={styles.scriptCheckHead}>대본대로 읽었는지도 볼까?</p>
         <p className={styles.checkNote}>
-          빠뜨린 말·바꾼 말·덧붙인 말을 대본 위에 표시해줘. 이 테이크를 잠깐 서버로 보내 글자로
-          바꾸고, 녹음도 글자도 바로 지워.
+          빠뜨린 말·바꾼 말을 찾아서 고칠 곳을 알려줘. 테이크를 잠깐 서버로 보내 글자로 바꾸고,
+          녹음도 글자도 바로 지워.
         </p>
         <div className={styles.checkBtns}>
-          <button type="button" className={styles.pillOn} onClick={() => onCheck()}>
-            이번 테이크 확인
+          <button type="button" className={styles.pillOn} onClick={() => onCheck(true)}>
+            확인하기 · 앞으로 자동
           </button>
-          {!autoCheck && (
-            <button type="button" className={styles.pill} onClick={() => onCheck(true)}>
-              앞으로 매번 확인
-            </button>
-          )}
+          <button type="button" className={styles.textBtn} onClick={() => onCheck()}>
+            이번만
+          </button>
         </div>
       </div>
     );
   }
 
   const pct = Math.round(match.accuracy * 100);
-  const missed = match.words.filter((w) => w.status === "missed").map((w) => clean(w.word));
-  const changed = match.words.filter((w) => w.status === "changed");
-  const perfect = !missed.length && !changed.length && !match.added.length;
-  const parts = [
-    missed.length
-      ? `빠뜨림 ${missed.length} (${missed.slice(0, 3).join(", ")}${missed.length > 3 ? " …" : ""})`
-      : "",
-    changed.length
-      ? `바꿈 ${changed.length} (${changed
-          .slice(0, 2)
-          .map((w) => `${clean(w.word)}→${w.heard ?? "?"}`)
-          .join(", ")}${changed.length > 2 ? " …" : ""})`
-      : "",
-    match.added.length
-      ? `덧붙임 ${match.added.length} (${match.added
-          .slice(0, 2)
-          .map((a) => a.text)
-          .join(", ")})`
-      : "",
-  ].filter(Boolean);
-
+  const SHOW = 5;
   return (
     <div className={styles.scriptCheck}>
       <div className={styles.checkTop}>
         <span className={styles.checkLabel}>대본</span>
         <span className={styles.checkValue}>{pct}%</span>
-        <span className={perfect ? styles.badgeOk : styles.badgeOff}>
-          {perfect ? "그대로" : "어긋남"}
+        <span className={fixes.length ? styles.badgeOff : styles.badgeOk}>
+          {fixes.length ? `고칠 곳 ${fixes.length}` : "그대로"}
         </span>
       </div>
-      <p className={styles.tip}>
-        {perfect
-          ? "한 마디도 안 빼고 대본대로 읽었어."
-          : `${parts.join(" · ")} — 대본 위에 표시해 뒀어.`}
-      </p>
+      {fixes.length === 0 ? (
+        <p className={styles.tip}>한 마디도 안 빼고 대본대로 읽었어.</p>
+      ) : (
+        <ol className={styles.fixes}>
+          {fixes.slice(0, SHOW).map((f, k) => (
+            <li key={k}>
+              <p className={styles.fixWhat}>
+                {f.kind === "missed" ? (
+                  <>
+                    <b>“{f.words}”</b>{josa(f.words, "을", "를")} 빠뜨렸어
+                  </>
+                ) : f.kind === "changed" ? (
+                  <>
+                    <b>“{f.words}”</b>{josa(f.words, "이", "가")}{" "}
+                    <span className={styles.fixHeard}>“{f.heard}”</span>
+                    {josa(f.heard, "으로", "로")} 들렸어
+                  </>
+                ) : (
+                  <>
+                    대본에 없는 <span className={styles.fixHeard}>“{f.heard}”</span>
+                    {josa(f.heard, "을", "를")} 넣었어
+                  </>
+                )}
+              </p>
+              {f.phrase.length > 0 && (
+                <p className={styles.fixAgain}>
+                  <span>다시</span>
+                  <span>
+                    {f.phrase.map((w, k) => (
+                      <span key={k}>
+                        {k > 0 && " "}
+                        {w.mark ? <u>{w.text}</u> : w.text}
+                      </span>
+                    ))}
+                  </span>
+                </p>
+              )}
+            </li>
+          ))}
+        </ol>
+      )}
+      {fixes.length > SHOW && (
+        <p className={styles.checkFine}>나머지 {fixes.length - SHOW}곳은 대본 위에 표시해 뒀어.</p>
+      )}
       <p className={styles.checkFine}>
         받아쓰기라 살짝 뭉개진 발음까지는 못 잡아. 빠뜨리거나 바꾼 말을 잡는 용도야.
       </p>
@@ -1141,6 +1184,14 @@ function ScriptCheck({
   );
 }
 
-function clean(w: string): string {
-  return w.replace(/[.,!?…·"'“”‘’]/g, "");
+/** 받침에 맞는 조사. "으로/로"는 ㄹ 받침도 "로"다. 숫자로 끝나면 읽는 소리로 본다. */
+function josa(word: string, withFinal: string, without: string): string {
+  const last = word.trim().slice(-1);
+  const DIGIT_FINAL = { "0": 1, "1": 8, "3": 1, "6": 1, "7": 8, "8": 8 } as Record<string, number>;
+  let tail = 0;
+  if (/[가-힣]/.test(last)) tail = (last.charCodeAt(0) - 0xac00) % 28;
+  else if (last in DIGIT_FINAL) tail = DIGIT_FINAL[last];
+  if (!tail) return without;
+  if (withFinal === "으로" && tail === 8) return without; // ㄹ 받침
+  return withFinal;
 }

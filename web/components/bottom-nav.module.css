@@ -1,0 +1,42 @@
+.spacer {
+  height: calc(64px + env(safe-area-inset-bottom));
+}
+
+.bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  background: rgba(14, 14, 16, 0.92);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border-top: 1px solid var(--rule);
+}
+
+.tab,
+.tabOn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 0 4px;
+  border-radius: 12px;
+  color: var(--ash-dim);
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.tab:hover {
+  color: var(--ash);
+}
+
+.tabOn {
+  color: var(--volt);
+}

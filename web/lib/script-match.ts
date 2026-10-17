@@ -283,3 +283,74 @@ export function matchScript(script: string, heardText: string): MatchResult {
   const totalSyl = ref.length || 1;
   return { words: results, added, accuracy: Math.min(1, good / totalSyl), missed, changed };
 }
+
+/** 구절을 어절로 — 고칠 어절에만 mark. 글자로 찾으면 "나도 나"의 엉뚱한 "나"에 밑줄이 간다. */
+export type PhraseWord = { text: string; mark: boolean };
+
+export type Fix =
+  | { kind: "missed"; words: string; phrase: PhraseWord[]; at: number[] }
+  | { kind: "changed"; words: string; heard: string; phrase: PhraseWord[]; at: number[] }
+  | { kind: "added"; heard: string; phrase: PhraseWord[]; at: number[] };
+
+/**
+ * 고칠 곳 — 다음 테이크에서 바로 할 일로 바꾼 목록. 대본 순서대로.
+ *
+ * 틀린 어절만 던져주면 "그래서 어디를?"이 남는다. 그래서 그 어절이 든 구절(쉼 표시
+ * 사이)을 같이 준다 — 그 구절만 다시 읽어보면 된다. 붙어 있는 빠뜨림("다 알아")은
+ * 하나로 묶는다.
+ */
+export function fixesOf(script: string, m: MatchResult): Fix[] {
+  // 어절 번호 → 그 어절이 든 구절의 [시작 번호, 어절들]
+  const phraseOf: { start: number; words: string[] }[] = [];
+  let n = 0;
+  script.split(/\/|\n/).forEach((chunk) => {
+    const ws = scriptWords(chunk);
+    const ph = { start: n, words: ws.map((w) => w.replace(/\*/g, "")) };
+    ws.forEach(() => phraseOf.push(ph));
+    n += ws.length;
+  });
+  const phrase = (index: number, at: number[]): PhraseWord[] => {
+    const ph = phraseOf[index];
+    if (!ph) return [];
+    return ph.words.map((text, k) => ({ text, mark: at.includes(ph.start + k) }));
+  };
+
+  const out: { pos: number; fix: Fix }[] = [];
+  let last: Fix | null = null;
+  let lastIdx = -2;
+  for (const w of m.words) {
+    if (w.status === "ok") continue;
+    const word = w.word.replace(/[.,!?…·"'“”‘’]/g, "");
+    if (
+      w.status === "missed" &&
+      last?.kind === "missed" &&
+      lastIdx === w.index - 1 &&
+      phraseOf[lastIdx] === phraseOf[w.index]
+    ) {
+      last.words += ` ${word}`;
+      last.at.push(w.index);
+      last.phrase = phrase(w.index, last.at);
+    } else {
+      const fix: Fix =
+        w.status === "missed"
+          ? { kind: "missed", words: word, phrase: phrase(w.index, [w.index]), at: [w.index] }
+          : {
+              kind: "changed",
+              words: word,
+              heard: w.heard ?? "",
+              phrase: phrase(w.index, [w.index]),
+              at: [w.index],
+            };
+      out.push({ pos: w.index, fix });
+      last = fix;
+    }
+    lastIdx = w.index;
+  }
+  for (const a of m.added) {
+    out.push({
+      pos: a.after + 0.5,
+      fix: { kind: "added", heard: a.text, phrase: phrase(Math.max(0, a.after), []), at: [a.after] },
+    });
+  }
+  return out.sort((a, b) => a.pos - b.pos).map((x) => x.fix);
+}
