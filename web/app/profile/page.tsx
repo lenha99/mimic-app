@@ -12,6 +12,9 @@ import { MyChallenges, type MyChallenge } from "./my-challenges";
 import { MyRecordings, type MyRecording } from "./my-recordings";
 import { MyPracticePosts } from "./my-practice-posts";
 import { myPosts } from "@/lib/board-server";
+import { isAdmin } from "@/lib/admin";
+import { createServiceClient } from "@/lib/supabase/service";
+import { AdminLinks } from "./admin-links";
 import styles from "./profile.module.css";
 
 /**
@@ -44,7 +47,7 @@ export default async function ProfilePage() {
     .order("created_at", { ascending: false })
     .limit(30);
 
-  const practicePosts = await myPosts(user.id).catch(() => []);
+  const [practicePosts, admin] = await Promise.all([myPosts(user.id).catch(() => []), adminCounts()]);
 
   // 내 녹음만 조회했으니(user_id 조건 + RLS) 서명해도 된다.
   const urls = await signAudio((recordings ?? []).map((r) => r.audio_path));
@@ -78,6 +81,7 @@ export default async function ProfilePage() {
 
       {profile ? (
         <div className={styles.stack}>
+          {admin && <AdminLinks pending={admin.pending} feedback={admin.feedback} />}
           <div className={styles.card}>
             <p className={styles.nickname}>{profile.nickname}</p>
             <NicknameEditor userId={user.id} initialNickname={profile.nickname} />
@@ -102,4 +106,16 @@ export default async function ProfilePage() {
       )}
     </main>
   );
+}
+
+/** 운영자면 메뉴에 띄울 숫자, 아니면 null. */
+async function adminCounts(): Promise<{ pending: number; feedback: number } | null> {
+  if (!(await isAdmin())) return null;
+  const service = createServiceClient();
+  const since = new Date(Date.now() - 7 * 86_400_000).toISOString();
+  const [{ count: pending }, { count: feedback }] = await Promise.all([
+    service.from("challenges").select("id", { count: "exact", head: true }).eq("status", "pending"),
+    service.from("app_feedback").select("id", { count: "exact", head: true }).gte("created_at", since),
+  ]);
+  return { pending: pending ?? 0, feedback: feedback ?? 0 };
 }
