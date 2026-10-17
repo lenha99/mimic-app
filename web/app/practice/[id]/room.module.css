@@ -80,9 +80,11 @@
   word-break: keep-all;
 }
 
+/* 한글 라벨은 본문 서체로 — 고정폭 서체엔 한글이 없어 대체 글꼴로 넘어가며 자간이 벌어진다. */
 .label {
   margin: 0;
-  font-family: var(--mono);
+  font-family: var(--sans);
+  font-weight: 700;
   font-size: 11px;
   letter-spacing: 0.04em;
   color: var(--ash);
@@ -196,7 +198,8 @@
 }
 
 .paperLabel {
-  font-family: var(--mono);
+  font-family: var(--sans);
+  font-weight: 700;
   font-size: 11px;
   letter-spacing: 0.04em;
   color: #8a8578;
@@ -932,4 +935,119 @@
   .checkFine {
     margin-left: 0;
   }
+}
+
+/* 고칠 곳 ---------------------------------------------------------------- */
+
+.fixes {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: fix;
+}
+
+.fixes li {
+  position: relative;
+  padding: 10px 0 10px 30px;
+  border-top: 1px dashed var(--rule);
+  counter-increment: fix;
+}
+
+.fixes li:first-child {
+  border-top: none;
+}
+
+.fixes li::before {
+  content: counter(fix);
+  position: absolute;
+  left: 0;
+  top: 11px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(255, 45, 120, 0.16);
+  color: #ff8fb4;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  display: grid;
+  place-items: center;
+}
+
+.fixWhat {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--white);
+  word-break: keep-all;
+}
+
+.fixWhat b {
+  font-weight: 800;
+}
+
+.fixHeard {
+  color: #fbbf6a;
+  font-weight: 700;
+}
+
+.fixAgain {
+  display: flex;
+  gap: 8px;
+  margin: 6px 0 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #f4f1ea;
+  color: #18181b;
+  font-size: 14.5px;
+  line-height: 1.6;
+  word-break: keep-all;
+}
+
+.fixAgain > span:first-child {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 800;
+  color: #c22d5f;
+  padding-top: 3px;
+}
+
+.fixAgain u {
+  text-decoration-color: #c22d5f;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+  font-weight: 800;
+}
+
+.textBtn {
+  min-height: 36px;
+  padding: 0 8px;
+  border: none;
+  background: none;
+  color: var(--ash);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.heard {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px dashed #d6d0c2;
+  font-size: 13px;
+  color: #5c584f;
+}
+
+.heard summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: #8a8578;
+}
+
+.heard p {
+  margin: 8px 0 0;
+  line-height: 1.75;
+  word-break: keep-all;
 }

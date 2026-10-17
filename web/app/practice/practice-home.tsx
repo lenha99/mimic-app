@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { BackHome } from "@/components/back-home";
 import { ago, expectedSeconds, TRACK_LABEL, type Script, type Track } from "@/lib/practice";
 import { summaries, type ItemSummary } from "@/lib/take-store";
 import styles from "./practice.module.css";
@@ -68,7 +67,6 @@ export default function PracticeHome({ scripts, lines }: { scripts: Script[]; li
 
   return (
     <main className="shell">
-      <BackHome />
 
       <header className={styles.intro}>
         <p className={styles.eyebrow}>MIMIC 연습실</p>

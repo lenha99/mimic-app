@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Black_Han_Sans, IBM_Plex_Mono } from "next/font/google";
+import { BottomNav } from "@/components/bottom-nav";
 import { config } from "@/lib/config";
 import "./globals.css";
 
@@ -65,7 +66,10 @@ export default function RootLayout({
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <BottomNav />
+      </body>
     </html>
   );
 }

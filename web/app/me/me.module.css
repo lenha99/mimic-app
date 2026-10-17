@@ -1,0 +1,80 @@
+.head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-block: 28px 20px;
+}
+
+.face {
+  flex-shrink: 0;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 26px;
+  color: var(--white);
+}
+
+.sub {
+  margin: 4px 0 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--ash);
+  word-break: keep-all;
+}
+
+.login {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 54px;
+  border-radius: 27px;
+  background: var(--volt);
+  color: var(--stage);
+  font-size: 16px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.list {
+  margin: 22px 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--rule);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px 2px;
+  border-bottom: 1px solid var(--rule);
+  color: var(--white);
+  text-decoration: none;
+}
+
+.row span {
+  display: grid;
+  gap: 2px;
+}
+
+.row b {
+  font-size: 15.5px;
+}
+
+.row small {
+  font-size: 12.5px;
+  color: var(--ash);
+}
+
+.row i {
+  font-style: normal;
+  color: var(--ash);
+}
+
+.row:hover b {
+  color: var(--volt);
+}
