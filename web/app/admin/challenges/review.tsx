@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import styles from "./admin.module.css";
 
-export function AdminLogin() {
+export function AdminLogin({ next = "/admin/challenges" }: { next?: string }) {
   const router = useRouter();
   const [passcode, setPasscode] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -29,6 +29,10 @@ export function AdminLogin() {
 
   return (
     <form onSubmit={submit} className={styles.login}>
+      <p>
+        운영자 계정으로 <a href={`/login?next=${encodeURIComponent(next)}`}>로그인</a>
+        하면 바로 열려요. 아니면 운영자 암호:
+      </p>
       <input
         type="password"
         value={passcode}

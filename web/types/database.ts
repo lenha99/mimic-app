@@ -257,6 +257,13 @@ export interface Database {
         Update: never;
         Relationships: [];
       };
+      /** 운영자 계정. 읽기는 서버(service_role)만. */
+      admins: {
+        Row: { user_id: string; created_at: string };
+        Insert: { user_id: string; created_at?: string };
+        Update: never;
+        Relationships: [];
+      };
       /** 결과 화면 한 줄 피드백. 로그인 없이도 남는다. */
       app_feedback: {
         Row: {
