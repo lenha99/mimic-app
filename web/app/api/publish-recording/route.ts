@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { normalizeAvatar } from "@/lib/avatar";
 import { config } from "@/lib/config";
+import { proxyHeaders } from "@/lib/modal-proxy";
 import { findMeme } from "@/lib/challenges";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -87,7 +88,7 @@ export async function POST(req: Request) {
     const res = await fetch(
       `${config.scoreUrl}?meme_id=${encodeURIComponent(memeId)}&rescore=1` +
         (client ? `&client=${encodeURIComponent(client)}` : ""),
-      { method: "POST", body: modalForm, signal: AbortSignal.timeout(55_000) },
+      { method: "POST", body: modalForm, headers: proxyHeaders(), signal: AbortSignal.timeout(55_000) },
     );
     const data = await res.json();
     if (!res.ok || data.error || typeof data.score !== "number") {

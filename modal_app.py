@@ -119,13 +119,41 @@ def version():
 # 확장자만 .wav 로 붙여 넘기면 그대로 죽는다. 디코딩은 ffmpeg 에 맡긴다. (이슈 #15)
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024   # 2.5초 opus 녹음이 ~15KB. 상한은 넉넉하게.
 DECODE_SR = 16000                     # _score 가 어차피 16k 로 리샘플한다.
+MAX_SCORE_S = 30                      # 따라하기는 원본 길이 + 2.5초. 명대사도 10초 안쪽이다.
 
 
-def _decode_upload(raw: bytes):
+def _wav_seconds(path: str) -> float:
+    import wave
+    with wave.open(path, "rb") as w:
+        return w.getnframes() / float(w.getframerate())
+
+
+# ---- 웹앱 경유 확인 ----
+# 채점·받아쓰기는 웹앱(/api/score, /api/transcribe)만 부른다. 주소가 공개 저장소에
+# 있으니 누구나 직접 두드릴 수 있었고, 그 CPU 값은 우리가 낸다. 웹앱 서버만 아는
+# 값을 헤더로 실어 보내게 하고 나머지는 돌려보낸다. 브라우저에는 이 값이 없다.
+#
+# 켜는 순서가 중요하다: Vercel 에 PROXY_TOKEN 이 먼저 있어야 한다. 그래서 Modal Secret
+# "mimic-proxy" 에 PROXY_ENFORCE=1 을 넣기 전까지는 막지 않고 통과시킨다 — 순서가 꼬여도
+# 프로덕션 채점이 끊기지 않게.
+def _from_proxy(request) -> bool:
+    if os.environ.get("PROXY_ENFORCE") != "1":
+        return True
+    want = os.environ.get("PROXY_TOKEN", "")
+    return bool(want) and request.headers.get("x-mimic-proxy", "") == want
+
+
+_PROXY_ONLY = {"error": "웹앱을 거쳐서만 쓸 수 있어요"}
+
+
+def _decode_upload(raw: bytes, max_s: float | None = None):
     """업로드 바이트를 16k mono wav 로 변환하고 임시 파일 경로를 돌려준다.
 
     포맷을 추측하지 않는다 — ffmpeg 이 컨테이너를 스스로 판별한다.
     읽을 수 없으면 None (호출부가 500 대신 에러 메시지를 돌려주도록).
+
+    max_s: 그 뒤는 디코딩하지 않는다. 10MB 상한은 opus 로 40분이 넘는다 — 길이를
+    안 자르면 그 40분을 통째로 채점·받아쓰기하느라 CPU 가 제한 시간까지 돈다.
     """
     if not raw or len(raw) > MAX_UPLOAD_BYTES:
         return None
@@ -137,6 +165,7 @@ def _decode_upload(raw: bytes):
             f.write(raw)
         subprocess.run(
             ["ffmpeg", "-v", "error", "-y", "-i", src,
+             *(["-t", str(max_s)] if max_s else []),
              "-ac", "1", "-ar", str(DECODE_SR), "-c:a", "pcm_s16le", dst],
             check=True, capture_output=True, timeout=30,
         )
@@ -152,10 +181,13 @@ def _decode_upload(raw: bytes):
 #  - enable_memory_snapshot: librosa 임포트 + JIT 워밍이 끝난 상태를 스냅샷으로
 #    저장 → 콜드 복원이 수십 초 → 수 초로 단축
 #  - scaledown_window=90: 첫 호출 이후 90초간 컨테이너 유지.
+#  - max_containers: 동시에 뜨는 컨테이너 상한 = 최악의 시간당 비용 상한.
 @app.function(image=score_image, volumes={REF_DIR: volume},
-              scaledown_window=90, enable_memory_snapshot=True)
+              scaledown_window=90, enable_memory_snapshot=True, max_containers=5,
+              secrets=[modal.Secret.from_name("mimic-proxy")])
 @modal.fastapi_endpoint(method="POST", docs=True)
-async def score(meme_id: str, file: UploadFile, client: str = "", rescore: int = 0):
+async def score(request: Request, meme_id: str, file: UploadFile, client: str = "",
+                rescore: int = 0):
     """
     meme_id: 따라할 밈 식별자 (예: 'ronaldo_siu') — query param
     file:    유저 녹음 (multipart 필드 'file', wav/m4a)
@@ -163,11 +195,13 @@ async def score(meme_id: str, file: UploadFile, client: str = "", rescore: int =
     rescore: 1 이면 이미 한 번 채점한 녹음을 저장 전에 다시 채점하는 것(웹
              /api/publish-recording). 도전 수에 또 세면 "N명 도전"이 부푼다.
     """
+    if not _from_proxy(request):
+        return _PROXY_ONLY
     ref_path = _ref_path(meme_id)
     if ref_path is None:
         return {"error": f"기준 음성 없음: {meme_id}"}
 
-    user_path = _decode_upload(await file.read())
+    user_path = _decode_upload(await file.read(), max_s=MAX_SCORE_S)
     if user_path is None:
         return {"error": "녹음 파일을 디코딩할 수 없음"}
 
@@ -189,7 +223,7 @@ async def score(meme_id: str, file: UploadFile, client: str = "", rescore: int =
 # ---- 받아쓰기 (연습실 대본 확인) ----
 # 사용자가 "대본 확인"을 누른 테이크만 온다. 녹음은 받아쓴 뒤 바로 지우고, 글자도
 # 남기지 않는다 — 이벤트에는 길이만 남겨 비용을 본다.
-MAX_TRANSCRIBE_S = 150   # 연습 대본은 길어야 1분 남짓. 이보다 길면 잘못 들어온 것
+MAX_TRANSCRIBE_S = 125   # 연습실 녹음은 120초에서 끊긴다(room.tsx MAX_SCRIPT_MS). 넘으면 잘못 들어온 것
 _whisper = None
 
 
@@ -201,10 +235,17 @@ def _whisper_model():
     return _whisper
 
 
-@app.function(image=transcribe_image, volumes={REF_DIR: volume}, cpu=2.0, memory=2048,
-              scaledown_window=120, timeout=120)
+# 비용: 받아쓰기 자체는 10초 녹음에 2초 안팎인데, 그 뒤 다음 요청을 기다리며 노는
+# 시간이 훨씬 길다. Modal 은 "잡아 둔 자원과 실제 쓴 자원 중 큰 쪽"으로 받으므로,
+# 잡아 두는 몫(요청)은 작게 하고 일할 때만 상한(2코어)까지 쓰게 한다.
+#   예전 cpu=2.0 · 120초 대기 → 한 번에 약 264 코어초
+#   지금 cpu=(0.5, 2.0) · 60초 대기 → 약 40 코어초
+# 대기를 0 으로 안 하는 건 다시 켜질 때 모델 적재가 10초쯤 걸려서다.
+@app.function(image=transcribe_image, volumes={REF_DIR: volume},
+              cpu=(0.5, 2.0), memory=(1024, 3072), scaledown_window=60, timeout=90,
+              max_containers=3, secrets=[modal.Secret.from_name("mimic-proxy")])
 @modal.fastapi_endpoint(method="POST")
-async def transcribe(file: UploadFile, client: str = ""):
+async def transcribe(request: Request, file: UploadFile, client: str = ""):
     """녹음 → 글자. 비교는 브라우저가 한다(대본은 서버가 모른다).
 
     vad_filter: 무음 구간을 건너뛴다. Whisper 는 조용한 구간에 "시청해 주셔서
@@ -213,9 +254,16 @@ async def transcribe(file: UploadFile, client: str = ""):
     대본을 initial_prompt 로 주지 않는 것도 같은 이유다 — 주면 틀리게 읽어도
     대본대로 받아써서 확인이 무의미해진다.
     """
-    path = _decode_upload(await file.read())
+    if not _from_proxy(request):
+        return _PROXY_ONLY
+    # 받아쓰기 전에 길이부터 본다. 예전엔 다 받아쓴 뒤에 길이를 봐서, 긴 파일 하나가
+    # 제한 시간 내내 CPU 2개를 태웠다.
+    path = _decode_upload(await file.read(), max_s=MAX_TRANSCRIBE_S + 1)
     if path is None:
         return {"error": "녹음 파일을 읽을 수 없어요"}
+    if _wav_seconds(path) > MAX_TRANSCRIBE_S:
+        os.unlink(path)
+        return {"error": "녹음이 너무 길어요"}
     try:
         # _decode_upload 가 이미 16k mono wav 로 만들어 뒀다. 파일 경로를 넘기면
         # faster-whisper 가 PyAV 로 다시 디코딩하는데, PyAV 최신판과 인자가 안 맞아
@@ -228,8 +276,6 @@ async def transcribe(file: UploadFile, client: str = ""):
         segments, info = _whisper_model().transcribe(
             audio, language="ko", beam_size=1, vad_filter=True,
             condition_on_previous_text=False, without_timestamps=True)
-        if info.duration > MAX_TRANSCRIBE_S:
-            return {"error": "녹음이 너무 길어요"}
         text = " ".join(seg.text.strip() for seg in segments).strip()
     finally:
         os.unlink(path)
@@ -484,31 +530,6 @@ def memes(include_draft: int = 0):
     if include_draft:
         return cat
     return [m for m in cat if not m.get("draft")]
-
-
-@app.function(image=slim_image, volumes={REF_DIR: volume})
-@modal.fastapi_endpoint(method="POST")
-async def submit(title: str, file: UploadFile, source: str = "친구", emoji: str = "🎤"):
-    """친구/유저가 자기 목소리를 새 챌린지로 업로드(UGC). 누구나 가능."""
-    import os, uuid
-    data = await file.read()
-    # 운영자 경로(admin_add)만큼 빡세게 보진 않는다 — 기기마다 샘플레이트가 달라서.
-    # 다만 wav 가 아닌 걸 {id}.wav 로 저장해 채점에서 터지는 것만 막는다.
-    if len(data) < 44 or data[:4] != b"RIFF" or data[8:12] != b"WAVE":
-        return {"error": "wav 형식이 아니다"}
-    mid = "ugc_" + uuid.uuid4().hex[:8]
-    with open(os.path.join(REF_DIR, f"{mid}.wav"), "wb") as f:
-        f.write(data)
-    volume.commit()
-    cat = _load_catalog()
-    # 인증 없이 누구나 부를 수 있는 곳이라 목록에 바로 올리지 않는다(draft).
-    # 예전엔 홈 두 번째 칸에 꽂혀서, 아무 소리나 올리면 모든 사람 홈에 떴다.
-    # 직링크(/record/{id})로만 열리고, 목록에 올릴지는 운영자가 정한다.
-    entry = {"id": mid, "title": (title or "내 소리")[:20], "source": source,
-             "emoji": emoji, "plays": 0, "ugc": True, "draft": True}
-    cat.append(entry)
-    _save_catalog(cat)
-    return entry
 
 
 @app.function(image=slim_image, volumes={REF_DIR: volume},

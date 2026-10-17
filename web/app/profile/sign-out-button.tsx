@@ -9,7 +9,8 @@ export function SignOutButton() {
   const router = useRouter();
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    // 이 기기만 로그아웃한다. 기본값(global)은 폰·PC·설치한 앱 전부에서 끊는다.
+    await supabase.auth.signOut({ scope: "local" });
     router.push("/");
     router.refresh();
   };

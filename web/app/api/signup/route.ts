@@ -4,6 +4,7 @@ import {
   normalizeUsername,
   usernameToEmail,
 } from "@/lib/id-account";
+import { allow, clientIp, tooMany } from "@/lib/rate-limit";
 import { createServiceClient } from "@/lib/supabase/service";
 
 /**
@@ -17,6 +18,10 @@ import { createServiceClient } from "@/lib/supabase/service";
  * 겹치면 받지 않는다 — 랭킹에 같은 이름이 둘 보이면 안 된다.
  */
 export async function POST(req: Request) {
+  // 가입은 서비스 키로 만들어서 Supabase 자체 가입 제한을 안 탄다. 여기서 막는다.
+  if (!allow(`signup:${clientIp(req)}`, 5, 3_600_000)) {
+    return tooMany("가입 시도가 너무 많아요. 한 시간 뒤에 다시 해주세요.");
+  }
   const body = (await req.json().catch(() => ({}))) as { username?: unknown; password?: unknown };
   const username = normalizeUsername(body.username);
 

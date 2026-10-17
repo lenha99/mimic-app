@@ -1,4 +1,6 @@
 import { config } from "@/lib/config";
+import { proxyHeaders } from "@/lib/modal-proxy";
+import { allow, clientIp, tooMany } from "@/lib/rate-limit";
 
 /**
  * 받아쓰기 프록시 — 연습실 "대본대로 읽었나" (lib/script-match).
@@ -12,6 +14,8 @@ const MAX_BYTES = 10 * 1024 * 1024; // modal_app._decode_upload 와 같은 상�
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
+  // 대본을 한 번 읽는 데 최소 몇 초는 걸린다. 받아쓰기는 채점보다 비싸서 더 좁게 둔다.
+  if (!allow(`transcribe:${clientIp(req)}`, 8, 60_000)) return tooMany();
   const client = (new URL(req.url).searchParams.get("client") ?? "").slice(0, 64);
   const file = (await req.formData()).get("file");
   if (!(file instanceof Blob) || file.size === 0) {
@@ -26,7 +30,7 @@ export async function POST(req: Request) {
   try {
     const res = await fetch(
       `${config.transcribeUrl}${client ? `?client=${encodeURIComponent(client)}` : ""}`,
-      { method: "POST", body, signal: AbortSignal.timeout(55_000) },
+      { method: "POST", body, headers: proxyHeaders(), signal: AbortSignal.timeout(55_000) },
     );
     const text = await res.text();
     try {

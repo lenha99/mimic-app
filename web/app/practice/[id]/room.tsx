@@ -37,7 +37,16 @@ import styles from "./room.module.css";
 type Nav = { id: string; title: string } | null;
 
 export type RoomItem =
-  | { kind: "script"; script: Script; number: number; total: number; prev: Nav; next: Nav }
+  | {
+      kind: "script";
+      script: Script;
+      number: number;
+      total: number;
+      prev: Nav;
+      next: Nav;
+      /** 내 대본만 — 고치기 화면 주소 */
+      editHref?: string;
+    }
   | { kind: "line"; meme: Meme; refUrl: string; number: number; total: number; prev: Nav; next: Nav };
 
 type Phase = "ready" | "count" | "recording" | "analyzing";
@@ -482,8 +491,15 @@ export default function Room({ item }: { item: RoomItem }) {
         <Link href="/practice" className={styles.back}>
           ← 연습실
         </Link>
-        <span className={styles.counter}>
-          {String(item.number).padStart(2, "0")} / {String(item.total).padStart(2, "0")}
+        <span className={styles.topRight}>
+          {item.kind === "script" && item.editHref && (
+            <Link href={item.editHref} className={styles.editLink}>
+              고치기
+            </Link>
+          )}
+          <span className={styles.counter}>
+            {String(item.number).padStart(2, "0")} / {String(item.total).padStart(2, "0")}
+          </span>
         </span>
       </nav>
 

@@ -1,5 +1,6 @@
 import { after } from "next/server";
 import { config } from "@/lib/config";
+import { proxyHeaders } from "@/lib/modal-proxy";
 
 /**
  * 채점 서버 예열.
@@ -59,6 +60,7 @@ export async function POST() {
       await fetch(`${config.scoreUrl}?meme_id=__warm__`, {
         method: "POST",
         body,
+        headers: proxyHeaders(),
         signal: AbortSignal.timeout(55_000),
       });
     } catch {

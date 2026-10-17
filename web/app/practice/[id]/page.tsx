@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { refAudio } from "@/lib/config";
 import { getMemes } from "@/lib/memes";
 import { findScript, neighbors, practiceLines, scriptNumber, SCRIPTS, TRACK_LABEL } from "@/lib/practice";
+import { MY_PREFIX } from "@/lib/my-scripts";
+import { MyRoom } from "./my-room";
 import Room, { type RoomItem } from "./room";
 
 type Props = { params: Promise<{ id: string }> };
@@ -50,7 +52,9 @@ async function resolve(id: string): Promise<RoomItem | null> {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const item = await resolve((await params).id);
+  const id = (await params).id;
+  if (id.startsWith(MY_PREFIX)) return { title: "내 대본 연습", robots: { index: false } };
+  const item = await resolve(id);
   if (!item) return { title: "없는 대본" };
   if (item.kind === "script") {
     const s = item.script;
@@ -66,7 +70,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function PracticeRoomPage({ params }: Props) {
-  const item = await resolve((await params).id);
+  const id = (await params).id;
+  // 내 대본은 서버가 모른다(이 기기에만 있다). 브라우저가 꺼내서 같은 연습 화면을 그린다.
+  if (id.startsWith(MY_PREFIX)) return <MyRoom id={id} />;
+  const item = await resolve(id);
   if (!item) notFound();
   return <Room item={item} />;
 }
