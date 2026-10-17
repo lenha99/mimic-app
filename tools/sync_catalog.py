@@ -36,9 +36,29 @@ BEGIN = "// <generated:catalog> — content/registry.json 에서 생성. 직접 
 END = "// </generated:catalog>"
 
 
-def load_registry():
+def load_doc():
     with REGISTRY.open(encoding="utf-8") as f:
-        return json.load(f)["memes"]
+        return json.load(f)
+
+
+def load_registry():
+    return load_doc()["memes"]
+
+
+# 연습실 대본은 서버를 거치지 않는다 — 기준 음성이 없으니 서버가 줄 게 없다.
+# 웹에 상수로 박아 정적 페이지로 낸다. 권리 기록(rights.holder/note)·added 는 레포에만.
+SCRIPT_FIELDS = ("id", "track", "category", "title", "level", "pace", "pitch", "direction", "text")
+SCRIPTS_TS_HEAD = (
+    "// content/registry.json 의 scripts 에서 생성된다. 직접 고치지 말 것 —\n"
+    "// 레지스트리를 고친 뒤 `python tools/sync_catalog.py`.\n"
+    'import type { Script } from "./practice";\n\n'
+)
+
+
+def render_scripts_ts(scripts):
+    rows = [{k: s[k] for k in SCRIPT_FIELDS} for s in scripts]
+    body = json.dumps(rows, ensure_ascii=False, indent=2)
+    return SCRIPTS_TS_HEAD + f"export const SCRIPTS: Script[] = {body};\n"
 
 
 def public_entry(m):
@@ -80,10 +100,11 @@ def splice(path: Path, block: str) -> str:
     return pattern.sub(lambda _: block, text)
 
 
-def targets(memes):
+def targets(memes, scripts=()):
     """(경로, 기대 내용) 목록."""
     catalog = render_catalog(memes)
     return [
+        (ROOT / "web" / "lib" / "scripts.ts", render_scripts_ts(scripts)),
         (ROOT / "catalog.json", catalog),
         (ROOT / "memes.json", catalog),
         (ROOT / "web" / "lib" / "memes.ts", splice(ROOT / "web" / "lib" / "memes.ts", render_ts(memes))),
@@ -95,9 +116,10 @@ def main():
     ap.add_argument("--check", action="store_true", help="쓰지 않고 드리프트만 검사")
     args = ap.parse_args()
 
-    memes = load_registry()
+    doc = load_doc()
+    memes = doc["memes"]
     drifted = []
-    for path, expected in targets(memes):
+    for path, expected in targets(memes, doc.get("scripts", [])):
         current = path.read_text(encoding="utf-8") if path.exists() else None
         if current == expected:
             continue
@@ -113,7 +135,7 @@ def main():
                 print(f"  - {r}")
             print("\n`python tools/sync_catalog.py` 를 돌리고 결과를 커밋해라.")
             return 1
-        print(f"카탈로그 동기화 OK — 밈 {len(memes)}개")
+        print(f"카탈로그 동기화 OK — 밈 {len(memes)}개 · 대본 {len(doc.get('scripts', []))}개")
         return 0
 
     if drifted:

@@ -76,3 +76,44 @@ def test_generated_copies_match_registry():
         [sys.executable, str(ROOT / "tools" / "sync_catalog.py"), "--check"],
         capture_output=True, text=True, encoding="utf-8", errors="replace")
     assert r.returncode == 0, r.stdout + r.stderr
+
+
+# ---- 권리 상태 · 연습실 대본 -------------------------------------------------
+
+RIGHTS = {"original", "public_domain", "quote_rerecorded", "partner", "clip"}
+SCRIPT_ID_RE = re.compile(r"^sc_[a-z0-9_]{3,29}$")
+
+
+@pytest.fixture(scope="module")
+def scripts():
+    with REGISTRY.open(encoding="utf-8") as f:
+        return json.load(f).get("scripts", [])
+
+
+def test_every_meme_states_its_rights(memes):
+    """돈을 받기 시작하면 clip 은 유료 기능에서 빠져야 한다. 그러려면 전부 적혀 있어야 한다."""
+    for m in memes:
+        assert (m.get("license") or {}).get("rights") in RIGHTS, f"{m['id']}: license.rights 누락/오타"
+
+
+def test_script_shape(scripts, memes):
+    ids = [s["id"] for s in scripts]
+    assert len(ids) == len(set(ids)), "대본 id 중복"
+    assert not set(ids) & {m["id"] for m in memes}, "대본 id 가 밈 id 와 겹친다 (연습실 주소가 같다)"
+    for s in scripts:
+        assert SCRIPT_ID_RE.match(s["id"]), f"대본 id 형식: {s['id']}"
+        assert s["track"] in {"voice", "anchor"}, s["id"]
+        assert s["level"] in {1, 2, 3}, s["id"]
+        assert s["pitch"] in {"low", "mid", "high"}, s["id"]
+        lo, hi = s["pace"]
+        assert 2.0 <= lo < hi <= 8.0, f"{s['id']}: 속도 범위가 이상하다 {s['pace']}"
+        assert s["rights"]["kind"] in RIGHTS, s["id"]
+        for key in ("title", "category", "direction", "text"):
+            assert s.get(key, "").strip(), f"{s['id']}: {key} 누락"
+
+
+def test_script_text_reads_as_written(scripts):
+    """속도는 음절 수로 잰다. 숫자·영문이 섞이면 읽는 음절 수와 글자 수가 어긋난다."""
+    for s in scripts:
+        assert not re.search(r"[0-9A-Za-z]", s["text"]), f"{s['id']}: 숫자·영문은 한글로 풀어 쓴다"
+        assert s["text"].count("*") % 2 == 0, f"{s['id']}: 강조 표시(*)가 짝이 안 맞다"

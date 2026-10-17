@@ -7,6 +7,7 @@ import { VoiceAvatar } from "@/components/voice-avatar";
 import { PRESETS } from "@/lib/avatar";
 import { listApprovedChallenges } from "@/lib/challenges";
 import { extraLine, getMemes, playCount, type Meme } from "@/lib/memes";
+import { SCRIPTS } from "@/lib/practice";
 import { createPublicClient } from "@/lib/supabase/public";
 import styles from "./page.module.css";
 
@@ -65,16 +66,19 @@ export default async function Home() {
         <nav className={styles.nav}>
           {/* 피드는 공개 녹음이 없어도 원본 카드로 채워지므로 늘 보인다. */}
           <Link href="/feed" className={`${styles.navPill} ${styles.navFeed}`}>
-            ▶ 피드
+            <span className={styles.navEmoji}>▶</span>피드
+          </Link>
+          <Link href="/practice" className={`${styles.navPill} ${styles.navPractice}`}>
+            연습실
           </Link>
           {/* 카탈로그 서버가 늦으면 내장 목록(FALLBACK)으로 그린다. 사용자에겐 의미 없는 말이라 안 보인다. */}
           {social && (
             <Link href="/rank" className={styles.navPill}>
-              🏆 랭킹
+              <span className={styles.navEmoji}>🏆</span>랭킹
             </Link>
           )}
           <Link href="/avatar" className={styles.navPill}>
-            🎨 캐릭터
+            <span className={styles.navEmoji}>🎨</span>캐릭터
           </Link>
           <ViewerBadge />
         </nav>
@@ -152,6 +156,20 @@ export default async function Home() {
           <span>원본 한 번, 그 사람 목소리 한 번 · 위로 넘기면 다음</span>
         </span>
         <span className={styles.feedGo} aria-hidden="true">
+          →
+        </span>
+      </Link>
+
+      {/* 놀이와 연습은 같은 엔진, 다른 마음이다. 준비생은 여기서 바로 갈라져 나간다. */}
+      <Link href="/practice" className={styles.practiceEntry}>
+        <span className={styles.practicePaper} aria-hidden="true">
+          그때 <i>/</i> 연락 못 한 거 <i>/</i> 바빠서 그랬다고 하면
+        </span>
+        <span className={styles.feedText}>
+          <b>연습실</b>
+          <span>성우·아나운서 준비생용 대본 {SCRIPTS.length}편 · 읽으면 속도·쉼·억양·말끝을 짚어줘</span>
+        </span>
+        <span className={styles.practiceGo} aria-hidden="true">
           →
         </span>
       </Link>

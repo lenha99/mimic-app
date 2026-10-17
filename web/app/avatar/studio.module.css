@@ -182,12 +182,14 @@
   right: 0;
   bottom: 0;
   z-index: 3;
-  padding: 12px var(--gutter) calc(12px + env(safe-area-inset-bottom));
+  /* 위로 흐려지는 구간은 안내 문구 위쪽 여백에서만 생긴다 — 글자 뒤는 꽉 채운다.
+     예전엔 30% 지점부터 채워서 안내 문구가 타일 위에 겹쳐 읽혔다. */
+  padding: 28px var(--gutter) calc(12px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  background: linear-gradient(transparent, var(--stage) 30%);
+  background: linear-gradient(rgba(10, 10, 11, 0), var(--stage) 22px);
 }
 
 .dock > * {

@@ -46,6 +46,9 @@ body {
   font-size: 16px;
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
+  /* 디스플레이 서체(Black Han Sans)는 굵기가 하나뿐이다. 그 위에 font-weight 를 더 주면
+     브라우저가 가짜로 두껍게 그려서 "몰"처럼 획이 촘촘한 글자가 까만 덩어리가 된다. */
+  font-synthesis: none;
   overflow-x: hidden;
 }
 

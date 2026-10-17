@@ -96,6 +96,12 @@ export default async function RecordPage({ params, searchParams }: Props) {
           <h1 className={styles.title}>{meme.title}</h1>
           <p className={styles.source}>{meme.source}</p>
         </div>
+        {/* 대사가 있는 밈은 연습실에서 반복할 수 있다 — 기록이 쌓이고 원본과 나란히 비교한다. */}
+        {meme.line && !meme.id.startsWith("u_") && (
+          <Link href={`/practice/${meme.id}`} className={styles.practiceLink}>
+            연습 모드로 반복하기 →
+          </Link>
+        )}
       </header>
 
       {meme.youtube && (
