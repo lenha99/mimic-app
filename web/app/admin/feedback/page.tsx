@@ -25,7 +25,7 @@ export default async function AdminFeedbackPage() {
       <main className="shell">
         <BackHome />
         <h1 className={styles.title}>피드백 모아보기</h1>
-        <AdminLogin />
+        <AdminLogin next="/admin/feedback" />
       </main>
     );
   }
