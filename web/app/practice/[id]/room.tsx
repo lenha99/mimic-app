@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { QuickFeedback } from "@/components/quick-feedback";
 import { YoutubeClip } from "@/components/youtube-clip";
 import { clientId } from "@/lib/client-id";
 import type { Meme } from "@/lib/memes";
@@ -19,6 +20,7 @@ import { fixesOf, matchScript, type MatchResult } from "@/lib/script-match";
 import { deleteTake, listTakes, newTakeId, saveTake, updateTake, type Take } from "@/lib/take-store";
 import { track } from "@/lib/track";
 import { analyze, analyzeBlob, decodeMono, type Analysis } from "@/lib/voice-analysis";
+import { AskFeedback } from "./ask-feedback";
 import styles from "./room.module.css";
 
 /**
@@ -653,6 +655,20 @@ export default function Room({ item }: { item: RoomItem }) {
             autoCheck={autoCheck}
             onCheck={(always) => void check(open, always)}
           />
+        )}
+        {phase !== "analyzing" && open && (
+          <>
+            <AskFeedback
+              key={open.id}
+              take={open}
+              scriptId={itemId}
+              title={item.kind === "script" ? item.script.title : item.meme.title}
+              text={text}
+              track={item.kind === "script" ? item.script.track : "line"}
+              onPosted={() => void refresh()}
+            />
+            <QuickFeedback page="practice" item={itemId} />
+          </>
         )}
         {phase !== "analyzing" && !open && (
           <div className={styles.empty}>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { QuickFeedback } from "@/components/quick-feedback";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocalAvatar } from "@/components/use-local-avatar";
 import { usePlaybackLevel } from "@/components/use-playback-level";
@@ -1253,6 +1254,7 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
               )}
             </div>
           </div>
+          <QuickFeedback page="record" item={meme.id} />
         </section>
       )}
     </>

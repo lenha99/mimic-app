@@ -16,12 +16,12 @@ import styles from "./bottom-nav.module.css";
 const TABS = [
   { href: "/", label: "홈", icon: HomeIcon, match: (p: string) => p === "/" },
   { href: "/challenges", label: "챌린지", icon: MicIcon, match: (p: string) => p.startsWith("/challenges") || p.startsWith("/rank") },
-  { href: "/practice", label: "연습실", icon: ScriptIcon, match: (p: string) => p === "/practice" },
+  { href: "/practice", label: "연습실", icon: ScriptIcon, match: (p: string) => p === "/practice" || p === "/practice/board" },
   { href: "/me", label: "나", icon: MeIcon, match: (p: string) => p.startsWith("/me") || p.startsWith("/profile") },
 ];
 
 /** 탭이 보이는 화면 — 목록·허브 화면만. */
-const SHOW = [/^\/$/, /^\/challenges$/, /^\/practice$/, /^\/me$/, /^\/profile$/, /^\/rank$/];
+const SHOW = [/^\/$/, /^\/challenges$/, /^\/practice$/, /^\/practice\/board$/, /^\/me$/, /^\/profile$/, /^\/rank$/];
 
 export function BottomNav() {
   const path = usePathname() ?? "/";

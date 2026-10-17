@@ -24,6 +24,8 @@ export type Take = {
   starred?: boolean;
   /** 대본 확인을 눌렀으면 받아쓴 글자. 비교(lib/script-match)는 그때그때 다시 한다. */
   transcript?: { text: string } | null;
+  /** 연습 피드백 게시판에 올렸으면 그 게시물 id (/practice/board/{id}). */
+  postId?: string;
 };
 
 /** 대본 하나에 남기는 테이크 수. 별표 친 건 세지 않고 지우지도 않는다. */

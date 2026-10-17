@@ -28,7 +28,16 @@ const TAB_KEY = "mimic.practice.filter";
 const FOLD = 3;
 const LEVEL_LABEL = ["", "쉬움", "보통", "어려움"];
 
-export default function PracticeHome({ scripts, lines }: { scripts: Script[]; lines: Line[] }) {
+export default function PracticeHome({
+  scripts,
+  lines,
+  waiting = 0,
+}: {
+  scripts: Script[];
+  lines: Line[];
+  /** 피드백을 하나도 못 받은 게시물 수 (5분마다 갱신) */
+  waiting?: number;
+}) {
   const [tab, setTab] = useState<Tab>("all");
   const [cat, setCat] = useState<string | null>(null);
   const [level, setLevel] = useState<Level>(0);
@@ -225,6 +234,21 @@ export default function PracticeHome({ scripts, lines }: { scripts: Script[]; li
           </div>
         </div>
       )}
+
+      <Link href="/practice/board" className={styles.board}>
+        <span className={styles.boardIcon} aria-hidden="true">
+          🎧
+        </span>
+        <span className={styles.boardText}>
+          <b>연습 피드백 · 서로 들어주기</b>
+          <small>
+            {waiting > 0
+              ? `${waiting}명이 첫 피드백을 기다려요 — 한 줄 남겨주기`
+              : "내 테이크를 올리고 다른 준비생에게 피드백 받기"}
+          </small>
+        </span>
+        <span aria-hidden="true">→</span>
+      </Link>
 
       <label className={styles.search}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">

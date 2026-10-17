@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getMemes } from "@/lib/memes";
+import { waitingCount } from "@/lib/board-server";
 import { practiceLines, SCRIPTS } from "@/lib/practice";
 import PracticeHome from "./practice-home";
 
@@ -13,12 +14,12 @@ export const metadata: Metadata = {
 export const revalidate = 300;
 
 export default async function PracticePage() {
-  const { memes } = await getMemes();
+  const [{ memes }, waiting] = await Promise.all([getMemes(), waitingCount()]);
   const lines = practiceLines(memes).map((m) => ({
     id: m.id,
     title: m.title,
     source: m.source,
     line: m.line ?? "",
   }));
-  return <PracticeHome scripts={SCRIPTS} lines={lines} />;
+  return <PracticeHome scripts={SCRIPTS} lines={lines} waiting={waiting} />;
 }
