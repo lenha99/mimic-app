@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- MIMIC 앱 아이콘. 다섯 줄 음파가 바닥에 붙어 M 모양을 만든다.
+       가운데 줄만 분홍 — 홈의 "방송 중" 불과 같은 색이다.
+       그림은 지름 410px 원(마스커블 안전 영역) 안에만 둔다. -->
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="22%" r="75%">
+      <stop offset="0" stop-color="#e8ff3a" stop-opacity="0.22"/>
+      <stop offset="0.6" stop-color="#e8ff3a" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="100%" cy="100%" r="70%">
+      <stop offset="0" stop-color="#ff2d78" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#ff2d78" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="bloom" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="10" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="512" height="512" fill="#0a0a0b"/>
+  <rect width="512" height="512" fill="url(#glow)"/>
+  <rect width="512" height="512" fill="url(#glow2)"/>
+  <g filter="url(#bloom)">
+    <rect x="116" y="126" width="40" height="260" rx="20" fill="#e8ff3a"/>
+    <rect x="176" y="196" width="40" height="190" rx="20" fill="#e8ff3a"/>
+    <rect x="236" y="266" width="40" height="120" rx="20" fill="#ff2d78"/>
+    <rect x="296" y="196" width="40" height="190" rx="20" fill="#e8ff3a"/>
+    <rect x="356" y="126" width="40" height="260" rx="20" fill="#e8ff3a"/>
+  </g>
+</svg>

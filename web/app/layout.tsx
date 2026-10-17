@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Black_Han_Sans, IBM_Plex_Mono } from "next/font/google";
 import { BottomNav } from "@/components/bottom-nav";
 import { config } from "@/lib/config";
+import { INSTALL_BOOTSTRAP } from "@/lib/install";
 import "./globals.css";
 
 // 데이터·코드·라벨용. next/font 가 자체 호스팅하므로 외부 요청이 없다.
@@ -45,6 +46,10 @@ export const metadata: Metadata = {
     description: "원본 소리를 듣고 따라해 보세요. AI가 피치·톤·타이밍을 채점합니다.",
   },
   twitter: { card: "summary_large_image" },
+  // 아이폰 "홈 화면에 추가" 용. 상태 막대는 불투명 검정 — 반투명이면 화면 맨 위가
+  // 시계 밑으로 들어가서 모든 화면에 위쪽 여백을 따로 줘야 한다.
+  appleWebApp: { capable: true, title: "MIMIC", statusBarStyle: "black" },
+  applicationName: "MIMIC",
 };
 
 export const viewport: Viewport = {
@@ -65,6 +70,8 @@ export default function RootLayout({
           rel="stylesheet"
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
         />
+        {/* 설치 이벤트는 React 가 붙기 전에 한 번 오고 끝난다 — 먼저 잡아 둔다 (lib/install). */}
+        <script dangerouslySetInnerHTML={{ __html: INSTALL_BOOTSTRAP }} />
       </head>
       <body>
         {children}
