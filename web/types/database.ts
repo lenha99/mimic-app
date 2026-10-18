@@ -453,6 +453,11 @@ export interface Database {
           is_public: boolean;
         }[];
       };
+      /** ❤ 넣기 — 중복·네트워크 상한을 한 트랜잭션에서 (마이그레이션 21). */
+      weekly_like: {
+        Args: { p_entry: string; p_voters: string[]; p_user: string | null; p_ip_hash: string; p_cap: number };
+        Returns: "ok" | "dup" | "cap";
+      };
       weekly_bump_play: {
         Args: { p_entry: string };
         Returns: undefined;

@@ -28,7 +28,9 @@ async function resolve(req: Request, id: string) {
   if (!user && !(typeof client === "string" && CLIENT.test(client))) {
     return { error: Response.json({ error: "이 브라우저에선 ❤ 를 저장할 수 없어요. 로그인해 주세요." }, { status: 401 }) };
   }
-  const voter = user ? `u:${user.id}` : `g:${client}`;
+  const guest = typeof client === "string" && CLIENT.test(client) ? `g:${client}` : null;
+  // 이 사람의 이름표들 — 첫째가 대표. 게스트로 누른 뒤 로그인해도 한 사람으로 본다.
+  const voters = [user ? `u:${user.id}` : null, guest].filter((v): v is string => !!v);
   const service = createServiceClient();
   const { data: e } = await service
     .from("weekly_entries")
@@ -40,7 +42,7 @@ async function resolve(req: Request, id: string) {
   if (!week || !isLive(week)) {
     return { error: Response.json({ error: "마감된 챌린지예요. ❤ 는 이제 바뀌지 않아요." }, { status: 409 }) };
   }
-  return { service, user, voter, entry: e, week };
+  return { service, user, voters, entry: e, week };
 }
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -49,28 +51,23 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   if (!allow(`weekly-like:${ip}`, 60, 600_000)) return tooMany();
   const r = await resolve(req, id);
   if ("error" in r) return r.error;
-  const { service, user, voter, entry, week } = r;
+  const { service, user, voters, entry, week } = r;
 
-  if (entry.owner === voter || (user && entry.user_id === user.id)) {
+  if (voters.includes(entry.owner) || (user && entry.user_id === user.id)) {
     return Response.json({ error: "내 출전작에는 ❤ 를 못 눌러요. 친구한테 부탁해 봐요!" }, { status: 403 });
   }
 
-  const hash = ipHash(ip, week.id);
-  const { count } = await service
-    .from("weekly_likes")
-    .select("voter", { count: "exact", head: true })
-    .eq("entry_id", id)
-    .eq("ip_hash", hash);
-  if ((count ?? 0) >= PER_NETWORK) {
+  // 중복 확인 · 네트워크 상한 · 넣기를 DB 한 트랜잭션에서 (마이그레이션 21).
+  const { data: result, error } = await service.rpc("weekly_like", {
+    p_entry: id,
+    p_voters: voters,
+    p_user: user?.id ?? null,
+    p_ip_hash: ipHash(ip, week.id),
+    p_cap: PER_NETWORK,
+  });
+  if (error) return Response.json({ error: "❤ 를 남기지 못했어요. 다시 해주세요." }, { status: 500 });
+  if (result === "cap") {
     return Response.json({ error: "같은 와이파이에서 이미 여러 번 눌렀어요." }, { status: 429 });
-  }
-
-  const { error } = await service
-    .from("weekly_likes")
-    .insert({ entry_id: id, voter, user_id: user?.id ?? null, ip_hash: hash });
-  // 이미 누른 상태면 unique 위반 — 원하는 상태와 같으니 성공으로 돌려준다.
-  if (error && error.code !== "23505") {
-    return Response.json({ error: "❤ 를 남기지 못했어요. 다시 해주세요." }, { status: 500 });
   }
   const { data: after } = await service.from("weekly_entries").select("like_count").eq("id", id).maybeSingle();
   return Response.json({ liked: true, likes: after?.like_count ?? entry.like_count });
@@ -81,8 +78,8 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
   if (!allow(`weekly-like:${clientIp(req)}`, 60, 600_000)) return tooMany();
   const r = await resolve(req, id);
   if ("error" in r) return r.error;
-  const { service, voter, entry } = r;
-  await service.from("weekly_likes").delete().eq("entry_id", id).eq("voter", voter);
+  const { service, voters, entry } = r;
+  await service.from("weekly_likes").delete().eq("entry_id", id).in("voter", voters);
   const { data: after } = await service.from("weekly_entries").select("like_count").eq("id", id).maybeSingle();
   return Response.json({ liked: false, likes: after?.like_count ?? entry.like_count });
 }

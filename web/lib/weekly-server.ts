@@ -129,7 +129,8 @@ export async function settle(w: Week, service: Service = createServiceClient()):
   if (!row || row.settled_at) return;
 
   const board = await getBoard(w);
-  const winners = board.entries.length >= MIN_AWARDS ? board.entries.filter((e) => e.likes > 0).slice(0, 3) : [];
+  // 참가 문턱(MIN_AWARDS)만 넘으면 순위대로 셋 — ❤ 가 0 이어도 3위는 3위다.
+  const winners = board.entries.length >= MIN_AWARDS ? board.entries.slice(0, 3) : [];
   if (winners.length) {
     const { data: owners } = await service
       .from("weekly_entries")

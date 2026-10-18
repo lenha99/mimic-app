@@ -74,7 +74,7 @@ export async function POST(req: Request) {
   const service = createServiceClient();
   await ensureWeek(week, service);
 
-  const { data: existing } = await service
+  let { data: existing } = await service
     .from("weekly_entries")
     .select("id, audio_path, claim_token")
     .eq("challenge_id", week.id)
@@ -82,6 +82,30 @@ export async function POST(req: Request) {
     .maybeSingle();
   if (existing && !user && existing.claim_token !== token) {
     return Response.json({ error: "이 기기에서 출전한 작품만 바꿀 수 있어요." }, { status: 403 });
+  }
+  // 게스트로 출전한 뒤 로그인했는데 아직 귀속(ClaimPending) 전이면, 그 게스트 출전작이 곧
+  // 이 사람의 출전작이다. 여기서 귀속하지 않으면 한 사람이 두 작품을 갖게 된다.
+  if (user && !existing && CLIENT.test(client)) {
+    const { data: guest } = await service
+      .from("weekly_entries")
+      .select("id, audio_path, claim_token")
+      .eq("challenge_id", week.id)
+      .eq("owner", `g:${client}`)
+      .is("user_id", null)
+      .maybeSingle();
+    if (guest) {
+      if (guest.claim_token !== token) {
+        return Response.json({ error: "이 기기에서 출전한 작품만 바꿀 수 있어요." }, { status: 403 });
+      }
+      const { error } = await service
+        .from("weekly_entries")
+        .update({ user_id: user.id, owner, claim_token: null, guest_name: null })
+        .eq("id", guest.id)
+        .is("user_id", null);
+      if (error) return Response.json({ error: "출전하지 못했어요. 다시 해주세요." }, { status: 500 });
+      await service.from("weekly_awards").update({ user_id: user.id }).eq("entry_id", guest.id);
+      existing = { ...guest, claim_token: null };
+    }
   }
   if (!existing) {
     const { count } = await service
