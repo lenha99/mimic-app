@@ -39,7 +39,7 @@ export default async function BoardPage({ searchParams }: { searchParams: Promis
         </Link>
       </nav>
 
-      <header className={styles.intro}>
+      <header className={styles.intro} data-tour="board-intro">
         <p className={styles.eyebrow}>연습 피드백</p>
         <h1 className={styles.h1}>서로 들어주기</h1>
         <p className={styles.lede}>

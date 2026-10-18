@@ -10,7 +10,7 @@ import { LikeButton } from "@/components/weekly/like-button";
 import { useToast } from "@/components/weekly/toast";
 import { buzz, shareLink, useWeeklyMe } from "@/components/weekly/use-weekly";
 import { normalizeAvatar, PRESETS } from "@/lib/avatar";
-import { SCRIPT_EXAMPLES } from "@/lib/examples";
+import { DEMO_TAKES } from "@/lib/examples";
 import { track } from "@/lib/track";
 import { audioSrc, LISTEN_RATIO, MIN_PODIUM, type Award, type EntryCard, type Week } from "@/lib/weekly";
 import { ScreenTour } from "@/components/onboarding/tours";
@@ -155,12 +155,12 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
           <Link href="/weekly/hall" className={styles.hallLink} data-tour="weekly-hall">
             🏆 명예의 전당
           </Link>
-          <TourHelp id="weekly" />
+          <TourHelp id="weekly" short />
         </span>
       </header>
 
       {/* 무대 — 이번 주 대본과 마감 */}
-      <section className={styles.hero}>
+      <section className={styles.hero} data-tour="weekly-hero">
         <div className={styles.heroGlow} aria-hidden="true" />
         <p className={styles.heroKicker}>
           <span className={styles.seasonChip}>{label}</span>
@@ -563,18 +563,20 @@ function LastInner({ a }: { a: Award }) {
  * 출전작이 하나도 없을 때 보여주는 예시 순위표 — "올리면 어디에, 어떻게 보이고, ❤ 는 어떻게 누르나".
  *
  * 빈 판에 "첫 번째가 되어 보세요"만 적어 두면 무엇이 생기는지 상상이 안 된다. 진짜 줄과
- * 똑같이 생긴 줄을 깔고 직접 눌러 보게 한다. 소리는 AI 가 읽은 이번 주 대본이다.
+ * 똑같이 생긴 줄을 깔고 직접 눌러 보게 한다. 소리는 AI 가 네 목소리로 읽은 이번 주 대본 —
+ * 줄마다 소리가 달라야 "사람마다 다르게 읽어 올리는 판"으로 들린다(tools/make_examples.py).
  * 누른 ❤ 는 이 화면 안에서만 움직이고 어디에도 저장되지 않는다.
  */
+// take 는 DEMO_TAKES 의 몇 번째 소리인지 — 생성기의 TAKES 순서와 맞춘다.
 const DEMO = [
-  { id: "demo-1", name: "새벽라디오", likes: 24, plays: 61, preset: 1 },
-  { id: "demo-2", name: "뉴스하는곰", likes: 17, plays: 44, preset: 2 },
-  { id: "demo-3", name: "목소리장인", likes: 9, plays: 23, preset: 6 },
-  { id: "demo-me", name: "나 (출전하면 여기)", likes: 2, plays: 5, preset: 0 },
+  { id: "demo-1", name: "새벽라디오", likes: 24, plays: 61, preset: 1, take: 0 },
+  { id: "demo-2", name: "뉴스하는곰", likes: 17, plays: 44, preset: 2, take: 1 },
+  { id: "demo-3", name: "목소리장인", likes: 9, plays: 23, preset: 6, take: 2 },
+  { id: "demo-me", name: "나 (출전하면 여기)", likes: 2, plays: 5, preset: 0, take: 3 },
 ];
 
 function DemoBoard({ scriptId }: { scriptId: string }) {
-  const ex = SCRIPT_EXAMPLES[scriptId];
+  const takes = DEMO_TAKES[scriptId] ?? [];
   const audio = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
@@ -587,8 +589,8 @@ function DemoBoard({ scriptId }: { scriptId: string }) {
     name: d.name,
     guest: true,
     avatar: PRESETS[d.preset].avatar,
-    duration: ex?.duration ?? 15,
-    bars: ex?.bars ?? [],
+    duration: takes[d.take]?.duration ?? 15,
+    bars: takes[d.take]?.bars ?? [],
     likes: d.likes + (liked.has(d.id) ? 1 : 0),
     plays: d.plays,
     trophies: 0,
@@ -599,7 +601,8 @@ function DemoBoard({ scriptId }: { scriptId: string }) {
 
   const play = (id: string) => {
     const el = audio.current;
-    if (!el || !ex) return;
+    const src = takes[DEMO.find((d) => d.id === id)?.take ?? -1]?.src;
+    if (!el || !src) return;
     if (playing === id) {
       el.pause();
       setPlaying(null);
@@ -607,7 +610,7 @@ function DemoBoard({ scriptId }: { scriptId: string }) {
     }
     setPlaying(id);
     setProgress(0);
-    el.currentTime = 0;
+    el.src = src;
     void el.play().catch(() => setPlaying(null));
   };
 
@@ -625,21 +628,18 @@ function DemoBoard({ scriptId }: { scriptId: string }) {
 
   return (
     <div className={styles.demo}>
-      {ex && (
-        <audio
-          ref={audio}
-          src={ex.src}
-          preload="none"
-          onTimeUpdate={(e) => {
-            const d = e.currentTarget.duration || ex.duration;
-            setProgress(d > 0 ? e.currentTarget.currentTime / d : 0);
-          }}
-          onEnded={() => {
-            setPlaying(null);
-            setProgress(1);
-          }}
-        />
-      )}
+      <audio
+        ref={audio}
+        preload="none"
+        onTimeUpdate={(e) => {
+          const d = e.currentTarget.duration;
+          setProgress(Number.isFinite(d) && d > 0 ? e.currentTarget.currentTime / d : 0);
+        }}
+        onEnded={() => {
+          setPlaying(null);
+          setProgress(1);
+        }}
+      />
       <div className={styles.demoHead}>
         <span className={styles.demoBadge}>예시 화면</span>
         <p>
@@ -679,7 +679,7 @@ function DemoBoard({ scriptId }: { scriptId: string }) {
           🌐 출전하면 내 녹음이 <b>‘나’ 표시 줄</b>로 여기 올라가요. 내 작품엔 ❤ 를 못 눌러요.
         </li>
         <li>🏆 일요일 밤 마감 때 1~3위가 시상대와 명예의 전당에 남아요.</li>
-        <li>🤖 예시 소리는 AI 가 읽은 이번 주 대본이에요.</li>
+        <li>🤖 예시 소리는 AI 가 여러 목소리로 읽은 이번 주 대본이에요.</li>
       </ul>
       <Link href={`/practice/${scriptId}?from=weekly`} className={styles.demoGo}>
         첫 번째 출전자 되기 →

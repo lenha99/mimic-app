@@ -5,6 +5,7 @@ import { MyFace } from "./my-face";
 import { getViewer } from "@/lib/viewer";
 import { ScreenTour } from "@/components/onboarding/tours";
 import { TourHelp } from "@/components/onboarding/tour";
+import { GuestNickname } from "./guest-nickname";
 import styles from "./me.module.css";
 
 export const metadata: Metadata = { title: "나" };
@@ -22,7 +23,7 @@ export default async function MePage() {
   return (
     <main className="shell">
       <TourHelp id="me" corner />
-      <header className={styles.head}>
+      <header className={styles.head} data-tour="me-head">
         <div className={styles.face}>
           <MyFace fallback={viewer.avatar} />
         </div>
@@ -31,6 +32,8 @@ export default async function MePage() {
           <p className={styles.sub}>로그인 없이도 다 해볼 수 있어. 로그인하면 기록이 계정에 남아.</p>
         </div>
       </header>
+
+      <GuestNickname />
 
       <Link href="/login" className={styles.login} data-tour="me-login">
         로그인 · 가입
@@ -41,7 +44,7 @@ export default async function MePage() {
         <Row href="/practice" title="연습 기록" sub="대본마다 내 테이크가 이 폰에 쌓여 있어" tour="me-practice" />
         <Row href="/create" title="내 소리로 챌린지 만들기" sub="5초 녹음하면 친구들이 날 따라해" />
         <Row href="/probe" title="마이크 검사" sub="녹음이 안 될 때" />
-        <Row href="/?tour=1" title="사용법 다시 보기" sub="홈 화면 안내를 다시 봐요 · 화면마다 ? 도 있어요" />
+        <Row href="/?tour=1" title="사용법 다시 보기" sub="홈 화면 안내를 다시 봐요 · 화면마다 💡 사용법 보기도 있어요" />
       </ul>
       <ScreenTour id="me" />
     </main>

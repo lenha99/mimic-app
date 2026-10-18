@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { cleanNickname, NICK_MAX, nicknameProblem } from "@/lib/nickname";
 import styles from "./profile.module.css";
 
 export function NicknameEditor({ userId, initialNickname }: { userId: string; initialNickname: string }) {
@@ -14,9 +15,9 @@ export function NicknameEditor({ userId, initialNickname }: { userId: string; in
   const [saving, setSaving] = useState(false);
 
   const save = async () => {
-    const trimmed = nickname.trim();
+    const trimmed = cleanNickname(nickname);
     if (!trimmed) {
-      setError("닉네임을 입력해주세요.");
+      setError(nicknameProblem(nickname));
       return;
     }
     setSaving(true);
@@ -53,7 +54,7 @@ export function NicknameEditor({ userId, initialNickname }: { userId: string; in
         value={nickname}
         onChange={(e) => setNickname(e.target.value)}
         className={styles.input}
-        maxLength={20}
+        maxLength={NICK_MAX}
       />
       {error && <p className={styles.warn}>{error}</p>}
       <div className={styles.actions}>

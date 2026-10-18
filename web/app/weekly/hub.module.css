@@ -21,7 +21,14 @@
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.22em;
+  white-space: nowrap;
   color: var(--volt);
+}
+
+@media (max-width: 400px) {
+  .brand {
+    letter-spacing: 0.12em;
+  }
 }
 
 .liveDot {
@@ -43,6 +50,7 @@
 }
 
 .hallLink {
+  white-space: nowrap;
   font-size: 13px;
   font-weight: 700;
   color: var(--white);

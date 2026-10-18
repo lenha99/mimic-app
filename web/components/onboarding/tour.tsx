@@ -11,32 +11,90 @@ import styles from "./tour.module.css";
  * 처음 온 사람이 궁금한 건 "어떻게 소리를 내지"가 아니라 "이 버튼이 뭐지, 어디를 누르지,
  * 올리면 어디로 가지"다. 글로 된 설명서는 안 읽으니, 그 버튼 위에 말풍선을 띄운다.
  *
- * 화면마다 처음 한 번만 저절로 뜨고, 그 뒤엔 화면의 ? 버튼(TourHelp)으로 다시 연다.
- * 비출 대상은 `data-tour="..."` 로 찾는다. 지금 화면에 없는 대상(로그인 안 해서 안 보이는
- * 버튼 등)은 건너뛴다.
+ * 저절로 뜨지 않는다. 화면을 열자마자 덮어 버리면 뭘 보기도 전에 닫게 된다. 화면마다
+ * "사용법 보기" 버튼(TourHelp)이 있고, 홈에 처음 온 사람에겐 그 버튼을 가리키는 인사만 한다.
+ * 비출 대상은 `data-tour="..."` 로 찾고, 지금 화면에 없는 대상은 건너뛴다.
  */
 export type TourStep = { target: string; title: string; body: ReactNode };
 
 const EVENT = "mimic:tour";
 const PAD = 6;
 
+function ask(id: string) {
+  window.dispatchEvent(new CustomEvent(EVENT, { detail: id }));
+}
+
 /**
- * 화면 위쪽에 두는 "?" — 누르면 그 화면 사용법을 다시 띄운다.
+ * "사용법 보기" 버튼. 그 화면 사용법을 아직 안 봤으면 살짝 숨 쉬듯 빛난다.
  * `corner` 는 머리줄 오른쪽이 비어 있는 화면용: 높이 0 줄에 띄워 레이아웃을 밀지 않는다.
+ * `welcome` 은 홈 전용: 처음 온 사람에게 이 버튼을 가리키는 인사 말풍선을 붙인다.
  */
-export function TourHelp({ id, corner = false }: { id: string; corner?: boolean }) {
-  const button = (
-    <button
-      type="button"
-      className={styles.help}
-      aria-label="이 화면 사용법"
-      data-tour="help"
-      onClick={() => window.dispatchEvent(new CustomEvent(EVENT, { detail: id }))}
-    >
-      ?
-    </button>
+export function TourHelp({
+  id,
+  corner = false,
+  welcome = false,
+  short = false,
+}: {
+  id: string;
+  corner?: boolean;
+  welcome?: boolean;
+  /** 머리줄이 빽빽한 화면에선 "사용법"만 */
+  short?: boolean;
+}) {
+  const [fresh, setFresh] = useState(false);
+  const [hello, setHello] = useState(false);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setFresh(!seen(`tour_${id}`));
+    setHello(welcome && !seen("tip_welcome") && !seen(`tour_${id}`));
+    const done = (e: Event) => {
+      if ((e as CustomEvent).detail === id) setFresh(false);
+    };
+    window.addEventListener(`${EVENT}:done`, done);
+    return () => window.removeEventListener(`${EVENT}:done`, done);
+  }, [id, welcome]);
+
+  const open = () => {
+    if (hello) markSeen("tip_welcome");
+    setHello(false);
+    ask(id);
+  };
+
+  const body = (
+    <span className={styles.helpWrap}>
+      <button
+        type="button"
+        className={`${styles.help} ${fresh ? styles.helpFresh : ""}`}
+        onClick={open}
+        data-tour="help"
+      >
+        <span aria-hidden="true">💡</span> {short ? "사용법" : "사용법 보기"}
+      </button>
+      {hello && (
+        <span className={styles.hello} role="note">
+          <b>안녕하세요! 👋</b>
+          <span>MIMIC 이 처음이라면 이 버튼을 눌러 보세요. 화면의 버튼이 뭔지 하나씩 알려드려요.</span>
+          <span className={styles.helloActions}>
+            <button
+              type="button"
+              className={styles.helloLater}
+              onClick={() => {
+                markSeen("tip_welcome");
+                setHello(false);
+              }}
+            >
+              나중에
+            </button>
+            <button type="button" className={styles.helloGo} onClick={open}>
+              사용법 보기
+            </button>
+          </span>
+        </span>
+      )}
+    </span>
   );
-  return corner ? <div className={styles.corner}>{button}</div> : button;
+  return corner ? <div className={styles.corner}>{body}</div> : body;
 }
 
 function find(target: string): HTMLElement | null {
@@ -46,7 +104,19 @@ function find(target: string): HTMLElement | null {
   return r.width > 0 && r.height > 0 ? el : null;
 }
 
-export function Tour({ id, steps, auto = true }: { id: string; steps: TourStep[]; auto?: boolean }) {
+/**
+ * 대상이 화면 가운데쯤 오게 세로로만 굴린다. scrollIntoView 는 가로로 넘치는 줄(캐릭터
+ * 고르기 같은)이 있으면 페이지까지 옆으로 밀어서, 안내를 닫은 뒤 화면이 잘려 보였다.
+ */
+function reveal(el: HTMLElement) {
+  if (el.closest("nav[aria-label='주 메뉴']") || getComputedStyle(el).position === "fixed") return;
+  const r = el.getBoundingClientRect();
+  const vh = window.innerHeight;
+  const top = r.height > vh * 0.6 ? r.top - 80 : r.top - (vh - r.height) / 2 + 60;
+  window.scrollTo({ top: Math.max(0, window.scrollY + top), left: 0, behavior: "smooth" });
+}
+
+export function Tour({ id, steps }: { id: string; steps: TourStep[] }) {
   const [live, setLive] = useState<TourStep[] | null>(null);
   const [i, setI] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
@@ -63,9 +133,9 @@ export function Tour({ id, steps, auto = true }: { id: string; steps: TourStep[]
   );
 
   useEffect(() => {
+    // "사용법 다시 보기"(/?tour=1)로 왔을 때만 바로 연다.
     const replay = new URLSearchParams(window.location.search).get("tour") === "1";
-    let t = 0;
-    if (replay || (auto && !seen(`tour_${id}`))) t = window.setTimeout(() => start(replay ? "replay" : "first"), 700);
+    const t = replay ? window.setTimeout(() => start("replay"), 500) : 0;
     const onAsk = (e: Event) => {
       if ((e as CustomEvent).detail === id) start("help");
     };
@@ -74,20 +144,18 @@ export function Tour({ id, steps, auto = true }: { id: string; steps: TourStep[]
       window.clearTimeout(t);
       window.removeEventListener(EVENT, onAsk);
     };
-  }, [id, start, auto]);
+  }, [id, start]);
 
   const step = live?.[i] ?? null;
 
-  // 대상을 화면 가운데로 굴린 뒤 자리를 잰다. 스크롤·회전이 일어나면 다시 잰다.
   useLayoutEffect(() => {
     if (!step) return;
     const el = find(step.target);
     if (!el) return;
-    const fixed = getComputedStyle(el).position === "fixed" || !!el.closest("nav[aria-label='주 메뉴']");
-    if (!fixed) el.scrollIntoView({ block: "center", behavior: "smooth" });
+    reveal(el);
     const measure = () => setRect(el.getBoundingClientRect());
     measure();
-    const t = window.setTimeout(measure, 380);
+    const t = window.setTimeout(measure, 420);
     window.addEventListener("scroll", measure, { passive: true });
     window.addEventListener("resize", measure);
     return () => {
@@ -101,8 +169,10 @@ export function Tour({ id, steps, auto = true }: { id: string; steps: TourStep[]
 
   const close = (how: "skip" | "done") => {
     markSeen(`tour_${id}`);
+    window.dispatchEvent(new CustomEvent(`${EVENT}:done`, { detail: id }));
     setLive(null);
     setRect(null);
+    if (window.scrollX) window.scrollTo({ left: 0, top: window.scrollY });
     track(how === "done" ? "intro_done" : "intro_skip", { via: `${id}:${i + 1}` });
     if (window.location.search.includes("tour=1")) {
       const u = new URL(window.location.href);
@@ -115,8 +185,8 @@ export function Tour({ id, steps, auto = true }: { id: string; steps: TourStep[]
   const vh = window.innerHeight;
   const below = rect.top + rect.height / 2 < vh * 0.55;
   const bubble: React.CSSProperties = below
-    ? { top: Math.min(rect.bottom + PAD + 12, vh - 200) }
-    : { bottom: Math.min(vh - rect.top + PAD + 12, vh - 200) };
+    ? { top: Math.min(rect.bottom + PAD + 12, vh - 220) }
+    : { bottom: Math.min(vh - rect.top + PAD + 12, vh - 220) };
 
   return (
     <div className={styles.layer} role="dialog" aria-modal="true" aria-label="화면 사용법">
@@ -129,7 +199,7 @@ export function Tour({ id, steps, auto = true }: { id: string; steps: TourStep[]
           height: rect.height + PAD * 2,
         }}
       />
-      <div className={`${styles.bubble} ${below ? styles.down : styles.up}`} style={bubble}>
+      <div className={styles.bubble} style={bubble}>
         <p className={styles.count}>
           {i + 1} / {live.length}
         </p>
@@ -137,7 +207,7 @@ export function Tour({ id, steps, auto = true }: { id: string; steps: TourStep[]
         <div className={styles.body}>{step.body}</div>
         <div className={styles.actions}>
           <button type="button" className={styles.skip} onClick={() => close("skip")}>
-            {last ? "닫기" : "건너뛰기"}
+            {last ? "닫기" : "그만 보기"}
           </button>
           {i > 0 && (
             <button type="button" className={styles.prev} onClick={() => setI(i - 1)}>

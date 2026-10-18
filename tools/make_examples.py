@@ -1,17 +1,20 @@
-"""AI 예시 음성 만들기 — 출전작이 없을 때 주간 챌린지 예시 순위표에서 틀 소리.
+"""예시 순위표 소리 만들기 — 출전작이 없을 때 주간 챌린지 화면에 까는 "예시 출전작" 네 개.
 
   python tools/make_examples.py           # 없는 것만 만든다
   python tools/make_examples.py --force   # 전부 다시
 
 만드는 것:
-  web/public/examples/scripts/{대본 id}.mp3   연습실 대본을 AI(edge-tts)가 읽은 것
-  web/lib/examples.ts                        위 목록·길이·파형 (생성물 — 직접 고치지 말 것)
+  web/public/examples/demo/{대본 id}_{0~3}.mp3   주간 대본(lib/weekly.ts 의 ROTATION)마다 네 목소리
+  web/lib/examples.ts                           위 목록·길이·파형 (생성물 — 직접 고치지 말 것)
 
-예시 순위표는 "예시"라고 붙이고, 실제 순위·❤·피드에는 절대 섞지 않는다.
+네 줄이 같은 소리면 "사람마다 다르게 읽어 올리는 판"이라는 게 안 보인다. 목소리·속도·높이를
+달리해 네 사람처럼 들리게 한다. 화면에는 "예시"라고 붙이고, 실제 순위·❤ 에는 섞지 않는다.
+ROTATION 에 대본을 덧붙였으면 다시 돌린다.
 """
 import asyncio
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -21,12 +24,25 @@ import librosa
 import numpy as np
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT = os.path.join(ROOT, "web", "public", "examples")
+OUT = os.path.join(ROOT, "web", "public", "examples", "demo")
 TS = os.path.join(ROOT, "web", "lib", "examples.ts")
+WEEKLY = os.path.join(ROOT, "web", "lib", "weekly.ts")
 
-# 성우 트랙은 여성, 아나운서 트랙은 남성 — 한 목소리만 들으면 "그 목소리를 흉내 내라"로 읽힌다.
-VOICE = {"voice": "ko-KR-SunHiNeural", "anchor": "ko-KR-InJoonNeural"}
+# 예시 출전자 넷 — hub.tsx 의 DEMO 와 순서가 같다. (목소리, 속도, 높이)
+TAKES = [
+    ("ko-KR-SunHiNeural", "-6%", "-4Hz"),
+    ("ko-KR-InJoonNeural", "+4%", "-8Hz"),
+    ("ko-KR-HyunsuMultilingualNeural", "+0%", "+0Hz"),
+    ("ko-KR-SunHiNeural", "+12%", "+18Hz"),
+]
 BARS = 40
+
+
+def rotation() -> list[str]:
+    src = open(WEEKLY, encoding="utf-8").read()
+    block = src[src.index("export const ROTATION"):]
+    block = block[: block.index("];")]
+    return re.findall(r'scriptId:\s*"([^"]+)"', block)
 
 
 def clean(text: str) -> str:
@@ -36,12 +52,12 @@ def clean(text: str) -> str:
     return "\n".join(p.strip() for p in t.split("\n") if p.strip())
 
 
-async def synth(text: str, voice: str, path: str) -> None:
-    await edge_tts.Communicate(text, voice).save(path)
+async def synth(text: str, voice: str, rate: str, pitch: str, path: str) -> None:
+    await edge_tts.Communicate(text, voice, rate=rate, pitch=pitch).save(path)
 
 
 def encode(src: str, dst: str) -> None:
-    """모노 · 48kbps · 앞뒤 무음 정리 — 대본 하나에 100KB 안팎."""
+    """모노 · 48kbps · 앞뒤 무음 정리 — 하나에 100KB 안팎."""
     os.makedirs(os.path.dirname(dst), exist_ok=True)
     subprocess.run(
         ["ffmpeg", "-y", "-loglevel", "error", "-i", src,
@@ -63,24 +79,29 @@ def shape(path: str) -> tuple[float, list[float]]:
 
 def main(force: bool) -> None:
     reg = json.load(open(os.path.join(ROOT, "content", "registry.json"), encoding="utf-8"))
-    scripts = {}
+    by_id = {s["id"]: s for s in reg["scripts"]}
+    demo: dict[str, list[dict]] = {}
     tmp = tempfile.mkdtemp()
 
-    for s in reg["scripts"]:
-        dst = os.path.join(OUT, "scripts", f"{s['id']}.mp3")
-        if force or not os.path.exists(dst):
-            raw = os.path.join(tmp, f"{s['id']}.mp3")
-            asyncio.run(synth(clean(s["text"]), VOICE[s["track"]], raw))
-            encode(raw, dst)
-        dur, bars = shape(dst)
-        scripts[s["id"]] = {"src": f"/examples/scripts/{s['id']}.mp3", "duration": dur, "bars": bars}
-        print("script", s["id"], dur)
+    for sid in rotation():
+        s = by_id[sid]
+        takes = []
+        for n, (voice, rate, pitch) in enumerate(TAKES):
+            dst = os.path.join(OUT, f"{sid}_{n}.mp3")
+            if force or not os.path.exists(dst):
+                raw = os.path.join(tmp, f"{sid}_{n}.mp3")
+                asyncio.run(synth(clean(s["text"]), voice, rate, pitch, raw))
+                encode(raw, dst)
+            dur, bars = shape(dst)
+            takes.append({"src": f"/examples/demo/{sid}_{n}.mp3", "duration": dur, "bars": bars})
+        demo[sid] = takes
+        print(sid, [t["duration"] for t in takes])
 
     with open(TS, "w", encoding="utf-8", newline="\n") as f:
         f.write("// tools/make_examples.py 가 만든다. 직접 고치지 말 것 — 다시 돌리면 덮어쓴다.\n")
-        f.write("// AI 예시 음성: 출전작이 없을 때 예시 순위표(app/weekly/hub.tsx)의 소리. 실제 순위·❤ 에 섞지 않는다.\n\n")
+        f.write("// 예시 순위표(app/weekly/hub.tsx)의 예시 출전작 소리 — AI 가 네 목소리로 읽었다. 실제 순위·❤ 에 섞지 않는다.\n\n")
         f.write("export type Example = { src: string; duration: number; bars: number[] };\n\n")
-        f.write(f"export const SCRIPT_EXAMPLES: Record<string, Example> = {json.dumps(scripts, ensure_ascii=False, indent=1)};\n")
+        f.write(f"export const DEMO_TAKES: Record<string, Example[]> = {json.dumps(demo, ensure_ascii=False)};\n")
     print("wrote", TS)
 
 

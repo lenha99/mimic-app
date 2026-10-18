@@ -5,6 +5,7 @@ import {
   usernameToEmail,
 } from "@/lib/id-account";
 import { allow, clientIp, tooMany } from "@/lib/rate-limit";
+import { cleanNickname, nicknameProblem } from "@/lib/nickname";
 import { createServiceClient } from "@/lib/supabase/service";
 
 /**
@@ -14,16 +15,22 @@ import { createServiceClient } from "@/lib/supabase/service";
  * 메일이 오가지 않는 내부 주소로 가입하면 영영 확인이 안 돼 로그인이 막힌다.
  * 서버가 확인 완료 상태로 만들고, 로그인은 브라우저가 signInWithPassword 로 한다.
  *
- * 아이디가 곧 닉네임이다(나중에 프로필에서 바꿀 수 있다). 소셜 가입자의 닉네임과
- * 겹치면 받지 않는다 — 랭킹에 같은 이름이 둘 보이면 안 된다.
+ * 닉네임은 가입할 때 따로 정할 수 있고, 안 정하면 아이디가 곧 닉네임이다(프로필에서 바꾼다).
+ * 다른 사람 닉네임과 겹치면 받지 않는다 — 랭킹에 같은 이름이 둘 보이면 안 된다.
  */
 export async function POST(req: Request) {
   // 가입은 서비스 키로 만들어서 Supabase 자체 가입 제한을 안 탄다. 여기서 막는다.
   if (!allow(`signup:${clientIp(req)}`, 5, 3_600_000)) {
     return tooMany("가입 시도가 너무 많아요. 한 시간 뒤에 다시 해주세요.");
   }
-  const body = (await req.json().catch(() => ({}))) as { username?: unknown; password?: unknown };
+  const body = (await req.json().catch(() => ({}))) as { username?: unknown; password?: unknown; nickname?: unknown };
   const username = normalizeUsername(body.username);
+  // 닉네임은 고를 수 있다. 안 적으면 아이디가 곧 닉네임이다.
+  const wanted = typeof body.nickname === "string" && body.nickname.trim() ? body.nickname : null;
+  const nickname = wanted === null ? username : cleanNickname(wanted);
+  if (!nickname) {
+    return Response.json({ error: nicknameProblem(String(wanted)) }, { status: 400 });
+  }
 
   const problem = checkUsername(username) ?? checkPassword(body.password);
   if (problem) {
@@ -36,10 +43,13 @@ export async function POST(req: Request) {
   const { data: taken } = await service
     .from("profiles")
     .select("id")
-    .eq("nickname", username)
+    .eq("nickname", nickname)
     .maybeSingle();
   if (taken) {
-    return Response.json({ error: "이미 있는 아이디예요." }, { status: 409 });
+    return Response.json(
+      { error: wanted === null ? "이미 있는 아이디예요." : "이미 누가 쓰는 닉네임이에요." },
+      { status: 409 },
+    );
   }
 
   const { data: created, error: createError } = await service.auth.admin.createUser({
@@ -58,7 +68,7 @@ export async function POST(req: Request) {
 
   const { error: profileError } = await service.from("profiles").insert({
     id: created.user.id,
-    nickname: username,
+    nickname,
     provider: "id",
   });
   if (profileError) {
@@ -66,7 +76,7 @@ export async function POST(req: Request) {
     await service.auth.admin.deleteUser(created.user.id);
     const clash = profileError.code === "23505";
     return Response.json(
-      { error: clash ? "이미 있는 아이디예요." : "가입에 실패했어요. 잠시 후 다시 시도해주세요." },
+      { error: clash ? "이미 누가 쓰는 닉네임이에요." : "가입에 실패했어요. 잠시 후 다시 시도해주세요." },
       { status: clash ? 409 : 500 },
     );
   }

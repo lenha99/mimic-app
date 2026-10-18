@@ -124,8 +124,7 @@ export default async function RecordPage({ params, searchParams }: Props) {
         loggedIn={viewer.loggedIn}
         avatar={viewer.avatar}
       />
-      {/* 도전장(?s=)을 받고 온 사람은 할 일이 정해져 있다 — 안내는 ? 로만. */}
-      <ScreenTour id="record" auto={beat === null} />
+      <ScreenTour id="record" />
     </main>
   );
 }

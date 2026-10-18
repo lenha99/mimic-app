@@ -95,7 +95,7 @@ export default async function ProfilePage() {
       {profile ? (
         <div className={styles.stack}>
           {admin && <AdminLinks pending={admin.pending} feedback={admin.feedback} reported={admin.reported} />}
-          <div className={styles.card}>
+          <div className={styles.card} data-tour="profile-nick">
             <p className={styles.nickname}>{profile.nickname}</p>
             <NicknameEditor userId={user.id} initialNickname={profile.nickname} />
           </div>

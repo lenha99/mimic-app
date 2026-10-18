@@ -107,17 +107,98 @@
   color: var(--volt);
 }
 
+.helpWrap {
+  position: relative;
+  display: inline-flex;
+}
+
 .help {
   flex: none;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
   border: 1px solid var(--rule);
   background: var(--panel);
   color: var(--white);
-  font-size: 14px;
-  font-weight: 900;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
   cursor: pointer;
+}
+
+/* 아직 안 본 화면 — 버튼이 숨 쉬듯 빛난다 */
+.helpFresh {
+  border-color: rgba(232, 255, 58, 0.6);
+  color: var(--volt);
+  animation: breathe 2.2s ease-in-out infinite;
+}
+
+.hello {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  z-index: 30;
+  width: min(290px, calc(100vw - 32px));
+  display: grid;
+  gap: 6px;
+  padding: 14px 14px 10px;
+  border-radius: 16px;
+  background: var(--white);
+  color: #2b2b31;
+  font-size: 13.5px;
+  line-height: 1.55;
+  text-align: left;
+  word-break: keep-all;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.5);
+  animation: pop 0.25s ease-out;
+}
+
+.hello::before {
+  content: "";
+  position: absolute;
+  top: -7px;
+  right: 34px;
+  width: 14px;
+  height: 14px;
+  transform: rotate(45deg);
+  background: var(--white);
+}
+
+.hello b {
+  font-size: 15px;
+  color: #000;
+}
+
+.helloActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.helloLater,
+.helloGo {
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.helloLater {
+  border: 0;
+  background: none;
+  color: #6b6b73;
+}
+
+.helloGo {
+  border: 0;
+  background: var(--stage);
+  color: var(--volt);
 }
 
 @keyframes ring {
@@ -129,13 +210,21 @@
 @keyframes pop {
   from {
     opacity: 0;
-    transform: translateX(-50%) translateY(6px);
+    translate: 0 6px;
+  }
+}
+
+@keyframes breathe {
+  50% {
+    box-shadow: 0 0 0 5px rgba(232, 255, 58, 0.14);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .spot,
-  .bubble {
+  .bubble,
+  .hello,
+  .helpFresh {
     animation: none;
     transition: none;
   }
@@ -149,6 +238,6 @@
   height: 0;
 }
 
-.corner .help {
-  margin-top: 18px;
+.corner .helpWrap {
+  margin-top: 16px;
 }

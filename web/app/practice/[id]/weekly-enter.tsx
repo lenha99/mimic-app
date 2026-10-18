@@ -10,6 +10,7 @@ import type { Take } from "@/lib/take-store";
 import { track } from "@/lib/track";
 import { currentWeek, isLive, readMine, remaining, seasonLabel, writeMine, type Week } from "@/lib/weekly";
 import { PrivacyTag } from "@/components/privacy-tag";
+import { cleanNickname, NICK_MAX, nicknameProblem, readNickname, writeNickname } from "@/lib/nickname";
 import styles from "./weekly-enter.module.css";
 
 /**
@@ -49,6 +50,7 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
   const [needLogin, setNeedLogin] = useState(false);
   const [done, setDone] = useState<Done | null>(null);
   const [local, setLocal] = useState(() => readMine()[week.id]);
+  const [name, setName] = useState(readNickname);
   const [toast, showToast] = useToast();
 
   if (!live) {
@@ -72,6 +74,10 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
   };
 
   const submit = async () => {
+    if (!me.loggedIn && name.trim() && !cleanNickname(name)) {
+      setError(nicknameProblem(name));
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -81,6 +87,11 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
       body.append("file", take.blob, `take.${ext}`);
       body.append("week", week.id);
       body.append("client", clientId());
+      if (!me.loggedIn) {
+        const nick = cleanNickname(name);
+        if (nick) body.append("name", nick);
+        writeNickname(name);
+      }
       if (local?.token) body.append("token", local.token);
       body.append("duration", String(Math.round(duration * 10) / 10));
       body.append("bars", JSON.stringify(downsample(take.analysis?.bars ?? [], 40)));
@@ -162,8 +173,26 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
               <li>한 사람 한 작품 — 더 나은 테이크가 나오면 교체할 수 있어요 (교체하면 ❤ 초기화)</li>
             )}
             <li>마감 전에도 언제든 내릴 수 있어요</li>
-            {!me.loggedIn && <li>로그인 없이 &lsquo;익명의 목소리&rsquo;로 출전돼요. 로그인하면 트로피가 계정에 남아요</li>}
+            {me.loggedIn ? (
+              <li>
+                프로필 닉네임으로 출전돼요 · <Link href="/profile">닉네임 바꾸기</Link>
+              </li>
+            ) : (
+              <li>로그인하지 않아도 돼요. 로그인하면 트로피가 계정에 남아요</li>
+            )}
           </ul>
+          {!me.loggedIn && (
+            <label className={styles.nick}>
+              <span>순위에 보일 닉네임</span>
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                maxLength={NICK_MAX}
+                placeholder="비워 두면 ‘익명의 목소리’"
+                autoComplete="nickname"
+              />
+            </label>
+          )}
           {needLogin ? (
             <p className={styles.login}>
               이 브라우저는 저장이 막혀 있어서 로그인해야 출전할 수 있어요.{" "}
