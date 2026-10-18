@@ -651,13 +651,16 @@
 }
 
 .takeWhen {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
   font-size: 13.5px;
   font-weight: 700;
   color: var(--white);
 }
 
 .star {
-  margin-left: 6px;
   font-style: normal;
   color: var(--volt);
 }
@@ -1064,4 +1067,10 @@
   margin: 8px 0 0;
   line-height: 1.75;
   word-break: keep-all;
+}
+
+/* AI 예시 ------------------------------------------------------------- */
+
+.example {
+  margin-top: 14px;
 }

@@ -33,7 +33,11 @@ export type TrackKind =
   | "weekly_play"
   | "weekly_like"
   | "weekly_enter"
-  | "weekly_share";
+  | "weekly_share"
+  // 첫 방문 안내 — 몇 장째에서 건너뛰는지(via)를 본다
+  | "intro_view"
+  | "intro_skip"
+  | "intro_done";
 
 const URL_ =
   process.env.NEXT_PUBLIC_TRACK_URL ?? "https://lenha99--meme-scoring-track.modal.run";

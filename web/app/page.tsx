@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ClaimPending } from "@/app/profile/claim-pending";
 import { HomeBeacon } from "@/components/home-beacon";
 import { InstallBanner } from "@/components/install-banner";
+import { IntroSheet } from "@/components/onboarding/intro-sheet";
 import { ViewerBadge } from "@/components/viewer";
 import { HomeHero } from "@/components/weekly/home-hero";
 import { getMemes } from "@/lib/memes";
@@ -93,12 +94,18 @@ export default async function Home() {
 
       <HomeBeacon />
 
+      {/* 처음 온 사람에게만, 한 번. */}
+      <IntroSheet scriptId={weekly.week.scriptId} title={weekly.week.title} />
+
       <footer className={styles.foot}>
         <p className={styles.footNote}>
-          녹음은 &ldquo;저장하기&rdquo;를 눌러야만 남아요 · 저장 안 하면 바로 버려요
+          🔒 연습 녹음은 내 폰에만 · 🌐 출전·공개를 고른 녹음만 다른 사람이 들어요
         </p>
         <Link href="/probe" className={styles.footLink}>
           녹음이 안 되면 마이크 검사 →
+        </Link>
+        <Link href="/?intro=1" className={styles.footLink}>
+          사용법 다시 보기
         </Link>
       </footer>
     </main>

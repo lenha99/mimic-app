@@ -54,7 +54,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   const { service, user, voters, entry, week } = r;
 
   if (voters.includes(entry.owner) || (user && entry.user_id === user.id)) {
-    return Response.json({ error: "내 출전작에는 ❤ 를 못 눌러요. 친구한테 부탁해 봐요!" }, { status: 403 });
+    return Response.json({ error: "내 출전작에는 ❤ 를 못 눌러요. 다른 출전작에 눌러 보세요!" }, { status: 403 });
   }
 
   // 중복 확인 · 네트워크 상한 · 넣기를 DB 한 트랜잭션에서 (마이그레이션 21).

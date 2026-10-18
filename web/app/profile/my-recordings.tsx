@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { PrivacyTag } from "@/components/privacy-tag";
 import styles from "./profile.module.css";
 
 export type MyRecording = {
@@ -11,6 +12,8 @@ export type MyRecording = {
   score: number | null;
   grade: string | null;
   isPublic: boolean;
+  /** 링크를 만들어 보낸 적 있다 — 링크를 받은 사람은 들을 수 있다. */
+  shared: boolean;
   hidden: boolean;
   audioUrl: string | null;
   createdAt: string;
@@ -81,6 +84,7 @@ export function MyRecordings({ items }: { items: MyRecording[] }) {
           <li key={r.id} className={styles.recRow}>
             <div className={styles.recHead}>
               <span className={styles.recTitle}>{r.memeTitle}</span>
+              <PrivacyTag kind={r.isPublic ? "public" : r.shared ? "link" : "private"} compact />
               <span className={styles.recScore}>
                 {r.score ?? "-"}점{r.grade ? ` · ${r.grade}` : ""}
               </span>

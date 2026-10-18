@@ -241,6 +241,21 @@
   cursor: pointer;
 }
 
+.mineMore {
+  display: block;
+  margin-top: 10px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--volt);
+  text-decoration: none;
+}
+
+.minePanel > p:has(+ .share),
+.minePanel .share {
+  margin-top: 12px;
+}
+
 .mineRow {
   margin-top: 10px;
   display: flex;

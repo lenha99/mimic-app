@@ -6,15 +6,7 @@ import { QuickFeedback } from "@/components/quick-feedback";
 import { YoutubeClip } from "@/components/youtube-clip";
 import { clientId } from "@/lib/client-id";
 import type { Meme } from "@/lib/memes";
-import {
-  ago,
-  parseScript,
-  pauseMarks,
-  PITCH_RANGE,
-  syllables,
-  TRACK_LABEL,
-  type Script,
-} from "@/lib/practice";
+import { ago, parseScript, pauseMarks, PITCH_RANGE, syllables, TRACK_LABEL, type Script } from "@/lib/practice";
 import { judge, passCount, warnings, type Check, type Target } from "@/lib/practice-feedback";
 import { fixesOf, matchScript, type MatchResult } from "@/lib/script-match";
 import { deleteTake, listTakes, newTakeId, saveTake, updateTake, type Take } from "@/lib/take-store";
@@ -22,6 +14,11 @@ import { track } from "@/lib/track";
 import { analyze, analyzeBlob, decodeMono, type Analysis } from "@/lib/voice-analysis";
 import { AskFeedback } from "./ask-feedback";
 import { WeeklyBanner, WeeklyEnter } from "./weekly-enter";
+import { ExamplePlayer } from "@/components/example-player";
+import { Tip } from "@/components/onboarding/tip";
+import { PrivacyTag } from "@/components/privacy-tag";
+import { SCRIPT_EXAMPLES } from "@/lib/examples";
+import { readMine } from "@/lib/weekly";
 import styles from "./room.module.css";
 
 /**
@@ -50,7 +47,15 @@ export type RoomItem =
       /** 내 대본만 — 고치기 화면 주소 */
       editHref?: string;
     }
-  | { kind: "line"; meme: Meme; refUrl: string; number: number; total: number; prev: Nav; next: Nav };
+  | {
+      kind: "line";
+      meme: Meme;
+      refUrl: string;
+      number: number;
+      total: number;
+      prev: Nav;
+      next: Nav;
+    };
 
 type Phase = "ready" | "count" | "recording" | "analyzing";
 
@@ -64,7 +69,11 @@ const SIZE_KEY = "mimic.practice.size";
 const CHECK_KEY = "mimic.practice.check";
 const MARKS_KEY = "mimic.practice.marks";
 
-type Score = { score: number; grade?: string; breakdown: { pitch: number; tone: number; timing: number } };
+type Score = {
+  score: number;
+  grade?: string;
+  breakdown: { pitch: number; tone: number; timing: number };
+};
 
 export default function Room({ item }: { item: RoomItem }) {
   const itemId = item.kind === "script" ? item.script.id : item.meme.id;
@@ -98,6 +107,8 @@ export default function Room({ item }: { item: RoomItem }) {
   const refEl = useRef<HTMLAudioElement>(null);
   const [refSrc, setRefSrc] = useState<string | null>(item.kind === "line" ? item.refUrl : null);
   const resultRef = useRef<HTMLElement>(null);
+  /** 챌린지에 출전한 테이크 — 기기에 남긴 출전 기록(lib/weekly)으로 안다. */
+  const [entered, setEntered] = useState<Set<string>>(new Set());
 
   // 기기 설정 — 글자 크기, 쉼·강조 표시.
   useEffect(() => {
@@ -111,6 +122,12 @@ export default function Room({ item }: { item: RoomItem }) {
       if (localStorage.getItem(CHECK_KEY) === "1") setAutoCheck(true);
     } catch {}
   }, []);
+
+  useEffect(() => {
+    // 테이크 목록이 바뀔 때마다(출전 직후 포함) 기기 기록을 다시 읽는다.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setEntered(new Set(Object.values(readMine()).flatMap((r) => (r.takeId ? [r.takeId] : []))));
+  }, [takes]);
 
   const refresh = useCallback(async () => {
     const rows = await listTakes(itemId);
@@ -185,7 +202,12 @@ export default function Room({ item }: { item: RoomItem }) {
   const target: Target = useMemo(() => {
     if (item.kind === "script") {
       const s = item.script;
-      return { track: s.track, pace: s.pace, pitch: s.pitch, marks: pauseMarks(s.text) };
+      return {
+        track: s.track,
+        pace: s.pace,
+        pitch: s.pitch,
+        marks: pauseMarks(s.text),
+      };
     }
     // 명대사 — 원본을 같은 자로 잰 값이 기준이다.
     const r = refAnalysis;
@@ -243,13 +265,23 @@ export default function Room({ item }: { item: RoomItem }) {
       } catch {
         analysis = null;
       }
-      const take: Take = { id: newTakeId(), itemId, at: Date.now(), blob, analysis, score: null };
+      const take: Take = {
+        id: newTakeId(),
+        itemId,
+        at: Date.now(),
+        blob,
+        analysis,
+        score: null,
+      };
       await saveTake(take);
       await refresh();
       setOpenId(take.id);
       setPhase("ready");
       requestAnimationFrame(() =>
-        resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+        resultRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        }),
       );
 
       if (autoCheck) void check(take);
@@ -297,7 +329,11 @@ export default function Room({ item }: { item: RoomItem }) {
     try {
       // 측정이 목적이라 자동 음량 보정은 끈다 — 켜두면 "끝 처짐"이 보정돼서 안 보인다.
       live = await navigator.mediaDevices.getUserMedia({
-        audio: { autoGainControl: false, noiseSuppression: false, echoCancellation: true },
+        audio: {
+          autoGainControl: false,
+          noiseSuppression: false,
+          echoCancellation: true,
+        },
       });
     } catch {
       setError("마이크를 켜줘야 녹음할 수 있어.");
@@ -308,8 +344,7 @@ export default function Room({ item }: { item: RoomItem }) {
     let analyser: AnalyserNode | null = null;
     try {
       const Ctor =
-        window.AudioContext ??
-        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (Ctor) {
         const c = new Ctor();
         analyser = c.createAnalyser();
@@ -353,8 +388,7 @@ export default function Room({ item }: { item: RoomItem }) {
         const refSec = [refAnalysis?.duration, refEl.current?.duration].find(
           (v): v is number => typeof v === "number" && Number.isFinite(v) && v > 0,
         );
-        const max =
-          item.kind === "line" ? Math.max(3000, (refSec ?? 5) * 1000 + LINE_TAIL_MS) : MAX_SCRIPT_MS;
+        const max = item.kind === "line" ? Math.max(3000, (refSec ?? 5) * 1000 + LINE_TAIL_MS) : MAX_SCRIPT_MS;
         const t0 = performance.now();
         const buf = new Uint8Array(analyser?.fftSize ?? 1024);
         let smooth = 0;
@@ -467,7 +501,7 @@ export default function Room({ item }: { item: RoomItem }) {
     [open, text],
   );
   const showMatch = overlay && phase !== "recording" && phase !== "count" ? match : null;
-  const before = open ? takes.find((t) => t.at < open.at && t.analysis) ?? null : null;
+  const before = open ? (takes.find((t) => t.at < open.at && t.analysis) ?? null) : null;
 
   const head =
     item.kind === "script"
@@ -479,7 +513,11 @@ export default function Room({ item }: { item: RoomItem }) {
 
   return (
     <main className={`shell ${styles.room}`}>
-      <audio ref={player} onEnded={() => setPlaying(null)} onPause={() => setPlaying((p) => (p === "ref" ? p : null))} />
+      <audio
+        ref={player}
+        onEnded={() => setPlaying(null)}
+        onPause={() => setPlaying((p) => (p === "ref" ? p : null))}
+      />
       {item.kind === "line" && refSrc && (
         <audio
           ref={refEl}
@@ -548,6 +586,13 @@ export default function Room({ item }: { item: RoomItem }) {
               <dd>{syl}음절</dd>
             </div>
           </dl>
+          <div className={styles.example}>
+            <ExamplePlayer
+              example={SCRIPT_EXAMPLES[item.script.id]}
+              title="AI가 읽어 봤어요"
+              note="참고용이에요. 똑같이 따라 하기보다 디렉션을 보고 내 해석으로 읽어 보세요"
+            />
+          </div>
         </section>
       ) : (
         <section className={styles.lineRef}>
@@ -613,8 +658,8 @@ export default function Room({ item }: { item: RoomItem }) {
         </div>
         {showMatch && open && (
           <p className={styles.overlayNote}>
-            테이크 #{order.get(open.id)} 확인 결과 · <s>빠뜨림</s>{" "}
-            <span className={styles.changedKey}>바꿈</span> <ins>+덧붙임</ins>
+            테이크 #{order.get(open.id)} 확인 결과 · <s>빠뜨림</s> <span className={styles.changedKey}>바꿈</span>{" "}
+            <ins>+덧붙임</ins>
           </p>
         )}
         <ScriptText text={text} marks={marks && item.kind === "script"} match={showMatch} />
@@ -678,9 +723,14 @@ export default function Room({ item }: { item: RoomItem }) {
           <div className={styles.empty}>
             <p className={styles.emptyTitle}>첫 테이크를 남겨봐</p>
             <p>
-              아래 버튼을 누르고 3·2·1 뒤에 읽기 시작하면 돼. 다 읽으면 한 번 더 눌러서 끝내.
-              속도·쉼·억양·말끝을 바로 짚어줄게.
+              아래 버튼을 누르고 3·2·1 뒤에 읽기 시작하면 돼. 다 읽으면 한 번 더 눌러서 끝내. 속도·쉼·억양·말끝을 바로
+              짚어줄게.
             </p>
+            <PrivacyTag kind="device" />
+            <Tip id="tip_mic">
+              처음 누르면 브라우저가 마이크를 써도 되는지 물어요. <b>허용</b>을 눌러야 녹음돼요. 안 되면{" "}
+              <Link href="/probe">마이크 검사</Link>
+            </Tip>
           </div>
         )}
       </section>
@@ -699,13 +749,21 @@ export default function Room({ item }: { item: RoomItem }) {
                   onClick={() => {
                     setOpenId(t.id);
                     setConfirmDel(null);
-                    resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    resultRef.current?.scrollIntoView({
+                      behavior: "smooth",
+                      block: "start",
+                    });
                   }}
                 >
                   <span className={styles.takeNo}>#{order.get(t.id)}</span>
                   <span className={styles.takeWhen}>
                     {ago(t.at)}
                     {t.starred && <i className={styles.star}>★</i>}
+                    {entered.has(t.id) || t.postId ? (
+                      <PrivacyTag kind="public" compact />
+                    ) : (
+                      <PrivacyTag kind="device" compact />
+                    )}
                   </span>
                   <span className={styles.takeStat}>{takeLine(t)}</span>
                 </button>
@@ -729,8 +787,9 @@ export default function Room({ item }: { item: RoomItem }) {
             ))}
           </ol>
           <p className={styles.keepNote}>
-            대본마다 최근 12개까지 남아요 · ★ 표시한 건 지워지지 않아요 · 이 폰에만 저장돼요
+            🔒 표시는 이 폰에만 있어 다른 사람이 들을 수 없어요 · 🌐 표시는 챌린지·게시판에 올라가 누구나 들을 수 있어요
           </p>
+          <p className={styles.keepNote}>대본마다 최근 12개까지 남아요 · ★ 표시한 건 지워지지 않아요</p>
         </section>
       )}
 
@@ -765,12 +824,7 @@ export default function Room({ item }: { item: RoomItem }) {
             <span>다 읽었으면 탭</span>
           </button>
         ) : (
-          <button
-            type="button"
-            className={styles.rec}
-            onClick={() => void start()}
-            disabled={phase !== "ready"}
-          >
+          <button type="button" className={styles.rec} onClick={() => void start()} disabled={phase !== "ready"}>
             {phase === "count" ? (
               <span className={styles.countNum}>{count}</span>
             ) : phase === "analyzing" ? (
@@ -788,15 +842,7 @@ export default function Room({ item }: { item: RoomItem }) {
   );
 }
 
-function ScriptText({
-  text,
-  marks,
-  match,
-}: {
-  text: string;
-  marks: boolean;
-  match: MatchResult | null;
-}) {
+function ScriptText({ text, marks, match }: { text: string; marks: boolean; match: MatchResult | null }) {
   const paras = useMemo(() => parseScript(text), [text]);
 
   // 어절 번호는 lib/script-match 의 scriptWords 와 같은 규칙으로 센다(표시를 뺀 공백 단위,
@@ -1022,8 +1068,7 @@ const STATUS_WORD: Record<Check["key"], Record<"ok" | "low" | "high", string>> =
 
 function CheckRow({ c, prev }: { c: Check; prev?: Check }) {
   const st = c.status === "na" ? "ok" : c.status;
-  const delta =
-    prev && c.scale && prev.scale ? c.scale.at - prev.scale.at : null;
+  const delta = prev && c.scale && prev.scale ? c.scale.at - prev.scale.at : null;
   return (
     <li className={styles.check}>
       <div className={styles.checkTop}>
@@ -1049,10 +1094,7 @@ function Scale({ s }: { s: NonNullable<Check["scale"]> }) {
   const pos = (v: number) => `${Math.max(0, Math.min(100, ((v - s.min) / (s.max - s.min)) * 100))}%`;
   return (
     <div className={styles.scale} aria-hidden="true">
-      <span
-        className={styles.scaleBand}
-        style={{ left: pos(s.lo), width: `calc(${pos(s.hi)} - ${pos(s.lo)})` }}
-      />
+      <span className={styles.scaleBand} style={{ left: pos(s.lo), width: `calc(${pos(s.hi)} - ${pos(s.lo)})` }} />
       <span className={styles.scaleAt} style={{ left: pos(s.at) }} />
     </div>
   );
@@ -1070,7 +1112,10 @@ function Wave({ a }: { a: Analysis }) {
         <span
           key={i}
           className={styles.waveGap}
-          style={{ left: `${s * 100}%`, width: `${Math.max(0.8, (e - s) * 100)}%` }}
+          style={{
+            left: `${s * 100}%`,
+            width: `${Math.max(0.8, (e - s) * 100)}%`,
+          }}
         />
       ))}
       <span className={styles.waveLen}>{a.span.toFixed(1)}초</span>
@@ -1143,8 +1188,7 @@ function ScriptCheck({
       <div className={styles.scriptCheck}>
         <p className={styles.scriptCheckHead}>대본대로 읽었는지도 볼까?</p>
         <p className={styles.checkNote}>
-          빠뜨린 말·바꾼 말을 찾아서 고칠 곳을 알려줘. 테이크를 잠깐 서버로 보내 글자로 바꾸고,
-          녹음도 글자도 바로 지워.
+          빠뜨린 말·바꾼 말을 찾아서 고칠 곳을 알려줘. 테이크를 잠깐 서버로 보내 글자로 바꾸고, 녹음도 글자도 바로 지워.
         </p>
         <div className={styles.checkBtns}>
           <button type="button" className={styles.pillOn} onClick={() => onCheck(true)}>
@@ -1178,12 +1222,13 @@ function ScriptCheck({
               <p className={styles.fixWhat}>
                 {f.kind === "missed" ? (
                   <>
-                    <b>“{f.words}”</b>{josa(f.words, "을", "를")} 빠뜨렸어
+                    <b>“{f.words}”</b>
+                    {josa(f.words, "을", "를")} 빠뜨렸어
                   </>
                 ) : f.kind === "changed" ? (
                   <>
-                    <b>“{f.words}”</b>{josa(f.words, "이", "가")}{" "}
-                    <span className={styles.fixHeard}>“{f.heard}”</span>
+                    <b>“{f.words}”</b>
+                    {josa(f.words, "이", "가")} <span className={styles.fixHeard}>“{f.heard}”</span>
                     {josa(f.heard, "으로", "로")} 들렸어
                   </>
                 ) : (
@@ -1213,9 +1258,7 @@ function ScriptCheck({
       {fixes.length > SHOW && (
         <p className={styles.checkFine}>나머지 {fixes.length - SHOW}곳은 대본 위에 표시해 뒀어.</p>
       )}
-      <p className={styles.checkFine}>
-        받아쓰기라 살짝 뭉개진 발음까지는 못 잡아. 빠뜨리거나 바꾼 말을 잡는 용도야.
-      </p>
+      <p className={styles.checkFine}>받아쓰기라 살짝 뭉개진 발음까지는 못 잡아. 빠뜨리거나 바꾼 말을 잡는 용도야.</p>
     </div>
   );
 }
@@ -1223,7 +1266,14 @@ function ScriptCheck({
 /** 받침에 맞는 조사. "으로/로"는 ㄹ 받침도 "로"다. 숫자로 끝나면 읽는 소리로 본다. */
 function josa(word: string, withFinal: string, without: string): string {
   const last = word.trim().slice(-1);
-  const DIGIT_FINAL = { "0": 1, "1": 8, "3": 1, "6": 1, "7": 8, "8": 8 } as Record<string, number>;
+  const DIGIT_FINAL = {
+    "0": 1,
+    "1": 8,
+    "3": 1,
+    "6": 1,
+    "7": 8,
+    "8": 8,
+  } as Record<string, number>;
   let tail = 0;
   if (/[가-힣]/.test(last)) tail = (last.charCodeAt(0) - 0xac00) % 28;
   else if (last in DIGIT_FINAL) tail = DIGIT_FINAL[last];

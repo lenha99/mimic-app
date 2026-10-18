@@ -35,7 +35,7 @@ export default async function ProfilePage() {
     supabase.from("profiles").select("*").eq("id", user.id).single(),
     supabase
       .from("recordings")
-      .select("id, meme_id, score, grade, is_public, hidden, audio_path, created_at")
+      .select("id, meme_id, score, grade, is_public, shared, hidden, audio_path, created_at")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(50),
@@ -64,6 +64,7 @@ export default async function ProfilePage() {
     score: r.score,
     grade: r.grade,
     isPublic: r.is_public,
+    shared: Boolean(r.shared),
     hidden: r.hidden,
     audioUrl: urls.get(r.audio_path) ?? null,
     createdAt: r.created_at,
@@ -106,6 +107,9 @@ export default async function ProfilePage() {
           <MyPracticePosts items={practicePosts} />
           <MyChallenges items={(challenges ?? []) as MyChallenge[]} />
           <MyRecordings items={items} />
+          <Link href="/?intro=1" className={styles.guideLink}>
+            사용법 다시 보기 →
+          </Link>
           <DeleteAccount />
         </div>
       ) : (

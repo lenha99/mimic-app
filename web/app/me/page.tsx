@@ -38,6 +38,7 @@ export default async function MePage() {
         <Row href="/practice" title="연습 기록" sub="대본마다 내 테이크가 이 폰에 쌓여 있어" />
         <Row href="/create" title="내 소리로 챌린지 만들기" sub="5초 녹음하면 친구들이 날 따라해" />
         <Row href="/probe" title="마이크 검사" sub="녹음이 안 될 때" />
+        <Row href="/?intro=1" title="사용법 다시 보기" sub="처음 안내 세 장을 다시 봐요" />
       </ul>
     </main>
   );

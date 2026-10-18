@@ -3,21 +3,17 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePlaybackLevel } from "@/components/use-playback-level";
+import { ExamplePlayer } from "@/components/example-player";
+import { Tip } from "@/components/onboarding/tip";
 import { VoiceAvatar } from "@/components/voice-avatar";
 import { Countdown } from "@/components/weekly/countdown";
 import { LikeButton } from "@/components/weekly/like-button";
 import { useToast } from "@/components/weekly/toast";
 import { buzz, shareLink, useWeeklyMe } from "@/components/weekly/use-weekly";
 import { normalizeAvatar } from "@/lib/avatar";
+import { SCRIPT_EXAMPLES } from "@/lib/examples";
 import { track } from "@/lib/track";
-import {
-  audioSrc,
-  LISTEN_RATIO,
-  MIN_PODIUM,
-  type Award,
-  type EntryCard,
-  type Week,
-} from "@/lib/weekly";
+import { audioSrc, LISTEN_RATIO, MIN_PODIUM, type Award, type EntryCard, type Week } from "@/lib/weekly";
 import styles from "./hub.module.css";
 
 type Props = {
@@ -25,7 +21,12 @@ type Props = {
   label: string;
   entries: EntryCard[];
   totalLikes: number;
-  script: { text: string; direction: string; seconds: number; category: string } | null;
+  script: {
+    text: string;
+    direction: string;
+    seconds: number;
+    category: string;
+  } | null;
   last: { week: Week; awards: Award[] } | null;
 };
 
@@ -205,7 +206,11 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
             <i aria-hidden="true">→</i>
           </Link>
         )}
-        {!mine && <p className={styles.heroNote}>로그인 없이 바로 · 마음에 든 테이크 하나만 올라가요</p>}
+        {!mine && (
+          <p className={styles.heroNote}>
+            로그인 없이 바로 · 연습 녹음은 🔒 내 폰에만, 고른 테이크 하나만 🌐 모두에게 공개돼요
+          </p>
+        )}
       </section>
 
       {/* 내 자리 — 순위와 시상대까지의 거리, 그리고 ❤ 를 모으는 길 */}
@@ -235,6 +240,15 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
           </div>
         </div>
 
+        {/* 처음 온 사람이 "어떤 걸 올리는 거지?"를 귀로 확인하는 자리. 순위·❤ 에는 섞지 않는다. */}
+        <div className={styles.example}>
+          <ExamplePlayer
+            example={SCRIPT_EXAMPLES[week.scriptId]}
+            title="이런 식으로 읽어서 올려요"
+            note="AI 가 읽은 예시라 순위에는 없어요. 사람 목소리는 이걸 쉽게 넘어요"
+          />
+        </div>
+
         {entries.length === 0 ? (
           <div className={styles.empty}>
             <p className={styles.emptyBig}>1등 자리가 비어 있어요</p>
@@ -244,24 +258,29 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
             </p>
           </div>
         ) : (
-          <ol className={styles.rows}>
-            {sorted.map((e, i) => (
-              <Row
-                key={e.id}
-                e={e}
-                cutAfter={tab === "rank" && podiumReady && i === 2 && entries.length > 3}
-                now={now}
-                isMine={e.id === me.mineId}
-                playing={playing === e.id}
-                progress={playing === e.id ? progress : null}
-                level={playing === e.id ? level : 0}
-                liked={me.liked.has(e.id)}
-                heard={me.heard.has(e.id)}
-                onPlay={() => play(e.id)}
-                onLike={() => void like(e.id)}
-              />
-            ))}
-          </ol>
+          <>
+            <Tip id="tip_like">
+              ▶ 로 끝까지 들으면 ❤ 가 열려요. 마음에 든 목소리에 눌러 주세요 — 순위는 이 ❤ 로 정해져요.
+            </Tip>
+            <ol className={styles.rows}>
+              {sorted.map((e, i) => (
+                <Row
+                  key={e.id}
+                  e={e}
+                  cutAfter={tab === "rank" && podiumReady && i === 2 && entries.length > 3}
+                  now={now}
+                  isMine={e.id === me.mineId}
+                  playing={playing === e.id}
+                  progress={playing === e.id ? progress : null}
+                  level={playing === e.id ? level : 0}
+                  liked={me.liked.has(e.id)}
+                  heard={me.heard.has(e.id)}
+                  onPlay={() => play(e.id)}
+                  onLike={() => void like(e.id)}
+                />
+              ))}
+            </ol>
+          </>
         )}
       </section>
 
@@ -343,10 +362,12 @@ function MyStanding({ mine, entries, onShare }: { mine: EntryCard; entries: Entr
       </div>
       <div className={styles.mineBody}>
         <p className={styles.mineLine}>{line}</p>
-        <p className={styles.mineSub}>❤ {mine.likes} · {mine.plays}번 끝까지 들음</p>
+        <p className={styles.mineSub}>
+          ❤ {mine.likes} · {mine.plays}번 끝까지 들음
+        </p>
         <div className={styles.mineActions}>
           <button type="button" className={styles.mineShare} onClick={onShare}>
-            친구한테 ❤ 부탁하기
+            내 출전작 공유하기
           </button>
           <Link href={`/weekly/e/${mine.id}`} className={styles.mineView}>
             내 출전작
@@ -392,7 +413,11 @@ function Podium({
               </span>
             )}
             <span className={styles.stepAvatar}>
-              <VoiceAvatar avatar={normalizeAvatar(e.avatar)} level={playing === e.id ? level : 0} size={place === 1 ? 92 : 70} />
+              <VoiceAvatar
+                avatar={normalizeAvatar(e.avatar)}
+                level={playing === e.id ? level : 0}
+                size={place === 1 ? 92 : 70}
+              />
             </span>
             <span className={styles.stepName}>
               {e.name}
@@ -462,7 +487,12 @@ function Row({
         <span className={`${styles.rank} ${e.rank <= 3 ? styles[`rank${e.rank}`] : ""}`}>
           {String(e.rank).padStart(2, "0")}
         </span>
-        <button type="button" className={styles.rowMain} onClick={onPlay} aria-label={`${e.name} ${playing ? "멈추기" : "듣기"}`}>
+        <button
+          type="button"
+          className={styles.rowMain}
+          onClick={onPlay}
+          aria-label={`${e.name} ${playing ? "멈추기" : "듣기"}`}
+        >
           <span className={styles.rowAvatar}>
             <VoiceAvatar avatar={normalizeAvatar(e.avatar)} level={level} size={46} />
             <span className={styles.rowPlay} aria-hidden="true">
