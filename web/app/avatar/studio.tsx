@@ -19,6 +19,8 @@ import {
 } from "@/lib/avatar";
 import { refreshViewer } from "@/components/viewer";
 import { createClient } from "@/lib/supabase/client";
+import { ScreenTour } from "@/components/onboarding/tours";
+import { TourHelp } from "@/components/onboarding/tour";
 import styles from "./studio.module.css";
 
 type Who = { userId: string | null; ready: boolean };
@@ -127,13 +129,15 @@ export function AvatarStudio() {
 
   return (
     <div className={styles.studio}>
+      <TourHelp id="avatar" corner />
+      <ScreenTour id="avatar" />
       <header className={styles.head}>
         <h1>내 캐릭터</h1>
         <p>녹음하면 이 녀석이 네 목소리로 외쳐</p>
       </header>
 
       <div className={styles.stage}>
-        <button type="button" className={styles.preview} onClick={shout} aria-label="캐릭터 외쳐보기">
+        <button type="button" className={styles.preview} onClick={shout} aria-label="캐릭터 외쳐보기" data-tour="avatar-preview">
           <VoiceAvatar avatar={avatar} level={level} size={184} />
         </button>
         <div className={styles.stageActions}>
@@ -146,7 +150,7 @@ export function AvatarStudio() {
         </div>
       </div>
 
-      <section className={styles.presets} aria-label="바로 쓰는 캐릭터">
+      <section className={styles.presets} aria-label="바로 쓰는 캐릭터" data-tour="avatar-presets">
         {PRESETS.map((p) => (
           <button key={p.name} type="button" className={styles.preset} onClick={() => apply(p.avatar)}>
             <VoiceAvatar avatar={p.avatar} size={58} />
@@ -155,7 +159,7 @@ export function AvatarStudio() {
         ))}
       </section>
 
-      <nav className={styles.tabs} role="tablist">
+      <nav className={styles.tabs} role="tablist" data-tour="avatar-tabs">
         {PART_GROUPS.map((g, i) => (
           <button
             key={g.label}
@@ -201,7 +205,13 @@ export function AvatarStudio() {
             <Link href="/login">로그인</Link>하면 투표·랭킹에도 이 캐릭터로 나와요.
           </p>
         )}
-        <button type="button" className={styles.save} onClick={save} disabled={saving || !dirty || !who.ready}>
+        <button
+          type="button"
+          className={styles.save}
+          onClick={save}
+          disabled={saving || !dirty || !who.ready}
+          data-tour="avatar-save"
+        >
           {saving ? "저장 중…" : dirty ? "이 캐릭터로 저장" : "저장됨 ✓"}
         </button>
       </div>

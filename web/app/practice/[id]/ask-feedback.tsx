@@ -36,7 +36,7 @@ export function AskFeedback({
 
   if (take.postId) {
     return (
-      <Link href={`/practice/board/${take.postId}`} className={styles.posted}>
+      <Link href={`/practice/board/${take.postId}`} className={styles.posted} data-tour="room-ask">
         <span>게시판에 올린 테이크예요</span>
         <b>피드백 보기 →</b>
       </Link>
@@ -45,7 +45,7 @@ export function AskFeedback({
 
   if (!open) {
     return (
-      <button type="button" className={styles.open} onClick={() => setOpen(true)}>
+      <button type="button" className={styles.open} onClick={() => setOpen(true)} data-tour="room-ask">
         <span className={styles.openIcon} aria-hidden="true">
           🎧
         </span>

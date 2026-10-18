@@ -3,6 +3,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { MyFace } from "./my-face";
 import { getViewer } from "@/lib/viewer";
+import { ScreenTour } from "@/components/onboarding/tours";
+import { TourHelp } from "@/components/onboarding/tour";
 import styles from "./me.module.css";
 
 export const metadata: Metadata = { title: "나" };
@@ -19,6 +21,7 @@ export default async function MePage() {
 
   return (
     <main className="shell">
+      <TourHelp id="me" corner />
       <header className={styles.head}>
         <div className={styles.face}>
           <MyFace fallback={viewer.avatar} />
@@ -29,24 +32,25 @@ export default async function MePage() {
         </div>
       </header>
 
-      <Link href="/login" className={styles.login}>
+      <Link href="/login" className={styles.login} data-tour="me-login">
         로그인 · 가입
       </Link>
 
       <ul className={styles.list}>
-        <Row href="/avatar" title="내 캐릭터 꾸미기" sub="녹음하면 이 녀석이 내 목소리로 외쳐" />
-        <Row href="/practice" title="연습 기록" sub="대본마다 내 테이크가 이 폰에 쌓여 있어" />
+        <Row href="/avatar" title="내 캐릭터 꾸미기" sub="녹음하면 이 녀석이 내 목소리로 외쳐" tour="me-avatar" />
+        <Row href="/practice" title="연습 기록" sub="대본마다 내 테이크가 이 폰에 쌓여 있어" tour="me-practice" />
         <Row href="/create" title="내 소리로 챌린지 만들기" sub="5초 녹음하면 친구들이 날 따라해" />
         <Row href="/probe" title="마이크 검사" sub="녹음이 안 될 때" />
-        <Row href="/?intro=1" title="사용법 다시 보기" sub="처음 안내 세 장을 다시 봐요" />
+        <Row href="/?tour=1" title="사용법 다시 보기" sub="홈 화면 안내를 다시 봐요 · 화면마다 ? 도 있어요" />
       </ul>
+      <ScreenTour id="me" />
     </main>
   );
 }
 
-function Row({ href, title, sub }: { href: string; title: string; sub: string }) {
+function Row({ href, title, sub, tour }: { href: string; title: string; sub: string; tour?: string }) {
   return (
-    <li>
+    <li data-tour={tour}>
       <Link href={href} className={styles.row}>
         <span>
           <b>{title}</b>

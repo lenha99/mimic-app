@@ -4,6 +4,8 @@ import { BOARD_TRACK_LABEL, POST_DAYS } from "@/lib/board";
 import { listPosts } from "@/lib/board-server";
 import { ago } from "@/lib/practice";
 import { createClient } from "@/lib/supabase/server";
+import { ScreenTour } from "@/components/onboarding/tours";
+import { TourHelp } from "@/components/onboarding/tour";
 import styles from "./board.module.css";
 
 export const metadata: Metadata = {
@@ -30,6 +32,7 @@ export default async function BoardPage({ searchParams }: { searchParams: Promis
 
   return (
     <main className="shell">
+      <TourHelp id="board" corner />
       <nav className={styles.top}>
         <Link href="/practice" className={styles.back}>
           ← 연습실
@@ -45,7 +48,7 @@ export default async function BoardPage({ searchParams }: { searchParams: Promis
         </p>
       </header>
 
-      <div className={styles.tabs}>
+      <div className={styles.tabs} data-tour="board-tabs">
         <Link href="/practice/board" className={sort === "waiting" ? styles.tabOn : styles.tab}>
           피드백 기다리는 중
         </Link>
@@ -55,18 +58,47 @@ export default async function BoardPage({ searchParams }: { searchParams: Promis
       </div>
 
       {posts.length === 0 ? (
-        <div className={styles.empty}>
-          <p className={styles.emptyTitle}>아직 올라온 연습이 없어요</p>
-          <p>
-            연습실에서 대본을 읽고, 테이크 아래 <b>다른 사람한테 피드백 받기</b>를 누르면 여기에
-            올라와요. 첫 번째가 되어 주세요.
+        <div className={styles.demo} data-tour="board-list">
+          <p className={styles.demoHead}>
+            <span className={styles.demoBadge}>예시</span>
+            아직 올라온 연습이 없어서, 올리면 어떻게 보이는지 예시로 보여드려요.
+          </p>
+          <div className={`${styles.card} ${styles.demoCard}`} aria-hidden="true">
+            <span className={styles.cardTop}>
+              <span className={styles.track}>아나운서</span>
+              <span className={styles.who}>새벽라디오 · 방금</span>
+            </span>
+            <span className={styles.cardTitle}>뉴스 오프닝</span>
+            <span className={styles.ask}>“문장 끝이 자꾸 올라가는데 어떻게 들리나요?”</span>
+            <span className={styles.countZero}>아직 피드백 없음 · 첫 번째로 들어주기</span>
+          </div>
+          <ol className={styles.steps}>
+            <li>
+              <b>1</b>
+              <span>연습실에서 대본을 읽어 녹음해요</span>
+            </li>
+            <li>
+              <b>2</b>
+              <span>테이크 아래 <em>🎧 다른 사람한테 피드백 받기</em>를 눌러요 — 듣고 싶은 점을 한 줄 적어요</span>
+            </li>
+            <li>
+              <b>3</b>
+              <span>위 카드처럼 여기 올라와요. 다른 사람이 카드를 눌러 듣고 한 줄 피드백을 남겨요</span>
+            </li>
+            <li>
+              <b>4</b>
+              <span>받은 피드백은 연습 화면과 <em>나 → 피드백 받은 연습</em>에서 봐요</span>
+            </li>
+          </ol>
+          <p className={styles.demoNote}>
+            🌐 올린 녹음·대본·닉네임은 다른 사람이 볼 수 있어요 · 로그인 필요 · {POST_DAYS}일 뒤 자동 삭제
           </p>
           <Link href="/practice" className={styles.emptyGo}>
             연습하러 가기 →
           </Link>
         </div>
       ) : (
-        <ol className={styles.list}>
+        <ol className={styles.list} data-tour="board-list">
           {posts.map((p) => (
             <li key={p.id}>
               <Link href={`/practice/board/${p.id}`} className={styles.card}>
@@ -87,6 +119,7 @@ export default async function BoardPage({ searchParams }: { searchParams: Promis
           ))}
         </ol>
       )}
+      <ScreenTour id="board" />
     </main>
   );
 }

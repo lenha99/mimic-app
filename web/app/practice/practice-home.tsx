@@ -6,6 +6,8 @@ import { PracticeStrip } from "@/components/weekly/practice-strip";
 import { listMine, type MyScript } from "@/lib/my-scripts";
 import { ago, expectedSeconds, TRACK_LABEL, type Script, type Track } from "@/lib/practice";
 import { summaries, type ItemSummary } from "@/lib/take-store";
+import { ScreenTour } from "@/components/onboarding/tours";
+import { TourHelp } from "@/components/onboarding/tour";
 import styles from "./practice.module.css";
 
 /**
@@ -185,7 +187,7 @@ export default function PracticeHome({
   };
 
   const addMine = (
-    <Link href="/practice/new" className={styles.addMine}>
+    <Link href="/practice/new" className={styles.addMine} data-tour="practice-add">
       <span className={styles.addPlus} aria-hidden="true">
         +
       </span>
@@ -198,6 +200,7 @@ export default function PracticeHome({
 
   return (
     <main className="shell">
+      <TourHelp id="practice" corner />
       <header className={styles.intro}>
         <p className={styles.eyebrow}>MIMIC 연습실</p>
         <h1 className={styles.h1}>읽고, 듣고, 다시 읽기</h1>
@@ -210,7 +213,7 @@ export default function PracticeHome({
       <PracticeStrip />
 
       {last ? (
-        <Link href={`/practice/${last.itemId}`} className={styles.resume}>
+        <Link href={`/practice/${last.itemId}`} className={styles.resume} data-tour="practice-start">
           <span className={styles.resumeLabel}>이어서</span>
           <span className={styles.resumeTitle}>{titles.get(last.itemId)!.title}</span>
           <span className={styles.resumeMeta}>
@@ -221,7 +224,7 @@ export default function PracticeHome({
           </span>
         </Link>
       ) : (
-        <div className={styles.starters}>
+        <div className={styles.starters} data-tour="practice-start">
           <p className={styles.startersLabel}>처음이라면 여기서</p>
           <div className={styles.starterRow}>
             <Link href="/practice/sc_v_confess" className={styles.starter}>
@@ -238,7 +241,7 @@ export default function PracticeHome({
         </div>
       )}
 
-      <Link href="/practice/board" className={styles.board}>
+      <Link href="/practice/board" className={styles.board} data-tour="practice-board">
         <span className={styles.boardIcon} aria-hidden="true">
           🎧
         </span>
@@ -268,7 +271,7 @@ export default function PracticeHome({
         />
       </label>
 
-      <div className={styles.tabs} role="tablist" aria-label="대본 종류">
+      <div className={styles.tabs} role="tablist" aria-label="대본 종류" data-tour="practice-filter">
         {(
           [
             ["all", "전체", scripts.length + lines.length + mine.length],
@@ -423,6 +426,7 @@ export default function PracticeHome({
         <p>기본 대본은 전부 MIMIC 이 직접 썼어요. 학원 수업·스터디에서 자유롭게 써도 돼요.</p>
         <Link href="/probe">녹음이 안 되면 마이크 검사 →</Link>
       </footer>
+      <ScreenTour id="practice" />
     </main>
   );
 }

@@ -3,17 +3,18 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePlaybackLevel } from "@/components/use-playback-level";
-import { ExamplePlayer } from "@/components/example-player";
 import { Tip } from "@/components/onboarding/tip";
 import { VoiceAvatar } from "@/components/voice-avatar";
 import { Countdown } from "@/components/weekly/countdown";
 import { LikeButton } from "@/components/weekly/like-button";
 import { useToast } from "@/components/weekly/toast";
 import { buzz, shareLink, useWeeklyMe } from "@/components/weekly/use-weekly";
-import { normalizeAvatar } from "@/lib/avatar";
+import { normalizeAvatar, PRESETS } from "@/lib/avatar";
 import { SCRIPT_EXAMPLES } from "@/lib/examples";
 import { track } from "@/lib/track";
 import { audioSrc, LISTEN_RATIO, MIN_PODIUM, type Award, type EntryCard, type Week } from "@/lib/weekly";
+import { ScreenTour } from "@/components/onboarding/tours";
+import { TourHelp } from "@/components/onboarding/tour";
 import styles from "./hub.module.css";
 
 type Props = {
@@ -150,9 +151,12 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
           <span className={styles.liveDot} aria-hidden="true" />
           WEEKLY VOICE
         </span>
-        <Link href="/weekly/hall" className={styles.hallLink}>
-          🏆 명예의 전당
-        </Link>
+        <span className={styles.topRight}>
+          <Link href="/weekly/hall" className={styles.hallLink} data-tour="weekly-hall">
+            🏆 명예의 전당
+          </Link>
+          <TourHelp id="weekly" />
+        </span>
       </header>
 
       {/* 무대 — 이번 주 대본과 마감 */}
@@ -195,7 +199,7 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
             다시 녹음해서 교체하기
           </Link>
         ) : (
-          <Link href={`/practice/${week.scriptId}?from=weekly`} className={styles.heroGo}>
+          <Link href={`/practice/${week.scriptId}?from=weekly`} className={styles.heroGo} data-tour="weekly-go">
             {open ? "연습하고 출전하기" : "미리 연습해 두기"}
             <i aria-hidden="true">→</i>
           </Link>
@@ -219,12 +223,12 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
         ))}
 
       {/* 출전작 */}
-      <section className={styles.board} aria-label="출전작">
+      <section className={styles.board} aria-label="출전작" data-tour="weekly-board">
         <div className={styles.boardHead}>
           <h2 className={styles.boardTitle}>
             출전작 <span>{entries.length}</span>
           </h2>
-          <div className={styles.tabs} role="tablist">
+          <div className={styles.tabs} role="tablist" data-tour="weekly-tabs">
             <button type="button" role="tab" aria-selected={tab === "rank"} onClick={() => setTab("rank")}>
               순위
             </button>
@@ -234,23 +238,8 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
           </div>
         </div>
 
-        {/* 처음 온 사람이 "어떤 걸 올리는 거지?"를 귀로 확인하는 자리. 순위·❤ 에는 섞지 않는다. */}
-        <div className={styles.example}>
-          <ExamplePlayer
-            example={SCRIPT_EXAMPLES[week.scriptId]}
-            title="이런 식으로 읽어서 올려요"
-            note="AI 가 읽은 예시라 순위에는 없어요. 사람 목소리는 이걸 쉽게 넘어요"
-          />
-        </div>
-
         {entries.length === 0 ? (
-          <div className={styles.empty}>
-            <p className={styles.emptyBig}>1등 자리가 비어 있어요</p>
-            <p>
-              지금 출전하면 <b>첫 번째 목소리</b>예요. 먼저 올리면 그만큼 많이
-              들려요.
-            </p>
-          </div>
+          <DemoBoard scriptId={week.scriptId} />
         ) : (
           <>
             <Tip id="tip_like">
@@ -299,6 +288,7 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
       </Link>
 
       {toast}
+      <ScreenTour id="weekly" />
     </main>
   );
 }
@@ -566,5 +556,135 @@ function LastInner({ a }: { a: Award }) {
       <span className={styles.lastName}>{a.name}</span>
       <span className={styles.lastLikes}>❤ {a.likes}</span>
     </>
+  );
+}
+
+/**
+ * 출전작이 하나도 없을 때 보여주는 예시 순위표 — "올리면 어디에, 어떻게 보이고, ❤ 는 어떻게 누르나".
+ *
+ * 빈 판에 "첫 번째가 되어 보세요"만 적어 두면 무엇이 생기는지 상상이 안 된다. 진짜 줄과
+ * 똑같이 생긴 줄을 깔고 직접 눌러 보게 한다. 소리는 AI 가 읽은 이번 주 대본이다.
+ * 누른 ❤ 는 이 화면 안에서만 움직이고 어디에도 저장되지 않는다.
+ */
+const DEMO = [
+  { id: "demo-1", name: "새벽라디오", likes: 24, plays: 61, preset: 1 },
+  { id: "demo-2", name: "뉴스하는곰", likes: 17, plays: 44, preset: 2 },
+  { id: "demo-3", name: "목소리장인", likes: 9, plays: 23, preset: 6 },
+  { id: "demo-me", name: "나 (출전하면 여기)", likes: 2, plays: 5, preset: 0 },
+];
+
+function DemoBoard({ scriptId }: { scriptId: string }) {
+  const ex = SCRIPT_EXAMPLES[scriptId];
+  const audio = useRef<HTMLAudioElement>(null);
+  const [playing, setPlaying] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [liked, setLiked] = useState<Set<string>>(new Set());
+  const [toast, showToast] = useToast();
+
+  const rows: EntryCard[] = DEMO.map((d) => ({
+    id: d.id,
+    rank: 0,
+    name: d.name,
+    guest: true,
+    avatar: PRESETS[d.preset].avatar,
+    duration: ex?.duration ?? 15,
+    bars: ex?.bars ?? [],
+    likes: d.likes + (liked.has(d.id) ? 1 : 0),
+    plays: d.plays,
+    trophies: 0,
+    createdAt: "2026-01-01T00:00:00Z",
+  }))
+    .sort((a, b) => b.likes - a.likes)
+    .map((e, i) => ({ ...e, rank: i + 1 }));
+
+  const play = (id: string) => {
+    const el = audio.current;
+    if (!el || !ex) return;
+    if (playing === id) {
+      el.pause();
+      setPlaying(null);
+      return;
+    }
+    setPlaying(id);
+    setProgress(0);
+    el.currentTime = 0;
+    void el.play().catch(() => setPlaying(null));
+  };
+
+  const like = (id: string) => {
+    buzz();
+    const on = !liked.has(id);
+    setLiked((s) => {
+      const n = new Set(s);
+      if (on) n.add(id);
+      else n.delete(id);
+      return n;
+    });
+    showToast(on ? "이렇게 ❤ 가 올라가요! 예시라 실제 순위엔 안 남아요" : "한 번 더 누르면 ❤ 가 취소돼요");
+  };
+
+  return (
+    <div className={styles.demo}>
+      {ex && (
+        <audio
+          ref={audio}
+          src={ex.src}
+          preload="none"
+          onTimeUpdate={(e) => {
+            const d = e.currentTarget.duration || ex.duration;
+            setProgress(d > 0 ? e.currentTarget.currentTime / d : 0);
+          }}
+          onEnded={() => {
+            setPlaying(null);
+            setProgress(1);
+          }}
+        />
+      )}
+      <div className={styles.demoHead}>
+        <span className={styles.demoBadge}>예시 화면</span>
+        <p>
+          아직 출전작이 없어서 <b>예시</b>로 보여드려요. 직접 눌러 보세요 — 실제 순위엔 안 들어가요.
+        </p>
+      </div>
+      <ol className={styles.howto}>
+        <li>
+          <b>1</b>캐릭터 ▶ 를 누르면 들어요
+        </li>
+        <li>
+          <b>2</b>마음에 들면 ❤ 를 눌러요
+        </li>
+        <li>
+          <b>3</b>❤ 많은 순서가 순위예요
+        </li>
+      </ol>
+      <ol className={styles.rows}>
+        {rows.map((e) => (
+          <Row
+            key={e.id}
+            e={e}
+            cutAfter={false}
+            now={null}
+            isMine={e.id === "demo-me"}
+            playing={playing === e.id}
+            progress={playing === e.id ? progress : null}
+            level={0}
+            liked={liked.has(e.id)}
+            onPlay={() => play(e.id)}
+            onLike={() => like(e.id)}
+          />
+        ))}
+      </ol>
+      <ul className={styles.demoNotes}>
+        <li>
+          🌐 출전하면 내 녹음이 <b>‘나’ 표시 줄</b>로 여기 올라가요. 내 작품엔 ❤ 를 못 눌러요.
+        </li>
+        <li>🏆 일요일 밤 마감 때 1~3위가 시상대와 명예의 전당에 남아요.</li>
+        <li>🤖 예시 소리는 AI 가 읽은 이번 주 대본이에요.</li>
+      </ul>
+      <Link href={`/practice/${scriptId}?from=weekly`} className={styles.demoGo}>
+        첫 번째 출전자 되기 →
+      </Link>
+      {toast}
+    </div>
   );
 }

@@ -723,17 +723,3 @@
   text-underline-offset: 3px;
   cursor: pointer;
 }
-
-/* AI 예시 — 원본 아래, 처음 온 사람의 첫 목표 */
-.example {
-  margin-top: 14px;
-  width: 100%;
-}
-
-.vsAi {
-  margin: 6px 0 0;
-  text-align: center;
-  font-size: 13.5px;
-  font-weight: 700;
-  color: var(--cyan);
-}

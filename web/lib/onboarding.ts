@@ -4,7 +4,8 @@
  * 로그인 없이 쓰는 사람이 대부분이라 서버가 아니라 localStorage 다. 지워지면 한 번 더
  * 보일 뿐이니 그걸로 충분하다. 안내는 늘 한 번만 — 두 번째부터는 방해다.
  */
-export type Guide = "intro" | "tip_mic" | "tip_like" | "tip_result";
+/** 한 번만 보여줄 안내의 이름 — 화면 사용법은 `tour_{화면}`, 한 줄 팁은 `tip_{무엇}`. */
+export type Guide = `tour_${string}` | `tip_${string}`;
 
 const KEY = "mimic.guide";
 

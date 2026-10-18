@@ -14,11 +14,11 @@ import { track } from "@/lib/track";
 import { analyze, analyzeBlob, decodeMono, type Analysis } from "@/lib/voice-analysis";
 import { AskFeedback } from "./ask-feedback";
 import { WeeklyBanner, WeeklyEnter } from "./weekly-enter";
-import { ExamplePlayer } from "@/components/example-player";
 import { Tip } from "@/components/onboarding/tip";
 import { PrivacyTag } from "@/components/privacy-tag";
-import { SCRIPT_EXAMPLES } from "@/lib/examples";
 import { readMine } from "@/lib/weekly";
+import { ScreenTour } from "@/components/onboarding/tours";
+import { TourHelp } from "@/components/onboarding/tour";
 import styles from "./room.module.css";
 
 /**
@@ -528,11 +528,14 @@ export default function Room({ item }: { item: RoomItem }) {
         />
       )}
 
+      {/* 처음 온 화면 사용법 — 첫 테이크가 나오면 결과·출전·피드백 사용법이 이어서 뜬다. */}
+      {phase === "ready" && (open ? <ScreenTour id="room_after" /> : <ScreenTour id="room" />)}
       <nav className={styles.top}>
         <Link href="/practice" className={styles.back}>
           ← 연습실
         </Link>
         <span className={styles.topRight}>
+          <TourHelp id={open ? "room_after" : "room"} />
           {item.kind === "script" && item.editHref && (
             <Link href={item.editHref} className={styles.editLink}>
               고치기
@@ -561,7 +564,7 @@ export default function Room({ item }: { item: RoomItem }) {
       {item.kind === "script" && <WeeklyBanner scriptId={itemId} />}
 
       {item.kind === "script" ? (
-        <section className={styles.direction}>
+        <section className={styles.direction} data-tour="room-script">
           <p className={styles.label}>디렉션</p>
           <p className={styles.directionText}>{item.script.direction}</p>
           <dl className={styles.targets}>
@@ -586,13 +589,6 @@ export default function Room({ item }: { item: RoomItem }) {
               <dd>{syl}음절</dd>
             </div>
           </dl>
-          <div className={styles.example}>
-            <ExamplePlayer
-              example={SCRIPT_EXAMPLES[item.script.id]}
-              title="AI가 읽어 봤어요"
-              note="참고용이에요. 똑같이 따라 하기보다 디렉션을 보고 내 해석으로 읽어 보세요"
-            />
-          </div>
         </section>
       ) : (
         <section className={styles.lineRef}>
@@ -682,7 +678,7 @@ export default function Room({ item }: { item: RoomItem }) {
         </p>
       )}
 
-      <section ref={resultRef} className={styles.result} aria-live="polite">
+      <section ref={resultRef} className={styles.result} aria-live="polite" data-tour={open ? "room-result" : undefined}>
         {phase === "analyzing" && <p className={styles.analyzing}>방금 테이크를 듣는 중…</p>}
         {phase !== "analyzing" && open && (
           <TakeReport
@@ -720,7 +716,7 @@ export default function Room({ item }: { item: RoomItem }) {
           </>
         )}
         {phase !== "analyzing" && !open && (
-          <div className={styles.empty}>
+          <div className={styles.empty} data-tour="room-privacy">
             <p className={styles.emptyTitle}>첫 테이크를 남겨봐</p>
             <p>
               아래 버튼을 누르고 3·2·1 뒤에 읽기 시작하면 돼. 다 읽으면 한 번 더 눌러서 끝내. 속도·쉼·억양·말끝을 바로
@@ -736,7 +732,7 @@ export default function Room({ item }: { item: RoomItem }) {
       </section>
 
       {takes.length > 0 && (
-        <section className={styles.history}>
+        <section className={styles.history} data-tour="room-takes">
           <h2 className={styles.historyTitle}>
             내 기록 <span>{takes.length}</span>
           </h2>
@@ -824,7 +820,13 @@ export default function Room({ item }: { item: RoomItem }) {
             <span>다 읽었으면 탭</span>
           </button>
         ) : (
-          <button type="button" className={styles.rec} onClick={() => void start()} disabled={phase !== "ready"}>
+          <button
+            type="button"
+            className={styles.rec}
+            onClick={() => void start()}
+            disabled={phase !== "ready"}
+            data-tour="room-record"
+          >
             {phase === "count" ? (
               <span className={styles.countNum}>{count}</span>
             ) : phase === "analyzing" ? (
