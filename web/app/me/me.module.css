@@ -78,3 +78,93 @@
 .row:hover b {
   color: var(--volt);
 }
+
+/* 손님 닉네임 ---------------------------------------------------------- */
+
+.nick {
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+}
+
+.nickHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.nickHead span {
+  display: grid;
+  gap: 2px;
+}
+
+.nickHead small {
+  font-size: 12px;
+  color: var(--ash);
+}
+
+.nickHead b {
+  font-size: 16px;
+}
+
+.nickEdit,
+.nickSave {
+  flex: none;
+  min-height: 38px;
+  padding: 0 16px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.nickEdit {
+  border: 1px solid var(--rule);
+  background: none;
+  color: var(--white);
+}
+
+.nickSave {
+  border: 0;
+  background: var(--volt);
+  color: var(--stage);
+}
+
+.nickForm {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.nickForm input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid var(--rule);
+  background: var(--stage);
+  color: var(--white);
+  font-size: 15px;
+}
+
+.nickForm input:focus {
+  outline: none;
+  border-color: var(--volt);
+}
+
+.nickError {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--pink);
+}
+
+.nickNote {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--ash);
+  word-break: keep-all;
+}

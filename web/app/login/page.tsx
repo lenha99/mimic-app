@@ -11,6 +11,7 @@ import {
   usernameToEmail,
 } from "@/lib/id-account";
 import { createClient } from "@/lib/supabase/client";
+import { NICK_MAX, nicknameProblem } from "@/lib/nickname";
 import styles from "./login.module.css";
 
 /**
@@ -46,6 +47,7 @@ function LoginForm() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [nickname, setNickname] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -67,6 +69,10 @@ function LoginForm() {
       setError("비밀번호 두 번이 서로 달라요.");
       return;
     }
+    if (mode === "signup" && nickname.trim() && nicknameProblem(nickname)) {
+      setError(nicknameProblem(nickname));
+      return;
+    }
 
     setBusy(true);
     setError(null);
@@ -75,7 +81,7 @@ function LoginForm() {
         const res = await fetch("/api/signup", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ username: id, password }),
+          body: JSON.stringify({ username: id, password, nickname: nickname.trim() || undefined }),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
@@ -163,6 +169,18 @@ function LoginForm() {
               required
             />
           </label>
+          {signup && (
+            <label className={styles.field}>
+              <span>닉네임 (순위·게시판에 보이는 이름)</span>
+              <input
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+                autoComplete="nickname"
+                maxLength={NICK_MAX}
+                placeholder="비워 두면 아이디로 · 나중에 바꿀 수 있어요"
+              />
+            </label>
+          )}
           {signup && (
             <label className={styles.field}>
               <span>비밀번호 확인</span>

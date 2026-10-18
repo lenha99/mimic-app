@@ -405,3 +405,27 @@
     transform: translateY(105vh) rotate(540deg);
   }
 }
+
+.nick {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--white);
+}
+
+.nick input {
+  min-height: 46px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid var(--rule);
+  background: var(--stage);
+  color: var(--white);
+  font-size: 15px;
+}
+
+.nick input:focus {
+  outline: none;
+  border-color: var(--volt);
+}

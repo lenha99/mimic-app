@@ -67,7 +67,7 @@ export default function Challenges({
   return (
     <main className="shell">
       <TourHelp id="challenges" corner />
-      <header className={styles.head}>
+      <header className={styles.head} data-tour="challenges-head">
         <h1 className={styles.title}>챌린지</h1>
         <p className={styles.sub}>듣고 따라 외치면 채점해줘. 점수로 친구한테 도전장을 던져.</p>
         {social && (

@@ -528,7 +528,7 @@ export default function Room({ item }: { item: RoomItem }) {
         />
       )}
 
-      {/* 처음 온 화면 사용법 — 첫 테이크가 나오면 결과·출전·피드백 사용법이 이어서 뜬다. */}
+      {/* 사용법 — 테이크가 생기면 결과·출전·피드백 받기 쪽 사용법으로 바뀐다. */}
       {phase === "ready" && (open ? <ScreenTour id="room_after" /> : <ScreenTour id="room" />)}
       <nav className={styles.top}>
         <Link href="/practice" className={styles.back}>
@@ -547,7 +547,7 @@ export default function Room({ item }: { item: RoomItem }) {
         </span>
       </nav>
 
-      <header className={styles.head}>
+      <header className={styles.head} data-tour="room-head">
         <p className={styles.crumb}>
           {head.crumb}
           {item.kind === "script" && (

@@ -45,7 +45,7 @@ export default async function Home() {
       <header className={styles.head}>
         <span className={styles.logo}>MIMIC</span>
         <span className={styles.headRight}>
-          <TourHelp id="home" />
+          <TourHelp id="home" welcome />
           <ViewerBadge />
         </span>
       </header>
@@ -100,7 +100,7 @@ export default async function Home() {
 
       <HomeBeacon />
 
-      {/* 처음 온 사람에게만, 한 번 — 버튼마다 "이건 뭐고 누르면 어떻게 되는지". */}
+      {/* 버튼마다 "이건 뭐고 누르면 어떻게 되는지" — 위쪽 "사용법 보기"로 연다. */}
       <ScreenTour id="home" />
 
       <footer className={styles.foot}>

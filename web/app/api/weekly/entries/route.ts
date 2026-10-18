@@ -4,6 +4,7 @@ import { allow, clientIp, tooMany } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { currentWeek, guestName, isLive, MAX_ENTRY_SECONDS } from "@/lib/weekly";
+import { cleanNickname } from "@/lib/nickname";
 import { ensureWeek, getBoard } from "@/lib/weekly-server";
 
 /**
@@ -32,6 +33,7 @@ export async function POST(req: Request) {
   const client = String(form?.get("client") ?? "");
   const token = String(form?.get("token") ?? "");
   const duration = Number(form?.get("duration"));
+  const name = cleanNickname(form?.get("name"));
   let bars: number[] = [];
   try {
     const raw: unknown = JSON.parse(String(form?.get("bars") ?? "[]"));
@@ -140,6 +142,7 @@ export async function POST(req: Request) {
         duration_s: duration,
         bars,
         ...(avatar && !user ? { avatar } : {}),
+        ...(name && !user ? { guest_name: name } : {}),
         like_count: 0,
         play_count: 0,
         updated_at: now,
@@ -159,7 +162,7 @@ export async function POST(req: Request) {
       user_id: user?.id ?? null,
       owner,
       claim_token: claimToken,
-      guest_name: user ? null : guestName(client),
+      guest_name: user ? null : (name ?? guestName(client)),
       avatar: avatar ?? {},
       audio_path: path,
       duration_s: duration,

@@ -23,7 +23,7 @@ web/                 # Next.js 웹앱 (유일한 클라이언트)
   app/challenges/    # 챌린지 목록 — 명대사 · 친구가 만든 · 몸풀기(동물 소리)
   app/me/            # "나" 탭 — 로그인했으면 /profile, 아니면 손님 허브
   components/bottom-nav.tsx  # 하단 탭(홈·챌린지·연습실·나). "챌린지"=/weekly. 몰입 화면에선 숨긴다
-  components/onboarding/tours.tsx  # 화면별 사용법 문구. 비출 버튼엔 data-tour 를 붙인다. 화면마다 첫 방문에 한 번, ? 로 다시
+  components/onboarding/tours.tsx  # 화면별 사용법 문구. 비출 버튼엔 data-tour. 저절로 안 뜨고 "💡 사용법 보기"로 연다
   app/record/[id]/   # 듣기 → 카운트다운 → 녹음 → 채점 → 결과
   app/practice/      # 연습실 — 대본(기준 음성 없음)·명대사 반복 연습, 기록은 기기 IndexedDB
   app/practice/new/  # 내 대본 넣기·고치기 — 대본은 기기 localStorage 에만 (lib/my-scripts.ts)
@@ -45,7 +45,7 @@ tools/
   sync_catalog.py    # registry → catalog.json / memes.json / 웹 FALLBACK 생성
   picker.html        # 파형 보고 귀로 구간 고르는 UI
   trend_scan.py      # 새 밈 후보 발굴
-  make_examples.py   # 대본 AI 예시 음성(edge-tts) → web/public/examples + web/lib/examples.ts (생성물). 주간 예시 순위표용
+  make_examples.py   # 주간 예시 순위표 소리(대본마다 AI 네 목소리) → web/public/examples/demo + web/lib/examples.ts. ROTATION 늘리면 다시
 refs_kr/             # 원본 유래 클립 (gitignore — 레지스트리로 재생성한다)
 refs_animals/        # CC0 동물 소리 원본 (제자리 수정 금지)
 ```

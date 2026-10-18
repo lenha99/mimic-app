@@ -69,29 +69,29 @@ const HOME: TourStep[] = [
   },
   {
     target: "help",
-    title: "헷갈리면 ?",
-    body: <p>화면마다 위쪽 ? 를 누르면 그 화면 사용법을 다시 볼 수 있어요.</p>,
+    title: "헷갈리면 사용법 보기",
+    body: <p>화면마다 위쪽 💡 사용법 보기를 누르면 그 화면의 버튼을 이렇게 하나씩 알려드려요.</p>,
   },
 ];
 
 const WEEKLY: TourStep[] = [
   {
-    target: "weekly-go",
-    title: "출전하는 법",
+    target: "weekly-hero",
+    title: "주간 보이스 챌린지",
     body: (
       <p>
-        누르면 이번 주 대본 연습실로 가요. 녹음하고, 마음에 드는 테이크 아래 <b>🏆 이번 주 챌린지 출전</b>을 누르면 이
-        목록에 바로 올라와요. 로그인 없이 돼요.
+        매주 월요일에 <b>대본 하나</b>가 열리고 일요일 밤 12시에 마감돼요. 여기 이번 주 대본과 남은 시간이 있어요. 모두
+        같은 대본을 읽고, 누가 제일 잘 읽었는지 ❤ 로 겨뤄요.
       </p>
     ),
   },
   {
     target: "weekly-board",
-    title: "듣고 ❤ 누르기",
+    title: "출전작 — 듣고 ❤ 누르기",
     body: (
       <p>
-        캐릭터(▶)를 누르면 들을 수 있고, 오른쪽 <b>❤ 를 누르면 좋아요</b>가 올라가요. 한 작품에 한 번, 내 작품엔 못
-        눌러요. <b>❤ 많은 순서가 곧 순위</b>예요.
+        다른 사람들이 올린 녹음이에요. 캐릭터(▶)를 누르면 듣고, 오른쪽 <b>❤ 를 누르면 좋아요</b>가 올라가요. 한 작품에
+        한 번, 내 작품엔 못 눌러요. <b>❤ 많은 순서가 곧 순위</b>예요.
       </p>
     ),
   },
@@ -101,13 +101,33 @@ const WEEKLY: TourStep[] = [
     body: <p>새 목소리 탭은 아직 덜 들린 출전작부터 보여줘요. 막 올라온 목소리에 ❤ 를 눌러 주세요.</p>,
   },
   {
+    target: "weekly-go",
+    title: "나도 출전하려면",
+    body: (
+      <p>
+        이 버튼을 누르면 이번 주 대본 연습 화면으로 가요. 녹음해 보고, 마음에 드는 테이크 아래{" "}
+        <b>🏆 이번 주 챌린지 출전</b>을 누르면 이 목록에 올라와요. 로그인 없이 돼요.
+      </p>
+    ),
+  },
+  {
     target: "weekly-hall",
     title: "명예의 전당",
-    body: <p>일요일 밤 마감 때 1~3위가 여기와 프로필에 트로피로 남아요.</p>,
+    body: <p>마감 때 1~3위가 여기와 프로필에 트로피로 남아요.</p>,
   },
 ];
 
 const PRACTICE: TourStep[] = [
+  {
+    target: "practice-intro",
+    title: "연습실",
+    body: (
+      <p>
+        성우·아나운서 대본을 혼자 연습하는 곳이에요. 녹음하면 속도·쉼·억양·말끝을 짚어주고, 연습 녹음은{" "}
+        <b>🔒 이 폰에만</b> 남아요.
+      </p>
+    ),
+  },
   {
     target: "practice-start",
     title: "대본 고르기",
@@ -136,6 +156,11 @@ const PRACTICE: TourStep[] = [
 ];
 
 const ROOM: TourStep[] = [
+  {
+    target: "room-head",
+    title: "대본 연습 화면",
+    body: <p>이 대본 하나를 연습하는 화면이에요. 위에서부터 디렉션 → 대본 → 맨 아래 녹음 버튼 순서예요.</p>,
+  },
   {
     target: "room-script",
     title: "디렉션과 대본",
@@ -215,6 +240,11 @@ const RECORD: TourStep[] = [
 
 const BOARD: TourStep[] = [
   {
+    target: "board-intro",
+    title: "연습 피드백 게시판",
+    body: <p>준비생끼리 서로의 연습 녹음을 듣고 한 줄씩 짚어주는 곳이에요.</p>,
+  },
+  {
     target: "board-list",
     title: "올라온 연습",
     body: (
@@ -284,6 +314,16 @@ const CREATE: TourStep[] = [
 
 const ME: TourStep[] = [
   {
+    target: "me-head",
+    title: "나",
+    body: <p>로그인하지 않아도 캐릭터·닉네임·연습 기록이 이 폰에 저장돼요.</p>,
+  },
+  {
+    target: "me-nickname",
+    title: "닉네임",
+    body: <p>챌린지에 출전하면 이 이름으로 보여요. 안 정하면 &lsquo;익명의 목소리&rsquo;로 나와요.</p>,
+  },
+  {
     target: "me-avatar",
     title: "캐릭터 꾸미기",
     body: <p>녹음할 때 내 목소리로 외치는 캐릭터를 고쳐요.</p>,
@@ -301,6 +341,11 @@ const ME: TourStep[] = [
 ];
 
 const PROFILE: TourStep[] = [
+  {
+    target: "profile-nick",
+    title: "닉네임",
+    body: <p>순위·게시판에 보이는 이름이에요. 눌러서 바꿀 수 있어요.</p>,
+  },
   {
     target: "profile-avatar",
     title: "내 캐릭터",
@@ -329,6 +374,11 @@ const PROFILE: TourStep[] = [
 ];
 
 const CHALLENGES: TourStep[] = [
+  {
+    target: "challenges-head",
+    title: "명대사 챌린지",
+    body: <p>원본 소리를 듣고 따라 외치면 얼마나 비슷한지 점수를 매겨줘요. 가볍게 노는 곳이에요.</p>,
+  },
   {
     target: "challenges-tabs",
     title: "종류 고르기",
@@ -363,7 +413,7 @@ const SETS = {
 
 export type TourId = keyof typeof SETS;
 
-/** `auto={false}` 면 ? 를 눌렀을 때만 뜬다 — 공유 링크로 온 사람처럼 할 일이 정해진 경우. */
-export function ScreenTour({ id, auto = true }: { id: TourId; auto?: boolean }) {
-  return <Tour id={id} steps={SETS[id]} auto={auto} />;
+/** 화면의 "사용법 보기"(TourHelp)를 누르면 뜬다. */
+export function ScreenTour({ id }: { id: TourId }) {
+  return <Tour id={id} steps={SETS[id]} />;
 }

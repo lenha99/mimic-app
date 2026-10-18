@@ -201,7 +201,7 @@ export default function PracticeHome({
   return (
     <main className="shell">
       <TourHelp id="practice" corner />
-      <header className={styles.intro}>
+      <header className={styles.intro} data-tour="practice-intro">
         <p className={styles.eyebrow}>MIMIC 연습실</p>
         <h1 className={styles.h1}>읽고, 듣고, 다시 읽기</h1>
         <p className={styles.lede}>
