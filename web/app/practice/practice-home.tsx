@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { PracticeStrip } from "@/components/weekly/practice-strip";
 import { listMine, type MyScript } from "@/lib/my-scripts";
 import { ago, expectedSeconds, TRACK_LABEL, type Script, type Track } from "@/lib/practice";
 import { summaries, type ItemSummary } from "@/lib/take-store";
@@ -205,6 +206,8 @@ export default function PracticeHome({
           바로 짚어주고, 대본대로 읽었는지도 확인해줘요. 녹음은 이 폰에만 남아요.
         </p>
       </header>
+
+      <PracticeStrip />
 
       {last ? (
         <Link href={`/practice/${last.itemId}`} className={styles.resume}>

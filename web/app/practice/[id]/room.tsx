@@ -21,6 +21,7 @@ import { deleteTake, listTakes, newTakeId, saveTake, updateTake, type Take } fro
 import { track } from "@/lib/track";
 import { analyze, analyzeBlob, decodeMono, type Analysis } from "@/lib/voice-analysis";
 import { AskFeedback } from "./ask-feedback";
+import { WeeklyBanner, WeeklyEnter } from "./weekly-enter";
 import styles from "./room.module.css";
 
 /**
@@ -519,6 +520,8 @@ export default function Room({ item }: { item: RoomItem }) {
         <h1 className={styles.title}>{head.title}</h1>
       </header>
 
+      {item.kind === "script" && <WeeklyBanner scriptId={itemId} />}
+
       {item.kind === "script" ? (
         <section className={styles.direction}>
           <p className={styles.label}>디렉션</p>
@@ -658,6 +661,7 @@ export default function Room({ item }: { item: RoomItem }) {
         )}
         {phase !== "analyzing" && open && (
           <>
+            {item.kind === "script" && <WeeklyEnter key={`w-${open.id}`} take={open} scriptId={itemId} />}
             <AskFeedback
               key={open.id}
               take={open}

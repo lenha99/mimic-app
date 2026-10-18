@@ -305,3 +305,39 @@
   font-style: normal;
   color: var(--volt);
 }
+
+/* 보이스 챌린지 트로피 진열장 */
+.trophies {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+
+.trophy {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(232, 255, 58, 0.3);
+  background: linear-gradient(90deg, rgba(232, 255, 58, 0.1), transparent 70%);
+}
+
+.trophyMedal {
+  font-size: 24px;
+}
+
+.trophy span:last-child {
+  display: grid;
+}
+
+.trophy b {
+  font-size: 14px;
+}
+
+.trophy small {
+  font-size: 12px;
+  color: var(--ash);
+}

@@ -7,6 +7,8 @@ import styles from "./bottom-nav.module.css";
 /**
  * 하단 탭 — 홈 · 챌린지 · 연습실 · 나.
  *
+ * "챌린지"는 주간 보이스 챌린지(/weekly)다. 밈 따라하기(/challenges)는 그 안에서 들어간다.
+ *
  * 홈 상단에 필이 다섯 개 붙어 있던 시절엔 어디로 가야 할지 고르는 게 일이었다.
  * 세션이 넷뿐이니 엄지 자리에 고정해 둔다.
  *
@@ -15,13 +17,18 @@ import styles from "./bottom-nav.module.css";
  */
 const TABS = [
   { href: "/", label: "홈", icon: HomeIcon, match: (p: string) => p === "/" },
-  { href: "/challenges", label: "챌린지", icon: MicIcon, match: (p: string) => p.startsWith("/challenges") || p.startsWith("/rank") },
+  {
+    href: "/weekly",
+    label: "챌린지",
+    icon: MicIcon,
+    match: (p: string) => p.startsWith("/weekly") || p.startsWith("/challenges") || p.startsWith("/rank"),
+  },
   { href: "/practice", label: "연습실", icon: ScriptIcon, match: (p: string) => p === "/practice" || p === "/practice/board" },
   { href: "/me", label: "나", icon: MeIcon, match: (p: string) => p.startsWith("/me") || p.startsWith("/profile") },
 ];
 
 /** 탭이 보이는 화면 — 목록·허브 화면만. */
-const SHOW = [/^\/$/, /^\/challenges$/, /^\/practice$/, /^\/practice\/board$/, /^\/me$/, /^\/profile$/, /^\/rank$/];
+const SHOW = [/^\/$/, /^\/weekly$/, /^\/weekly\/hall$/, /^\/challenges$/, /^\/practice$/, /^\/practice\/board$/, /^\/me$/, /^\/profile$/, /^\/rank$/];
 
 export function BottomNav() {
   const path = usePathname() ?? "/";

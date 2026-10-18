@@ -1,0 +1,407 @@
+/* 연습실 → 주간 챌린지 출전. 피드백 받기(cyan)와 구분되게 무대 조명(volt)을 쓴다. */
+
+.open,
+.openAlt {
+  width: 100%;
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 18px;
+  color: var(--white);
+  text-align: left;
+  cursor: pointer;
+}
+
+.open {
+  border: 1px solid rgba(232, 255, 58, 0.55);
+  background:
+    radial-gradient(120% 120% at 0% 0%, rgba(232, 255, 58, 0.22), transparent 60%),
+    var(--panel);
+  box-shadow: 0 0 24px rgba(232, 255, 58, 0.12);
+}
+
+.openAlt {
+  border: 1px solid var(--rule);
+  background: var(--panel);
+}
+
+.open > span:nth-child(2),
+.openAlt > span:nth-child(2) {
+  flex: 1;
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.open b,
+.openAlt b {
+  font-size: 15.5px;
+  font-weight: 900;
+}
+
+.open small,
+.openAlt small {
+  font-size: 12px;
+  color: var(--ash);
+  word-break: keep-all;
+}
+
+.open i,
+.openAlt i {
+  font-style: normal;
+  color: var(--volt);
+  font-weight: 900;
+}
+
+.openIcon {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--volt);
+  font-size: 20px;
+}
+
+.openAlt .openIcon {
+  background: var(--panel-hi);
+}
+
+.panel {
+  margin-top: 14px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(232, 255, 58, 0.45);
+  background: var(--panel);
+}
+
+.title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.facts {
+  margin: 10px 0 14px;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--ash);
+  word-break: keep-all;
+}
+
+.warn {
+  color: #ff8fb3;
+  font-weight: 700;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 8px;
+}
+
+.cancel,
+.go {
+  min-height: 52px;
+  border-radius: 26px;
+  font-size: 15.5px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.cancel {
+  border: 1px solid var(--rule);
+  background: none;
+  color: var(--ash);
+}
+
+.go {
+  border: 0;
+  background: var(--volt);
+  color: var(--stage);
+}
+
+.go:disabled,
+.cancel:disabled {
+  opacity: 0.6;
+}
+
+.login {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.error {
+  margin: 10px 0 0;
+  color: #ff8fb3;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.soon {
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(232, 255, 58, 0.06);
+  font-size: 13.5px;
+  color: var(--ash);
+  word-break: keep-all;
+}
+
+.soon b {
+  color: var(--volt);
+}
+
+/* 출전 중 */
+.entered {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 45, 120, 0.45);
+  background: linear-gradient(120deg, rgba(255, 45, 120, 0.12), transparent 70%), var(--panel);
+}
+
+.enteredBadge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--volt);
+  color: var(--stage);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.entered p {
+  margin: 8px 0 10px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.enteredActions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+}
+
+.ask,
+.rankLink {
+  min-height: 44px;
+  padding: 0 16px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.ask {
+  border: 0;
+  background: var(--pink);
+  color: var(--white);
+}
+
+.rankLink {
+  border: 1px solid var(--rule);
+  color: var(--white);
+}
+
+/* 연습실 맨 위 띠 */
+.banner {
+  margin: 0 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(232, 255, 58, 0.35);
+  background: rgba(232, 255, 58, 0.07);
+  color: var(--white);
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.bannerChip {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--volt);
+  color: var(--stage);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.bannerText {
+  flex: 1;
+  min-width: 0;
+  word-break: keep-all;
+}
+
+.bannerText b {
+  color: var(--volt);
+}
+
+.banner i {
+  flex: none;
+  font-style: normal;
+  font-weight: 800;
+  color: var(--volt);
+}
+
+/* 출전 완료 축하 */
+.celebrate {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(5, 5, 6, 0.82);
+  backdrop-filter: blur(8px);
+  animation: fadeIn 0.25s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+}
+
+.card {
+  position: relative;
+  width: min(100%, 380px);
+  display: grid;
+  gap: 10px;
+  padding: 26px 22px 18px;
+  border-radius: 28px;
+  border: 1px solid rgba(232, 255, 58, 0.4);
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgba(232, 255, 58, 0.2), transparent 70%),
+    var(--panel);
+  text-align: center;
+  animation: rise 0.45s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+@keyframes rise {
+  from {
+    transform: translateY(30px) scale(0.94);
+    opacity: 0;
+  }
+}
+
+.cardKicker {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  color: var(--volt);
+}
+
+.cardRank {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+}
+
+.cardRank b {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 96px;
+  line-height: 1;
+  background: linear-gradient(180deg, var(--volt), #b8d400);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.cardRank span {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--ash);
+}
+
+.cardLine {
+  margin: 0 0 6px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  word-break: keep-all;
+}
+
+.cardShare {
+  min-height: 54px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--pink);
+  color: var(--white);
+  font-size: 16px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.cardRankLink {
+  min-height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--rule);
+  color: var(--white);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.cardClose {
+  border: 0;
+  background: none;
+  color: var(--ash);
+  font-size: 13px;
+  padding: 6px;
+  cursor: pointer;
+}
+
+.confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.confetti i {
+  position: absolute;
+  top: -20px;
+  left: calc(var(--i) * 5.5% + 2%);
+  width: 8px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--volt);
+  opacity: 0;
+  animation: fall 2.2s calc(var(--i) * 0.07s) ease-in forwards;
+}
+
+.confetti i:nth-child(3n) {
+  background: var(--pink);
+}
+
+.confetti i:nth-child(3n + 1) {
+  background: var(--cyan);
+}
+
+@keyframes fall {
+  0% {
+    opacity: 1;
+    transform: translateY(0) rotate(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(105vh) rotate(540deg);
+  }
+}
