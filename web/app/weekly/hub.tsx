@@ -104,16 +104,10 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
   const unlock = (id: string) => {
     me.hear(id);
     void fetch(`/api/weekly/entries/${id}/play`, { method: "POST" }).catch(() => {});
-    if (id !== me.mineId && !me.liked.has(id)) showToast("다 들었어요 — 이제 ❤ 를 누를 수 있어요");
   };
 
   const like = async (id: string) => {
     if (id === me.mineId) return;
-    if (!me.heard.has(id)) {
-      if (playing !== id) play(id);
-      showToast("끝까지 들으면 ❤ 를 누를 수 있어요");
-      return;
-    }
     buzz();
     const before = entries.find((e) => e.id === id)?.likes ?? 0;
     const on = !me.liked.has(id);
@@ -253,14 +247,14 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
           <div className={styles.empty}>
             <p className={styles.emptyBig}>1등 자리가 비어 있어요</p>
             <p>
-              지금 출전하면 <b>첫 번째 목소리</b>예요. 끝까지 들은 사람만 ❤ 를 누를 수 있어서, 먼저 올리면 그만큼 많이
+              지금 출전하면 <b>첫 번째 목소리</b>예요. 먼저 올리면 그만큼 많이
               들려요.
             </p>
           </div>
         ) : (
           <>
             <Tip id="tip_like">
-              ▶ 로 끝까지 들으면 ❤ 가 열려요. 마음에 든 목소리에 눌러 주세요 — 순위는 이 ❤ 로 정해져요.
+              ▶ 로 들어 보고 마음에 든 목소리에 ❤ 를 눌러 주세요 — 순위는 이 ❤ 로 정해져요.
             </Tip>
             <ol className={styles.rows}>
               {sorted.map((e, i) => (
@@ -274,7 +268,6 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
                   progress={playing === e.id ? progress : null}
                   level={playing === e.id ? level : 0}
                   liked={me.liked.has(e.id)}
-                  heard={me.heard.has(e.id)}
                   onPlay={() => play(e.id)}
                   onLike={() => void like(e.id)}
                 />
@@ -291,7 +284,7 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
         <ul>
           <li>매주 월요일 0시에 새 대본이 열리고 일요일 밤 12시에 마감돼요.</li>
           <li>한 사람(한 기기) 한 작품. 다시 녹음해서 교체할 수 있지만 교체하면 ❤ 가 0 으로 돌아가요.</li>
-          <li>❤ 는 끝까지 들어야 누를 수 있고, 한 사람이 한 출전작에 한 번이에요. 내 작품엔 못 눌러요.</li>
+          <li>❤ 는 한 사람이 한 출전작에 한 번이에요. 내 작품엔 못 눌러요.</li>
           <li>마감 때 ❤ 순으로 1~3위가 시상대에 올라 명예의 전당과 프로필에 트로피가 남아요.</li>
           <li>로그인 없이 출전해도 돼요. 트로피를 계정에 남기려면 마감 전에 로그인하세요.</li>
         </ul>
@@ -463,7 +456,6 @@ function Row({
   progress,
   level,
   liked,
-  heard,
   onPlay,
   onLike,
 }: {
@@ -475,7 +467,6 @@ function Row({
   progress: number | null;
   level: number;
   liked: boolean;
-  heard: boolean;
   onPlay: () => void;
   onLike: () => void;
 }) {
@@ -523,7 +514,7 @@ function Row({
         <LikeButton
           likes={e.likes}
           liked={liked}
-          locked={!heard && !isMine}
+          locked={false}
           progress={progress}
           mine={isMine}
           onPress={onLike}

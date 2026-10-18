@@ -87,15 +87,9 @@ export default function Stage({
     if (heard) return;
     me.hear(entry.id);
     void fetch(`/api/weekly/entries/${entry.id}/play`, { method: "POST" }).catch(() => {});
-    if (!mine && live && !liked) showToast("다 들었어요 — 이제 ❤ 를 누를 수 있어요");
   };
 
   const like = async () => {
-    if (!heard) {
-      if (!playing) play();
-      showToast("끝까지 들으면 ❤ 를 누를 수 있어요");
-      return;
-    }
     buzz();
     const before = likes;
     setLikes(before + (liked ? -1 : 1));
@@ -203,7 +197,7 @@ export default function Stage({
           <LikeButton
             likes={likes}
             liked={liked}
-            locked={!heard && !mine}
+            locked={false}
             progress={playing || progress > 0 ? progress : null}
             mine={mine}
             frozen={!live}
@@ -211,14 +205,13 @@ export default function Stage({
             onPress={() => void like()}
           />
         </div>
-        {!mine && live && !heard && <p className={styles.hint}>끝까지 들으면 ❤ 가 열려요</p>}
       </section>
 
       {mine ? (
         <section className={styles.minePanel}>
           <p className={styles.mineTitle}>내 출전작이에요</p>
           <p className={styles.mineSub}>
-            ❤ 는 다른 사용자들이 끝까지 듣고 눌러줘요. 당신도 다른 출전작을 듣고 ❤ 를 눌러 보세요.
+            ❤ 는 다른 사용자들이 듣고 눌러줘요. 당신도 다른 출전작을 듣고 ❤ 를 눌러 보세요.
           </p>
           <PrivacyTag kind="public" />
           <button type="button" className={styles.share} onClick={() => void share()}>

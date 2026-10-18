@@ -200,7 +200,7 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
                 ? "첫 번째 목소리예요. 다른 사용자가 ❤ 하나만 눌러도 1위로 시작해요."
                 : done.rank <= 3
                   ? "벌써 시상대 위예요! 마감까지 자리를 지켜요."
-                  : "❤ 는 다른 사용자들이 끝까지 듣고 눌러줘요. 당신도 다른 출전작을 듣고 ❤ 를 눌러 보세요."}
+                  : "❤ 는 다른 사용자들이 듣고 눌러줘요. 당신도 다른 출전작을 듣고 ❤ 를 눌러 보세요."}
             </p>
             <PrivacyTag kind="public" />
             <button type="button" className={styles.cardShare} onClick={() => void share(done.id)}>

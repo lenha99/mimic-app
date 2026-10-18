@@ -121,7 +121,7 @@ export function IntroSheet({ scriptId, title }: { scriptId: string; title: strin
             </h2>
             <PrivacyTag kind="public" />
             <p className={styles.body}>
-              <b>❤ 는 다른 사용자들이 끝까지 듣고 눌러줘요.</b> 당신도 다른 출전작을 듣고 ❤ 를 눌러 보세요. 일요일 밤
+              <b>❤ 는 다른 사용자들이 듣고 눌러줘요.</b> 당신도 다른 출전작을 듣고 ❤ 를 눌러 보세요. 일요일 밤
               마감 때 ❤ 순 1~3위가 시상대에 남아요.
             </p>
             <p className={styles.small}>로그인 없이 바로 돼요 · 출전작은 언제든 내릴 수 있어요</p>
