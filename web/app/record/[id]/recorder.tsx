@@ -1167,12 +1167,14 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
 
           {publishPhase === "done" ? (
             <div className={styles.publish}>
-              <PrivacyTag kind={publishedPublic ? "public" : "private"} />
+              <PrivacyTag kind={publishedPublic ? "public" : linkState === "ready" ? "link" : "private"} />
               <p className={styles.publishDone}>
                 저장 완료 ✓{" "}
                 {publishedPublic
                   ? "피드에 올라갔어. 사람들이 원본이랑 나란히 듣고 반응할 거야."
-                  : loggedIn
+                  : linkState === "ready"
+                    ? "링크를 받은 사람만 들을 수 있어."
+                    : loggedIn
                     ? "나만 들을 수 있게 저장했어."
                     : "로그인하면 내 녹음으로 가져올 수 있어."}
               </p>
