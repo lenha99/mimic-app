@@ -9,6 +9,7 @@ import { clientId } from "@/lib/client-id";
 import type { Take } from "@/lib/take-store";
 import { track } from "@/lib/track";
 import { currentWeek, isLive, readMine, remaining, seasonLabel, writeMine, type Week } from "@/lib/weekly";
+import { PrivacyTag } from "@/components/privacy-tag";
 import styles from "./weekly-enter.module.css";
 
 /**
@@ -122,12 +123,13 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
         <div className={styles.entered}>
           <span className={styles.enteredBadge}>🏆 출전 중</span>
           <p>이 테이크로 {seasonLabel(week)} 챌린지에 나가 있어요.</p>
+          <PrivacyTag kind="public" />
           <div className={styles.enteredActions}>
             <button type="button" className={styles.ask} onClick={() => void share(local.entryId)}>
-              친구한테 ❤ 부탁하기
+              내 출전작 공유하기
             </button>
             <Link href="/weekly" className={styles.rankLink}>
-              순위 보기
+              다른 출전작 듣기
             </Link>
           </div>
         </div>
@@ -195,16 +197,17 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
             </p>
             <p className={styles.cardLine}>
               {done.total === 1
-                ? "첫 번째 목소리예요. 친구가 ❤ 하나만 눌러도 1위로 시작해요."
+                ? "첫 번째 목소리예요. 다른 사용자가 ❤ 하나만 눌러도 1위로 시작해요."
                 : done.rank <= 3
                   ? "벌써 시상대 위예요! 마감까지 자리를 지켜요."
-                  : "❤ 는 친구들이 끝까지 들어야 눌러져요. 링크를 돌려서 시상대로 올라가요."}
+                  : "❤ 는 다른 사용자들이 듣고 눌러줘요. 당신도 다른 출전작을 듣고 ❤ 를 눌러 보세요."}
             </p>
+            <PrivacyTag kind="public" />
             <button type="button" className={styles.cardShare} onClick={() => void share(done.id)}>
-              친구한테 ❤ 부탁하기
+              내 출전작 공유하기
             </button>
             <Link href="/weekly" className={styles.cardRankLink}>
-              순위 보러 가기 →
+              다른 출전작 듣고 ❤ 누르러 가기 →
             </Link>
             <button type="button" className={styles.cardClose} onClick={() => setDone(null)}>
               연습 계속하기

@@ -1,6 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { ExamplePlayer } from "@/components/example-player";
+import { PrivacyTag } from "@/components/privacy-tag";
+import { LINE_EXAMPLES } from "@/lib/examples";
 import { QuickFeedback } from "@/components/quick-feedback";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocalAvatar } from "@/components/use-local-avatar";
@@ -871,6 +874,14 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
           {extraLine(meme) && (
             <p className={styles.line}>“{extraLine(meme)}”</p>
           )}
+          {/* 처음 온 사람용 — AI 가 따라한 걸 먼저 들어보고, 그 점수를 첫 목표로. */}
+          <div className={styles.example}>
+            <ExamplePlayer
+              example={LINE_EXAMPLES[meme.id]}
+              title="AI가 따라해 봤어요"
+              note="감정 없이 읽으면 이 정도예요. AI 점수부터 넘어 봐요"
+            />
+          </div>
         </section>
       )}
 
@@ -1067,6 +1078,14 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
               {result.grade}
             </span>
           </div>
+          {typeof LINE_EXAMPLES[meme.id]?.score === "number" && (
+            <p className={styles.vsAi}>
+              🤖 AI {LINE_EXAMPLES[meme.id].score}점 ·{" "}
+              {result.score > LINE_EXAMPLES[meme.id].score!
+                ? `AI보다 ${result.score - LINE_EXAMPLES[meme.id].score!}점 높아요!`
+                : "AI한테 졌어요. 한 번 더!"}
+            </p>
+          )}
 
           <p className={styles.verdict}>
             {verdict(result.score, result.breakdown, pitchScored(result))}
@@ -1148,11 +1167,14 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
 
           {publishPhase === "done" ? (
             <div className={styles.publish}>
+              <PrivacyTag kind={publishedPublic ? "public" : linkState === "ready" ? "link" : "private"} />
               <p className={styles.publishDone}>
                 저장 완료 ✓{" "}
                 {publishedPublic
                   ? "피드에 올라갔어. 사람들이 원본이랑 나란히 듣고 반응할 거야."
-                  : loggedIn
+                  : linkState === "ready"
+                    ? "링크를 받은 사람만 들을 수 있어."
+                    : loggedIn
                     ? "나만 들을 수 있게 저장했어."
                     : "로그인하면 내 녹음으로 가져올 수 있어."}
               </p>
@@ -1175,6 +1197,7 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
             </div>
           ) : (
             <div className={styles.publish}>
+              <PrivacyTag kind="unsaved" />
               {loggedIn ? (
                 <label className={styles.publishToggle}>
                   <input

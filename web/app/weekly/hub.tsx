@@ -3,21 +3,17 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePlaybackLevel } from "@/components/use-playback-level";
+import { ExamplePlayer } from "@/components/example-player";
+import { Tip } from "@/components/onboarding/tip";
 import { VoiceAvatar } from "@/components/voice-avatar";
 import { Countdown } from "@/components/weekly/countdown";
 import { LikeButton } from "@/components/weekly/like-button";
 import { useToast } from "@/components/weekly/toast";
 import { buzz, shareLink, useWeeklyMe } from "@/components/weekly/use-weekly";
 import { normalizeAvatar } from "@/lib/avatar";
+import { SCRIPT_EXAMPLES } from "@/lib/examples";
 import { track } from "@/lib/track";
-import {
-  audioSrc,
-  LISTEN_RATIO,
-  MIN_PODIUM,
-  type Award,
-  type EntryCard,
-  type Week,
-} from "@/lib/weekly";
+import { audioSrc, LISTEN_RATIO, MIN_PODIUM, type Award, type EntryCard, type Week } from "@/lib/weekly";
 import styles from "./hub.module.css";
 
 type Props = {
@@ -25,7 +21,12 @@ type Props = {
   label: string;
   entries: EntryCard[];
   totalLikes: number;
-  script: { text: string; direction: string; seconds: number; category: string } | null;
+  script: {
+    text: string;
+    direction: string;
+    seconds: number;
+    category: string;
+  } | null;
   last: { week: Week; awards: Award[] } | null;
 };
 
@@ -103,16 +104,10 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
   const unlock = (id: string) => {
     me.hear(id);
     void fetch(`/api/weekly/entries/${id}/play`, { method: "POST" }).catch(() => {});
-    if (id !== me.mineId && !me.liked.has(id)) showToast("다 들었어요 — 이제 ❤ 를 누를 수 있어요");
   };
 
   const like = async (id: string) => {
     if (id === me.mineId) return;
-    if (!me.heard.has(id)) {
-      if (playing !== id) play(id);
-      showToast("끝까지 들으면 ❤ 를 누를 수 있어요");
-      return;
-    }
     buzz();
     const before = entries.find((e) => e.id === id)?.likes ?? 0;
     const on = !me.liked.has(id);
@@ -205,7 +200,11 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
             <i aria-hidden="true">→</i>
           </Link>
         )}
-        {!mine && <p className={styles.heroNote}>로그인 없이 바로 · 마음에 든 테이크 하나만 올라가요</p>}
+        {!mine && (
+          <p className={styles.heroNote}>
+            로그인 없이 바로 · 연습 녹음은 🔒 내 폰에만, 고른 테이크 하나만 🌐 모두에게 공개돼요
+          </p>
+        )}
       </section>
 
       {/* 내 자리 — 순위와 시상대까지의 거리, 그리고 ❤ 를 모으는 길 */}
@@ -235,33 +234,46 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
           </div>
         </div>
 
+        {/* 처음 온 사람이 "어떤 걸 올리는 거지?"를 귀로 확인하는 자리. 순위·❤ 에는 섞지 않는다. */}
+        <div className={styles.example}>
+          <ExamplePlayer
+            example={SCRIPT_EXAMPLES[week.scriptId]}
+            title="이런 식으로 읽어서 올려요"
+            note="AI 가 읽은 예시라 순위에는 없어요. 사람 목소리는 이걸 쉽게 넘어요"
+          />
+        </div>
+
         {entries.length === 0 ? (
           <div className={styles.empty}>
             <p className={styles.emptyBig}>1등 자리가 비어 있어요</p>
             <p>
-              지금 출전하면 <b>첫 번째 목소리</b>예요. 끝까지 들은 사람만 ❤ 를 누를 수 있어서, 먼저 올리면 그만큼 많이
+              지금 출전하면 <b>첫 번째 목소리</b>예요. 먼저 올리면 그만큼 많이
               들려요.
             </p>
           </div>
         ) : (
-          <ol className={styles.rows}>
-            {sorted.map((e, i) => (
-              <Row
-                key={e.id}
-                e={e}
-                cutAfter={tab === "rank" && podiumReady && i === 2 && entries.length > 3}
-                now={now}
-                isMine={e.id === me.mineId}
-                playing={playing === e.id}
-                progress={playing === e.id ? progress : null}
-                level={playing === e.id ? level : 0}
-                liked={me.liked.has(e.id)}
-                heard={me.heard.has(e.id)}
-                onPlay={() => play(e.id)}
-                onLike={() => void like(e.id)}
-              />
-            ))}
-          </ol>
+          <>
+            <Tip id="tip_like">
+              ▶ 로 들어 보고 마음에 든 목소리에 ❤ 를 눌러 주세요 — 순위는 이 ❤ 로 정해져요.
+            </Tip>
+            <ol className={styles.rows}>
+              {sorted.map((e, i) => (
+                <Row
+                  key={e.id}
+                  e={e}
+                  cutAfter={tab === "rank" && podiumReady && i === 2 && entries.length > 3}
+                  now={now}
+                  isMine={e.id === me.mineId}
+                  playing={playing === e.id}
+                  progress={playing === e.id ? progress : null}
+                  level={playing === e.id ? level : 0}
+                  liked={me.liked.has(e.id)}
+                  onPlay={() => play(e.id)}
+                  onLike={() => void like(e.id)}
+                />
+              ))}
+            </ol>
+          </>
         )}
       </section>
 
@@ -272,7 +284,7 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
         <ul>
           <li>매주 월요일 0시에 새 대본이 열리고 일요일 밤 12시에 마감돼요.</li>
           <li>한 사람(한 기기) 한 작품. 다시 녹음해서 교체할 수 있지만 교체하면 ❤ 가 0 으로 돌아가요.</li>
-          <li>❤ 는 끝까지 들어야 누를 수 있고, 한 사람이 한 출전작에 한 번이에요. 내 작품엔 못 눌러요.</li>
+          <li>❤ 는 한 사람이 한 출전작에 한 번이에요. 내 작품엔 못 눌러요.</li>
           <li>마감 때 ❤ 순으로 1~3위가 시상대에 올라 명예의 전당과 프로필에 트로피가 남아요.</li>
           <li>로그인 없이 출전해도 돼요. 트로피를 계정에 남기려면 마감 전에 로그인하세요.</li>
         </ul>
@@ -343,10 +355,12 @@ function MyStanding({ mine, entries, onShare }: { mine: EntryCard; entries: Entr
       </div>
       <div className={styles.mineBody}>
         <p className={styles.mineLine}>{line}</p>
-        <p className={styles.mineSub}>❤ {mine.likes} · {mine.plays}번 끝까지 들음</p>
+        <p className={styles.mineSub}>
+          ❤ {mine.likes} · {mine.plays}번 끝까지 들음
+        </p>
         <div className={styles.mineActions}>
           <button type="button" className={styles.mineShare} onClick={onShare}>
-            친구한테 ❤ 부탁하기
+            내 출전작 공유하기
           </button>
           <Link href={`/weekly/e/${mine.id}`} className={styles.mineView}>
             내 출전작
@@ -392,7 +406,11 @@ function Podium({
               </span>
             )}
             <span className={styles.stepAvatar}>
-              <VoiceAvatar avatar={normalizeAvatar(e.avatar)} level={playing === e.id ? level : 0} size={place === 1 ? 92 : 70} />
+              <VoiceAvatar
+                avatar={normalizeAvatar(e.avatar)}
+                level={playing === e.id ? level : 0}
+                size={place === 1 ? 92 : 70}
+              />
             </span>
             <span className={styles.stepName}>
               {e.name}
@@ -438,7 +456,6 @@ function Row({
   progress,
   level,
   liked,
-  heard,
   onPlay,
   onLike,
 }: {
@@ -450,7 +467,6 @@ function Row({
   progress: number | null;
   level: number;
   liked: boolean;
-  heard: boolean;
   onPlay: () => void;
   onLike: () => void;
 }) {
@@ -462,7 +478,12 @@ function Row({
         <span className={`${styles.rank} ${e.rank <= 3 ? styles[`rank${e.rank}`] : ""}`}>
           {String(e.rank).padStart(2, "0")}
         </span>
-        <button type="button" className={styles.rowMain} onClick={onPlay} aria-label={`${e.name} ${playing ? "멈추기" : "듣기"}`}>
+        <button
+          type="button"
+          className={styles.rowMain}
+          onClick={onPlay}
+          aria-label={`${e.name} ${playing ? "멈추기" : "듣기"}`}
+        >
           <span className={styles.rowAvatar}>
             <VoiceAvatar avatar={normalizeAvatar(e.avatar)} level={level} size={46} />
             <span className={styles.rowPlay} aria-hidden="true">
@@ -493,7 +514,7 @@ function Row({
         <LikeButton
           likes={e.likes}
           liked={liked}
-          locked={!heard && !isMine}
+          locked={false}
           progress={progress}
           mine={isMine}
           onPress={onLike}

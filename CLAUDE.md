@@ -44,6 +44,7 @@ tools/
   sync_catalog.py    # registry → catalog.json / memes.json / 웹 FALLBACK 생성
   picker.html        # 파형 보고 귀로 구간 고르는 UI
   trend_scan.py      # 새 밈 후보 발굴
+  make_examples.py   # AI 예시 음성(edge-tts) → web/public/examples + web/lib/examples.ts (생성물). 대본·명대사를 바꿨으면 다시 돌린다
 refs_kr/             # 원본 유래 클립 (gitignore — 레지스트리로 재생성한다)
 refs_animals/        # CC0 동물 소리 원본 (제자리 수정 금지)
 ```

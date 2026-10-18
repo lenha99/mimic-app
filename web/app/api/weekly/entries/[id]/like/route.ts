@@ -13,7 +13,7 @@ import { ipHash } from "@/lib/weekly-server";
  *   - 내 출전작에는 못 누른다
  *   - 같은 네트워크(IP)에서 한 출전작에 3번까지 — 시크릿 창 몰아주기를 끊는다
  *   - 마감된 주는 얼어붙는다
- * "끝까지 들어야 ❤" 는 화면이 건다. 서버는 들었는지 알 수 없다.
+ * 듣지 않고도 누를 수 있다(사람이 적을 땐 문턱이 ❤ 를 막는다). 재생 수는 /play 가 따로 센다.
  */
 const CLIENT = /^[a-z0-9]{8,40}$/;
 const PER_NETWORK = 3;
@@ -54,7 +54,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   const { service, user, voters, entry, week } = r;
 
   if (voters.includes(entry.owner) || (user && entry.user_id === user.id)) {
-    return Response.json({ error: "내 출전작에는 ❤ 를 못 눌러요. 친구한테 부탁해 봐요!" }, { status: 403 });
+    return Response.json({ error: "내 출전작에는 ❤ 를 못 눌러요. 다른 출전작에 눌러 보세요!" }, { status: 403 });
   }
 
   // 중복 확인 · 네트워크 상한 · 넣기를 DB 한 트랜잭션에서 (마이그레이션 21).
