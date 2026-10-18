@@ -1,0 +1,143 @@
+.page {
+  padding-top: 12px;
+}
+
+.nav {
+  padding: 6px 0 10px;
+}
+
+.nav a {
+  color: var(--ash);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.title {
+  margin: 6px 0 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 44px;
+  line-height: 1.1;
+  background: linear-gradient(90deg, var(--volt), #fff6a8 50%, var(--volt));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.sub {
+  margin: 4px 0 20px;
+  color: var(--ash);
+  font-size: 14px;
+}
+
+.seasons,
+.places {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.seasons {
+  display: grid;
+  gap: 14px;
+}
+
+.season {
+  padding: 14px;
+  border-radius: 20px;
+  border: 1px solid var(--rule);
+  background: var(--panel);
+}
+
+.seasonHead {
+  margin: 0 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 15.5px;
+  font-weight: 900;
+}
+
+.seasonHead small {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ash);
+}
+
+.chip {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--volt);
+  color: var(--stage);
+  font-family: var(--mono);
+  font-size: 11.5px;
+}
+
+.places {
+  display: grid;
+  gap: 6px;
+}
+
+.place {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 14px;
+  background: var(--stage);
+  color: var(--white);
+  text-decoration: none;
+}
+
+.first .place {
+  border: 1px solid rgba(232, 255, 58, 0.4);
+  background: linear-gradient(90deg, rgba(232, 255, 58, 0.12), transparent 70%), var(--stage);
+}
+
+.medal {
+  font-size: 22px;
+}
+
+.name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.likes {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--pink);
+}
+
+.empty {
+  padding: 30px 18px;
+  border-radius: 22px;
+  border: 1px dashed rgba(232, 255, 58, 0.35);
+  text-align: center;
+  color: var(--ash);
+  font-size: 14px;
+  word-break: keep-all;
+}
+
+.emptyBig {
+  margin: 0 0 8px;
+  font-family: var(--display);
+  font-size: 26px;
+  color: var(--white);
+}
+
+.go {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 12px 20px;
+  border-radius: 999px;
+  background: var(--volt);
+  color: var(--stage);
+  font-weight: 900;
+  text-decoration: none;
+}

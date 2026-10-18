@@ -3,9 +3,10 @@ import { ClaimPending } from "@/app/profile/claim-pending";
 import { HomeBeacon } from "@/components/home-beacon";
 import { InstallBanner } from "@/components/install-banner";
 import { ViewerBadge } from "@/components/viewer";
-import { YoutubeClip } from "@/components/youtube-clip";
-import { extraLine, getMemes, playCount, type Meme } from "@/lib/memes";
+import { HomeHero } from "@/components/weekly/home-hero";
+import { getMemes } from "@/lib/memes";
 import { SCRIPTS } from "@/lib/practice";
+import { getBoard, liveWeek } from "@/lib/weekly-server";
 import styles from "./page.module.css";
 
 /**
@@ -19,7 +20,8 @@ import styles from "./page.module.css";
 export const revalidate = 300;
 
 /**
- * 홈은 "뭐부터 하지"에만 답한다 — 오늘의 명대사 하나, 입구 둘.
+ * 홈은 "뭐부터 하지"에만 답한다 — 이번 주 보이스 챌린지 하나, 입구 둘.
+ * (예전 맨 위는 "오늘의 명대사"였다. 밈 따라하기는 이제 아래 입구로 들어간다.)
  *
  * 예전 홈엔 단계 안내, 피드 배너, 연습실 띠, 명대사 레일, 동물 소리 타일, 친구
  * 챌린지, 캐릭터·투표 홍보가 한 화면에 다 있었다. 다 보여주니 아무것도 안 보였다.
@@ -29,9 +31,12 @@ export const revalidate = 300;
  * 고르다 나간다.
  */
 export default async function Home() {
-  const { memes } = await getMemes();
+  const week = await liveWeek();
+  const [{ memes }, weekly] = await Promise.all([
+    getMemes(),
+    getBoard(week).catch(() => ({ week, entries: [], totalLikes: 0 })),
+  ]);
   const lines = memes.filter((m) => m.line);
-  const today = pickToday(lines.length ? lines : memes);
 
   return (
     <main className="shell">
@@ -45,49 +50,8 @@ export default async function Home() {
       {/* 로그인 전에 저장한 녹음을 계정으로 가져온다. 가져올 게 없으면 아무것도 안 그린다. */}
       <ClaimPending />
 
-      {today && (
-        <section className={styles.hero}>
-          <div className={styles.heroTop}>
-            <span className={styles.kicker}>
-              <span className={styles.live} aria-hidden="true" />
-              오늘의 명대사
-            </span>
-            {playCount(today) !== null && (
-              <span className={styles.plays}>
-                {playCount(today)!.toLocaleString("ko-KR")}명 도전
-              </span>
-            )}
-          </div>
-
-          <div className={styles.stage}>
-            {today.youtube ? (
-              <div className={styles.clip}>
-                <YoutubeClip
-                  id={today.youtube.id}
-                  start={today.youtube.start}
-                  end={today.youtube.end}
-                  title={today.title}
-                />
-              </div>
-            ) : (
-              <p className={styles.face} aria-hidden="true">
-                {today.emoji}
-              </p>
-            )}
-          </div>
-
-          <h1 className={styles.heroTitle}>{today.title}</h1>
-          <p className={styles.heroSource}>
-            {today.source}
-            {extraLine(today) && ` · “${extraLine(today)}”`}
-          </p>
-
-          <Link href={`/record/${today.id}`} className={styles.heroGo}>
-            듣고 바로 따라하기
-          </Link>
-          <p className={styles.heroNote}>로그인 없이 · 탭 한 번이면 시작</p>
-        </section>
-      )}
+      {/* 이번 주 보이스 챌린지 — 지금 이 앱의 첫 한 걸음이다. */}
+      <HomeHero week={weekly.week} top={weekly.entries.slice(0, 3)} count={weekly.entries.length} />
 
       <nav className={styles.doors} aria-label="둘러보기">
         <Link href="/challenges" className={`${styles.door} ${styles.doorChallenge}`}>
@@ -139,14 +103,4 @@ export default async function Home() {
       </footer>
     </main>
   );
-}
-
-/**
- * "오늘의 명대사"는 정말 날마다 바뀐다(한국 시간 자정 기준). 페이지가 5분마다
- * 다시 만들어지므로 자정이 지나면 늦어도 5분 안에 바뀐다.
- */
-function pickToday(memes: Meme[]): Meme | undefined {
-  if (memes.length === 0) return undefined;
-  const day = Math.floor((Date.now() + 9 * 3_600_000) / 86_400_000);
-  return memes[day % memes.length];
 }

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { readGuestClaims, removeGuestClaims } from "@/lib/guest-claims";
+import { dropTokens, guestTokens } from "@/lib/weekly";
 import styles from "./profile.module.css";
 
 /**
@@ -14,6 +15,9 @@ import styles from "./profile.module.css";
  *
  * 토큰은 1회용이고, 이미 귀속됐거나 남의 것이면 RPC가 거부한다 — 실패는 조용히
  * 넘기고 토큰만 버린다. 여기서 에러를 띄워봐야 사용자가 할 수 있는 게 없다.
+ *
+ * 주간 챌린지에 게스트로 출전한 작품도 여기서 가져온다(/api/weekly/claim) — 순위·❤·트로피가
+ * 그대로 계정으로 따라온다.
  */
 export function ClaimPending() {
   const router = useRouter();
@@ -21,12 +25,34 @@ export function ClaimPending() {
 
   useEffect(() => {
     const tokens = readGuestClaims();
-    if (tokens.length === 0) return;
+    const weekly = guestTokens();
+    if (tokens.length === 0 && weekly.length === 0) return;
 
     let cancelled = false;
     void (async () => {
       const supabase = createClient();
       let ok = 0;
+      if (weekly.length) {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (session) {
+          try {
+            const res = await fetch("/api/weekly/claim", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ tokens: weekly }),
+            });
+            const d = (await res.json().catch(() => ({}))) as { claimed?: number; done?: string[] };
+            if (res.ok) {
+              dropTokens(d.done ?? []);
+              ok += d.claimed ?? 0;
+            }
+          } catch {
+            // 다음 방문 때 다시 한다.
+          }
+        }
+      }
       const settled: string[] = [];
       for (const token of tokens) {
         const { error } = await supabase.rpc("claim_recording", { p_claim_token: token });

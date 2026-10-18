@@ -1,4 +1,6 @@
 import { createServiceClient } from "@/lib/supabase/service";
+import { previousWeek } from "@/lib/weekly";
+import { settle } from "@/lib/weekly-server";
 
 /**
  * 주인 없는 게스트 녹음 청소 — Vercel Cron 이 하루 한 번 부른다 (web/vercel.json).
@@ -19,6 +21,8 @@ export async function GET(req: Request) {
   const service = createServiceClient();
   // 연습 피드백 게시판 — 14일 지난 게시물은 녹음째 지운다 (피드백 행은 cascade).
   const practice = await purgePractice(service);
+  // 주간 챌린지 — 끝난 주 정산, 귀속 안 된 게스트 출전작은 마감 30일 뒤 삭제.
+  const weekly = await weeklyChores(service);
 
   const cutoff = new Date(Date.now() - KEEP_DAYS * 86_400_000).toISOString();
 
@@ -32,7 +36,7 @@ export async function GET(req: Request) {
     return Response.json({ error: error.message }, { status: 500 });
   }
   if (!rows || rows.length === 0) {
-    return Response.json({ purged: 0, practice });
+    return Response.json({ purged: 0, practice, weekly });
   }
 
   // 파일을 먼저 지운다. 행을 먼저 지우고 파일 삭제가 실패하면 경로를 잃어 다시 못 찾는다.
@@ -54,7 +58,7 @@ export async function GET(req: Request) {
     return Response.json({ error: rowError.message }, { status: 500 });
   }
 
-  return Response.json({ purged: rows.length, more: rows.length === BATCH, practice });
+  return Response.json({ purged: rows.length, more: rows.length === BATCH, practice, weekly });
 }
 
 async function purgePractice(service: ReturnType<typeof createServiceClient>): Promise<number | string> {
@@ -75,4 +79,39 @@ async function purgePractice(service: ReturnType<typeof createServiceClient>): P
       rows.map((r) => r.id),
     );
   return rows.length;
+}
+
+async function weeklyChores(service: ReturnType<typeof createServiceClient>): Promise<{ settled: boolean; purged: number | string }> {
+  let settled = false;
+  const prev = previousWeek();
+  if (prev) {
+    try {
+      await settle(prev, service);
+      settled = true;
+    } catch {}
+  }
+  const cutoff = new Date(Date.now() - KEEP_DAYS * 86_400_000).toISOString();
+  const { data: weeks } = await service.from("weekly_challenges").select("id").lt("ends_at", cutoff).limit(200);
+  if (!weeks?.length) return { settled, purged: 0 };
+  const { data: rows, error } = await service
+    .from("weekly_entries")
+    .select("id, audio_path")
+    .is("user_id", null)
+    .in(
+      "challenge_id",
+      weeks.map((w) => w.id),
+    )
+    .limit(BATCH);
+  if (error) return { settled, purged: error.message };
+  if (!rows?.length) return { settled, purged: 0 };
+  const { error: fileError } = await service.storage.from("recordings").remove(rows.map((r) => r.audio_path));
+  if (fileError) return { settled, purged: fileError.message };
+  await service
+    .from("weekly_entries")
+    .delete()
+    .in(
+      "id",
+      rows.map((r) => r.id),
+    );
+  return { settled, purged: rows.length };
 }

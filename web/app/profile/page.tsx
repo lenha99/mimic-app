@@ -15,6 +15,8 @@ import { myPosts } from "@/lib/board-server";
 import { isAdmin } from "@/lib/admin";
 import { createServiceClient } from "@/lib/supabase/service";
 import { AdminLinks } from "./admin-links";
+import { MyWeekly } from "./my-weekly";
+import { myAwards, myEntries } from "@/lib/weekly-server";
 import styles from "./profile.module.css";
 
 /**
@@ -47,7 +49,12 @@ export default async function ProfilePage() {
     .order("created_at", { ascending: false })
     .limit(30);
 
-  const [practicePosts, admin] = await Promise.all([myPosts(user.id).catch(() => []), adminCounts()]);
+  const [practicePosts, admin, awards, weeklyEntries] = await Promise.all([
+    myPosts(user.id).catch(() => []),
+    adminCounts(),
+    myAwards(user.id).catch(() => []),
+    myEntries(user.id).catch(() => []),
+  ]);
 
   // 내 녹음만 조회했으니(user_id 조건 + RLS) 서명해도 된다.
   const urls = await signAudio((recordings ?? []).map((r) => r.audio_path));
@@ -81,7 +88,7 @@ export default async function ProfilePage() {
 
       {profile ? (
         <div className={styles.stack}>
-          {admin && <AdminLinks pending={admin.pending} feedback={admin.feedback} />}
+          {admin && <AdminLinks pending={admin.pending} feedback={admin.feedback} reported={admin.reported} />}
           <div className={styles.card}>
             <p className={styles.nickname}>{profile.nickname}</p>
             <NicknameEditor userId={user.id} initialNickname={profile.nickname} />
@@ -93,6 +100,9 @@ export default async function ProfilePage() {
               <em>버럭이·할머니·MZ… 꾸미러 가기 →</em>
             </span>
           </Link>
+          {/* 동적 페이지라 요청 시각이 곧 지금이다. */}
+          {/* eslint-disable-next-line react-hooks/purity */}
+          <MyWeekly awards={awards} entries={weeklyEntries} now={Date.now()} />
           <MyPracticePosts items={practicePosts} />
           <MyChallenges items={(challenges ?? []) as MyChallenge[]} />
           <MyRecordings items={items} />
@@ -109,13 +119,14 @@ export default async function ProfilePage() {
 }
 
 /** 운영자면 메뉴에 띄울 숫자, 아니면 null. */
-async function adminCounts(): Promise<{ pending: number; feedback: number } | null> {
+async function adminCounts(): Promise<{ pending: number; feedback: number; reported: number } | null> {
   if (!(await isAdmin())) return null;
   const service = createServiceClient();
   const since = new Date(Date.now() - 7 * 86_400_000).toISOString();
-  const [{ count: pending }, { count: feedback }] = await Promise.all([
+  const [{ count: pending }, { count: feedback }, { count: reported }] = await Promise.all([
     service.from("challenges").select("id", { count: "exact", head: true }).eq("status", "pending"),
     service.from("app_feedback").select("id", { count: "exact", head: true }).gte("created_at", since),
+    service.from("weekly_entries").select("id", { count: "exact", head: true }).gt("reports", 0),
   ]);
-  return { pending: pending ?? 0, feedback: feedback ?? 0 };
+  return { pending: pending ?? 0, feedback: feedback ?? 0, reported: reported ?? 0 };
 }

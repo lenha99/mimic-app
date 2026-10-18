@@ -289,6 +289,107 @@ export interface Database {
         Update: never;
         Relationships: [];
       };
+      /** 주간 보이스 챌린지 (마이그레이션 20). 읽기·쓰기는 서버(service_role)만. */
+      weekly_challenges: {
+        Row: {
+          id: string;
+          season: number;
+          script_id: string;
+          field: string;
+          title: string;
+          starts_at: string;
+          ends_at: string;
+          settled_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id: string;
+          season: number;
+          script_id: string;
+          field: string;
+          title: string;
+          starts_at: string;
+          ends_at: string;
+          settled_at?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["weekly_challenges"]["Insert"]>;
+        Relationships: [];
+      };
+      weekly_entries: {
+        Row: {
+          id: string;
+          challenge_id: string;
+          user_id: string | null;
+          owner: string;
+          claim_token: string | null;
+          guest_name: string | null;
+          avatar: AvatarJson;
+          audio_path: string;
+          duration_s: number;
+          bars: number[];
+          like_count: number;
+          play_count: number;
+          hidden: boolean;
+          reports: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          challenge_id: string;
+          user_id?: string | null;
+          owner: string;
+          claim_token?: string | null;
+          guest_name?: string | null;
+          avatar?: AvatarJson;
+          audio_path: string;
+          duration_s: number;
+          bars?: number[];
+          like_count?: number;
+          play_count?: number;
+          hidden?: boolean;
+          reports?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["weekly_entries"]["Insert"]>;
+        Relationships: [];
+      };
+      weekly_likes: {
+        Row: { entry_id: string; voter: string; user_id: string | null; ip_hash: string; created_at: string };
+        Insert: { entry_id: string; voter: string; user_id?: string | null; ip_hash: string; created_at?: string };
+        Update: never;
+        Relationships: [];
+      };
+      weekly_reports: {
+        Row: { entry_id: string; user_id: string; created_at: string };
+        Insert: { entry_id: string; user_id: string; created_at?: string };
+        Update: never;
+        Relationships: [];
+      };
+      weekly_awards: {
+        Row: {
+          challenge_id: string;
+          place: number;
+          entry_id: string | null;
+          user_id: string | null;
+          name: string;
+          avatar: AvatarJson;
+          likes: number;
+        };
+        Insert: {
+          challenge_id: string;
+          place: number;
+          entry_id?: string | null;
+          user_id?: string | null;
+          name: string;
+          avatar?: AvatarJson;
+          likes: number;
+        };
+        Update: { user_id?: string | null };
+        Relationships: [];
+      };
     };
     Views: {
       rankings: {
@@ -351,6 +452,10 @@ export interface Database {
           grade: string | null;
           is_public: boolean;
         }[];
+      };
+      weekly_bump_play: {
+        Args: { p_entry: string };
+        Returns: undefined;
       };
     };
     Enums: Record<string, never>;

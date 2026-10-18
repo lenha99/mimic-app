@@ -16,10 +16,13 @@ Flutter 클라이언트와 공유 영상 생성기가 있었으나 둘 다 걷�
 ## 파일 구조
 ```
 web/                 # Next.js 웹앱 (유일한 클라이언트)
-  app/page.tsx       # 홈 — 오늘의 명대사 하나 + 입구 둘(챌린지 · 연습실)
+  app/page.tsx       # 홈 — 이번 주 보이스 챌린지 + 입구 둘(명대사 챌린지 · 연습실)
+  app/weekly/        # 주간 보이스 챌린지 — 매주 대본 하나, 출전작에 ❤, 시상대·명예의 전당
+  lib/weekly.ts      # 주차 계산·대본 순서(ROTATION)·기기 기록. DB 없이 "이번 주 대본"을 안다
+  lib/weekly-server.ts  # 순위·정산(1~3위 박제)·수상 조회. 표에 RLS 정책이 없어 조건은 여기서 건다
   app/challenges/    # 챌린지 목록 — 명대사 · 친구가 만든 · 몸풀기(동물 소리)
   app/me/            # "나" 탭 — 로그인했으면 /profile, 아니면 손님 허브
-  components/bottom-nav.tsx  # 하단 탭(홈·챌린지·연습실·나). 몰입 화면에선 숨긴다
+  components/bottom-nav.tsx  # 하단 탭(홈·챌린지·연습실·나). "챌린지"=/weekly. 몰입 화면에선 숨긴다
   app/record/[id]/   # 듣기 → 카운트다운 → 녹음 → 채점 → 결과
   app/practice/      # 연습실 — 대본(기준 음성 없음)·명대사 반복 연습, 기록은 기기 IndexedDB
   app/practice/new/  # 내 대본 넣기·고치기 — 대본은 기기 localStorage 에만 (lib/my-scripts.ts)
@@ -53,6 +56,8 @@ refs_animals/        # CC0 동물 소리 원본 (제자리 수정 금지)
   풀어 쓴다(속도를 음절로 잰다). 권리 상태(`rights`)가 `clip` 인 콘텐츠는 유료 기능에 쓰지 않는다
 - 정규화 규칙을 바꿨으면 `python tools/ingest.py renorm` 으로 전체 재생성
 - 프로덕션이 레지스트리와 맞는지: `python tools/ingest.py doctor`
+- 주간 챌린지 대본 순서: `web/lib/weekly.ts` 의 `ROTATION`. 이미 지난 주를 바꾸면 그 주 기록과
+  어긋나니 뒤쪽에만 덧붙인다. 마이그레이션은 `npx supabase db push` (자동 적용 안 됨)
 
 ## 배포
 서버는 `modal_app.py` 가 바뀐 채 main 에 머지되면 GitHub Actions(`deploy-modal.yml`)가
