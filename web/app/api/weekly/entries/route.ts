@@ -142,7 +142,8 @@ export async function POST(req: Request) {
         duration_s: duration,
         bars,
         ...(avatar && !user ? { avatar } : {}),
-        ...(name && !user ? { guest_name: name } : {}),
+        // 손님이 닉네임을 비우고 교체하면 다시 익명이다 — 예전 이름을 남겨 두지 않는다.
+        ...(user ? {} : { guest_name: name ?? guestName(client) }),
         like_count: 0,
         play_count: 0,
         updated_at: now,

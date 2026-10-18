@@ -87,8 +87,9 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
       body.append("file", take.blob, `take.${ext}`);
       body.append("week", week.id);
       body.append("client", clientId());
-      if (!me.loggedIn && cleanNickname(name)) {
-        body.append("name", cleanNickname(name)!);
+      if (!me.loggedIn) {
+        const nick = cleanNickname(name);
+        if (nick) body.append("name", nick);
         writeNickname(name);
       }
       if (local?.token) body.append("token", local.token);
