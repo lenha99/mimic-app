@@ -1,9 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ExamplePlayer } from "@/components/example-player";
 import { PrivacyTag } from "@/components/privacy-tag";
-import { LINE_EXAMPLES } from "@/lib/examples";
 import { QuickFeedback } from "@/components/quick-feedback";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocalAvatar } from "@/components/use-local-avatar";
@@ -874,14 +872,6 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
           {extraLine(meme) && (
             <p className={styles.line}>“{extraLine(meme)}”</p>
           )}
-          {/* 처음 온 사람용 — AI 가 따라한 걸 먼저 들어보고, 그 점수를 첫 목표로. */}
-          <div className={styles.example}>
-            <ExamplePlayer
-              example={LINE_EXAMPLES[meme.id]}
-              title="AI가 따라해 봤어요"
-              note="감정 없이 읽으면 이 정도예요. AI 점수부터 넘어 봐요"
-            />
-          </div>
         </section>
       )}
 
@@ -1033,11 +1023,11 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
         <div className={styles.dock}>
           {isLong ? (
             <>
-              <button className={styles.go} onClick={listenOnly}>
+              <button className={styles.go} onClick={listenOnly} data-tour="record-listen">
                 원본 듣기
               </button>
               <div className={styles.secondary}>
-                <button className={styles.ghost} onClick={recordNow}>
+                <button className={styles.ghost} onClick={recordNow} data-tour="record-go">
                   바로 따라하기
                 </button>
               </div>
@@ -1049,11 +1039,11 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
             </>
           ) : (
             <>
-              <button className={styles.go} onClick={listenAndRecord}>
+              <button className={styles.go} onClick={listenAndRecord} data-tour="record-go">
                 듣고 바로 따라하기
               </button>
               <div className={styles.secondary}>
-                <button className={styles.ghost} onClick={listenOnly}>
+                <button className={styles.ghost} onClick={listenOnly} data-tour="record-listen">
                   원본만 듣기
                 </button>
               </div>
@@ -1078,14 +1068,6 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
               {result.grade}
             </span>
           </div>
-          {typeof LINE_EXAMPLES[meme.id]?.score === "number" && (
-            <p className={styles.vsAi}>
-              🤖 AI {LINE_EXAMPLES[meme.id].score}점 ·{" "}
-              {result.score > LINE_EXAMPLES[meme.id].score!
-                ? `AI보다 ${result.score - LINE_EXAMPLES[meme.id].score!}점 높아요!`
-                : "AI한테 졌어요. 한 번 더!"}
-            </p>
-          )}
 
           <p className={styles.verdict}>
             {verdict(result.score, result.breakdown, pitchScored(result))}

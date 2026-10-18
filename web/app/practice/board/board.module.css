@@ -467,3 +467,81 @@
   text-align: center;
   text-decoration: none;
 }
+
+/* 예시 — 아직 올라온 게 없을 때 ------------------------------------------ */
+
+.demo {
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px dashed rgba(0, 229, 255, 0.4);
+  background: rgba(0, 229, 255, 0.04);
+}
+
+.demoHead {
+  margin: 0 0 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #c9c9cf;
+  word-break: keep-all;
+}
+
+.demoBadge {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: var(--cyan);
+  color: var(--stage);
+  font-size: 11.5px;
+  font-weight: 900;
+}
+
+.demoCard {
+  pointer-events: none;
+}
+
+.steps {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.steps li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #d8d8dd;
+  word-break: keep-all;
+}
+
+.steps b {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--volt);
+  color: var(--stage);
+  font-size: 12px;
+}
+
+.steps em {
+  font-style: normal;
+  font-weight: 800;
+  color: var(--white);
+}
+
+.demoNote {
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  color: var(--ash);
+  word-break: keep-all;
+}

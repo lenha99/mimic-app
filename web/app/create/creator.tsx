@@ -243,7 +243,7 @@ export function Creator() {
           <>
             <p className={styles.cue}>따라하고 싶어지는 소리 하나</p>
             <p className={styles.hint}>말버릇 · 성대모사 · 사투리 · 동물 흉내 · 유행어 — 5초 안으로</p>
-            <button type="button" className={styles.rec} onClick={start}>
+            <button type="button" className={styles.rec} onClick={start} data-tour="create-rec">
               ● 녹음 시작
             </button>
           </>

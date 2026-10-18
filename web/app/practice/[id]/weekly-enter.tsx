@@ -120,7 +120,7 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
   return (
     <>
       {entered && local ? (
-        <div className={styles.entered}>
+        <div className={styles.entered} data-tour="room-enter">
           <span className={styles.enteredBadge}>🏆 출전 중</span>
           <p>이 테이크로 {seasonLabel(week)} 챌린지에 나가 있어요.</p>
           <PrivacyTag kind="public" />
@@ -134,7 +134,12 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
           </div>
         </div>
       ) : !open ? (
-        <button type="button" className={replacing ? styles.openAlt : styles.open} onClick={() => setOpen(true)}>
+        <button
+          type="button"
+          className={replacing ? styles.openAlt : styles.open}
+          onClick={() => setOpen(true)}
+          data-tour="room-enter"
+        >
           <span className={styles.openIcon} aria-hidden="true">
             🏆
           </span>

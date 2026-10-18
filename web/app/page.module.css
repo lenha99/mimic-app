@@ -421,3 +421,9 @@
 .footLink:hover {
   color: var(--cyan);
 }
+
+.headRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}

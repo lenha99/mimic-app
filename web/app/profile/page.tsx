@@ -17,6 +17,8 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { AdminLinks } from "./admin-links";
 import { MyWeekly } from "./my-weekly";
 import { myAwards, myEntries } from "@/lib/weekly-server";
+import { ScreenTour } from "@/components/onboarding/tours";
+import { TourHelp } from "@/components/onboarding/tour";
 import styles from "./profile.module.css";
 
 /**
@@ -82,7 +84,10 @@ export default async function ProfilePage() {
               : (user.email ?? user.id)}
           </p>
         </div>
-        <SignOutButton />
+        <span className={styles.headRight}>
+          <TourHelp id="profile" />
+          <SignOutButton />
+        </span>
       </div>
 
       <ClaimPending />
@@ -94,7 +99,7 @@ export default async function ProfilePage() {
             <p className={styles.nickname}>{profile.nickname}</p>
             <NicknameEditor userId={user.id} initialNickname={profile.nickname} />
           </div>
-          <Link href="/avatar" className={styles.avatarCard}>
+          <Link href="/avatar" className={styles.avatarCard} data-tour="profile-avatar">
             <VoiceAvatar avatar={normalizeAvatar(profile.avatar)} size={72} />
             <span>
               <strong>내 캐릭터</strong>
@@ -102,12 +107,20 @@ export default async function ProfilePage() {
             </span>
           </Link>
           {/* 동적 페이지라 요청 시각이 곧 지금이다. */}
-          {/* eslint-disable-next-line react-hooks/purity */}
-          <MyWeekly awards={awards} entries={weeklyEntries} now={Date.now()} />
-          <MyPracticePosts items={practicePosts} />
-          <MyChallenges items={(challenges ?? []) as MyChallenge[]} />
-          <MyRecordings items={items} />
-          <Link href="/?intro=1" className={styles.guideLink}>
+          <div data-tour="profile-weekly">
+            {/* eslint-disable-next-line react-hooks/purity */}
+            <MyWeekly awards={awards} entries={weeklyEntries} now={Date.now()} />
+          </div>
+          <div data-tour="profile-posts">
+            <MyPracticePosts items={practicePosts} />
+          </div>
+          <div data-tour="profile-challenges">
+            <MyChallenges items={(challenges ?? []) as MyChallenge[]} />
+          </div>
+          <div data-tour="profile-recordings">
+            <MyRecordings items={items} />
+          </div>
+          <Link href="/?tour=1" className={styles.guideLink}>
             사용법 다시 보기 →
           </Link>
           <DeleteAccount />
@@ -118,6 +131,7 @@ export default async function ProfilePage() {
           profiles insert RLS 정책을 확인해주세요.
         </p>
       )}
+      <ScreenTour id="profile" />
     </main>
   );
 }

@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { ScreenTour } from "@/components/onboarding/tours";
+import { TourHelp } from "@/components/onboarding/tour";
 import styles from "./challenges.module.css";
 
 /**
@@ -64,6 +66,7 @@ export default function Challenges({
 
   return (
     <main className="shell">
+      <TourHelp id="challenges" corner />
       <header className={styles.head}>
         <h1 className={styles.title}>챌린지</h1>
         <p className={styles.sub}>듣고 따라 외치면 채점해줘. 점수로 친구한테 도전장을 던져.</p>
@@ -75,7 +78,7 @@ export default function Challenges({
         )}
       </header>
 
-      <div className={styles.chips} role="tablist" aria-label="챌린지 종류">
+      <div className={styles.chips} role="tablist" aria-label="챌린지 종류" data-tour="challenges-tabs">
         {tabs.map(([key, label, n]) => (
           <button
             key={key}
@@ -92,7 +95,7 @@ export default function Challenges({
       {current === "warmups" ? (
         <>
           <p className={styles.note}>짧고 웃긴 소리로 목 풀기. 채점은 똑같이 해줘.</p>
-          <ul className={styles.tiles}>
+          <ul className={styles.tiles} data-tour="challenges-list">
             {list.map((m) => (
               <li key={m.id}>
                 <Link href={`/record/${m.id}`} className={styles.tile}>
@@ -107,7 +110,7 @@ export default function Challenges({
           </ul>
         </>
       ) : (
-        <ul className={styles.grid}>
+        <ul className={styles.grid} data-tour="challenges-list">
           {list.map((m, i) => (
             <li key={m.id}>
               <Link
@@ -132,10 +135,11 @@ export default function Challenges({
         </ul>
       )}
 
-      <Link href="/create" className={styles.create}>
+      <Link href="/create" className={styles.create} data-tour="challenges-create">
         <b>내 소리로 챌린지 만들기</b>
         <span>엄마 전화 받는 소리, 친구 말버릇. 5초 녹음하면 친구들이 날 따라해 →</span>
       </Link>
+      <ScreenTour id="challenges" />
     </main>
   );
 }

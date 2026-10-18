@@ -7,6 +7,8 @@ import { extraLine } from "@/lib/memes";
 import { getViewer } from "@/lib/viewer";
 import { YoutubeClip } from "@/components/youtube-clip";
 import Recorder from "./recorder";
+import { ScreenTour } from "@/components/onboarding/tours";
+import { TourHelp } from "@/components/onboarding/tour";
 import styles from "./record.module.css";
 
 type Props = {
@@ -88,6 +90,7 @@ export default async function RecordPage({ params, searchParams }: Props) {
 
   return (
     <main className="shell">
+      <TourHelp id="record" corner />
       <header className={styles.head}>
         <Link href="/" className={styles.back}>
           ← 다른 소리
@@ -121,6 +124,8 @@ export default async function RecordPage({ params, searchParams }: Props) {
         loggedIn={viewer.loggedIn}
         avatar={viewer.avatar}
       />
+      {/* 도전장(?s=)을 받고 온 사람은 할 일이 정해져 있다 — 안내는 ? 로만. */}
+      <ScreenTour id="record" auto={beat === null} />
     </main>
   );
 }

@@ -888,7 +888,108 @@
   }
 }
 
-/* AI 예시 — 순위 밖 */
-.example {
-  margin-bottom: 12px;
+.topRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 예시 순위표 — 출전작이 없을 때 ------------------------------------------ */
+
+.demo {
+  padding: 14px;
+  border-radius: 20px;
+  border: 1px dashed rgba(0, 229, 255, 0.4);
+  background: rgba(0, 229, 255, 0.04);
+}
+
+.demoHead {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.demoHead p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #c9c9cf;
+  word-break: keep-all;
+}
+
+.demoHead b {
+  color: var(--cyan);
+}
+
+.demoBadge {
+  flex: none;
+  padding: 3px 8px;
+  border-radius: 8px;
+  background: var(--cyan);
+  color: var(--stage);
+  font-size: 11.5px;
+  font-weight: 900;
+}
+
+.howto {
+  margin: 12px 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.howto li {
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+  padding: 10px 6px;
+  border-radius: 12px;
+  background: var(--panel);
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: center;
+  color: #d8d8dd;
+  word-break: keep-all;
+}
+
+.howto b {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--volt);
+  color: var(--stage);
+  font-size: 12px;
+}
+
+.demoNotes {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ash);
+  word-break: keep-all;
+}
+
+.demoNotes b {
+  color: var(--white);
+}
+
+.demoGo {
+  margin-top: 14px;
+  min-height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--volt);
+  color: var(--stage);
+  font-size: 15.5px;
+  font-weight: 900;
+  text-decoration: none;
 }

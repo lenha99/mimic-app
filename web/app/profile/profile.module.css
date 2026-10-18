@@ -354,3 +354,9 @@
 .recHead .recTitle {
   margin-right: auto;
 }
+
+.headRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

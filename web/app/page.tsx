@@ -2,12 +2,13 @@ import Link from "next/link";
 import { ClaimPending } from "@/app/profile/claim-pending";
 import { HomeBeacon } from "@/components/home-beacon";
 import { InstallBanner } from "@/components/install-banner";
-import { IntroSheet } from "@/components/onboarding/intro-sheet";
 import { ViewerBadge } from "@/components/viewer";
 import { HomeHero } from "@/components/weekly/home-hero";
 import { getMemes } from "@/lib/memes";
 import { SCRIPTS } from "@/lib/practice";
 import { getBoard, liveWeek } from "@/lib/weekly-server";
+import { ScreenTour } from "@/components/onboarding/tours";
+import { TourHelp } from "@/components/onboarding/tour";
 import styles from "./page.module.css";
 
 /**
@@ -43,7 +44,10 @@ export default async function Home() {
     <main className="shell">
       <header className={styles.head}>
         <span className={styles.logo}>MIMIC</span>
-        <ViewerBadge />
+        <span className={styles.headRight}>
+          <TourHelp id="home" />
+          <ViewerBadge />
+        </span>
       </header>
 
       <InstallBanner />
@@ -52,10 +56,12 @@ export default async function Home() {
       <ClaimPending />
 
       {/* 이번 주 보이스 챌린지 — 지금 이 앱의 첫 한 걸음이다. */}
-      <HomeHero week={weekly.week} top={weekly.entries.slice(0, 3)} count={weekly.entries.length} />
+      <div data-tour="home-weekly">
+        <HomeHero week={weekly.week} top={weekly.entries.slice(0, 3)} count={weekly.entries.length} />
+      </div>
 
       <nav className={styles.doors} aria-label="둘러보기">
-        <Link href="/challenges" className={`${styles.door} ${styles.doorChallenge}`}>
+        <Link href="/challenges" className={`${styles.door} ${styles.doorChallenge}`} data-tour="home-memes">
           <span className={styles.doorKicker}>따라 외치고 점수 대결</span>
           <span className={styles.doorTitle}>명대사 챌린지</span>
           <span className={styles.doorSub}>{lines.length}개 · 친구한테 점수로 도전장</span>
@@ -69,7 +75,7 @@ export default async function Home() {
           </span>
         </Link>
 
-        <Link href="/practice" className={`${styles.door} ${styles.doorPractice}`}>
+        <Link href="/practice" className={`${styles.door} ${styles.doorPractice}`} data-tour="home-practice">
           <span className={styles.doorKicker}>성우·아나운서 준비</span>
           <span className={styles.doorTitle}>연습실</span>
           <span className={styles.doorSub}>대본 {SCRIPTS.length}편 · 고칠 곳을 짚어줘</span>
@@ -84,7 +90,7 @@ export default async function Home() {
         </Link>
       </nav>
 
-      <Link href="/create" className={styles.create}>
+      <Link href="/create" className={styles.create} data-tour="home-create">
         <span>
           <b>내 소리로 챌린지 만들기</b>
           <small>5초 녹음하면 친구들이 날 따라해</small>
@@ -94,8 +100,8 @@ export default async function Home() {
 
       <HomeBeacon />
 
-      {/* 처음 온 사람에게만, 한 번. */}
-      <IntroSheet scriptId={weekly.week.scriptId} title={weekly.week.title} />
+      {/* 처음 온 사람에게만, 한 번 — 버튼마다 "이건 뭐고 누르면 어떻게 되는지". */}
+      <ScreenTour id="home" />
 
       <footer className={styles.foot}>
         <p className={styles.footNote}>
@@ -104,7 +110,7 @@ export default async function Home() {
         <Link href="/probe" className={styles.footLink}>
           녹음이 안 되면 마이크 검사 →
         </Link>
-        <Link href="/?intro=1" className={styles.footLink}>
+        <Link href="/?tour=1" className={styles.footLink}>
           사용법 다시 보기
         </Link>
       </footer>

@@ -3,6 +3,8 @@ import Link from "next/link";
 import { BackHome } from "@/components/back-home";
 import { createClient } from "@/lib/supabase/server";
 import { Creator } from "./creator";
+import { ScreenTour } from "@/components/onboarding/tours";
+import { TourHelp } from "@/components/onboarding/tour";
 import styles from "./create.module.css";
 
 export const metadata: Metadata = {
@@ -25,21 +27,23 @@ export default async function CreatePage() {
 
   return (
     <main className="shell">
+      <TourHelp id="create" corner />
       <BackHome />
-      <header className={styles.head}>
+      <header className={styles.head} data-tour="create-head">
         <h1>내 챌린지 만들기</h1>
         <p>내 소리를 녹음하면 친구들이 날 따라해</p>
       </header>
       {user ? (
         <Creator />
       ) : (
-        <div className={styles.gate}>
+        <div className={styles.gate} data-tour="create-gate">
           <p>챌린지는 로그인하면 만들 수 있어요. 누가 만들었는지 보여주고, 몇 명이 따라했는지 알려줘야 해서요.</p>
           <Link href="/login" className={styles.primary}>
             로그인하고 만들기
           </Link>
         </div>
       )}
+      <ScreenTour id="create" />
     </main>
   );
 }

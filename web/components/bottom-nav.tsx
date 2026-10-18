@@ -36,7 +36,7 @@ export function BottomNav() {
   return (
     <>
       <div className={styles.spacer} aria-hidden="true" />
-      <nav className={styles.bar} aria-label="주 메뉴">
+      <nav className={styles.bar} aria-label="주 메뉴" data-tour="nav">
         {TABS.map(({ href, label, icon: Icon, match }) => {
           const on = match(path);
           return (
