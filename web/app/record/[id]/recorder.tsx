@@ -17,7 +17,11 @@ import { track } from "@/lib/track";
 import styles from "./record.module.css";
 
 /**
- * 원테이크 — 탭 한 번에 원본 재생 → 3·2·1 → 자동 녹음 → 자동 정지 → 채점.
+ * 원본 재생 → (내 차례: 준비되면 직접 시작) → 3·2·1 → 녹음 → 자동 정지 → 채점.
+ *
+ * 예전엔 원본이 끝나면 곧바로 3·2·1 로 넘어가는 원테이크였다. 1초 남짓한 카운트다운은
+ * 숨 고를 틈도 안 돼서 "너무 짧다"는 피드백이 나왔다. 그래서 원본 다음엔 멈춰서
+ * 기다린다 — 시작 시점은 사람이 고르고, 원본은 그 자리에서 몇 번이고 다시 들을 수 있다.
  *
  * 조작이 소리보다 길면 밈이 아니라 장비가 된다. 그래서 짧은 소리는 정지 버튼 없이
  * 한 번에 흐르게 한다. 녹음 창은 원본 길이에서 계산하고, 남은 시간은 줄어드는
@@ -63,8 +67,8 @@ const FALLBACK_REF_MS = 1400;
 const STALL_MS = 8_000;
 /** 멈춘 원본을 다시 틀어보는 간격. 아이폰은 마이크 권한 창이 뜰 때 재생을 멈춘다. */
 const RESUME_EVERY_MS = 600;
-/** 3 → 2 → 1 한 칸. 기다리게 하는 게 아니라 준비시키는 게 목적. */
-const COUNT_STEP_MS = 320;
+/** 3 → 2 → 1 한 칸. 시작은 사람이 눌러서 하니 이건 숨 들이쉴 만큼만. */
+const COUNT_STEP_MS = 500;
 /** 채점이 이만큼 넘어가면 그때 "서버 깨우는 중"을 꺼낸다. */
 const SLOW_AFTER_MS = 6_000;
 const RING_R = 112;
@@ -81,6 +85,8 @@ type Score = {
 type Phase =
   | "idle"
   | "listening"
+  /** 원본을 다 들었다. 사람이 시작을 누를 때까지 기다린다. */
+  | "ready"
   | "countdown"
   | "recording"
   | "scoring"
@@ -196,8 +202,6 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
   const advanced = useRef(false);
   /** 원본을 우리가 일부러 멈췄는지. 아니면(시스템이 끊었으면) 다시 튼다. */
   const pausedByUs = useRef(false);
-  /** 감시 루프가 최신 beginCountdown 을 부르게. (effect 의존성에 넣으면 루프가 매번 재시작된다) */
-  const countdownRef = useRef<() => void>(() => {});
   /** 채점 대기 중 원본 다음에 내 소리를 자동으로 한 번 틀었는지. */
   const abPlayed = useRef(false);
   /** 저장할 때 같은 오디오를 서버로 다시 보내야 해서 들고 있는다. */
@@ -442,8 +446,23 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
     );
   }, [beginRecording, clearTimers, requestMic]);
 
-  useEffect(() => {
-    countdownRef.current = beginCountdown;
+  /**
+   * 원본이 끝났다. 이어서 따라할 거면 "내 차례"에서 기다리고, 아니면 대기 화면으로.
+   * 감시 루프와 onEnded 가 둘 다 부를 수 있어서 phaseRef 를 바로 바꿔 한 번만 돈다.
+   */
+  const finishListening = useCallback(() => {
+    if (phaseRef.current !== "listening") return;
+    const nextPhase: Phase = chain.current ? "ready" : "idle";
+    phaseRef.current = nextPhase;
+    pausedByUs.current = true;
+    refAudio.current?.pause();
+    setPhase(nextPhase);
+  }, []);
+
+  /** 내 차례에서 시작을 눌렀다. */
+  const startTake = useCallback(() => {
+    advanced.current = false;
+    beginCountdown();
   }, [beginCountdown]);
 
   /**
@@ -496,7 +515,7 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
     [clearTimers, meme.id],
   );
 
-  /** 듣고 바로 따라하기 (짧은 원본의 기본 동작). */
+  /** 듣고 따라하기 (짧은 원본의 기본 동작). 원본이 끝나면 "내 차례"에서 기다린다. */
   const listenAndRecord = useCallback(() => {
     if (typeof MediaRecorder === "undefined") {
       setError("이 브라우저에선 녹음이 안 돼. 크롬이나 사파리로 열어줘.");
@@ -558,8 +577,7 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
 
           const done = el.ended || (known && el.currentTime >= d - 0.04);
           if (done) {
-            if (chain.current) countdownRef.current();
-            else setPhase("idle");
+            finishListening();
           } else if (el.paused && !pausedByUs.current && now - lastResumeAt > RESUME_EVERY_MS) {
             // 시스템이 끊었다(아이폰 마이크 권한 창, 오디오 세션 전환). 이어서 튼다.
             lastResumeAt = now;
@@ -592,7 +610,7 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
 
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [phase]);
+  }, [phase, finishListening]);
 
   const toggle = useCallback(
     (which: "ref" | "user") => {
@@ -617,9 +635,7 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
   const onRefEnded = useCallback(() => {
     setPlaying(null);
     if (phaseRef.current === "listening") {
-      pausedByUs.current = true;
-      if (chain.current) beginCountdown();
-      else setPhase("idle");
+      finishListening();
       return;
     }
     // 채점을 기다리는 동안 원본 다음에 내 소리를 한 번 이어서 들려준다.
@@ -627,7 +643,7 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
       abPlayed.current = true;
       toggle("user");
     }
-  }, [beginCountdown, toggle]);
+  }, [finishListening, toggle]);
 
   useEffect(() => {
     if (phase !== "scoring" || abPlayed.current) return;
@@ -923,7 +939,7 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
             {phase === "countdown"
               ? "곧 시작"
               : chaining
-                ? "끝나면 바로 녹음 시작"
+                ? "다 듣고 준비되면 시작"
                 : "듣기만 하는 중"}
           </p>
           {meme.line && <p className={styles.lineCue}>“{meme.line}”</p>}
@@ -932,6 +948,15 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
               지금 따라하기 →
             </button>
           )}
+        </section>
+      )}
+
+      {phase === "ready" && (
+        <section className={styles.stage}>
+          <VoiceAvatar avatar={avatar} level={0} size={168} />
+          <h2 className={meme.line ? styles.cueSmall : styles.cue}>네 차례</h2>
+          <p className={styles.cueSub}>준비되면 눌러 · 3·2·1 뒤에 녹음돼</p>
+          {meme.line && <p className={styles.lineCue}>“{meme.line}”</p>}
         </section>
       )}
 
@@ -1040,7 +1065,7 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
           ) : (
             <>
               <button className={styles.go} onClick={listenAndRecord} data-tour="record-go">
-                듣고 바로 따라하기
+                듣고 따라하기
               </button>
               <div className={styles.secondary}>
                 <button className={styles.ghost} onClick={listenOnly} data-tour="record-listen">
@@ -1048,12 +1073,25 @@ export default function Recorder({ meme, refUrl, beat, next, loggedIn, avatar: a
                 </button>
               </div>
               <p className={styles.note}>
-                탭 한 번이면 원본 → 3·2·1 → 녹음까지 자동
+                원본을 듣고, 준비되면 시작을 눌러
                 <br />
                 로그인 없이 바로 · 저장 안 하면 녹음은 바로 버려
               </p>
             </>
           )}
+        </div>
+      )}
+
+      {phase === "ready" && (
+        <div className={styles.dock}>
+          <button className={styles.go} onClick={startTake}>
+            따라하기 시작
+          </button>
+          <div className={styles.secondary}>
+            <button className={styles.ghost} onClick={listenAndRecord}>
+              원본 다시 듣기
+            </button>
+          </div>
         </div>
       )}
 
