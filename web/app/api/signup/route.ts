@@ -7,6 +7,7 @@ import {
 import { allow, clientIp, tooMany } from "@/lib/rate-limit";
 import { cleanNickname, nicknameProblem } from "@/lib/nickname";
 import { createServiceClient } from "@/lib/supabase/service";
+import { requestLang, tr } from "@/lib/i18n";
 
 /**
  * 아이디·비밀번호 가입.
@@ -19,9 +20,11 @@ import { createServiceClient } from "@/lib/supabase/service";
  * 다른 사람 닉네임과 겹치면 받지 않는다 — 랭킹에 같은 이름이 둘 보이면 안 된다.
  */
 export async function POST(req: Request) {
+  const lang = requestLang(req);
+  const t = tr(lang);
   // 가입은 서비스 키로 만들어서 Supabase 자체 가입 제한을 안 탄다. 여기서 막는다.
   if (!allow(`signup:${clientIp(req)}`, 5, 3_600_000)) {
-    return tooMany("가입 시도가 너무 많아요. 한 시간 뒤에 다시 해주세요.");
+    return tooMany(t("가입 시도가 너무 많아요. 한 시간 뒤에 다시 시도해 주세요.", "Too many sign-up attempts. Try again in an hour."));
   }
   const body = (await req.json().catch(() => ({}))) as { username?: unknown; password?: unknown; nickname?: unknown };
   const username = normalizeUsername(body.username);
@@ -29,10 +32,10 @@ export async function POST(req: Request) {
   const wanted = typeof body.nickname === "string" && body.nickname.trim() ? body.nickname : null;
   const nickname = wanted === null ? username : cleanNickname(wanted);
   if (!nickname) {
-    return Response.json({ error: nicknameProblem(String(wanted)) }, { status: 400 });
+    return Response.json({ error: nicknameProblem(String(wanted), lang) }, { status: 400 });
   }
 
-  const problem = checkUsername(username) ?? checkPassword(body.password);
+  const problem = checkUsername(username, lang) ?? checkPassword(body.password, lang);
   if (problem) {
     return Response.json({ error: problem }, { status: 400 });
   }
@@ -47,7 +50,7 @@ export async function POST(req: Request) {
     .maybeSingle();
   if (taken) {
     return Response.json(
-      { error: wanted === null ? "이미 있는 아이디예요." : "이미 누가 쓰는 닉네임이에요." },
+      { error: wanted === null ? t("이미 있는 아이디예요.", "That username is taken.") : t("이미 누가 쓰는 닉네임이에요.", "That nickname is taken.") },
       { status: 409 },
     );
   }
@@ -61,7 +64,7 @@ export async function POST(req: Request) {
   if (createError || !created.user) {
     const exists = /already|registered|exists/i.test(createError?.message ?? "");
     return Response.json(
-      { error: exists ? "이미 있는 아이디예요." : "가입에 실패했어요. 잠시 후 다시 시도해주세요." },
+      { error: exists ? t("이미 있는 아이디예요.", "That username is taken.") : t("가입이 안 됐어요. 잠시 후 다시 시도해 주세요.", "Sign-up failed. Please try again shortly.") },
       { status: exists ? 409 : 500 },
     );
   }
@@ -76,7 +79,7 @@ export async function POST(req: Request) {
     await service.auth.admin.deleteUser(created.user.id);
     const clash = profileError.code === "23505";
     return Response.json(
-      { error: clash ? "이미 누가 쓰는 닉네임이에요." : "가입에 실패했어요. 잠시 후 다시 시도해주세요." },
+      { error: clash ? t("이미 누가 쓰는 닉네임이에요.", "That nickname is taken.") : t("가입이 안 됐어요. 잠시 후 다시 시도해 주세요.", "Sign-up failed. Please try again shortly.") },
       { status: clash ? 409 : 500 },
     );
   }

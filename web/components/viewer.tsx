@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { ShoutingAvatar } from "./shouting-avatar";
 import { VoiceAvatar } from "./voice-avatar";
 import styles from "./viewer.module.css";
+import { useT } from "@/components/lang";
 
 /**
  * 지금 보는 사람 — 브라우저에서 알아낸다.
@@ -87,18 +88,19 @@ export function useViewer(): Viewer | null {
  */
 export function ViewerBadge() {
   const viewer = useViewer();
+  const t = useT();
   if (!viewer) return <span className={styles.slot} aria-hidden="true" />;
   if (viewer.loggedIn) {
     return (
-      <Link href="/profile" className={styles.me} aria-label="내 정보">
+      <Link href="/profile" className={styles.me} aria-label={t("내 정보", "My profile")}>
         <VoiceAvatar avatar={viewer.avatar} size={28} />
-        <span>{viewer.nickname ?? "나"}</span>
+        <span>{viewer.nickname ?? t("나", "Me")}</span>
       </Link>
     );
   }
   return (
     <Link href="/login" className={styles.pill}>
-      로그인
+      {t("로그인", "Log in")}
     </Link>
   );
 }

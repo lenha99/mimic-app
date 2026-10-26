@@ -1,6 +1,7 @@
 import { normalizeAvatar } from "@/lib/avatar";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { requestT } from "@/lib/i18n";
 
 /**
  * 이미 저장한 녹음을 링크로 공유 가능하게 켠다 (/p/{id}).
@@ -10,6 +11,7 @@ import { createServiceClient } from "@/lib/supabase/service";
  * 그 김에 지금 캐릭터로 갈아입힌다 — 저장 뒤에 캐릭터를 바꿨을 수 있다.
  */
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
+  const t = requestT(req);
   const { id } = await ctx.params;
   const body = (await req.json().catch(() => ({}))) as { claimToken?: unknown; avatar?: unknown };
 
@@ -20,7 +22,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     .eq("id", id)
     .maybeSingle();
   if (!row || row.hidden) {
-    return Response.json({ error: "공유할 수 없는 녹음이에요." }, { status: 404 });
+    return Response.json({ error: t("공유할 수 없는 녹음이에요.", "This recording can't be shared.") }, { status: 404 });
   }
 
   let owner = false;
@@ -33,7 +35,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     owner = typeof body.claimToken === "string" && body.claimToken === row.claim_token;
   }
   if (!owner) {
-    return Response.json({ error: "내 녹음이 아니에요." }, { status: 403 });
+    return Response.json({ error: t("내 녹음이 아니에요.", "That's not your recording.") }, { status: 403 });
   }
 
   const { error } = await service
@@ -41,7 +43,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     .update({ shared: true, ...(body.avatar ? { avatar: normalizeAvatar(body.avatar) } : {}) })
     .eq("id", id);
   if (error) {
-    return Response.json({ error: "링크를 못 만들었어요. 다시 시도해주세요." }, { status: 500 });
+    return Response.json({ error: t("링크를 못 만들었어요. 다시 시도해주세요.", "Couldn't create a link. Please try again.") }, { status: 500 });
   }
   return Response.json({ ok: true });
 }

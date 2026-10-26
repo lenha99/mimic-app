@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { clientId } from "@/lib/client-id";
+import { useT } from "@/components/lang";
 import styles from "./quick-feedback.module.css";
 
 /**
@@ -14,6 +15,7 @@ type Page = "record" | "practice" | "board";
 const KEY = "mimic.feedback.done";
 
 export function QuickFeedback({ page, item }: { page: Page; item?: string }) {
+  const t = useT();
   const [state, setState] = useState<"hidden" | "ask" | "write" | "sent">("hidden");
   const [rating, setRating] = useState<1 | -1>(1);
   const [message, setMessage] = useState("");
@@ -55,7 +57,7 @@ export function QuickFeedback({ page, item }: { page: Page; item?: string }) {
   if (state === "hidden") return null;
 
   if (state === "sent") {
-    return <p className={styles.thanks}>고마워요! 하나하나 다 읽어요 · Thanks!</p>;
+    return <p className={styles.thanks}>{t("고마워요! 하나하나 다 읽어요 🙏", "Thanks! We read every one 🙏")}</p>;
   }
 
   if (state === "ask") {
@@ -68,14 +70,14 @@ export function QuickFeedback({ page, item }: { page: Page; item?: string }) {
     return (
       <div className={styles.box}>
         <p className={styles.q}>
-          이거 어땠어요? <small>How was it?</small>
+          {t("이거 어땠어요?", "How was it?")}
         </p>
         <div className={styles.row}>
-          <button type="button" className={styles.thumb} onClick={() => pick(1)} aria-label="좋았어요">
-            👍 <span>좋았어요</span>
+          <button type="button" className={styles.thumb} onClick={() => pick(1)} aria-label={t("좋았어요", "Liked it")}>
+            👍 <span>{t("좋았어요", "Liked it")}</span>
           </button>
-          <button type="button" className={styles.thumb} onClick={() => pick(-1)} aria-label="아쉬웠어요">
-            👎 <span>아쉬웠어요</span>
+          <button type="button" className={styles.thumb} onClick={() => pick(-1)} aria-label={t("아쉬웠어요", "Not great")}>
+            👎 <span>{t("아쉬웠어요", "Not great")}</span>
           </button>
         </div>
       </div>
@@ -92,7 +94,8 @@ export function QuickFeedback({ page, item }: { page: Page; item?: string }) {
       }}
     >
       <p className={styles.q}>
-        {rating === 1 ? "뭐가 좋았어요?" : "뭐가 아쉬웠어요?"} <small>한 줄이면 충분해요 · optional</small>
+        {rating === 1 ? t("뭐가 좋았어요?", "What did you like?") : t("뭐가 아쉬웠어요?", "What could be better?")}{" "}
+        <small>{t("한 줄이면 충분해요", "one line is plenty · optional")}</small>
       </p>
       <div className={styles.row}>
         <input
@@ -100,11 +103,15 @@ export function QuickFeedback({ page, item }: { page: Page; item?: string }) {
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           maxLength={500}
-          placeholder={rating === 1 ? "예: 대본 확인이 신기했어요" : "예: 점수가 왜 낮은지 모르겠어요"}
+          placeholder={
+            rating === 1
+              ? t("예: 대본 확인이 신기했어요", "e.g. The script check was cool")
+              : t("예: 점수가 왜 낮은지 모르겠어요", "e.g. Not sure why my score was low")
+          }
           autoFocus
         />
         <button type="submit" className={styles.send} disabled={busy}>
-          {message.trim() ? "보내기" : "건너뛰기"}
+          {message.trim() ? t("보내기", "Send") : t("건너뛰기", "Skip")}
         </button>
       </div>
     </form>

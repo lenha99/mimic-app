@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { tr } from "@/lib/i18n";
 import { VoiceAvatar } from "@/components/voice-avatar";
 import { decodeAvatar } from "@/lib/avatar";
 import { svgToString } from "@/lib/svg-string";
@@ -38,6 +39,7 @@ async function subsetFont(text: string): Promise<ArrayBuffer | null> {
 
 export async function GET(req: Request) {
   const q = new URL(req.url).searchParams;
+  const t = tr(q.get("lang") === "en" ? "en" : "ko");
   const title = (q.get("title") ?? "MIMIC").slice(0, 24);
   const line = (q.get("line") ?? "").slice(0, 30);
   const who = (q.get("who") ?? "").slice(0, 16);
@@ -48,9 +50,11 @@ export async function GET(req: Request) {
   const beat = Number.isInteger(raw) && raw >= 0 && raw <= 100 ? raw : null;
 
   const shout = line || title;
-  const kicker = beat !== null ? `${who || "친구"}의 도전장` : "따라하기 챌린지";
-  const sub = beat !== null ? "이거 넘어봐" : "설치 없이 탭 한 번";
-  const text = `${title}${shout}${kicker}${sub}${beat ?? ""}점MIMIC`;
+  const kicker =
+    beat !== null ? t(`${who || "친구"}의 도전장`, `${who || "A friend"} dares you`) : t("따라하기 챌린지", "Voice copy challenge");
+  const sub = beat !== null ? t("이 점수 넘을 수 있음?", "Can you beat this?") : t("설치 없이 탭 한 번", "One tap, no install");
+  const unit = t("점", "pts");
+  const text = `${title}${shout}${kicker}${sub}${beat ?? ""}${unit}MIMIC`;
   const font = await subsetFont(text);
 
   // 캐릭터는 SVG 문자열로 만들어 이미지로 넣는다 (lib/svg-string 주석 참고).
@@ -101,7 +105,7 @@ export async function GET(req: Request) {
           {beat !== null ? (
             <div style={{ display: "flex", alignItems: "baseline", marginTop: 18 }}>
               <div style={{ display: "flex", fontSize: 168, lineHeight: 1, color: "#E8FF3A" }}>{beat}</div>
-              <div style={{ display: "flex", fontSize: 56, color: "#8A8A92", marginLeft: 8 }}>점</div>
+              <div style={{ display: "flex", fontSize: 56, color: "#8A8A92", marginLeft: 8 }}>{unit}</div>
             </div>
           ) : null}
           <div style={{ display: "flex", fontSize: 40, color: "#F5F5F7", marginTop: beat !== null ? 4 : 24 }}>

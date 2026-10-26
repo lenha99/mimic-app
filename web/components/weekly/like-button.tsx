@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { LISTEN_RATIO } from "@/lib/weekly";
 import styles from "./weekly.module.css";
+import { useT } from "@/components/lang";
 
 /**
  * ❤ 버튼. 끝까지 듣기 전엔 잠겨 있고, 듣는 동안 테두리가 차오른다 — 다 차면 열린다.
@@ -29,19 +30,20 @@ export function LikeButton({
   size?: "md" | "lg";
   onPress: () => void;
 }) {
+  const t = useT();
   const [burst, setBurst] = useState(0);
   const fill = locked ? Math.min(1, (progress ?? 0) / LISTEN_RATIO) : 1;
   const R = 21;
   const C = 2 * Math.PI * R;
   const label = mine
-    ? `내 출전작 · ❤ ${likes}`
+    ? t(`내 출전작 · ❤ ${likes}`, `Your entry · ❤ ${likes}`)
     : frozen
-      ? `마감 · ❤ ${likes}`
+      ? t(`마감 · ❤ ${likes}`, `Closed · ❤ ${likes}`)
       : locked
-        ? `끝까지 들으면 ❤ 를 누를 수 있어요 · 지금 ${likes}`
+        ? t(`끝까지 들으면 ❤ 를 누를 수 있어요 · 지금 ${likes}`, `Listen to the end to ❤ · now ${likes}`)
         : liked
-          ? `❤ 취소 · 지금 ${likes}`
-          : `❤ 누르기 · 지금 ${likes}`;
+          ? t(`❤ 취소 · 지금 ${likes}`, `Undo ❤ · now ${likes}`)
+          : t(`❤ 누르기 · 지금 ${likes}`, `Tap ❤ · now ${likes}`);
 
   return (
     <button

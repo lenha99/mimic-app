@@ -126,7 +126,8 @@ def test_timing_rejects_junk(ladder):
     """
     for meme, label, _, bd in ladder:
         if label in ("순수잡음", "다른밈"):
-            assert bd["timing"] < 70, (
+            # breakdown 은 표시 곡선을 거친 값이다 — 원점수 70 을 같은 곡선에 태워 비교
+            assert bd["timing"] < round(modal_app._curve(70)), (
                 f"{meme}/{label}: 따라한 게 아닌데 timing={bd['timing']}"
             )
 
@@ -151,6 +152,14 @@ def test_truncation_is_penalised(ladder):
             )
         checked += 1
     assert checked, "잘림 검증이 한 건도 안 돌았다 — 픽스처가 비었는지 확인"
+
+
+def test_curve_is_monotone_and_pinned():
+    """표시 곡선이 순증가여야 순위가 안 바뀐다. 양 끝은 0·100 고정."""
+    assert modal_app._curve(0) == 0 and modal_app._curve(100) == 100
+    ys = [modal_app._curve(x / 2) for x in range(201)]
+    assert all(b > a for a, b in zip(ys, ys[1:]))
+    assert all(modal_app._curve(x) >= x for x in range(101)), "곡선은 올리기만 한다"
 
 
 def test_grade_matches_score(ladder):

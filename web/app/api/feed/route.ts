@@ -1,5 +1,6 @@
 import { loadFeed, loadTake, parseSort } from "@/lib/feed";
 import { createClient } from "@/lib/supabase/server";
+import { requestT } from "@/lib/i18n";
 
 /**
  * 피드 다음 페이지 · 녹음 하나 다시 받기.
@@ -10,6 +11,7 @@ import { createClient } from "@/lib/supabase/server";
  * 쿠키 세션으로 부른다 — "내가 누른 반응"과 "내 녹음" 표시가 보는 사람마다 다르다.
  */
 export async function GET(req: Request) {
+  const t = requestT(req);
   const q = new URL(req.url).searchParams;
   const supabase = await createClient();
   // 누가 보는지는 조회와 동시에 — 기다렸다 조회하면 DB 왕복이 하나 는다.
@@ -23,7 +25,7 @@ export async function GET(req: Request) {
     const take = await loadTake(supabase, id, await viewer);
     return take
       ? Response.json({ item: take })
-      : Response.json({ error: "없거나 내려간 녹음이에요" }, { status: 404 });
+      : Response.json({ error: t("없거나 내려간 녹음이에요", "This recording doesn't exist or was removed.") }, { status: 404 });
   }
 
   const offset = Math.max(0, Math.min(10_000, Number(q.get("offset")) || 0));

@@ -1,3 +1,4 @@
+import { tr, type Lang } from "./i18n";
 import { SCRIPTS } from "./scripts";
 import type { Meme } from "./memes";
 
@@ -32,6 +33,16 @@ export const TRACK_LABEL: Record<Track | "line", string> = {
   anchor: "아나운서·낭독",
   line: "명대사",
 };
+
+const TRACK_LABEL_EN: Record<Track | "line", string> = {
+  voice: "Voice acting",
+  anchor: "Anchor & reading",
+  line: "Movie lines",
+};
+
+export function trackLabel(track: Track | "line", lang: Lang): string {
+  return (lang === "en" ? TRACK_LABEL_EN : TRACK_LABEL)[track];
+}
 
 /** 억양 폭 기준 — 반음 단위, 목소리 높낮이의 10~90% 구간. */
 export const PITCH_RANGE: Record<PitchBand, [number, number]> = {
@@ -114,14 +125,15 @@ export function practiceLines(memes: Meme[]): Meme[] {
 }
 
 /** "3분 전" · "어제" — 기록 목록에서 언제 읽었는지. */
-export function ago(at: number): string {
+export function ago(at: number, lang: Lang = "ko"): string {
+  const t = tr(lang);
   const min = Math.round((Date.now() - at) / 60_000);
-  if (min < 1) return "방금";
-  if (min < 60) return `${min}분 전`;
+  if (min < 1) return t("방금", "just now");
+  if (min < 60) return t(`${min}분 전`, `${min}m ago`);
   const h = Math.round(min / 60);
-  if (h < 24) return `${h}시간 전`;
+  if (h < 24) return t(`${h}시간 전`, `${h}h ago`);
   const d = Math.round(h / 24);
-  if (d === 1) return "어제";
-  if (d < 7) return `${d}일 전`;
-  return new Date(at).toLocaleDateString("ko-KR", { month: "long", day: "numeric" });
+  if (d === 1) return t("어제", "yesterday");
+  if (d < 7) return t(`${d}일 전`, `${d}d ago`);
+  return new Date(at).toLocaleDateString(t("ko-KR", "en-US"), { month: "long", day: "numeric" });
 }

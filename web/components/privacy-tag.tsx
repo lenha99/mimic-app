@@ -1,3 +1,7 @@
+"use client";
+
+import { useT } from "@/components/lang";
+import type { T } from "@/lib/i18n";
 import styles from "./privacy-tag.module.css";
 
 /**
@@ -9,16 +13,16 @@ import styles from "./privacy-tag.module.css";
  */
 export type PrivacyKind = "device" | "unsaved" | "private" | "link" | "public";
 
-const COPY: Record<PrivacyKind, { icon: string; label: string; sub: string }> = {
-  device: { icon: "🔒", label: "내 폰에만 저장", sub: "다른 사람은 들을 수 없어요" },
-  unsaved: { icon: "⏳", label: "아직 저장 안 됨", sub: "저장하지 않으면 이 화면을 나갈 때 사라져요" },
-  private: { icon: "🔒", label: "서버에 저장 · 나만", sub: "다른 사람은 들을 수 없어요. 프로필에서 지울 수 있어요" },
-  link: { icon: "🔗", label: "링크 공개", sub: "링크를 받은 사람만 들을 수 있어요" },
-  public: { icon: "🌐", label: "모두에게 공개", sub: "누구나 들을 수 있어요. 언제든 내릴 수 있어요" },
-};
+const COPY = (t: T): Record<PrivacyKind, { icon: string; label: string; sub: string }> => ({
+  device: { icon: "🔒", label: t("내 폰에만 저장돼요", "Saved on this phone only"), sub: t("다른 사람은 들을 수 없어요", "No one else can hear it") },
+  unsaved: { icon: "⏳", label: t("아직 저장 전이에요", "Not saved yet"), sub: t("저장 안 하고 나가면 사라져요", "Leave without saving and it's gone") },
+  private: { icon: "🔒", label: t("나만 듣기", "Only me"), sub: t("다른 사람은 들을 수 없어요. 프로필에서 언제든 지울 수 있어요", "No one else can hear it. Delete anytime from your profile") },
+  link: { icon: "🔗", label: t("링크 공개", "Link only"), sub: t("링크 받은 사람만 들을 수 있어요", "Only people with the link can listen") },
+  public: { icon: "🌐", label: t("전체 공개", "Public"), sub: t("누구나 들을 수 있어요. 언제든 내릴 수 있어요", "Anyone can listen. Take it down anytime") },
+});
 
 export function PrivacyTag({ kind, compact = false }: { kind: PrivacyKind; compact?: boolean }) {
-  const c = COPY[kind];
+  const c = COPY(useT())[kind];
   const tone = kind === "public" || kind === "link" ? styles.open : kind === "unsaved" ? styles.temp : styles.closed;
   if (compact) {
     return (

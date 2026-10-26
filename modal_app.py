@@ -773,6 +773,23 @@ def _timing_envelope(ref, usr):
     return 100.0 * max(0.0, shape) * dur
 
 
+# 표시 점수 곡선 — (원점수, 표시점수) 매듭. 사이는 직선으로 잇는다.
+# 원점수는 "기계가 본 닮음"이라 사람이 남의 목소리를 따라 하면 음색에서 깎여
+# 40~60 에 몰린다. 제대로 해도 50점이면 자랑할 데가 없다. 그래서 위로 휜다.
+# 정확도는 그대로다: 곡선이 순증가라 순위·마진(test/calibration_test.py)이 안 바뀌고,
+# 0→0 · 100→100 이라 무음·동일 음성의 양 끝도 그대로다. 매듭을 바꾸면
+# supabase/migrations 의 mimic_curve 도 같이 바꿔야 옛 기록과 새 기록이 같은 자로 잰다.
+SCORE_CURVE = [(0, 0), (20, 30), (35, 55), (50, 72), (65, 85), (80, 94), (100, 100)]
+
+
+def _curve(raw):
+    raw = max(0.0, min(100.0, float(raw)))
+    for (x0, y0), (x1, y1) in zip(SCORE_CURVE, SCORE_CURVE[1:]):
+        if raw <= x1:
+            return y0 + (y1 - y0) * (raw - x0) / (x1 - x0)
+    return 100.0
+
+
 def _score(reference_path, user_path):
     SR = 22050
 
@@ -828,7 +845,8 @@ def _score(reference_path, user_path):
     comps.append((tone, 0.50))
     comps.append((timing, 0.35))
     wsum = sum(w for _, w in comps)
-    total = round(sum(v * w for v, w in comps) / wsum)
+    raw = sum(v * w for v, w in comps) / wsum
+    total = round(_curve(raw))
 
     grade = ("SS" if total >= 90 else "S" if total >= 80
              else "A" if total >= 70 else "B" if total >= 55 else "C")
@@ -843,11 +861,13 @@ def _score(reference_path, user_path):
         return [round(v / (m + 1e-9), 3) for v in out]
 
     return {
-        "score": total, "grade": grade,
+        "score": total, "grade": grade, "raw": round(raw),
+        "pitch_scored": pitch is not None,
+        # 항목도 같은 곡선 — 총점만 올리면 "총점 82 인데 항목은 다 50대"가 된다
         "breakdown": {
-            "pitch": round(pitch) if pitch is not None else 0,
-            "tone": round(tone),
-            "timing": round(timing),
+            "pitch": round(_curve(pitch)) if pitch is not None else 0,
+            "tone": round(_curve(tone)),
+            "timing": round(_curve(timing)),
         },
         "waveform": {"ref": bars(ref), "user": bars(usr)},
     }
