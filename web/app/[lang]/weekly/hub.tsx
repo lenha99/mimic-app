@@ -624,7 +624,7 @@ const DEMO = [
   { id: "demo-1", name: ["새벽라디오", "LateNightRadio"], likes: 24, plays: 61, preset: 1, take: 0 },
   { id: "demo-2", name: ["뉴스하는곰", "NewsBear"], likes: 17, plays: 44, preset: 2, take: 1 },
   { id: "demo-3", name: ["목소리장인", "VoiceMaster"], likes: 9, plays: 23, preset: 6, take: 2 },
-  { id: "demo-me", name: ["나 (출전하면 여기)", "You (after you enter)"], likes: 2, plays: 5, preset: 0, take: 3 },
+  { id: "demo-me", name: ["나 (출전하면 여기)", "You (after entry)"], likes: 2, plays: 5, preset: 0, take: 3 },
 ];
 
 function DemoBoard({ scriptId }: { scriptId: string }) {

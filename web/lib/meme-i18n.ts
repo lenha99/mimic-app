@@ -21,7 +21,7 @@ const EN: Record<string, MemeEn> = {
     meaning: "A grandpa's iconic victory yell — Korea's ultimate “woo-hoo!”",
   },
   eoiga_eopne: {
-    title: "Unbelievable",
+    title: "You kidding me?",
     source: "Veteran (2015)",
     roman: "eo-i-ga eom-ne",
     meaning: "“I'm speechless.” Yoo Ah-in's smug, disbelieving sneer.",

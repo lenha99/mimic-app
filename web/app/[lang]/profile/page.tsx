@@ -22,6 +22,7 @@ import { TourHelp } from "@/components/onboarding/tour";
 import { getLang } from "@/lib/i18n-server";
 import { tr } from "@/lib/i18n";
 import { memeText } from "@/lib/meme-i18n";
+import { LangSwitch } from "@/components/lang";
 import styles from "./profile.module.css";
 
 /**
@@ -128,6 +129,9 @@ export default async function ProfilePage() {
           <Link href="/?tour=1" className={styles.guideLink}>
             {t("사용법 다시 보기 →", "Replay the tour →")}
           </Link>
+          <p className={styles.lang}>
+            <LangSwitch />
+          </p>
           <DeleteAccount />
         </div>
       ) : (

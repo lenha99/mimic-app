@@ -168,3 +168,9 @@
   color: var(--ash);
   word-break: keep-all;
 }
+
+.lang {
+  margin: 18px 0 0;
+  display: flex;
+  justify-content: center;
+}
