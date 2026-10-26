@@ -4,6 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useState, type ReactNode } fro
 import { markSeen, seen } from "@/lib/onboarding";
 import { track } from "@/lib/track";
 import styles from "./tour.module.css";
+import { useT } from "@/components/lang";
 
 /**
  * 화면 사용법 — 실제 버튼을 하나씩 비추며 "이건 뭐고, 누르면 어떻게 되는지" 말해준다.
@@ -41,6 +42,7 @@ export function TourHelp({
   /** 머리줄이 빽빽한 화면에선 "사용법"만 */
   short?: boolean;
 }) {
+  const t = useT();
   const [fresh, setFresh] = useState(false);
   const [hello, setHello] = useState(false);
 
@@ -69,12 +71,12 @@ export function TourHelp({
         onClick={open}
         data-tour="help"
       >
-        <span aria-hidden="true">💡</span> {short ? "사용법" : "사용법 보기"}
+        <span aria-hidden="true">💡</span> {short ? t("사용법", "Help") : t("사용법 보기", "How it works")}
       </button>
       {hello && (
         <span className={styles.hello} role="note">
-          <b>안녕하세요! 👋</b>
-          <span>MIMIC 이 처음이라면 이 버튼을 눌러 보세요. 화면의 버튼이 뭔지 하나씩 알려드려요.</span>
+          <b>{t("반가워요! 👋", "Hey there! 👋")}</b>
+          <span>{t("MIMIC 처음이세요? 이 버튼을 누르면 화면 사용법을 하나씩 알려드려요.", "New to MIMIC? Tap here for a quick tour of this screen.")}</span>
           <span className={styles.helloActions}>
             <button
               type="button"
@@ -84,10 +86,10 @@ export function TourHelp({
                 setHello(false);
               }}
             >
-              나중에
+              {t("나중에", "Later")}
             </button>
             <button type="button" className={styles.helloGo} onClick={open}>
-              사용법 보기
+              {t("사용법 보기", "Show me")}
             </button>
           </span>
         </span>
@@ -109,7 +111,7 @@ function find(target: string): HTMLElement | null {
  * 고르기 같은)이 있으면 페이지까지 옆으로 밀어서, 안내를 닫은 뒤 화면이 잘려 보였다.
  */
 function reveal(el: HTMLElement) {
-  if (el.closest("nav[aria-label='주 메뉴']") || getComputedStyle(el).position === "fixed") return;
+  if (el.closest("[data-tour='nav']") || getComputedStyle(el).position === "fixed") return;
   const r = el.getBoundingClientRect();
   const vh = window.innerHeight;
   const top = r.height > vh * 0.6 ? r.top - 80 : r.top - (vh - r.height) / 2 + 60;
@@ -117,6 +119,7 @@ function reveal(el: HTMLElement) {
 }
 
 export function Tour({ id, steps }: { id: string; steps: TourStep[] }) {
+  const t = useT();
   const [live, setLive] = useState<TourStep[] | null>(null);
   const [i, setI] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
@@ -189,7 +192,7 @@ export function Tour({ id, steps }: { id: string; steps: TourStep[] }) {
     : { bottom: Math.min(vh - rect.top + PAD + 12, vh - 220) };
 
   return (
-    <div className={styles.layer} role="dialog" aria-modal="true" aria-label="화면 사용법">
+    <div className={styles.layer} role="dialog" aria-modal="true" aria-label={t("화면 사용법", "Screen guide")}>
       <div
         className={styles.spot}
         style={{
@@ -207,15 +210,15 @@ export function Tour({ id, steps }: { id: string; steps: TourStep[] }) {
         <div className={styles.body}>{step.body}</div>
         <div className={styles.actions}>
           <button type="button" className={styles.skip} onClick={() => close("skip")}>
-            {last ? "닫기" : "그만 보기"}
+            {last ? t("닫기", "Close") : t("그만 보기", "Skip")}
           </button>
           {i > 0 && (
             <button type="button" className={styles.prev} onClick={() => setI(i - 1)}>
-              이전
+              {t("이전", "Back")}
             </button>
           )}
           <button type="button" className={styles.next} onClick={() => (last ? close("done") : setI(i + 1))}>
-            {last ? "알겠어요" : "다음"}
+            {last ? t("알겠어요", "Got it") : t("다음", "Next")}
           </button>
         </div>
       </div>

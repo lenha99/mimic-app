@@ -8,6 +8,8 @@
  *
  * 브라우저(로그인)와 서버(가입)가 같은 규칙을 써야 해서 여기 한 곳에 둔다.
  */
+import { tr, type Lang } from "./i18n";
+
 export const USERNAME_RULE = /^[a-z0-9_]{3,20}$/;
 export const PASSWORD_MIN = 8;
 /** bcrypt 가 72바이트 뒤를 버린다. 그보다 긴 비밀번호는 착각을 부른다. */
@@ -24,19 +26,23 @@ export function usernameToEmail(username: string): string {
 }
 
 /** 규칙에 어긋나면 사람에게 보여줄 문구, 맞으면 null. */
-export function checkUsername(username: string): string | null {
+export function checkUsername(username: string, lang: Lang = "ko"): string | null {
   if (!USERNAME_RULE.test(username)) {
-    return "아이디는 영어 소문자·숫자·밑줄(_)로 3~20자예요.";
+    return tr(lang)(
+      "아이디는 영어 소문자·숫자·밑줄(_)로 3~20자예요.",
+      "Usernames are 3–20 lowercase letters, numbers or underscores.",
+    );
   }
   return null;
 }
 
-export function checkPassword(password: unknown): string | null {
+export function checkPassword(password: unknown, lang: Lang = "ko"): string | null {
+  const t = tr(lang);
   if (typeof password !== "string" || password.length < PASSWORD_MIN) {
-    return `비밀번호는 ${PASSWORD_MIN}자 이상이에요.`;
+    return t(`비밀번호는 ${PASSWORD_MIN}자 이상이에요.`, `Passwords need at least ${PASSWORD_MIN} characters.`);
   }
   if (new TextEncoder().encode(password).length > PASSWORD_MAX) {
-    return "비밀번호가 너무 길어요.";
+    return t("비밀번호가 너무 길어요.", "That password is too long.");
   }
   return null;
 }

@@ -1,3 +1,5 @@
+import type { Lang } from "./i18n";
+
 /**
  * 연습 피드백 게시판 — 규칙과 상수. 브라우저·서버가 같이 쓴다.
  *
@@ -26,6 +28,19 @@ export const NOTE_TAGS = {
 } as const;
 export type NoteTag = keyof typeof NOTE_TAGS;
 
+const NOTE_TAGS_EN: Record<NoteTag, string> = {
+  pace: "Pace",
+  breath: "Breath & pauses",
+  diction: "Diction",
+  emotion: "Emotion",
+  ending: "Endings",
+  good: "Loved it",
+};
+
+export function noteTagLabel(tag: NoteTag, lang: Lang): string {
+  return lang === "en" ? NOTE_TAGS_EN[tag] : NOTE_TAGS[tag];
+}
+
 export function isNoteTag(t: unknown): t is NoteTag {
   return typeof t === "string" && t in NOTE_TAGS;
 }
@@ -36,6 +51,10 @@ export const BOARD_TRACK_LABEL: Record<BoardTrack, string> = {
   anchor: "아나운서·낭독",
   line: "명대사",
 };
+
+export function boardTrackLabel(track: BoardTrack, lang: Lang): string {
+  return lang === "en" ? { voice: "Voice acting", anchor: "Anchor & reading", line: "Movie lines" }[track] : BOARD_TRACK_LABEL[track];
+}
 
 export type PostSummary = {
   id: string;

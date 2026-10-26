@@ -2,7 +2,8 @@ import { ImageResponse } from "next/og";
 import { VoiceAvatar } from "@/components/voice-avatar";
 import { normalizeAvatar } from "@/lib/avatar";
 import { svgToString } from "@/lib/svg-string";
-import { seasonLabel } from "@/lib/weekly";
+import { displayName, seasonLabel } from "@/lib/weekly";
+import { tr } from "@/lib/i18n";
 import { getEntry } from "@/lib/weekly-server";
 
 /**
@@ -30,17 +31,22 @@ async function subsetFont(text: string): Promise<ArrayBuffer | null> {
 }
 
 export async function GET(req: Request) {
-  const id = new URL(req.url).searchParams.get("id") ?? "";
+  const q = new URL(req.url).searchParams;
+  const id = q.get("id") ?? "";
+  const lang = q.get("lang") === "en" ? "en" : "ko";
+  const t = tr(lang);
   const entry = await getEntry(id).catch(() => null);
 
-  const name = (entry?.name ?? "익명의 목소리").slice(0, 16);
-  const title = (entry?.week.title ?? "보이스 챌린지").slice(0, 20);
-  const kicker = entry ? `${seasonLabel(entry.week)} 보이스 챌린지` : "MIMIC 보이스 챌린지";
-  const rank = entry ? `${entry.rank}위` : "";
-  const of = entry ? `/ ${entry.total}명` : "";
+  const name = displayName(entry?.name ?? "익명의 목소리", lang).slice(0, 16);
+  const title = (entry ? t(entry.week.title, entry.week.titleEn) : t("보이스 챌린지", "Voice challenge")).slice(0, 20);
+  const kicker = entry
+    ? t(`${seasonLabel(entry.week)} 보이스 챌린지`, `${seasonLabel(entry.week, "en")} voice challenge`)
+    : t("MIMIC 보이스 챌린지", "MIMIC voice challenge");
+  const rank = entry ? t(`${entry.rank}위`, `#${entry.rank}`) : "";
+  const of = entry ? t(`/ ${entry.total}명`, `of ${entry.total}`) : "";
   // 디스플레이 서체엔 ❤ 글리프가 없다 — 하트는 SVG 로 그리고 글자는 숫자만.
   const likes = entry ? String(entry.likes) : "";
-  const sub = "들어보고 하트 눌러줘";
+  const sub = t("들어 보고 하트 눌러 줘", "Listen & tap the heart");
   const font = await subsetFont(`${name}${title}${kicker}${rank}${of}${likes}${sub}MIMIC`);
 
   const svg = svgToString(<VoiceAvatar avatar={normalizeAvatar(entry?.avatar)} level={0.75} size={420} />);

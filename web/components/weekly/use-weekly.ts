@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { clientId } from "@/lib/client-id";
 import { markHeard, readHeard, readMine, writeMine } from "@/lib/weekly";
+import { useT } from "@/components/lang";
 
 /**
  * 챌린지 화면에서 "나"에 관한 것 — 내가 ❤ 누른 것, 내 출전작, 끝까지 들은 것.
@@ -11,6 +12,7 @@ import { markHeard, readHeard, readMine, writeMine } from "@/lib/weekly";
  * 출전작은 이 기기의 기록(readMine)으로 안다.
  */
 export function useWeeklyMe(weekId: string) {
+  const t = useT();
   const [liked, setLiked] = useState<Set<string>>(new Set());
   const [mineId, setMineId] = useState<string | null>(null);
   const [loggedIn, setLoggedIn] = useState(false);
@@ -63,7 +65,7 @@ export function useWeeklyMe(weekId: string) {
           body: JSON.stringify({ client: clientId() }),
         });
         const d = (await res.json().catch(() => ({}))) as { liked?: boolean; likes?: number; error?: string };
-        if (!res.ok || typeof d.likes !== "number") throw new Error(d.error ?? "❤ 를 남기지 못했어요.");
+        if (!res.ok || typeof d.likes !== "number") throw new Error(d.error ?? t("❤ 가 안 눌렸어요. 다시 시도해 주세요", "Couldn't send ❤. Try again"));
         return { liked: on, likes: d.likes };
       } catch (e) {
         setLiked((s) => {
@@ -75,7 +77,7 @@ export function useWeeklyMe(weekId: string) {
         throw e;
       }
     },
-    [liked],
+    [liked, t],
   );
 
   const forgetMine = useCallback(() => {
@@ -90,7 +92,7 @@ export function useWeeklyMe(weekId: string) {
 export async function shareLink(url: string, text: string): Promise<"shared" | "copied" | "failed"> {
   try {
     if (navigator.share) {
-      await navigator.share({ title: "MIMIC 보이스 챌린지", text, url });
+      await navigator.share({ title: "MIMIC", text, url });
       return "shared";
     }
   } catch (e) {

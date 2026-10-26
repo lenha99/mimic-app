@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { ClaimPending } from "@/app/profile/claim-pending";
+import { ClaimPending } from "@/app/[lang]/profile/claim-pending";
 import { useViewer } from "./viewer";
+import { useT } from "@/components/lang";
 import styles from "./viewer-welcome.module.css";
 
 /**
@@ -14,20 +15,24 @@ import styles from "./viewer-welcome.module.css";
  */
 export function ViewerWelcome({ todayId, todayTitle }: { todayId?: string; todayTitle?: string }) {
   const viewer = useViewer();
+  const t = useT();
   if (!viewer?.loggedIn) return null;
 
   const actions = [
-    todayId && { href: `/record/${todayId}`, icon: "🎯", label: "오늘의 소리 도전", sub: todayTitle },
-    { href: "/avatar", icon: "🎨", label: "내 캐릭터 꾸미기", sub: "버럭이·할머니·MZ…" },
-    { href: "/create", icon: "🎤", label: "내 챌린지 만들기", sub: "친구가 날 따라하게" },
-    { href: "/profile", icon: "📼", label: "내 녹음·챌린지", sub: "공개·삭제·다시 던지기" },
+    todayId && { href: `/record/${todayId}`, icon: "🎯", label: t("오늘의 대사 도전", "Today's challenge"), sub: todayTitle },
+    { href: "/avatar", icon: "🎨", label: t("내 캐릭터 꾸미기", "Style my character"), sub: t("버럭이·할머니·MZ…", "Angry guy, grandma, Gen Z…") },
+    { href: "/create", icon: "🎤", label: t("내 챌린지 만들기", "Make my challenge"), sub: t("친구들이 날 따라 하게", "Make friends copy YOU") },
+    { href: "/profile", icon: "📼", label: t("내 녹음·챌린지", "My takes & challenges"), sub: t("공개·삭제·다시 보내기", "Share, delete, resend") },
   ].filter(Boolean) as { href: string; icon: string; label: string; sub?: string }[];
 
   return (
     <section className={styles.welcome}>
       <ClaimPending />
       <p className={styles.hi}>
-        안녕, <b>{viewer.nickname ?? "친구"}</b>! 오늘은 뭐 해볼까?
+        {t(
+          <>반가워요, <b>{viewer.nickname ?? "친구"}</b>님! 오늘은 뭐 해볼까요?</>,
+          <>Hey <b>{viewer.nickname ?? "there"}</b>! What are we doing today?</>,
+        )}
       </p>
       <ul className={styles.grid}>
         {actions.map((a) => (

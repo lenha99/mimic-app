@@ -1,0 +1,165 @@
+import Link from "next/link";
+import { BackHome } from "@/components/back-home";
+import { VoiceAvatar } from "@/components/voice-avatar";
+import { normalizeAvatar } from "@/lib/avatar";
+import { createClient } from "@/lib/supabase/server";
+import { getLang } from "@/lib/i18n-server";
+import { tr } from "@/lib/i18n";
+import { memeText } from "@/lib/meme-i18n";
+import styles from "./rank.module.css";
+
+type RankRow = {
+  user_id: string;
+  meme_id: string;
+  nickname: string;
+  avatar_emoji: string;
+  avatar: unknown;
+  wins: number;
+  losses: number;
+  elo_rating: number;
+};
+
+/**
+ * 이만큼 붙어본 녹음부터 순위에 올린다.
+ *
+ * Elo 는 판이 쌓여야 뜻이 생긴다. 1판 이긴 녹음(1216)이 열 판 검증된 녹음보다
+ * 위에 서면, 사람이 적은 지금은 순위가 "먼저 한 번 이긴 사람" 순서가 된다.
+ */
+const MIN_GAMES = 3;
+
+/** TODO(Dev A): 페이지네이션, 내 순위 하이라이트. */
+export default async function RankPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ meme?: string }>;
+}) {
+  const { meme: selectedMeme } = await searchParams;
+  const lang = await getLang();
+  const t = tr(lang);
+  const supabase = await createClient();
+
+  const [{ data: memes }, rankingsResult] = await Promise.all([
+    supabase.from("memes").select("id, title, emoji").order("title"),
+    fetchAllRankings(supabase),
+  ]);
+  const { rows: rankings, error } = rankingsResult;
+
+  // 판 수는 밈별 녹음 단위로 센다. 전체 순위에서 밈 세 개에 한 판씩 붙은 사람이
+  // 합쳐서 세 판이 됐다고 올라가면, 결국 한 판짜리 Elo 가 순위를 정한다.
+  const seasoned = (r: RankRow) => r.wins + r.losses >= MIN_GAMES;
+  const all = rankings ?? [];
+  const rows = aggregate(all.filter(seasoned), selectedMeme);
+  const ranked = new Set(rows.map((r) => r.user_id));
+  const rookies = aggregate(
+    all.filter((r) => !seasoned(r)),
+    selectedMeme,
+  )
+    .filter((r) => !ranked.has(r.user_id))
+    .sort((a, b) => b.wins + b.losses - (a.wins + a.losses));
+
+  return (
+    <main className="shell">
+      <BackHome />
+      <h1 className={styles.title}>{t("🏆 랭킹", "🏆 Rankings")}</h1>
+      <p className={styles.note}>
+        {t(
+          `“이 목소리에 투표”를 받은 만큼 올라가요 · ${MIN_GAMES}판 이상 붙어 본 녹음부터 순위에 올라요`,
+          `Climb by winning votes · takes need ${MIN_GAMES}+ matchups to be ranked`,
+        )}
+      </p>
+
+      <div className={styles.tabs}>
+        <TabLink href="/rank" active={!selectedMeme}>
+          {t("전체", "All")}
+        </TabLink>
+        {memes?.map((m) => (
+          <TabLink key={m.id} href={`/rank?meme=${m.id}`} active={selectedMeme === m.id}>
+            {m.emoji} {memeText({ id: m.id, title: m.title, source: "" }, lang).title}
+          </TabLink>
+        ))}
+      </div>
+
+      {error && <p className={styles.warn}>{t(`랭킹을 불러오지 못했어요 (${error}).`, `Couldn't load rankings (${error}).`)}</p>}
+
+      {!error && all.length === 0 && (
+        <p className={styles.empty}>
+          {t("아직 집계된 투표가 없어요. 투표가 쌓이면 여기 순위가 나타나요.", "No votes yet. Rankings show up once votes come in.")}
+        </p>
+      )}
+
+      <ul className={styles.list}>
+        {rows.map((r, i) => (
+          <li key={r.user_id} className={styles.row}>
+            <span className={styles.rank}>#{i + 1}</span>
+            <VoiceAvatar avatar={normalizeAvatar(r.avatar)} size={34} />
+            <span className={styles.name}>{r.nickname}</span>
+            <span className={styles.record}>{t(`${r.wins}승 ${r.losses}패`, `${r.wins}W ${r.losses}L`)}</span>
+            <span className={styles.elo}>{r.elo_rating}</span>
+          </li>
+        ))}
+      </ul>
+
+      {rookies.length > 0 && (
+        <>
+          <h2 className={styles.subhead}>{t("심사 중", "In review")}</h2>
+          <ul className={styles.list}>
+            {rookies.map((r) => (
+              <li key={r.user_id} className={styles.row}>
+                <VoiceAvatar avatar={normalizeAvatar(r.avatar)} size={34} />
+                <span className={styles.name}>{r.nickname}</span>
+                <span className={styles.record}>{t(`${r.wins}승 ${r.losses}패`, `${r.wins}W ${r.losses}L`)}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </main>
+  );
+}
+
+/** 밈이 선택되어 있으면 그 밈만(elo 순), 아니면 유저별 최고 elo로 전체 집계. */
+/** PostgREST 는 한 번에 1000행까지만 준다. 그 이상은 끝까지 넘기며 모은다. */
+async function fetchAllRankings(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+): Promise<{ rows: RankRow[]; error: string | null }> {
+  const PAGE = 1000;
+  const rows: RankRow[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from("rankings")
+      .select("*")
+      .order("user_id")
+      .order("meme_id")
+      .range(from, from + PAGE - 1);
+    if (error) return { rows, error: error.message };
+    rows.push(...((data ?? []) as RankRow[]));
+    if (!data || data.length < PAGE) return { rows, error: null };
+  }
+}
+
+function aggregate(rankings: RankRow[], meme?: string): RankRow[] {
+  if (meme) {
+    return rankings.filter((r) => r.meme_id === meme).sort((a, b) => b.elo_rating - a.elo_rating);
+  }
+
+  const byUser = new Map<string, RankRow>();
+  for (const r of rankings) {
+    const acc = byUser.get(r.user_id);
+    if (!acc) {
+      byUser.set(r.user_id, { ...r });
+    } else {
+      acc.wins += r.wins;
+      acc.losses += r.losses;
+      acc.elo_rating = Math.max(acc.elo_rating, r.elo_rating);
+    }
+  }
+  return [...byUser.values()].sort((a, b) => b.elo_rating - a.elo_rating);
+}
+
+function TabLink({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
+  return (
+    <Link href={href} className={`${styles.tab} ${active ? styles.tabActive : ""}`}>
+      {children}
+    </Link>
+  );
+}

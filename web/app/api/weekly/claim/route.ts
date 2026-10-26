@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { requestT } from "@/lib/i18n";
 
 /**
  * 게스트로 출전한 작품을 로그인한 계정으로 가져온다. 순위·❤·수상 기록이 그대로 따라온다.
@@ -8,11 +9,12 @@ import { createServiceClient } from "@/lib/supabase/service";
  * 출전작은 그대로 남고 열쇠도 기기에 남는다. 응답의 done 은 기기에서 버려도 되는 열쇠다.
  */
 export async function POST(req: Request) {
+  const t = requestT(req);
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return Response.json({ error: "로그인이 필요해요." }, { status: 401 });
+  if (!user) return Response.json({ error: t("로그인이 필요해요.", "Please log in.") }, { status: 401 });
 
   const { tokens } = (await req.json().catch(() => ({}))) as { tokens?: unknown };
   const list = (Array.isArray(tokens) ? tokens : [])

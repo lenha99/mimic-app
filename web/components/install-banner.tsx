@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { detectInstallEnv, promptInstall, subscribeInstallPrompt, type InstallEnv } from "@/lib/install";
 import styles from "./install-banner.module.css";
+import { useT } from "@/components/lang";
 
 const DISMISS_KEY = "mimic:install-dismissed";
 const DISMISS_FOR = 14 * 86_400_000;
@@ -14,6 +15,7 @@ const DISMISS_FOR = 14 * 86_400_000;
  * 이미 설치해서 연 경우와 데스크톱에선 그리지 않는다.
  */
 export function InstallBanner() {
+  const t = useT();
   const [env, setEnv] = useState<InstallEnv | null>(null);
   const [canPrompt, setCanPrompt] = useState(false);
 
@@ -37,16 +39,18 @@ export function InstallBanner() {
   };
 
   const label =
-    env.kind === "inapp" ? "브라우저로 열고 앱으로 설치" : "홈 화면에 앱으로 설치";
+    env.kind === "inapp"
+      ? t("브라우저로 열어서 앱처럼 설치하기", "Open in browser & install as an app")
+      : t("홈 화면에 앱으로 설치하기", "Install on your home screen");
   const body = (
     <>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/icons/icon-192.png" alt="" width={36} height={36} className={styles.icon} />
       <span className={styles.text}>
         <b>{label}</b>
-        <small>아이콘 한 번에 · Add to Home Screen</small>
+        <small>{t("아이콘 한 번 탭이면 바로 도전 · 무료", "One tap to play · free")}</small>
       </span>
-      <span className={styles.go}>설치</span>
+      <span className={styles.go}>{t("설치", "Install")}</span>
     </>
   );
 
@@ -68,7 +72,7 @@ export function InstallBanner() {
           {body}
         </Link>
       )}
-      <button type="button" className={styles.close} onClick={close} aria-label="닫기">
+      <button type="button" className={styles.close} onClick={close} aria-label={t("닫기", "Close")}>
         ×
       </button>
     </div>

@@ -1,0 +1,149 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import type { Metadata } from "next";
+import { refAudio } from "@/lib/config";
+import { findMeme as findAnyMeme } from "@/lib/challenges";
+import { extraLine } from "@/lib/memes";
+import { getViewer } from "@/lib/viewer";
+import { YoutubeClip } from "@/components/youtube-clip";
+import Recorder from "./recorder";
+import { ScreenTour } from "@/components/onboarding/tours";
+import { TourHelp } from "@/components/onboarding/tour";
+import { getLang } from "@/lib/i18n-server";
+import { tr } from "@/lib/i18n";
+import { memeText } from "@/lib/meme-i18n";
+import styles from "./record.module.css";
+
+type Props = {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+/**
+ * 공유 링크에 실려 오는 친구 점수(`?s=87`).
+ *
+ * 링크를 받은 사람에게 "넘어야 할 숫자"를 보여주는 것이 이 앱의 유일한 자가증식
+ * 장치다. 남의 입력이므로 0~100 정수만 통과시킨다.
+ */
+function parseBeat(raw: string | string[] | undefined): number | null {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (!value) return null;
+  const n = Number(value);
+  return Number.isInteger(n) && n >= 0 && n <= 100 ? n : null;
+}
+
+async function findMeme(id: string) {
+  // 미공개(draft) 밈과 검토 전 사용자 챌린지도 직링크로는 열려야 한다 —
+  // 챌린지를 만든 사람이 링크를 바로 친구한테 던지는 경로다.
+  const found = await findAnyMeme(id);
+  if (!found) return null;
+  const { meme, catalog: memes } = found;
+
+  // 결과 화면에서 목록으로 돌아가지 않고 바로 다음 소리로 넘어가기 위한 것.
+  // 다음 소리는 공개된 것 중에서 고른다 — 미공개를 남에게 떠넘기면 안 된다.
+  const live = memes.filter((m) => !m.draft);
+  const at = live.findIndex((m) => m.id === id);
+  const next = live.length > 1 && at >= 0 ? live[(at + 1) % live.length] : live[0] ?? null;
+  return { meme, next: next && next.id !== id ? next : null };
+}
+
+export async function generateMetadata({
+  params,
+  searchParams,
+}: Props): Promise<Metadata> {
+  const found = await findMeme((await params).id);
+  const lang = await getLang();
+  const t = tr(lang);
+  if (!found) return { title: t("없는 챌린지예요", "Challenge not found") };
+
+  const { meme } = found;
+  const mt = memeText(meme, lang);
+  const beat = parseBeat((await searchParams).s);
+
+  // 점수가 실려 오면 카톡·DM 미리보기 자체가 도전장이 된다.
+  // (OG 이미지는 아직 없다 — 이슈 #14. 그때까진 제목·설명으로 숫자를 보낸다.)
+  const title =
+    beat !== null
+      ? t(`🔥 ${mt.title} ${beat}점… 이거 넘을 수 있어요?`, `🔥 ${beat} pts on "${mt.title}" — can you beat it?`)
+      : t(`${mt.title} — 똑같이 따라 하면 몇 점?`, `"${mt.title}" — how close can you get?`);
+  const description =
+    beat !== null
+      ? t(
+          `친구가 '${mt.title}' 따라 하기로 ${beat}점을 찍었어요. 설치 없이 탭 한 번이면 바로 도전!`,
+          `Your friend scored ${beat} copying "${mt.title}". No install — one tap and you're in.`,
+        )
+      : t(
+          `${mt.source} 레전드 대사, 듣고 따라 해보세요. 설치 없이 탭 한 번이면 점수가 나와요.`,
+          `Copy the iconic line from ${mt.source}. No install — one tap to get your score.`,
+        );
+
+  // 미리보기 카드. 카톡에 링크를 던졌을 때 회색 박스가 뜨면 아무도 안 누른다.
+  const card = new URLSearchParams({
+    title: mt.title,
+    source: mt.source ?? "",
+    lang,
+    emoji: meme.emoji ?? "🎙",
+    ...(extraLine(meme) ? { line: extraLine(meme)! } : {}),
+    ...(beat !== null ? { s: String(beat) } : {}),
+  });
+  const images = [{ url: `/api/og?${card}`, width: 1200, height: 630 }];
+
+  return {
+    title,
+    description,
+    openGraph: { title, description, type: "website", images },
+    twitter: { card: "summary_large_image", title, description, images },
+  };
+}
+
+export default async function RecordPage({ params, searchParams }: Props) {
+  const found = await findMeme((await params).id);
+  if (!found) notFound();
+
+  const { meme, next } = found;
+  const beat = parseBeat((await searchParams).s);
+  const viewer = await getViewer();
+  const lang = await getLang();
+  const t = tr(lang);
+  const mt = memeText(meme, lang);
+
+  return (
+    <main className="shell">
+      <TourHelp id="record" corner />
+      <header className={styles.head}>
+        <Link href="/" className={styles.back}>
+          {t("← 다른 대사", "← More clips")}
+        </Link>
+        <div className={styles.titleRow}>
+          <h1 className={styles.title}>{mt.title}</h1>
+          <p className={styles.source}>{mt.source}</p>
+        </div>
+        {/* 대사가 있는 밈은 연습실에서 반복할 수 있다 — 기록이 쌓이고 원본과 나란히 비교한다. */}
+        {meme.line && !meme.id.startsWith("u_") && (
+          <Link href={`/practice/${meme.id}`} className={styles.practiceLink}>
+            {t("연습 모드로 무한 반복 →", "Practice mode — repeat it →")}
+          </Link>
+        )}
+      </header>
+
+      {meme.youtube && (
+        <YoutubeClip
+          id={meme.youtube.id}
+          start={meme.youtube.start}
+          end={meme.youtube.end}
+          title={mt.title}
+        />
+      )}
+
+      <Recorder
+        meme={meme}
+        refUrl={refAudio(meme.id)}
+        beat={beat}
+        next={next ? { id: next.id, title: next.title } : null}
+        loggedIn={viewer.loggedIn}
+        avatar={viewer.avatar}
+      />
+      <ScreenTour id="record" />
+    </main>
+  );
+}

@@ -3,6 +3,7 @@ import { config } from "@/lib/config";
 import { removeUgcAudio } from "@/lib/challenges";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { requestT } from "@/lib/i18n";
 
 /**
  * 내 소리로 챌린지 만들기.
@@ -24,12 +25,13 @@ function clean(v: FormDataEntryValue | null, max: number): string {
 }
 
 export async function POST(req: Request) {
+  const t = requestT(req);
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    return Response.json({ error: "챌린지를 만들려면 로그인이 필요해요." }, { status: 401 });
+    return Response.json({ error: t("챌린지를 만들려면 로그인이 필요해요.", "Log in to create challenges.") }, { status: 401 });
   }
 
   const form = await req.formData();
@@ -38,13 +40,13 @@ export async function POST(req: Request) {
   const line = clean(form.get("line"), 40);
   const emoji = clean(form.get("emoji"), 8) || "🎤";
   if (!(file instanceof Blob) || file.size === 0) {
-    return Response.json({ error: "녹음이 비어 있어요." }, { status: 400 });
+    return Response.json({ error: t("녹음이 비어 있어요.", "The recording is empty.") }, { status: 400 });
   }
   if (file.size > MAX_BYTES) {
-    return Response.json({ error: "녹음이 너무 커요." }, { status: 413 });
+    return Response.json({ error: t("녹음이 너무 커요.", "The recording is too large.") }, { status: 413 });
   }
   if (!title) {
-    return Response.json({ error: "제목을 적어주세요." }, { status: 400 });
+    return Response.json({ error: t("제목을 적어주세요.", "Please add a title.") }, { status: 400 });
   }
 
   const service = createServiceClient();
@@ -55,12 +57,12 @@ export async function POST(req: Request) {
     .eq("creator_id", user.id)
     .gte("created_at", since);
   if ((count ?? 0) >= PER_DAY) {
-    return Response.json({ error: `챌린지는 하루 ${PER_DAY}개까지 만들 수 있어요.` }, { status: 429 });
+    return Response.json({ error: t(`챌린지는 하루 ${PER_DAY}개까지 만들 수 있어요.`, `You can create up to ${PER_DAY} challenges a day.`) }, { status: 429 });
   }
 
   const token = process.env.UGC_TOKEN;
   if (!token) {
-    return Response.json({ error: "지금은 챌린지를 만들 수 없어요." }, { status: 503 });
+    return Response.json({ error: t("지금은 챌린지를 만들 수 없어요.", "Challenge creation is unavailable right now.") }, { status: 503 });
   }
 
   // 8자리 소문자·숫자 — DB 제약(^u_[a-z0-9]{8}$)과 같다.
@@ -77,10 +79,10 @@ export async function POST(req: Request) {
     );
     made = await res.json();
   } catch {
-    return Response.json({ error: "소리 서버가 응답하지 않아요. 잠시 후 다시 해주세요." }, { status: 504 });
+    return Response.json({ error: t("소리 서버가 응답하지 않아요. 잠시 후 다시 해주세요.", "The audio server isn't responding. Please try again shortly.") }, { status: 504 });
   }
   if (!made.ok) {
-    return Response.json({ error: made.error ?? "소리를 다듬지 못했어요. 다시 녹음해줄래요?" }, { status: 422 });
+    return Response.json({ error: made.error ?? t("소리를 다듬지 못했어요. 다시 녹음해줄래요?", "Couldn't process the sound. Try recording again?") }, { status: 422 });
   }
 
   const { error } = await service.from("challenges").insert({
@@ -93,7 +95,7 @@ export async function POST(req: Request) {
   });
   if (error) {
     await removeUgcAudio(id); // 행이 없으면 그 소리는 아무도 못 찾는다
-    return Response.json({ error: "챌린지를 저장하지 못했어요. 다시 해주세요." }, { status: 500 });
+    return Response.json({ error: t("챌린지를 저장하지 못했어요. 다시 해주세요.", "Couldn't save the challenge. Please try again.") }, { status: 500 });
   }
 
   return Response.json({ id });

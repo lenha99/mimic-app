@@ -5,6 +5,7 @@ import { proxyHeaders } from "@/lib/modal-proxy";
 import { findMeme } from "@/lib/challenges";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { requestT } from "@/lib/i18n";
 
 /**
  * "저장하기" 버튼이 부를 단일 엔드포인트 (이슈 #23).
@@ -28,10 +29,11 @@ const MAX_BYTES = 10 * 1024 * 1024;
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
+  const t = requestT(req);
   const q = new URL(req.url).searchParams;
   const memeId = q.get("meme_id");
   if (!memeId) {
-    return Response.json({ error: "meme_id가 없습니다" }, { status: 400 });
+    return Response.json({ error: t("meme_id가 없습니다", "Missing meme_id.") }, { status: 400 });
   }
   const client = (q.get("client") ?? "").slice(0, 64);
 
@@ -51,10 +53,10 @@ export async function POST(req: Request) {
   }
 
   if (!(file instanceof Blob) || file.size === 0) {
-    return Response.json({ error: "녹음이 비어 있습니다" }, { status: 400 });
+    return Response.json({ error: t("녹음이 비어 있습니다", "The recording is empty.") }, { status: 400 });
   }
   if (file.size > MAX_BYTES) {
-    return Response.json({ error: "녹음이 너무 깁니다" }, { status: 413 });
+    return Response.json({ error: t("녹음이 너무 깁니다", "The recording is too long.") }, { status: 413 });
   }
 
   // 1) 누가 요청했는지 확인 — 로그인 유저면 user_id, 아니면 게스트.
@@ -64,7 +66,7 @@ export async function POST(req: Request) {
   } = await supabase.auth.getUser();
 
   if (isPublic && !user) {
-    return Response.json({ error: "공개하려면 로그인이 필요해요." }, { status: 401 });
+    return Response.json({ error: t("공개하려면 로그인이 필요해요.", "Log in to make it public.") }, { status: 401 });
   }
 
   // 2) 카탈로그에 있는 밈인지. recordings.meme_id 는 memes 를 참조하는데, memes 테이블은
@@ -72,7 +74,7 @@ export async function POST(req: Request) {
   // 운영 콘텐츠든 사용자 챌린지든 (lib/challenges.findMeme).
   const meme = (await findMeme(memeId))?.meme;
   if (!meme) {
-    return Response.json({ error: "없는 챌린지예요" }, { status: 404 });
+    return Response.json({ error: t("없는 챌린지예요", "Challenge not found.") }, { status: 404 });
   }
 
   // 3) 같은 오디오로 Modal에 다시 채점 요청 — 클라이언트가 뭐라 주장하든 무시.
@@ -92,12 +94,12 @@ export async function POST(req: Request) {
     );
     const data = await res.json();
     if (!res.ok || data.error || typeof data.score !== "number") {
-      return Response.json({ error: data.error ?? "채점에 실패했습니다." }, { status: 502 });
+      return Response.json({ error: data.error ?? t("채점에 실패했습니다.", "Scoring failed.") }, { status: 502 });
     }
     scoreResult = data;
   } catch {
     return Response.json(
-      { error: "채점 서버가 응답하지 않습니다. 잠시 후 다시 시도해 주세요." },
+      { error: t("채점 서버가 응답하지 않습니다. 잠시 후 다시 시도해 주세요.", "The scoring server isn't responding. Please try again shortly.") },
       { status: 504 },
     );
   }
@@ -110,7 +112,7 @@ export async function POST(req: Request) {
     { onConflict: "id" },
   );
   if (memeError) {
-    return Response.json({ error: "결과 저장에 실패했습니다." }, { status: 500 });
+    return Response.json({ error: t("결과 저장에 실패했습니다.", "Couldn't save the result.") }, { status: 500 });
   }
 
   const folder = user?.id ?? "guest";
@@ -120,7 +122,7 @@ export async function POST(req: Request) {
     contentType: "audio/webm",
   });
   if (uploadError) {
-    return Response.json({ error: "파일 저장에 실패했습니다." }, { status: 500 });
+    return Response.json({ error: t("파일 저장에 실패했습니다.", "Couldn't save the file.") }, { status: 500 });
   }
 
   const claimToken = user ? undefined : randomUUID();
@@ -146,7 +148,7 @@ export async function POST(req: Request) {
   if (insertError || !recording) {
     // 행이 없으면 파일은 아무도 못 찾는 고아가 된다. 지운다.
     await service.storage.from("recordings").remove([path]);
-    return Response.json({ error: "결과 저장에 실패했습니다." }, { status: 500 });
+    return Response.json({ error: t("결과 저장에 실패했습니다.", "Couldn't save the result.") }, { status: 500 });
   }
 
   return Response.json({

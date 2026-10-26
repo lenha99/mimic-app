@@ -1,6 +1,7 @@
 import { allow, clientIp, tooMany } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { requestT } from "@/lib/i18n";
 
 /**
  * 결과 화면 한 줄 피드백 (components/quick-feedback). 로그인 없이도 받는다 —
@@ -9,11 +10,12 @@ import { createServiceClient } from "@/lib/supabase/service";
 const PAGES = ["record", "practice", "board"] as const;
 
 export async function POST(req: Request) {
-  if (!allow(`feedback:${clientIp(req)}`, 12, 3_600_000)) return tooMany();
+  const t = requestT(req);
+  if (!allow(`feedback:${clientIp(req)}`, 12, 3_600_000)) return tooMany(t("너무 자주 눌렀어요. 잠깐 쉬었다가 다시 시도해 주세요.", "Too many tries. Take a breather and try again."));
   const b = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   const rating = b.rating === 1 ? 1 : b.rating === -1 ? -1 : null;
   const page = PAGES.find((p) => p === b.page);
-  if (!rating || !page) return Response.json({ error: "잘못된 요청이에요." }, { status: 400 });
+  if (!rating || !page) return Response.json({ error: t("잘못된 요청이에요.", "Invalid request.") }, { status: 400 });
   const message = typeof b.message === "string" ? b.message.trim().slice(0, 500) : "";
 
   const supabase = await createClient();
@@ -31,6 +33,6 @@ export async function POST(req: Request) {
       rating,
       message: message || null,
     });
-  if (error) return Response.json({ error: "보내지 못했어요." }, { status: 500 });
+  if (error) return Response.json({ error: t("보내지 못했어요.", "Couldn't send.") }, { status: 500 });
   return Response.json({ ok: true });
 }

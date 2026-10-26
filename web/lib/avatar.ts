@@ -64,12 +64,12 @@ export const HAIR_COLORS: Record<Avatar["hairColor"], string> = {
 };
 
 /** 편집 화면의 탭 순서와 이름. */
-export const PART_GROUPS: { label: string; parts: AvatarPart[] }[] = [
-  { label: "얼굴", parts: ["body", "color"] },
-  { label: "표정", parts: ["eyes", "face"] },
-  { label: "머리", parts: ["hair", "hairColor"] },
-  { label: "소품", parts: ["glasses", "hat"] },
-  { label: "효과", parts: ["fx"] },
+export const PART_GROUPS: { label: string; labelEn: string; parts: AvatarPart[] }[] = [
+  { label: "얼굴", labelEn: "Body", parts: ["body", "color"] },
+  { label: "표정", labelEn: "Face", parts: ["eyes", "face"] },
+  { label: "머리", labelEn: "Hair", parts: ["hair", "hairColor"] },
+  { label: "소품", labelEn: "Gear", parts: ["glasses", "hat"] },
+  { label: "효과", labelEn: "FX", parts: ["fx"] },
 ];
 
 export const PART_LABELS: Record<AvatarPart, string> = {
@@ -111,38 +111,85 @@ export const OPTION_LABELS: Record<AvatarPart, Record<string, string>> = {
   fx: { none: "없음", fire: "불꽃", rain: "먹구름", sparkle: "반짝이", hearts: "하트", sweat: "땀" },
 };
 
+export const PART_LABELS_EN: Record<AvatarPart, string> = {
+  body: "Body",
+  color: "Color",
+  eyes: "Eyes",
+  hair: "Hair",
+  hairColor: "Hair color",
+  face: "Details",
+  glasses: "Glasses",
+  hat: "Hat",
+  fx: "Effect",
+};
+
+export const OPTION_LABELS_EN: Record<AvatarPart, Record<string, string>> = {
+  body: { blob: "Blob", cat: "Cat", bear: "Bear", bunny: "Bunny", ghost: "Ghost" },
+  color: {
+    skin: "Apricot", tan: "Tan", volt: "Neon", pink: "Pink", peach: "Peach", red: "Red",
+    blue: "Blue", cyan: "Sky", lime: "Lime", lilac: "Lilac", white: "White",
+  },
+  eyes: {
+    dot: "Dots", happy: "Happy", sleepy: "Sleepy", wink: "Wink", star: "Starry", heart: "Hearts",
+    angry: "Angry", sad: "Teary",
+  },
+  hair: {
+    none: "None", bangs: "Bangs", twin: "Pigtails", spiky: "Spiky", perm: "Curly perm",
+    bun: "Bun", bald: "Receding", white: "White sides",
+  },
+  hairColor: { black: "Black", brown: "Brown", blonde: "Blonde", pink: "Pink", gray: "Silver" },
+  face: {
+    none: "None", blush: "Blush", freckles: "Freckles", mustache: "Mustache", beard: "White beard",
+    wrinkles: "Wrinkles", tears: "Tears", bandaid: "Band-aid",
+  },
+  glasses: { none: "None", round: "Round", thick: "Horn-rim", sun: "Shades", reading: "Readers" },
+  hat: {
+    none: "None", cap: "Cap", beanie: "Beanie", bucket: "Bucket hat", visor: "Visor", crown: "Crown",
+    bow: "Bow", flower: "Flower pin", headset: "Headset",
+  },
+  fx: { none: "None", fire: "Fire", rain: "Rain cloud", sparkle: "Sparkles", hearts: "Hearts", sweat: "Sweat" },
+};
+
 /** 한 번 눌러 바로 되는 캐릭터. 여기서 시작해 파츠를 바꾸면 된다. */
-export const PRESETS: { name: string; avatar: Avatar }[] = [
+export const PRESETS: { name: string; nameEn: string; avatar: Avatar }[] = [
   {
     name: "버럭이",
+    nameEn: "Grumpy",
     avatar: { body: "blob", color: "red", eyes: "angry", hair: "spiky", hairColor: "black", face: "none", glasses: "none", hat: "none", fx: "fire" },
   },
   {
     name: "슬픔이",
+    nameEn: "Weepy",
     avatar: { body: "blob", color: "blue", eyes: "sad", hair: "bangs", hairColor: "black", face: "tears", glasses: "round", hat: "none", fx: "rain" },
   },
   {
     name: "아저씨",
+    nameEn: "Ajussi",
     avatar: { body: "blob", color: "skin", eyes: "dot", hair: "bald", hairColor: "black", face: "mustache", glasses: "thick", hat: "none", fx: "sweat" },
   },
   {
     name: "할아버지",
+    nameEn: "Grandpa",
     avatar: { body: "blob", color: "skin", eyes: "happy", hair: "white", hairColor: "gray", face: "beard", glasses: "reading", hat: "none", fx: "none" },
   },
   {
     name: "아줌마",
+    nameEn: "Ajumma",
     avatar: { body: "blob", color: "skin", eyes: "happy", hair: "perm", hairColor: "brown", face: "blush", glasses: "none", hat: "visor", fx: "none" },
   },
   {
     name: "할머니",
+    nameEn: "Grandma",
     avatar: { body: "blob", color: "skin", eyes: "happy", hair: "bun", hairColor: "gray", face: "wrinkles", glasses: "reading", hat: "flower", fx: "none" },
   },
   {
     name: "MZ",
+    nameEn: "Gen Z",
     avatar: { body: "cat", color: "lilac", eyes: "wink", hair: "none", hairColor: "black", face: "blush", glasses: "sun", hat: "bucket", fx: "sparkle" },
   },
   {
     name: "사랑둥이",
+    nameEn: "Lovebug",
     avatar: { body: "bunny", color: "pink", eyes: "heart", hair: "twin", hairColor: "blonde", face: "blush", glasses: "none", hat: "bow", fx: "hearts" },
   },
 ];

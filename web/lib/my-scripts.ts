@@ -1,4 +1,5 @@
 import { syllables, type PitchBand, type Script, type Track } from "./practice";
+import { tr, type Lang } from "./i18n";
 
 /**
  * 내 대본 — 사용자가 직접 넣은 연습 대본. 이 기기(localStorage)에만 남는다.
@@ -25,9 +26,9 @@ export const MAX_SYLLABLES = 500;
 export const MAX_CHARS = 900;
 
 export const PACE_PRESETS = {
-  slow: { label: "느리게", pace: [3.0, 4.2] },
-  mid: { label: "보통", pace: [3.8, 5.2] },
-  fast: { label: "빠르게", pace: [4.8, 6.4] },
+  slow: { label: "느리게", labelEn: "Slow", pace: [3.0, 4.2] },
+  mid: { label: "보통", labelEn: "Natural", pace: [3.8, 5.2] },
+  fast: { label: "빠르게", labelEn: "Fast", pace: [4.8, 6.4] },
 } as const;
 export type PaceKey = keyof typeof PACE_PRESETS;
 
@@ -61,26 +62,35 @@ export type Draft = {
 };
 
 /** 문제가 있으면 사람에게 보여줄 문구, 괜찮으면 null. */
-export function checkDraft(d: Draft): string | null {
-  if (!d.title.trim()) return "제목을 적어 주세요.";
-  if (d.title.trim().length > MAX_TITLE) return `제목은 ${MAX_TITLE}자까지예요.`;
+export function checkDraft(d: Draft, lang: Lang = "ko"): string | null {
+  const t = tr(lang);
+  if (!d.title.trim()) return t("제목을 적어 주세요.", "Please add a title.");
+  if (d.title.trim().length > MAX_TITLE) return t(`제목은 ${MAX_TITLE}자까지예요.`, `Titles can be up to ${MAX_TITLE} characters.`);
   const syl = syllables(d.text);
-  if (syl < 5) return "대본이 너무 짧아요. 한글로 다섯 글자 이상 적어 주세요.";
-  if (syl > MAX_SYLLABLES) return `대본이 너무 길어요. 한글 ${MAX_SYLLABLES}자까지 넣을 수 있어요 (지금 ${syl}자).`;
-  if (d.text.length > MAX_CHARS) return `대본이 너무 길어요. 전체 ${MAX_CHARS}자까지예요.`;
-  if (d.direction.length > MAX_DIRECTION) return `디렉션은 ${MAX_DIRECTION}자까지예요.`;
+  if (syl < 5) return t("대본이 너무 짧아요. 한글로 다섯 글자 이상 적어 주세요.", "Too short. Please write at least 5 Korean syllables.");
+  if (syl > MAX_SYLLABLES)
+    return t(
+      `대본이 너무 길어요. 한글 ${MAX_SYLLABLES}자까지 넣을 수 있어요 (지금 ${syl}자).`,
+      `Too long. Up to ${MAX_SYLLABLES} Korean syllables (now ${syl}).`,
+    );
+  if (d.text.length > MAX_CHARS) return t(`대본이 너무 길어요. 전체 ${MAX_CHARS}자까지예요.`, `Too long. Up to ${MAX_CHARS} characters total.`);
+  if (d.direction.length > MAX_DIRECTION)
+    return t(`디렉션은 ${MAX_DIRECTION}자까지예요.`, `Direction can be up to ${MAX_DIRECTION} characters.`);
   return null;
 }
 
 /** 저장하고 id 를 돌려준다. 실패하면 문구를 던진다. */
-export function saveMine(d: Draft, id?: string): string {
-  const problem = checkDraft(d);
+export function saveMine(d: Draft, id?: string, lang: Lang = "ko"): string {
+  const t = tr(lang);
+  const problem = checkDraft(d, lang);
   if (problem) throw new Error(problem);
   const rows = listMine();
   const now = Date.now();
   const cur = id ? rows.find((s) => s.id === id) : undefined;
   if (!cur && rows.length >= MAX_MINE) {
-    throw new Error(`내 대본은 ${MAX_MINE}편까지예요. 안 쓰는 대본을 지우고 다시 해주세요.`);
+    throw new Error(
+      t(`내 대본은 ${MAX_MINE}편까지예요. 안 쓰는 대본을 지우고 다시 해주세요.`, `You can keep up to ${MAX_MINE} scripts. Delete one you don't use and try again.`),
+    );
   }
   const script: MyScript = {
     id: cur?.id ?? `${MY_PREFIX}${now.toString(36)}${Math.random().toString(36).slice(2, 6)}`,
@@ -99,7 +109,7 @@ export function saveMine(d: Draft, id?: string): string {
   try {
     localStorage.setItem(KEY, JSON.stringify(next));
   } catch {
-    throw new Error("이 브라우저는 저장이 막혀 있어요. 사생활 보호 모드라면 꺼 주세요.");
+    throw new Error(t("이 브라우저는 저장이 막혀 있어요. 사생활 보호 모드라면 꺼 주세요.", "This browser blocks storage. Turn off private mode and try again."));
   }
   return script.id;
 }

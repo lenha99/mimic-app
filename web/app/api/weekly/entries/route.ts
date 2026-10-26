@@ -6,6 +6,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { currentWeek, guestName, isLive, MAX_ENTRY_SECONDS } from "@/lib/weekly";
 import { cleanNickname } from "@/lib/nickname";
 import { ensureWeek, getBoard } from "@/lib/weekly-server";
+import { requestT } from "@/lib/i18n";
 
 /**
  * 이번 주 챌린지 출전 · 교체 · 내리기.
@@ -22,9 +23,10 @@ const MAX_ENTRIES = 500;
 const CLIENT = /^[a-z0-9]{8,40}$/;
 
 export async function POST(req: Request) {
+  const t = requestT(req);
   const ip = clientIp(req);
   if (!allow(`weekly-enter:${ip}`, 8, 3_600_000)) {
-    return tooMany("한 시간에 너무 많이 올렸어요. 잠시 뒤에 해주세요.");
+    return tooMany(t("한 시간에 너무 많이 올렸어요. 잠시 뒤에 해주세요.", "Too many uploads this hour. Please try again later."));
   }
 
   const form = await req.formData().catch(() => null);
@@ -46,19 +48,19 @@ export async function POST(req: Request) {
 
   const week = currentWeek();
   if (weekId !== week.id || !isLive(week)) {
-    return Response.json({ error: "이번 주 챌린지가 마감됐어요. 새 대본으로 다시 도전해 주세요." }, { status: 409 });
+    return Response.json({ error: t("이번 주 챌린지가 마감됐어요. 새 대본으로 다시 도전해 주세요.", "This week's challenge has closed. Try again with the new script.") }, { status: 409 });
   }
   if (!(file instanceof Blob) || file.size < 1000) {
-    return Response.json({ error: "녹음이 비어 있어요." }, { status: 400 });
+    return Response.json({ error: t("녹음이 비어 있어요.", "The recording is empty.") }, { status: 400 });
   }
   if (file.size > MAX_BYTES) {
-    return Response.json({ error: "녹음이 너무 커요." }, { status: 413 });
+    return Response.json({ error: t("녹음이 너무 커요.", "The recording is too large.") }, { status: 413 });
   }
   if (!/^audio\//.test(file.type)) {
-    return Response.json({ error: "녹음 파일이 아니에요." }, { status: 400 });
+    return Response.json({ error: t("녹음 파일이 아니에요.", "That's not an audio file.") }, { status: 400 });
   }
   if (!Number.isFinite(duration) || duration < 2 || duration > MAX_ENTRY_SECONDS) {
-    return Response.json({ error: `출전 녹음은 2초~${MAX_ENTRY_SECONDS}초여야 해요.` }, { status: 400 });
+    return Response.json({ error: t(`출전 녹음은 2초~${MAX_ENTRY_SECONDS}초여야 해요.`, `Entries must be 2–${MAX_ENTRY_SECONDS} seconds long.`) }, { status: 400 });
   }
 
   const supabase = await createClient();
@@ -67,7 +69,7 @@ export async function POST(req: Request) {
   } = await supabase.auth.getUser();
   if (!user && !CLIENT.test(client)) {
     return Response.json(
-      { error: "이 브라우저는 저장이 막혀 있어서 로그인해야 출전할 수 있어요." },
+      { error: t("이 브라우저는 저장이 막혀 있어서 로그인해야 출전할 수 있어요.", "This browser blocks storage, so you'll need to log in to enter.") },
       { status: 401 },
     );
   }
@@ -83,7 +85,7 @@ export async function POST(req: Request) {
     .eq("owner", owner)
     .maybeSingle();
   if (existing && !user && existing.claim_token !== token) {
-    return Response.json({ error: "이 기기에서 출전한 작품만 바꿀 수 있어요." }, { status: 403 });
+    return Response.json({ error: t("이 기기에서 출전한 작품만 바꿀 수 있어요.", "You can only replace entries made on this device.") }, { status: 403 });
   }
   // 게스트로 출전한 뒤 로그인했는데 아직 귀속(ClaimPending) 전이면, 그 게스트 출전작이 곧
   // 이 사람의 출전작이다. 여기서 귀속하지 않으면 한 사람이 두 작품을 갖게 된다.
@@ -97,14 +99,14 @@ export async function POST(req: Request) {
       .maybeSingle();
     if (guest) {
       if (guest.claim_token !== token) {
-        return Response.json({ error: "이 기기에서 출전한 작품만 바꿀 수 있어요." }, { status: 403 });
+        return Response.json({ error: t("이 기기에서 출전한 작품만 바꿀 수 있어요.", "You can only replace entries made on this device.") }, { status: 403 });
       }
       const { error } = await service
         .from("weekly_entries")
         .update({ user_id: user.id, owner, claim_token: null, guest_name: null })
         .eq("id", guest.id)
         .is("user_id", null);
-      if (error) return Response.json({ error: "출전하지 못했어요. 다시 해주세요." }, { status: 500 });
+      if (error) return Response.json({ error: t("출전하지 못했어요. 다시 해주세요.", "Couldn't enter. Please try again.") }, { status: 500 });
       await service.from("weekly_awards").update({ user_id: user.id }).eq("entry_id", guest.id);
       existing = { ...guest, claim_token: null };
     }
@@ -115,7 +117,7 @@ export async function POST(req: Request) {
       .select("id", { count: "exact", head: true })
       .eq("challenge_id", week.id);
     if ((count ?? 0) >= MAX_ENTRIES) {
-      return Response.json({ error: "이번 주 출전 자리가 꽉 찼어요. 다음 주에 만나요!" }, { status: 503 });
+      return Response.json({ error: t("이번 주 출전 자리가 꽉 찼어요. 다음 주에 만나요!", "This week's entries are full. See you next week!") }, { status: 503 });
     }
   }
 
@@ -127,7 +129,7 @@ export async function POST(req: Request) {
     .from("recordings")
     .upload(path, file, { contentType: type, upsert: false });
   if (upError) {
-    return Response.json({ error: "녹음을 올리지 못했어요. 다시 해주세요." }, { status: 500 });
+    return Response.json({ error: t("녹음을 올리지 못했어요. 다시 해주세요.", "Couldn't upload the recording. Please try again.") }, { status: 500 });
   }
 
   const now = new Date().toISOString();
@@ -151,7 +153,7 @@ export async function POST(req: Request) {
       .eq("id", id);
     if (error) {
       await service.storage.from("recordings").remove([path]);
-      return Response.json({ error: "바꾸지 못했어요. 다시 해주세요." }, { status: 500 });
+      return Response.json({ error: t("바꾸지 못했어요. 다시 해주세요.", "Couldn't replace. Please try again.") }, { status: 500 });
     }
     await service.storage.from("recordings").remove([existing.audio_path]);
     claimToken = existing.claim_token;
@@ -176,7 +178,7 @@ export async function POST(req: Request) {
       // 동시에 두 번 눌러 1인 1작품 제약에 걸린 경우
       const dup = error.code === "23505";
       return Response.json(
-        { error: dup ? "이미 출전했어요. 새로고침하고 다시 해주세요." : "출전하지 못했어요. 다시 해주세요." },
+        { error: dup ? t("이미 출전했어요. 새로고침하고 다시 해주세요.", "Already entered. Refresh and try again.") : t("출전하지 못했어요. 다시 해주세요.", "Couldn't enter. Please try again.") },
         { status: dup ? 409 : 500 },
       );
     }
@@ -195,10 +197,11 @@ export async function POST(req: Request) {
 
 /** 내리기 — 로그인 출전은 본인 계정, 게스트는 열쇠로. 기간이 끝나도 언제든 지울 수 있다. */
 export async function DELETE(req: Request) {
+  const t = requestT(req);
   const q = new URL(req.url).searchParams;
   const id = q.get("id") ?? "";
   const token = q.get("token") ?? "";
-  if (!/^[0-9a-f-]{36}$/i.test(id)) return Response.json({ error: "잘못된 요청이에요." }, { status: 400 });
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return Response.json({ error: t("잘못된 요청이에요.", "Invalid request.") }, { status: 400 });
 
   const supabase = await createClient();
   const {
@@ -212,10 +215,10 @@ export async function DELETE(req: Request) {
     .maybeSingle();
   if (!e) return Response.json({ ok: true });
   const mine = (user && e.user_id === user.id) || (!!token && e.claim_token === token);
-  if (!mine) return Response.json({ error: "내 출전작만 내릴 수 있어요." }, { status: 403 });
+  if (!mine) return Response.json({ error: t("내 출전작만 내릴 수 있어요.", "You can only withdraw your own entry.") }, { status: 403 });
 
   const { error } = await service.from("weekly_entries").delete().eq("id", id);
-  if (error) return Response.json({ error: "내리지 못했어요. 다시 해주세요." }, { status: 500 });
+  if (error) return Response.json({ error: t("내리지 못했어요. 다시 해주세요.", "Couldn't remove. Please try again.") }, { status: 500 });
   await service.storage.from("recordings").remove([e.audio_path]);
   return Response.json({ ok: true });
 }

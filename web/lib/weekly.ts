@@ -1,4 +1,6 @@
+import type { Lang } from "./i18n";
 import { findScript, type Script } from "./practice";
+import { fieldName, scriptTitle } from "./script-i18n";
 
 /**
  * 주간 보이스 챌린지 — 브라우저·서버 공용 (DB 를 모르는 부분만).
@@ -54,6 +56,8 @@ export type Week = {
   field: string;
   emoji: string;
   title: string;
+  /** 영어 화면용 대본 제목 (lib/script-i18n). */
+  titleEn: string;
 };
 
 function weekIdOf(mondayDay: number): string {
@@ -92,6 +96,7 @@ function weekFromMonday(mondayDay: number): Week {
     field: slot.field,
     emoji: slot.emoji,
     title: script?.title ?? slot.field,
+    titleEn: scriptTitle(slot.scriptId, script?.title ?? fieldName(slot.field, "en"), "en"),
   };
 }
 
@@ -127,9 +132,9 @@ export function weekScript(w: Week): Script | undefined {
   return findScript(w.scriptId);
 }
 
-/** 시즌 라벨 — "S3 · 광고" */
-export function seasonLabel(w: Pick<Week, "season" | "field">): string {
-  return `S${w.season} · ${w.field}`;
+/** 시즌 라벨 — "S3 · 광고" / "S3 · Commercial" */
+export function seasonLabel(w: Pick<Week, "season" | "field">, lang: Lang = "ko"): string {
+  return `S${w.season} · ${fieldName(w.field, lang)}`;
 }
 
 /** 남은 시간 — 카운트다운 칸 네 개 (일·시·분·초). */
@@ -143,6 +148,11 @@ export function guestName(seed: string): string {
   let h = 2166136261;
   for (let i = 0; i < seed.length; i++) h = Math.imul(h ^ seed.charCodeAt(i), 16777619);
   return `익명의 목소리 #${String((h >>> 0) % 10000).padStart(4, "0")}`;
+}
+
+/** 저장된 게스트 이름은 한국어다 — 영어 화면에선 앞말만 바꿔 보여준다. */
+export function displayName(name: string, lang: Lang): string {
+  return lang === "en" ? name.replace(/^익명의 목소리/, "Anonymous voice") : name;
 }
 
 /** 화면에 내려가는 출전작 하나. 오디오는 /api/weekly/audio/{id} 로 받는다(서명 URL 만료 대비). */

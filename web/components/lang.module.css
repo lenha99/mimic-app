@@ -1,0 +1,23 @@
+.switch {
+  display: inline-flex;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 2px;
+  background: var(--panel);
+}
+
+.switch button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--ash);
+  font: 600 12px/1 var(--mono);
+  padding: 6px 9px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.switch button[aria-pressed="true"] {
+  background: var(--white);
+  color: var(--stage);
+}

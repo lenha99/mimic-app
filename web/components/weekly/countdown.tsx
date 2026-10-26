@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { remaining } from "@/lib/weekly";
 import styles from "./weekly.module.css";
+import { useT } from "@/components/lang";
 
 /**
  * 마감 카운트다운 — 일 · 시 · 분 · 초 네 칸이 1초마다 넘어간다.
@@ -20,6 +21,7 @@ export function Countdown({
   opensAt?: number;
   compact?: boolean;
 }) {
+  const t = useT();
   const [now, setNow] = useState<number | null>(null);
   useEffect(() => {
     // 붙은 뒤에야 지금 시각을 안다.
@@ -32,10 +34,10 @@ export function Countdown({
   const before = opensAt !== undefined && now !== null && now < opensAt;
   const r = now === null ? null : remaining((before ? opensAt! : to) - now);
   const cells: [string, number | null][] = [
-    ["일", r?.d ?? null],
-    ["시간", r?.h ?? null],
-    ["분", r?.m ?? null],
-    ["초", r?.s ?? null],
+    [t("일", "days"), r?.d ?? null],
+    [t("시간", "hrs"), r?.h ?? null],
+    [t("분", "min"), r?.m ?? null],
+    [t("초", "sec"), r?.s ?? null],
   ];
   const urgent = r !== null && r.d === 0 && r.h < 6;
 
@@ -43,7 +45,7 @@ export function Countdown({
     <div
       className={`${compact ? styles.countCompact : styles.count} ${urgent ? styles.countUrgent : ""}`}
       role="timer"
-      aria-label={r ? `${r.d}일 ${r.h}시간 ${r.m}분 남음` : "남은 시간"}
+      aria-label={r ? t(`${r.d}일 ${r.h}시간 ${r.m}분 남음`, `${r.d}d ${r.h}h ${r.m}m left`) : t("남은 시간", "Time left")}
     >
       {cells.map(([label, v]) => (
         <span key={label} className={styles.countCell}>
@@ -56,7 +58,7 @@ export function Countdown({
   if (opensAt === undefined) return cellsEl;
   return (
     <div>
-      <p className={styles.countCaption}>{before ? "시즌 오픈까지" : "마감까지"}</p>
+      <p className={styles.countCaption}>{before ? t("시즌 오픈까지", "Season opens in") : t("마감까지", "Closes in")}</p>
       {cellsEl}
     </div>
   );

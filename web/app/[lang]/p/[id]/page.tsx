@@ -1,0 +1,112 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { signAudio } from "@/lib/audio-url";
+import { DEFAULT_AVATAR, encodeAvatar, normalizeAvatar } from "@/lib/avatar";
+import { findMeme } from "@/lib/challenges";
+import { extraLine } from "@/lib/memes";
+import { createServiceClient } from "@/lib/supabase/service";
+import { SharePlayer } from "./player";
+import { getLang } from "@/lib/i18n-server";
+import { tr } from "@/lib/i18n";
+import { memeText } from "@/lib/meme-i18n";
+import styles from "./share.module.css";
+
+type Props = { params: Promise<{ id: string }> };
+
+/**
+ * 공유 링크 — 친구가 내 녹음을 내 캐릭터로 듣는 화면.
+ *
+ * 이 앱에서 제일 웃긴 건 점수가 아니라 "내 캐릭터가 내 목소리로 외치는 장면"이다.
+ * 도전장이 숫자만 들고 가면 받은 사람은 그걸 못 본다. 여기서 보여주고, 바로 아래에
+ * "나도 해보기"를 둔다 — 듣고 웃은 그 순간이 따라하고 싶은 순간이다.
+ *
+ * 조회는 service_role 로 id 하나만 한다. RLS 로 shared 를 열면 anon 이 목록으로
+ * 긁어갈 수 있어서다. 링크(추측 불가 uuid)를 가진 사람만 들어온다.
+ */
+async function load(id: string) {
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
+  const service = createServiceClient();
+  const { data: rec } = await service
+    .from("recordings")
+    .select("id, user_id, meme_id, audio_path, score, grade, avatar, shared, is_public, hidden")
+    .eq("id", id)
+    .maybeSingle();
+  if (!rec || rec.hidden || !(rec.shared || rec.is_public)) return null;
+
+  const [found, profile, urls] = await Promise.all([
+    findMeme(rec.meme_id),
+    rec.user_id
+      ? service.from("profiles").select("nickname, avatar").eq("id", rec.user_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    signAudio([rec.audio_path]),
+  ]);
+  const meme = found?.meme;
+  if (!meme) return null;
+
+  const avatarSource = rec.avatar ?? profile.data?.avatar ?? null;
+  return {
+    id: rec.id,
+    meme,
+    score: rec.score ?? 0,
+    grade: rec.grade ?? "",
+    nickname: profile.data?.nickname ?? null,
+    avatar: avatarSource ? normalizeAvatar(avatarSource) : DEFAULT_AVATAR,
+    audioUrl: urls.get(rec.audio_path) ?? null,
+  };
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const found = await load((await params).id);
+  const lang = await getLang();
+  const t = tr(lang);
+  if (!found) return { title: t("없는 녹음이에요", "Recording not found") };
+  const { meme, score, nickname, avatar } = found;
+  const mt = memeText({ id: meme.id, title: meme.title, source: meme.source ?? "" }, lang);
+  const who = nickname ?? t("친구", "A friend");
+  const title = t(`${who}의 「${mt.title}」 ${score}점 ㅋㅋ 들어봐`, `${who} scored ${score} on "${mt.title}" 😂`);
+  const description = t(
+    `${who}님이 「${mt.title}」 따라 했어요. 들어 보고, 이 점수 넘을 수 있으면 넘어 보세요 😏`,
+    `${who} tried "${mt.title}". Have a listen — think you can beat it? 😏`,
+  );
+  const card = new URLSearchParams({
+    lang,
+    title: mt.title,
+    source: mt.source ?? "",
+    emoji: meme.emoji ?? "🎙",
+    ...(extraLine(meme) ? { line: extraLine(meme)! } : {}),
+    s: String(score),
+    // 카톡 미리보기에 보낸 사람 캐릭터가 외치는 모습이 뜬다.
+    a: encodeAvatar(avatar),
+    ...(nickname ? { who: nickname } : {}),
+  });
+  const images = [{ url: `/api/og?${card}`, width: 1200, height: 630 }];
+  return {
+    title,
+    description,
+    openGraph: { title, description, type: "website", images },
+    twitter: { card: "summary_large_image", title, description, images },
+  };
+}
+
+export default async function SharePage({ params }: Props) {
+  const found = await load((await params).id);
+  if (!found) notFound();
+  const { meme, score, grade, nickname, avatar, audioUrl } = found;
+  const mt = memeText({ id: meme.id, title: meme.title, source: meme.source ?? "" }, await getLang());
+
+  return (
+    <main className={`shell ${styles.page}`}>
+      <SharePlayer
+        memeId={meme.id}
+        title={mt.title}
+        line={meme.line ?? meme.title}
+        emoji={meme.emoji ?? "🎙"}
+        score={score}
+        grade={grade}
+        who={nickname}
+        avatar={avatar}
+        audioUrl={audioUrl}
+      />
+    </main>
+  );
+}

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useT } from "@/components/lang";
 import styles from "./bottom-nav.module.css";
 
 /**
@@ -16,15 +17,15 @@ import styles from "./bottom-nav.module.css";
  * 버튼이 있고, 탭이 겹치면 녹음 버튼이 밀려 올라간다.
  */
 const TABS = [
-  { href: "/", label: "홈", icon: HomeIcon, match: (p: string) => p === "/" },
+  { href: "/", label: ["홈", "Home"], icon: HomeIcon, match: (p: string) => p === "/" },
   {
     href: "/weekly",
-    label: "챌린지",
+    label: ["챌린지", "Challenge"],
     icon: MicIcon,
     match: (p: string) => p.startsWith("/weekly") || p.startsWith("/challenges") || p.startsWith("/rank"),
   },
-  { href: "/practice", label: "연습실", icon: ScriptIcon, match: (p: string) => p === "/practice" || p === "/practice/board" },
-  { href: "/me", label: "나", icon: MeIcon, match: (p: string) => p.startsWith("/me") || p.startsWith("/profile") },
+  { href: "/practice", label: ["연습실", "Practice"], icon: ScriptIcon, match: (p: string) => p === "/practice" || p === "/practice/board" },
+  { href: "/me", label: ["나", "Me"], icon: MeIcon, match: (p: string) => p.startsWith("/me") || p.startsWith("/profile") },
 ];
 
 /** 탭이 보이는 화면 — 목록·허브 화면만. */
@@ -32,17 +33,18 @@ const SHOW = [/^\/$/, /^\/weekly$/, /^\/weekly\/hall$/, /^\/challenges$/, /^\/pr
 
 export function BottomNav() {
   const path = usePathname() ?? "/";
+  const t = useT();
   if (!SHOW.some((re) => re.test(path))) return null;
   return (
     <>
       <div className={styles.spacer} aria-hidden="true" />
-      <nav className={styles.bar} aria-label="주 메뉴" data-tour="nav">
+      <nav className={styles.bar} aria-label={t("주 메뉴", "Main menu")} data-tour="nav">
         {TABS.map(({ href, label, icon: Icon, match }) => {
           const on = match(path);
           return (
             <Link key={href} href={href} className={on ? styles.tabOn : styles.tab} aria-current={on ? "page" : undefined}>
               <Icon />
-              <span>{label}</span>
+              <span>{t(label[0], label[1])}</span>
             </Link>
           );
         })}

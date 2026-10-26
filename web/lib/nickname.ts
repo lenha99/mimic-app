@@ -1,3 +1,5 @@
+import type { Lang } from "./i18n";
+
 /**
  * 닉네임 — 순위·게시판에 보이는 이름.
  *
@@ -20,8 +22,11 @@ export function cleanNickname(v: unknown): string | null {
   return n >= NICK_MIN && n <= NICK_MAX ? s : null;
 }
 
-export function nicknameProblem(v: string): string | null {
-  return cleanNickname(v) ? null : `닉네임은 ${NICK_MIN}~${NICK_MAX}자로 적어 주세요.`;
+export function nicknameProblem(v: string, lang: Lang = "ko"): string | null {
+  if (cleanNickname(v)) return null;
+  return lang === "en"
+    ? `Nicknames need ${NICK_MIN}–${NICK_MAX} characters.`
+    : `닉네임은 ${NICK_MIN}~${NICK_MAX}자로 적어 주세요.`;
 }
 
 const KEY = "mimic.nickname";

@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { markSeen, seen, type Guide } from "@/lib/onboarding";
 import styles from "./onboarding.module.css";
+import { useT } from "@/components/lang";
 
 /**
  * 그 자리에서 딱 한 번 뜨는 한 줄 안내. 닫으면 다시 안 뜬다.
@@ -11,6 +12,7 @@ import styles from "./onboarding.module.css";
  * 처음 보는 ❤)에 그 자리에서 한 줄만 말한다.
  */
 export function Tip({ id, children }: { id: Guide; children: ReactNode }) {
+  const t = useT();
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -28,13 +30,13 @@ export function Tip({ id, children }: { id: Guide; children: ReactNode }) {
       <button
         type="button"
         className={styles.tipClose}
-        aria-label="안내 닫기"
+        aria-label={t("안내 닫기", "Dismiss tip")}
         onClick={() => {
           markSeen(id);
           setShow(false);
         }}
       >
-        알겠어요
+        {t("알겠어요", "Got it")}
       </button>
     </div>
   );
