@@ -7,6 +7,7 @@ import { ScreenTour } from "@/components/onboarding/tours";
 import { TourHelp } from "@/components/onboarding/tour";
 import { GuestNickname } from "./guest-nickname";
 import { getT } from "@/lib/i18n-server";
+import { LangSwitch } from "@/components/lang";
 import styles from "./me.module.css";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -71,6 +72,9 @@ export default async function MePage() {
           sub={t("홈 화면 안내를 다시 봐요 · 화면마다 💡 사용법 보기도 있어요", "See the home guide again · every screen has 💡 How it works")}
         />
       </ul>
+      <p className={styles.lang}>
+        <LangSwitch />
+      </p>
       <ScreenTour id="me" />
     </main>
   );

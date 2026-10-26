@@ -48,9 +48,9 @@ export default async function Home() {
       <header className={styles.head}>
         <span className={styles.logo}>MIMIC</span>
         <span className={styles.headRight}>
-          <LangSwitch />
-          <TourHelp id="home" welcome />
+          {/* 안내 말풍선이 버튼 오른쪽 끝에 맞춰 펼쳐지므로 맨 오른쪽에 둔다. */}
           <ViewerBadge />
+          <TourHelp id="home" welcome />
         </span>
       </header>
 
@@ -112,6 +112,7 @@ export default async function Home() {
       <ScreenTour id="home" />
 
       <footer className={styles.foot}>
+        <LangSwitch />
         <p className={styles.footNote}>
           {t(
             "🔒 연습 녹음은 내 폰에만 저장돼요 · 🌐 공개를 고른 녹음만 다른 사람이 들을 수 있어요",

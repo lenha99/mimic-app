@@ -71,7 +71,7 @@ export function TourHelp({
         onClick={open}
         data-tour="help"
       >
-        <span aria-hidden="true">💡</span> {short ? t("사용법", "Help") : t("사용법 보기", "How it works")}
+        <span aria-hidden="true">💡</span> {short ? t("사용법", "Help") : t("사용법 보기", "Guide")}
       </button>
       {hello && (
         <span className={styles.hello} role="note">

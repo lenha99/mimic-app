@@ -39,6 +39,7 @@
 
 .seasons {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
 }
 
@@ -76,6 +77,7 @@
 
 .places {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
 }
 

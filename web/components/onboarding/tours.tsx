@@ -98,7 +98,7 @@ const sets = (t: T) => {
     },
     {
       target: "help",
-      title: t("헷갈리면 사용법 보기", "Stuck? Tap How it works"),
+      title: t("헷갈리면 사용법 보기", "Stuck? Tap 💡 Guide"),
       body: t(
         <p>화면마다 위쪽 💡 사용법 보기를 누르면 그 화면의 버튼을 하나씩 알려드려요.</p>,
         <p>Tap 💡 at the top of any screen and we&apos;ll walk you through its buttons.</p>,
