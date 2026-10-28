@@ -353,43 +353,61 @@
   color: #c22d5f;
 }
 
-/* 내 챌린지 만들기 한 줄 -------------------------------------------------- */
+/* 목소리 사극 판정 한 줄 ------------------------------------------------ */
 
-.create {
+.voice {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
   margin-top: 10px;
   padding: 14px 16px;
   border-radius: 18px;
-  border: 1px dashed var(--ash-dim);
+  border: 1px solid rgba(224, 49, 75, 0.35);
+  background:
+    radial-gradient(60% 120% at 0% 50%, rgba(224, 49, 75, 0.16), transparent 70%),
+    var(--panel);
   color: var(--white);
   text-decoration: none;
 }
 
-.create span {
+.voiceSeals {
+  flex: none;
+  display: flex;
+}
+
+.voiceSeals > span + span {
+  margin-left: -10px;
+}
+
+.voiceSeals > span:nth-child(2) {
+  transform: rotate(5deg) translateY(-3px);
+}
+
+.voiceText {
+  flex: 1;
+  min-width: 0;
   display: grid;
   gap: 2px;
 }
 
-.create b {
+.voiceText b {
   font-size: 15px;
+  word-break: keep-all;
 }
 
-.create small {
+.voiceText small {
   font-size: 12px;
   color: var(--ash);
   word-break: keep-all;
 }
 
-.create i {
+.voice i {
   font-style: normal;
   color: var(--ash);
 }
 
-.create:hover {
-  border-color: var(--ash);
+.voice:hover {
+  border-color: rgba(224, 49, 75, 0.7);
 }
 
 /* 바닥 --------------------------------------------------------------- */

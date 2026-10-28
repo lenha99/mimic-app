@@ -1,7 +1,8 @@
-/* 보이스 카드 — 캡처해서 올리고 싶은 한 장. 카드가 이 화면의 전부다. */
+/* 목소리 사극 판정 — 붉은 도장이 얼굴이다. 캡처해서 스토리에 올리고 싶은 한 장. */
 
 .page {
   padding-top: 12px;
+  --seal: #e0314b;
 }
 
 .nav {
@@ -21,7 +22,7 @@
 .title {
   margin: 0;
   font-family: var(--display);
-  font-size: 28px;
+  font-size: 30px;
   line-height: 1.2;
   word-break: keep-all;
 }
@@ -34,22 +35,97 @@
   word-break: keep-all;
 }
 
+/* 도장 ---------------------------------------------------------------- */
+
+.seal {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 14%;
+  background: var(--seal, #e0314b);
+  color: #fff6ee;
+  font-family: "Noto Serif KR", "Batang", "AppleMyungjo", serif;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 246, 238, 0.85),
+    inset 0 0 0 6px var(--seal, #e0314b),
+    0 6px 18px rgba(224, 49, 75, 0.35);
+  transform: rotate(-6deg);
+}
+
+.sealStamp {
+  animation: stamp 0.55s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+
+@keyframes stamp {
+  0% {
+    transform: scale(2.4) rotate(-18deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(0.92) rotate(-4deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(-6deg);
+  }
+}
+
+.marquee {
+  margin: 16px calc(var(--gutter) * -1) 0;
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+}
+
+.marquee > div {
+  display: flex;
+  gap: 12px;
+  width: max-content;
+  padding: 8px 0;
+  animation: slide 28s linear infinite;
+}
+
+@keyframes slide {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sealStamp,
+  .marquee > div {
+    animation: none;
+  }
+}
+
+/* 녹음 무대 ------------------------------------------------------------- */
+
 .stage {
-  margin: 18px 0 14px;
+  margin: 12px 0 14px;
   padding: 18px 18px 22px;
+  min-height: 300px;
   border-radius: 26px;
-  border: 1px solid rgba(232, 255, 58, 0.2);
+  border: 1px solid rgba(224, 49, 75, 0.3);
   background:
-    radial-gradient(70% 55% at 50% 30%, rgba(232, 255, 58, 0.16), transparent 70%),
+    radial-gradient(70% 55% at 50% 25%, rgba(224, 49, 75, 0.16), transparent 70%),
     var(--panel);
   display: grid;
   justify-items: center;
-  gap: 12px;
+  align-content: center;
+  gap: 10px;
+}
+
+.lineTip {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--seal);
 }
 
 .line {
   margin: 0;
-  font-size: 19px;
+  font-size: 18px;
   font-weight: 700;
   line-height: 1.6;
   text-align: center;
@@ -68,7 +144,50 @@
 .meter i {
   display: block;
   height: 100%;
-  background: var(--pink);
+  background: var(--seal);
+}
+
+.spin {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+}
+
+.spin p {
+  margin: 0;
+  font-weight: 800;
+  color: var(--ash);
+}
+
+.gender {
+  margin-bottom: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.gender span {
+  margin-right: 4px;
+  font-size: 12.5px;
+  color: var(--ash);
+}
+
+.gender button {
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--rule);
+  background: var(--panel);
+  color: var(--ash);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.gender button[aria-checked="true"] {
+  border-color: var(--white);
+  background: var(--white);
+  color: var(--stage);
 }
 
 .error {
@@ -79,14 +198,16 @@
   word-break: keep-all;
 }
 
+/* 버튼 ---------------------------------------------------------------- */
+
 .primary {
   width: 100%;
   display: block;
   padding: 16px;
   border: 0;
   border-radius: 16px;
-  background: var(--volt);
-  color: var(--stage);
+  background: var(--seal);
+  color: #fff;
   font-size: 17px;
   font-weight: 900;
   text-align: center;
@@ -94,29 +215,28 @@
   cursor: pointer;
 }
 
-.primary:disabled {
-  opacity: 0.7;
-}
-
 .rec {
-  background: var(--pink);
-  color: var(--white);
+  background: var(--white);
+  color: var(--stage);
 }
 
 .secondary {
   display: block;
-  padding: 14px 16px;
-  border-radius: 16px;
+  padding: 13px 10px;
+  border: 0;
+  border-radius: 14px;
   background: var(--panel);
   color: var(--white);
-  font-size: 14.5px;
+  font-size: 14px;
   font-weight: 700;
+  text-align: center;
   text-decoration: none;
+  cursor: pointer;
   word-break: keep-all;
 }
 
 .ghost {
-  padding: 12px;
+  padding: 10px;
   border: 0;
   background: none;
   color: var(--ash);
@@ -130,11 +250,58 @@
   gap: 8px;
 }
 
+.actionRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.next {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--rule);
+  color: var(--white);
+  text-decoration: none;
+}
+
+.next span {
+  display: grid;
+  gap: 2px;
+}
+
+.next b {
+  font-size: 14.5px;
+}
+
+.next small {
+  font-size: 12px;
+  color: var(--ash);
+}
+
+.next i {
+  font-style: normal;
+  color: var(--ash);
+}
+
 .note {
   margin: 14px 0 0;
   color: var(--ash-dim);
   font-size: 12.5px;
   line-height: 1.5;
+  text-align: center;
+  word-break: keep-all;
+}
+
+.roster {
+  margin: 18px 0 0;
+  color: var(--ash-dim);
+  font-size: 12px;
+  line-height: 1.7;
   text-align: center;
   word-break: keep-all;
 }
@@ -146,15 +313,17 @@
   text-align: center;
 }
 
-/* 카드 */
+/* 카드 ---------------------------------------------------------------- */
+
 .card {
+  --seal: #e0314b;
   margin-top: 6px;
   padding: 20px 18px 18px;
   border-radius: 28px;
-  border: 1px solid rgba(232, 255, 58, 0.35);
+  border: 1px solid rgba(224, 49, 75, 0.4);
   background:
-    radial-gradient(80% 50% at 50% 18%, rgba(232, 255, 58, 0.2), transparent 70%),
-    radial-gradient(90% 60% at 100% 100%, rgba(255, 45, 120, 0.16), transparent 60%),
+    radial-gradient(80% 45% at 50% 12%, rgba(224, 49, 75, 0.22), transparent 70%),
+    radial-gradient(90% 60% at 100% 100%, rgba(232, 255, 58, 0.08), transparent 60%),
     var(--panel);
   display: grid;
   justify-items: center;
@@ -164,94 +333,171 @@
 .cardKicker {
   margin: 0;
   font-family: var(--mono);
-  font-size: 11.5px;
-  letter-spacing: 0.18em;
-  color: var(--volt);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--ash);
   text-transform: uppercase;
 }
 
-.cardAvatar {
-  margin: 6px 0 2px;
+.cardHero {
+  margin: 10px 0 4px;
+  display: flex;
+  align-items: center;
+}
+
+.cardHero > :last-child {
+  margin-left: -26px;
+  margin-top: 46px;
 }
 
 .cardLead {
-  margin: 0;
+  margin: 6px 0 0;
   color: var(--ash);
   font-size: 14px;
 }
 
 .cardType {
-  margin: 4px 0 10px;
+  margin: 2px 0 0;
   font-family: var(--display);
-  font-size: 34px;
+  font-size: 40px;
   line-height: 1.15;
   color: var(--white);
   word-break: keep-all;
 }
 
-.tags {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 6px;
+.lean {
+  margin: 4px 0 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--volt);
 }
 
-.tags li {
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(245, 245, 247, 0.08);
+.why {
+  margin: 10px 0 0;
+  font-size: 15px;
+  line-height: 1.55;
+  word-break: keep-all;
+}
+
+.axes {
+  margin: 16px 0 0;
+  padding: 12px 12px 4px;
+  width: 100%;
+  list-style: none;
+  border-radius: 16px;
+  background: var(--stage);
+  display: grid;
+  gap: 10px;
+  text-align: left;
+}
+
+.axes small {
+  display: block;
+  margin: 3px 0 6px;
+  font-size: 11.5px;
+  color: var(--ash);
+  word-break: keep-all;
+}
+
+.axisRow {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 8px;
   font-size: 12.5px;
   font-weight: 700;
+  color: var(--ash-dim);
 }
 
-.stats {
-  margin: 16px 0 0;
+.axisRow > span:last-child {
+  text-align: right;
+}
+
+.axisOn {
+  color: var(--white);
+}
+
+.track {
+  position: relative;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(224, 49, 75, 0.45), var(--rule) 50%, rgba(232, 255, 58, 0.4));
+}
+
+.track i {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--white);
+  box-shadow: 0 0 0 3px var(--stage);
+  transform: translate(-50%, -50%);
+}
+
+.quote {
+  margin: 14px 0 0;
+  padding: 0;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.45;
+  word-break: keep-all;
+}
+
+.quote small {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ash);
+}
+
+.pairs {
+  margin-top: 14px;
   width: 100%;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }
 
-.stats div {
-  padding: 10px 4px;
+.pairs p {
+  margin: 0;
+  padding: 10px 8px;
   border-radius: 14px;
   background: var(--stage);
+  display: grid;
+  gap: 4px;
+  min-width: 0;
 }
 
-.stats dt {
+.pairs small {
   font-size: 11.5px;
   color: var(--ash);
 }
 
-.stats dd {
-  margin: 4px 0 0;
-  font-family: var(--mono);
-  font-size: 20px;
-  font-weight: 700;
-}
-
-.stats small {
-  margin-left: 2px;
-  font-size: 10.5px;
-  color: var(--ash);
-}
-
-.role {
-  margin: 14px 0 0;
-  display: grid;
-  gap: 3px;
-}
-
-.role span {
-  font-size: 12px;
-  color: var(--ash);
-}
-
-.role b {
-  font-size: 15.5px;
-  color: var(--volt);
+.pairs b {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 14px;
   word-break: keep-all;
+}
+
+.miniSeal {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 5px;
+  background: var(--seal);
+  color: #fff6ee;
+  font-family: "Noto Serif KR", "Batang", serif;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.miniRival {
+  background: var(--ash-dim);
 }

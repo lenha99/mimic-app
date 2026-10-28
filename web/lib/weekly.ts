@@ -26,6 +26,8 @@ export const MIN_AWARDS = 3;
 export const LISTEN_RATIO = 0.8;
 /** 블라인드 배틀을 이만큼 치러야 배틀 순위에 오른다. 한두 판은 운이다. */
 export const MIN_BATTLES = 3;
+/** 출전작이 이만큼 모여야 블라인드 배틀을 연다. 그 전엔 모르는 사람끼리 붙일 짝도, 심사할 사람도 없다. */
+export const BATTLE_OPEN = 30;
 /** 출전 녹음 길이 상한(초). 대본은 10~22초짜리다. */
 export const MAX_ENTRY_SECONDS = 60;
 

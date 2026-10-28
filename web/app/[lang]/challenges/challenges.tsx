@@ -78,8 +78,7 @@ export default function Challenges({
           )}
         </p>
         <nav className={styles.links}>
-          <Link href="/weekly/battle">{t("블라인드 배틀", "Blind battle")}</Link>
-          <Link href="/voice">{t("보이스 카드", "Voice card")}</Link>
+          <Link href="/voice">{t("목소리 사극 판정", "Voice casting")}</Link>
         </nav>
       </header>
 

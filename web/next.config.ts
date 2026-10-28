@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       { source: "/rank", destination: "/weekly", permanent: false },
-      { source: "/vote", destination: "/weekly/battle", permanent: false },
+      { source: "/vote", destination: "/weekly", permanent: false },
     ];
   },
   async headers() {
