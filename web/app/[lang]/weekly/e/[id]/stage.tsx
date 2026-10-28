@@ -231,6 +231,11 @@ export default function Stage({
           <button type="button" className={styles.share} onClick={() => void share()}>
             {t("❤ 모으러 공유하기", "Share to get ❤")}
           </button>
+          {live && (
+            <Link href={`/weekly/vs/${entry.id}`} className={styles.mineMore}>
+              {t("⚔️ 친구에게 1:1 대결 신청 →", "⚔️ Challenge a friend 1:1 →")}
+            </Link>
+          )}
           <Link href="/weekly" className={styles.mineMore}>
             {t("다른 출전작 들으러 가기 →", "Listen to other entries →")}
           </Link>
@@ -261,6 +266,11 @@ export default function Stage({
           <p className={styles.ctaNote}>
             {t("가입 없이 · 연습은 내 폰에만 · 마음에 든 테이크 하나만 올라가요", "No sign-up · practice stays on your phone · only your pick goes up")}
           </p>
+          {live && thisWeek.id === week.id && (
+            <Link href={`/weekly/vs/${entry.id}`} className={styles.duelLink}>
+              {t(`⚔️ ${name}님이랑 1:1로 붙기`, `⚔️ Duel ${name} 1:1`)}
+            </Link>
+          )}
           <button type="button" className={styles.shareGhost} onClick={() => void share()}>
             {t("이 목소리 공유하기", "Share this voice")}
           </button>

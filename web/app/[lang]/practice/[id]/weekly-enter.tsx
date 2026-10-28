@@ -56,6 +56,11 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
   const [done, setDone] = useState<Done | null>(null);
   const [local, setLocal] = useState(() => readMine()[week.id]);
   const [name, setName] = useState(readNickname);
+  // 1:1 도전장을 받고 왔으면(?vs=상대 출전작) 출전 직후 바로 대결로 보낸다.
+  const [vs] = useState(() => {
+    const v = new URLSearchParams(window.location.search).get("vs");
+    return v && /^[0-9a-f-]{36}$/i.test(v) ? v : null;
+  });
   const [toast, showToast] = useToast();
 
   if (!live) {
@@ -255,9 +260,15 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
                   : t("친구들한테 공유하면 ❤ 가 훨씬 빨리 모여요!", "Share with friends and the ❤ will pile up way faster!")}
             </p>
             <PrivacyTag kind="public" />
-            <button type="button" className={styles.cardShare} onClick={() => void share(done.id)}>
-              {t("❤ 모으러 공유하기", "Share to get ❤")}
-            </button>
+            {vs && vs !== done.id ? (
+              <Link href={`/weekly/vs/${vs}?b=${done.id}`} className={styles.cardShare}>
+                {t("⚔️ 대결 시작! 심판 부르러 가기", "⚔️ Duel on! Go get judges")}
+              </Link>
+            ) : (
+              <button type="button" className={styles.cardShare} onClick={() => void share(done.id)}>
+                {t("❤ 모으러 공유하기", "Share to get ❤")}
+              </button>
+            )}
             <Link href="/weekly" className={styles.cardRankLink}>
               {t("다른 출전작 듣고 ❤ 누르러 가기 →", "Listen to others and give ❤ →")}
             </Link>

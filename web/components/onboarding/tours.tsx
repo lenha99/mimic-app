@@ -56,15 +56,15 @@ const sets = (t: T) => {
     },
     {
       target: "home-voice",
-      title: t("보이스 카드", "Voice card"),
+      title: t("목소리 사극 판정", "Voice casting"),
       body: t(
         <p>
-          문장 하나를 읽으면 <b>평균 음높이·억양 폭·말 속도</b>를 재서 내 목소리 유형과 어울리는 배역을 카드로
-          보여 줘요. 녹음은 <b>🔒 이 기기에서만</b> 분석하고, 카드는 링크·이미지로 자랑할 수 있어요.
+          사극 대사 한 줄을 읽으면 <b>음높이·억양 폭·말 속도·말끝 힘</b>을 재서 왕·간신·망나니 같은 16역 중 하나로
+          판정해요. 녹음은 <b>🔒 이 기기에서만</b> 분석하고, 결과는 스토리 이미지로 자랑할 수 있어요.
         </p>,
         <p>
-          Read one line and we measure <b>average pitch, pitch range and pace</b> to give you a voice type and roles
-          that fit. The recording is analyzed <b>🔒 on this device</b>; share the card as a link or image.
+          Read one royal-drama line and we measure <b>pitch, range, pace and how you end sentences</b> to cast you as one
+          of 16 roles. The recording stays <b>🔒 on this device</b>; share your role as a story image.
         </p>,
       ),
     },
@@ -137,15 +137,15 @@ const sets = (t: T) => {
     },
     {
       target: "weekly-tabs",
-      title: t("순위 · 새 목소리 · 블라인드", "Top · New voices · Blind"),
+      title: t("순위 · 새 목소리", "Top · New voices"),
       body: t(
         <p>
-          새 목소리 탭은 아직 덜 들린 출전작부터 보여줘요. 블라인드 탭은 <b>이름 없이 듣고 고른 결과</b>로만 정한
-          순위예요. 친구 수와 상관없이 목소리로만 겨뤄요.
+          새 목소리 탭은 아직 덜 들린 출전작부터 보여줘요. 출전하고 나면 <b>친구에게 1:1 대결</b>을 신청해서 같은
+          대본으로 맞붙을 수도 있어요.
         </p>,
         <p>
-          New voices shows the least-heard entries first. Blind ranks entries only by <b>nameless head-to-head picks</b>
-          — no friend count, just the voice.
+          New voices shows the least-heard entries first. Once you enter, you can <b>challenge a friend 1:1</b> on the
+          same script.
         </p>,
       ),
     },

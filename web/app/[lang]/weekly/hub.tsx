@@ -12,7 +12,7 @@ import { buzz, shareLink, useWeeklyMe } from "@/components/weekly/use-weekly";
 import { normalizeAvatar, PRESETS } from "@/lib/avatar";
 import { DEMO_TAKES } from "@/lib/examples";
 import { track } from "@/lib/track";
-import { audioSrc, displayName, LISTEN_RATIO, MIN_BATTLES, MIN_PODIUM, type Award, type EntryCard, type Week } from "@/lib/weekly";
+import { audioSrc, displayName, BATTLE_OPEN, LISTEN_RATIO, MIN_BATTLES, MIN_PODIUM, type Award, type EntryCard, type Week } from "@/lib/weekly";
 import { ScreenTour } from "@/components/onboarding/tours";
 import { TourHelp } from "@/components/onboarding/tour";
 import { useLang, useT } from "@/components/lang";
@@ -72,6 +72,7 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
   const open = now === null || now >= week.startsAt;
   const mine = entries.find((e) => e.id === me.mineId) ?? null;
   const podiumReady = entries.length >= MIN_PODIUM;
+  const blindOpen = entries.length >= BATTLE_OPEN;
 
   const sorted = useMemo(() => {
     if (tab === "rank") return entries;
@@ -256,9 +257,11 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
             <button type="button" role="tab" aria-selected={tab === "fresh"} onClick={() => setTab("fresh")}>
               {t("새 목소리", "New voices")}
             </button>
-            <button type="button" role="tab" aria-selected={tab === "blind"} onClick={() => setTab("blind")}>
-              {t("블라인드", "Blind")}
-            </button>
+            {blindOpen && (
+              <button type="button" role="tab" aria-selected={tab === "blind"} onClick={() => setTab("blind")}>
+                {t("블라인드", "Blind")}
+              </button>
+            )}
           </div>
         </div>
 
@@ -266,7 +269,7 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
           <DemoBoard scriptId={week.scriptId} />
         ) : (
           <>
-            {entries.length >= 2 && (
+            {blindOpen && (
               <Link href="/weekly/battle" className={styles.battleCta} onClick={() => track("battle_cta", { via: tab })}>
                 <span aria-hidden="true">🎧</span>
                 <span>
@@ -321,7 +324,8 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
             <li>❤ 는 한 사람이 한 출전작에 한 번만 누를 수 있어요. 내 작품엔 못 눌러요.</li>
             <li>마감 때 ❤ 순으로 1~3위가 시상대에 올라 명예의 전당과 프로필에 트로피가 남아요.</li>
             <li>가입 없이 출전해도 돼요. 트로피를 계정에 남기려면 마감 전에 로그인해 주세요.</li>
-            <li>블라인드 순위는 따로예요. 이름 없이 두 녹음을 듣고 고른 결과로만 정해지고, {MIN_BATTLES}판 이상 치러야 올라가요.</li>
+            <li>출전하면 친구에게 1:1 대결을 신청할 수 있어요. 대결 결과는 ❤ 순위와 따로예요.</li>
+            {blindOpen && <li>블라인드 순위도 따로예요. 이름 없이 두 녹음을 듣고 고른 결과로만 정해지고, {MIN_BATTLES}판 이상 치러야 올라가요.</li>}
           </ul>,
           <ul>
             <li>A new script opens Monday 00:00 and closes Sunday midnight (KST).</li>
@@ -329,7 +333,8 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
             <li>One ❤ per person per entry. You can&apos;t ❤ your own.</li>
             <li>At close, the top 3 by ❤ take the podium and get trophies in the Hall of Fame and on their profiles.</li>
             <li>No sign-up needed to enter. Log in before the deadline to keep your trophy.</li>
-            <li>The Blind ranking is separate: it comes only from listeners picking between two nameless recordings. {MIN_BATTLES}+ battles to get ranked.</li>
+            <li>Once you enter, you can challenge a friend to a 1:1 duel. Duel results don&apos;t affect the ❤ ranking.</li>
+            {blindOpen && <li>The Blind ranking is separate too: it comes only from listeners picking between two nameless recordings. {MIN_BATTLES}+ battles to get ranked.</li>}
           </ul>,
         )}
       </details>
@@ -425,6 +430,9 @@ function MyStanding({ mine, entries, onShare }: { mine: EntryCard; entries: Entr
           </button>
           <Link href={`/weekly/e/${mine.id}`} className={styles.mineView}>
             {t("내 출전작", "My entry")}
+          </Link>
+          <Link href={`/weekly/vs/${mine.id}`} className={styles.mineDuel}>
+            {t("⚔️ 친구에게 1:1 대결 신청", "⚔️ Challenge a friend 1:1")}
           </Link>
         </div>
       </div>

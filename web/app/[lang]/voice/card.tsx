@@ -1,68 +1,94 @@
 "use client";
 
 import { VoiceAvatar } from "@/components/voice-avatar";
-import { useT } from "@/components/lang";
+import { useLang, useT } from "@/components/lang";
 import { decodeAvatar } from "@/lib/avatar";
-import {
-  EXPR_LABEL,
-  exprOf,
-  PACE_LABEL,
-  paceOf,
-  REGISTER_LABEL,
-  registerOf,
-  VOICE_TYPES,
-  type CardData,
-} from "@/lib/voice-card";
-import type { Lang } from "@/lib/i18n";
+import { AXES, evidence, ROLES, SEAL_FONT_CSS, sliders, verdict, type CardData } from "@/lib/voice-card";
 import styles from "./voice.module.css";
 
+/** 붉은 도장 한 글자. 서체는 한자 16자만 잘라 받는다. */
+export function Seal({ char, size = 96, stamp = false }: { char: string; size?: number; stamp?: boolean }) {
+  return (
+    <>
+      <link rel="stylesheet" href={SEAL_FONT_CSS} precedence="default" />
+      <span
+        className={`${styles.seal} ${stamp ? styles.sealStamp : ""}`}
+        style={{ width: size, height: size, fontSize: size * 0.62 }}
+        aria-hidden="true"
+      >
+        {char}
+      </span>
+    </>
+  );
+}
+
 /** 카드 한 장 — 만든 사람 화면과 공유 링크 화면이 같은 걸 그린다. */
-export function VoiceCard({ card, readLang, level = 0 }: { card: CardData; readLang: Lang; level?: number }) {
+export function VoiceCard({ card, stamp = false }: { card: CardData; stamp?: boolean }) {
   const t = useT();
-  const type = VOICE_TYPES[card.type];
-  const reg = REGISTER_LABEL[registerOf(card.hz)];
-  const expr = EXPR_LABEL[exprOf(card.st10 / 10)];
-  const pace = card.pace10 !== null ? PACE_LABEL[paceOf(card.pace10 / 10, readLang)] : null;
+  const lang = useLang();
+  const { role, lean } = verdict(card);
+  const pos = sliders(card);
+  const why = evidence(card, lang);
+  const best = ROLES[role.best];
+  const rival = ROLES[role.rival];
+  const name = (r: { ko: string; en: string }) => t(r.ko, r.en);
+  // 근거 문장은 잰 축만 순서대로 나온다 — 슬라이더도 같은 축만 남긴다.
+  const rows = AXES.map((ax, i) => ({ ax, p: pos[i] })).filter((x): x is { ax: (typeof AXES)[number]; p: number } => x.p !== null);
   return (
     <article className={styles.card}>
-      <p className={styles.cardKicker}>{t("MIMIC 보이스 카드", "MIMIC voice card")}</p>
-      <div className={styles.cardAvatar}>
-        <VoiceAvatar avatar={decodeAvatar(card.avatar)} level={level} size={132} />
+      <p className={styles.cardKicker}>{t("MIMIC · 목소리 사극 판정", "MIMIC · Voice casting")}</p>
+      <div className={styles.cardHero}>
+        <VoiceAvatar avatar={decodeAvatar(card.avatar)} level={0.35} size={112} />
+        <Seal char={role.seal} size={92} stamp={stamp} />
       </div>
-      <p className={styles.cardLead}>{t("내 목소리 유형은", "My voice type is")}</p>
-      <h2 className={styles.cardType}>{t(type.ko, type.en)}</h2>
-      <ul className={styles.tags}>
-        <li>{t(reg[0], reg[1])}</li>
-        <li>{t(expr[0], expr[1])}</li>
-        {pace && <li>{t(pace[0], pace[1])}</li>}
+      <p className={styles.cardLead}>{t("내 목소리, 사극에선", "In a period drama, my voice plays")}</p>
+      <h2 className={styles.cardType}>{t(`「${role.ko}」 역`, role.en)}</h2>
+      {lean && (
+        <p className={styles.lean}>
+          {t(`${ROLES[lean].ko} 기질 살짝`, `with a hint of ${ROLES[lean].en}`)}
+        </p>
+      )}
+      <p className={styles.why}>{t(role.whyKo, role.whyEn)}</p>
+
+      <ul className={styles.axes}>
+        {rows.map(({ ax, p }, i) => {
+          const labels = lang === "en" ? ax.en : ax.ko;
+          const line = why[i];
+          return (
+            <li key={i}>
+              <div className={styles.axisRow}>
+                <span className={p < 0.5 ? styles.axisOn : undefined}>{labels[0]}</span>
+                <span className={styles.track}>
+                  <i style={{ left: `${p * 100}%` }} />
+                </span>
+                <span className={p >= 0.5 ? styles.axisOn : undefined}>{labels[1]}</span>
+              </div>
+              <small>{line}</small>
+            </li>
+          );
+        })}
       </ul>
-      <dl className={styles.stats}>
-        <div>
-          <dt>{t("평균 음높이", "Avg pitch")}</dt>
-          <dd>
-            {card.hz}
-            <small>Hz</small>
-          </dd>
-        </div>
-        <div>
-          <dt>{t("억양 폭", "Pitch range")}</dt>
-          <dd>
-            {(card.st10 / 10).toFixed(1)}
-            <small>{t("반음", "st")}</small>
-          </dd>
-        </div>
-        <div>
-          <dt>{t("말 속도", "Pace")}</dt>
-          <dd>
-            {card.pace10 !== null ? (card.pace10 / 10).toFixed(1) : "–"}
-            <small>{t("음절/초", "syl/s")}</small>
-          </dd>
-        </div>
-      </dl>
-      <p className={styles.role}>
-        <span>{t("어울리는 배역", "Cast me as")}</span>
-        <b>{t(type.roleKo, type.roleEn)}</b>
-      </p>
+
+      <blockquote className={styles.quote}>
+        <small>{t("어울리는 대사", "Your line")}</small>“{t(role.lineKo, role.lineEn)}”
+      </blockquote>
+
+      <div className={styles.pairs}>
+        <p>
+          <small>{t("찰떡 궁합", "Best match")}</small>
+          <b>
+            <span className={styles.miniSeal}>{best.seal}</span>
+            {name(best)}
+          </b>
+        </p>
+        <p>
+          <small>{t("만나면 싸움", "Arch rival")}</small>
+          <b>
+            <span className={`${styles.miniSeal} ${styles.miniRival}`}>{rival.seal}</span>
+            {name(rival)}
+          </b>
+        </p>
+      </div>
     </article>
   );
 }

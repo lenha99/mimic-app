@@ -1,0 +1,48 @@
+/* 1:1 대결 — 카드·파형은 블라인드 배틀(battle.module.css)과 같은 걸 쓰고, 여기엔 다른 것만. */
+
+.solo {
+  display: grid;
+  max-width: 260px;
+  margin: 0 auto;
+}
+
+.total {
+  margin: 12px 0 0;
+  text-align: center;
+  color: var(--ash);
+  font-size: 13px;
+}
+
+.actions {
+  display: grid;
+  gap: 4px;
+}
+
+.ghost {
+  padding: 12px;
+  text-align: center;
+  color: var(--ash);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.script {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--panel);
+  font-size: 14px;
+}
+
+.script summary {
+  cursor: pointer;
+  color: var(--ash);
+  font-weight: 700;
+}
+
+.script p {
+  margin: 10px 0 0;
+  line-height: 1.7;
+  white-space: pre-line;
+  word-break: keep-all;
+}

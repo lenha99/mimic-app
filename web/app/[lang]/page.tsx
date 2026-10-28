@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ClaimPending } from "@/app/[lang]/profile/claim-pending";
+import { Seal } from "@/app/[lang]/voice/card";
 import { HomeBeacon } from "@/components/home-beacon";
 import { InstallBanner } from "@/components/install-banner";
 import { ViewerBadge } from "@/components/viewer";
@@ -98,10 +99,15 @@ export default async function Home() {
         </Link>
       </nav>
 
-      <Link href="/voice" className={styles.create} data-tour="home-voice">
-        <span>
-          <b>{t("🪪 내 목소리는 무슨 유형?", "🪪 What type is your voice?")}</b>
-          <small>{t("문장 하나 읽으면 10초 만에 보이스 카드가 나와요", "Read one line, get your voice card in 10 seconds")}</small>
+      <Link href="/voice" className={styles.voice} data-tour="home-voice">
+        <span className={styles.voiceSeals} aria-hidden="true">
+          <Seal char="王" size={34} />
+          <Seal char="奸" size={34} />
+          <Seal char="笑" size={34} />
+        </span>
+        <span className={styles.voiceText}>
+          <b>{t("내 목소리, 사극에선 무슨 역?", "What role would your voice play?")}</b>
+          <small>{t("왕 · 간신 · 망나니 · 삐에로… 10초 판정", "King · Schemer · Jester… cast in 10 seconds")}</small>
         </span>
         <i aria-hidden="true">→</i>
       </Link>
