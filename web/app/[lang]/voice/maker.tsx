@@ -112,7 +112,8 @@ export default function Maker() {
       setCard(next);
       setPhase("done");
       buzz(40);
-      track("voice_card_done", { via: verdict(next).key });
+      // 잰 값도 남긴다 — 경계(voice-card.ts)를 실제 사용자 분포로 다시 맞추는 데 쓴다. via 는 16자라 meme_id 칸에.
+      track("voice_card_done", { via: verdict(next).key, meme_id: cardQuery({ ...next, avatar: "" }) });
     } catch {
       setPhase("ready");
       setError(t("분석하다 문제가 생겼어요. 한 번 더 해 볼까요?", "Something went wrong while analyzing. Try again?"));

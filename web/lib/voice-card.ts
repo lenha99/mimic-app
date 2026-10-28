@@ -26,12 +26,20 @@ export type Measure = {
   lang: Lang;
 };
 
+/*
+ * 경계는 전부 중앙값이다 — 반은 이쪽, 반은 저쪽으로 갈려야 16역이 고르게 나온다.
+ * 예시 음성 48개(대본 12개 × 목소리 넷, 뉴스부터 악당까지)를 이 앱의 측정 코드로 그대로
+ * 잰 값에서 뽑았다. 처음엔 어림값(속도 5.0, 말끝 -6dB, 억양 8반음)을 썼다가 속도는 48개 중
+ * 2개만 "빠름", 억양은 46개가 "출렁"으로 갈려 거의 모두 같은 역이 나왔다.
+ * 속도는 쉼까지 넣은 시간으로 재서 대본에 적힌 말 속도보다 낮게 나온다.
+ * 실제 사용자 값은 voice_card_done 이벤트에 남긴다 — 쌓이면 그걸로 다시 맞춘다.
+ */
 /** 음높이 경계 — 같은 성별 안에서 낮은 편/높은 편. 모르면 남녀 사이 값. */
-const PITCH_CUT: Record<Gender, number> = { m: 125, f: 205, x: 165 };
-/** 사극 문장은 원래 억양이 출렁인다 — 경계를 평소 말투보다 높게 둔다. */
-const RANGE_CUT = 8;
-const PACE_CUT: Record<Lang, number> = { ko: 5.0, en: 3.9 };
-const END_CUT = -6;
+const PITCH_CUT: Record<Gender, number> = { m: 135, f: 222, x: 175 };
+const RANGE_CUT = 10.8;
+/** 영어는 한국어 경계를 음절 밀도 비율(기존 3.9/5.0)로 옮긴 값 — 아직 잰 적은 없다. */
+const PACE_CUT: Record<Lang, number> = { ko: 3.75, en: 2.9 };
+const END_CUT = -2.8;
 
 /** 경계에서 이만큼 안쪽이면 "살짝" — 다시 하면 바뀔 수 있는 축. */
 const MARGIN = { hz: 0.07, st: 1.2, pace: 0.35, end: 1.5 };
