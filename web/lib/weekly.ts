@@ -24,6 +24,8 @@ export const MIN_PODIUM = 5;
 export const MIN_AWARDS = 3;
 /** 이만큼 들어야 ❤ 를 누를 수 있다 — 안 듣고 누르는 ❤ 는 순위를 망친다. */
 export const LISTEN_RATIO = 0.8;
+/** 블라인드 배틀을 이만큼 치러야 배틀 순위에 오른다. 한두 판은 운이다. */
+export const MIN_BATTLES = 3;
 /** 출전 녹음 길이 상한(초). 대본은 10~22초짜리다. */
 export const MAX_ENTRY_SECONDS = 60;
 
@@ -169,6 +171,8 @@ export type EntryCard = {
   /** 지난 시즌 수상 횟수 — 이름 옆 트로피 */
   trophies: number;
   createdAt: string;
+  /** 블라인드 배틀 성적. 배틀 칸이 아직 없는 DB 면 null */
+  battle: { rating: number; wins: number; losses: number } | null;
 };
 
 export type WeeklyBoard = {

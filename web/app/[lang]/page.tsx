@@ -98,10 +98,10 @@ export default async function Home() {
         </Link>
       </nav>
 
-      <Link href="/create" className={styles.create} data-tour="home-create">
+      <Link href="/voice" className={styles.create} data-tour="home-voice">
         <span>
-          <b>{t("내 목소리로 챌린지 만들기", "Make a challenge with your voice")}</b>
-          <small>{t("5초만 녹음하면 친구들이 날 따라 해요 🤭", "Record 5 seconds, make your friends copy you 🤭")}</small>
+          <b>{t("🪪 내 목소리는 무슨 유형?", "🪪 What type is your voice?")}</b>
+          <small>{t("문장 하나 읽으면 10초 만에 보이스 카드가 나와요", "Read one line, get your voice card in 10 seconds")}</small>
         </span>
         <i aria-hidden="true">→</i>
       </Link>

@@ -415,6 +415,12 @@ FUNNEL = ("view_home", "view_record", "play_ref", "record_start", "score", "shar
 FEED = ("view_feed", "feed_play", "feed_react", "feed_try")
 # 연습실 — 대본을 열고(view), 녹음한다(take). 녹음 자체는 기기에만 남는다.
 PRACTICE = ("practice_view", "practice_take")
+# 주간 챌린지 · 블라인드 배틀 · 보이스 카드 · 첫 방문 안내. 웹은 예전부터 보냈는데
+# 여기 목록에 없어 조용히 버려지고 있었다.
+WEEKLY = ("weekly_view", "weekly_play", "weekly_like", "weekly_enter", "weekly_share",
+          "battle_cta", "battle_view", "battle_vote",
+          "voice_card_start", "voice_card_done", "voice_card_share",
+          "intro_view", "intro_skip", "intro_done")
 
 
 @app.function(image=slim_image, volumes={REF_DIR: volume})
@@ -457,7 +463,7 @@ def stats(days: int = 7):
         return rows
 
     return {"days": days, "memes": out, "funnel": steps(FUNNEL), "feed": steps(FEED),
-            "practice": steps(PRACTICE)}
+            "practice": steps(PRACTICE), "weekly": steps(WEEKLY)}
 
 
 @app.function(image=slim_image, volumes={REF_DIR: volume})
@@ -475,7 +481,7 @@ async def track(request: Request):
     except Exception:
         return Response(status_code=204)
     kind = body.get("kind")
-    if kind not in FUNNEL + FEED + PRACTICE or kind == "score":   # score 는 채점 서버가 직접 남긴다
+    if kind not in FUNNEL + FEED + PRACTICE + WEEKLY or kind == "score":   # score 는 채점 서버가 직접 남긴다
         return Response(status_code=204)
     rec = {}
     for k in ("meme_id", "client"):

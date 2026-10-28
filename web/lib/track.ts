@@ -34,6 +34,14 @@ export type TrackKind =
   | "weekly_like"
   | "weekly_enter"
   | "weekly_share"
+  // 블라인드 배틀 — 허브에서 들어와(cta) → 짝을 받고(view) → 고른다(vote)
+  | "battle_cta"
+  | "battle_view"
+  | "battle_vote"
+  // 보이스 카드 — 녹음 시작(start) → 카드 나옴(done) → 공유(share)
+  | "voice_card_start"
+  | "voice_card_done"
+  | "voice_card_share"
   // 첫 방문 안내 — 몇 장째에서 건너뛰는지(via)를 본다
   | "intro_view"
   | "intro_skip"

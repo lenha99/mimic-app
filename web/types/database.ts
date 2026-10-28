@@ -334,6 +334,10 @@ export interface Database {
           reports: number;
           created_at: string;
           updated_at: string;
+          /** 블라인드 배틀 Elo (마이그레이션 23) */
+          battle_rating: number;
+          battle_wins: number;
+          battle_losses: number;
         };
         Insert: {
           id?: string;
@@ -354,6 +358,22 @@ export interface Database {
           updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["weekly_entries"]["Insert"]>;
+        Relationships: [];
+      };
+      weekly_battle_votes: {
+        Row: {
+          id: number;
+          challenge_id: string;
+          pair: string;
+          winner_id: string;
+          loser_id: string;
+          voter: string;
+          user_id: string | null;
+          ip_hash: string;
+          created_at: string;
+        };
+        Insert: never;
+        Update: never;
         Relationships: [];
       };
       weekly_likes: {
@@ -456,6 +476,18 @@ export interface Database {
       /** ❤ 넣기 — 중복·네트워크 상한을 한 트랜잭션에서 (마이그레이션 21). */
       weekly_like: {
         Args: { p_entry: string; p_voters: string[]; p_user: string | null; p_ip_hash: string; p_cap: number };
+        Returns: "ok" | "dup" | "cap";
+      };
+      weekly_battle_vote: {
+        Args: {
+          p_week: string;
+          p_winner: string;
+          p_loser: string;
+          p_voters: string[];
+          p_user: string | null;
+          p_ip_hash: string;
+          p_cap: number;
+        };
         Returns: "ok" | "dup" | "cap";
       };
       weekly_bump_play: {

@@ -42,13 +42,29 @@ function byRank(a: { like_count: number; updated_at: string }, b: { like_count: 
 
 export async function getBoard(w: Week): Promise<WeeklyBoard> {
   const service = createServiceClient();
-  const { data: rows } = await service
-    .from("weekly_entries")
-    .select("id, user_id, guest_name, avatar, duration_s, bars, like_count, play_count, created_at, updated_at")
-    .eq("challenge_id", w.id)
-    .eq("hidden", false)
-    .limit(500);
-  const list = [...(rows ?? [])].sort(byRank);
+  const base = "id, user_id, guest_name, avatar, duration_s, bars, like_count, play_count, created_at, updated_at";
+  const query = (cols: string) =>
+    service.from("weekly_entries").select(cols).eq("challenge_id", w.id).eq("hidden", false).limit(500);
+  // 배틀 칸은 마이그레이션 23 에서 생긴다. 배포가 마이그레이션보다 먼저 나가도 순위판은 떠야 한다.
+  let res = await query(`${base}, battle_rating, battle_wins, battle_losses`);
+  if (res.error) res = await query(base);
+  type BoardRow = {
+    id: string;
+    user_id: string | null;
+    guest_name: string | null;
+    avatar: unknown;
+    duration_s: number;
+    bars: number[] | null;
+    like_count: number;
+    play_count: number;
+    created_at: string;
+    updated_at: string;
+    battle_rating?: number;
+    battle_wins?: number;
+    battle_losses?: number;
+  };
+  const rows = (res.data ?? []) as unknown as BoardRow[];
+  const list = [...rows].sort(byRank);
 
   const users = [...new Set(list.map((r) => r.user_id).filter((x): x is string => !!x))];
   const [{ data: profiles }, { data: awards }] = users.length
@@ -76,6 +92,10 @@ export async function getBoard(w: Week): Promise<WeeklyBoard> {
       plays: r.play_count,
       trophies: r.user_id ? (trophies.get(r.user_id) ?? 0) : 0,
       createdAt: r.updated_at,
+      battle:
+        r.battle_rating === undefined
+          ? null
+          : { rating: Math.round(r.battle_rating), wins: r.battle_wins ?? 0, losses: r.battle_losses ?? 0 },
     };
   });
   return { week: w, entries, totalLikes: entries.reduce((n, e) => n + e.likes, 0) };

@@ -55,16 +55,16 @@ const sets = (t: T) => {
       ),
     },
     {
-      target: "home-create",
-      title: t("내 챌린지 만들기", "Make your own challenge"),
+      target: "home-voice",
+      title: t("보이스 카드", "Voice card"),
       body: t(
         <p>
-          내 목소리 5초(말버릇·성대모사)를 녹음하면 <b>다른 사람들이 날 따라 하는 챌린지</b>가 돼요. 로그인 후 만들 수
-          있고, <b>나 → 내 챌린지</b>에서 보고 지울 수 있어요.
+          문장 하나를 읽으면 <b>평균 음높이·억양 폭·말 속도</b>를 재서 내 목소리 유형과 어울리는 배역을 카드로
+          보여 줘요. 녹음은 <b>🔒 이 기기에서만</b> 분석하고, 카드는 링크·이미지로 자랑할 수 있어요.
         </p>,
         <p>
-          Record 5 seconds of your voice (a catchphrase, an impression) and it becomes <b>a challenge others try to
-          copy</b>. Log in to create; find or delete it under <b>Me → My challenges</b>.
+          Read one line and we measure <b>average pitch, pitch range and pace</b> to give you a voice type and roles
+          that fit. The recording is analyzed <b>🔒 on this device</b>; share the card as a link or image.
         </p>,
       ),
     },
@@ -137,10 +137,16 @@ const sets = (t: T) => {
     },
     {
       target: "weekly-tabs",
-      title: t("순위 · 새 목소리", "Ranking · New voices"),
+      title: t("순위 · 새 목소리 · 블라인드", "Top · New voices · Blind"),
       body: t(
-        <p>새 목소리 탭은 아직 덜 들린 출전작부터 보여줘요. 막 올라온 목소리에 ❤ 하나 눌러 주세요.</p>,
-        <p>New voices shows the least-heard entries first. Give a fresh voice some ❤.</p>,
+        <p>
+          새 목소리 탭은 아직 덜 들린 출전작부터 보여줘요. 블라인드 탭은 <b>이름 없이 듣고 고른 결과</b>로만 정한
+          순위예요. 친구 수와 상관없이 목소리로만 겨뤄요.
+        </p>,
+        <p>
+          New voices shows the least-heard entries first. Blind ranks entries only by <b>nameless head-to-head picks</b>
+          — no friend count, just the voice.
+        </p>,
       ),
     },
     {
