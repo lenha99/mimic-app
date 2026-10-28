@@ -1,0 +1,280 @@
+/* 블라인드 배틀 — 두 카드가 마주 보는 링. 고르기 전엔 이름도 얼굴도 없다. */
+
+.page {
+  padding-top: 12px;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0 12px;
+}
+
+.nav a {
+  color: var(--ash);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.count {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--volt);
+  color: var(--stage);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.head {
+  margin-bottom: 16px;
+}
+
+.head :global(.eyebrow) {
+  margin: 0 0 6px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 28px;
+  line-height: 1.2;
+  word-break: keep-all;
+}
+
+.sub {
+  margin: 8px 0 0;
+  color: var(--ash);
+  font-size: 14px;
+  line-height: 1.5;
+  word-break: keep-all;
+}
+
+.skeleton {
+  height: 300px;
+  border-radius: 22px;
+  background: linear-gradient(90deg, var(--panel), var(--panel-hi), var(--panel));
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.duel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.card {
+  min-width: 0;
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  padding: 14px 12px;
+  border-radius: 22px;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  transition:
+    border-color 0.2s,
+    opacity 0.2s,
+    transform 0.2s;
+}
+
+.cardOn {
+  border-color: rgba(232, 255, 58, 0.6);
+  box-shadow: 0 0 0 3px rgba(232, 255, 58, 0.12);
+}
+
+.cardWin {
+  border-color: var(--volt);
+  background:
+    radial-gradient(80% 60% at 50% 0%, rgba(232, 255, 58, 0.18), transparent 70%),
+    var(--panel);
+}
+
+.cardLose {
+  opacity: 0.6;
+}
+
+.cardTop {
+  position: relative;
+  min-height: 64px;
+  display: grid;
+  place-items: center;
+}
+
+.letter {
+  width: 60px;
+  height: 60px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--panel-hi);
+  border: 1px dashed var(--ash-dim);
+  font-family: var(--display);
+  font-size: 30px;
+  color: var(--white);
+}
+
+.heard {
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--lime);
+}
+
+.badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--volt);
+  color: var(--stage);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.name {
+  margin: 0;
+  display: grid;
+  gap: 2px;
+  text-align: center;
+  min-width: 0;
+}
+
+.name b {
+  font-size: 14.5px;
+  overflow-wrap: anywhere;
+}
+
+.name small {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ash);
+}
+
+.play {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--stage);
+  color: var(--white);
+  cursor: pointer;
+  min-width: 0;
+}
+
+.playIcon {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--volt);
+  color: var(--stage);
+  font-size: 13px;
+}
+
+.wave {
+  flex: 1;
+  min-width: 0;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.wave i {
+  flex: 1;
+  min-width: 1px;
+  border-radius: 2px;
+  background: var(--ash-dim);
+}
+
+.wave i.waveOn {
+  background: var(--volt);
+}
+
+.pick {
+  padding: 12px 8px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--panel-hi);
+  color: var(--ash);
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  word-break: keep-all;
+}
+
+.pick[data-ready="true"] {
+  background: var(--white);
+  color: var(--stage);
+}
+
+.pick:disabled {
+  opacity: 0.6;
+}
+
+.hint {
+  margin: 14px 0 0;
+  text-align: center;
+  color: var(--ash);
+  font-size: 13.5px;
+}
+
+.next {
+  margin-top: 16px;
+  width: 100%;
+  display: block;
+  padding: 15px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--volt);
+  color: var(--stage);
+  font-size: 16px;
+  font-weight: 900;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.empty {
+  padding: 28px 18px;
+  border-radius: 22px;
+  background: var(--panel);
+  text-align: center;
+  line-height: 1.55;
+  word-break: keep-all;
+}
+
+.empty p {
+  margin: 0;
+}
+
+.emptyBig {
+  font-size: 40px;
+  margin-bottom: 8px !important;
+}
+
+.foot {
+  margin: 22px 0 0;
+  color: var(--ash-dim);
+  font-size: 12.5px;
+  line-height: 1.5;
+  text-align: center;
+  word-break: keep-all;
+}

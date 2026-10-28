@@ -12,7 +12,7 @@ import { buzz, shareLink, useWeeklyMe } from "@/components/weekly/use-weekly";
 import { normalizeAvatar, PRESETS } from "@/lib/avatar";
 import { DEMO_TAKES } from "@/lib/examples";
 import { track } from "@/lib/track";
-import { audioSrc, displayName, LISTEN_RATIO, MIN_PODIUM, type Award, type EntryCard, type Week } from "@/lib/weekly";
+import { audioSrc, displayName, LISTEN_RATIO, MIN_BATTLES, MIN_PODIUM, type Award, type EntryCard, type Week } from "@/lib/weekly";
 import { ScreenTour } from "@/components/onboarding/tours";
 import { TourHelp } from "@/components/onboarding/tour";
 import { useLang, useT } from "@/components/lang";
@@ -33,7 +33,9 @@ type Props = {
   last: { week: Week; awards: Award[] } | null;
 };
 
-type Tab = "rank" | "fresh";
+type Tab = "rank" | "fresh" | "blind";
+
+const battled = (e: EntryCard) => !!e.battle && e.battle.wins + e.battle.losses >= MIN_BATTLES;
 
 /**
  * 이번 주 챌린지 — 무대 · 내 자리 · 시상대 · 순위 · 지난주.
@@ -73,6 +75,15 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
 
   const sorted = useMemo(() => {
     if (tab === "rank") return entries;
+    if (tab === "blind") {
+      // 블라인드 — 이름 없이 들은 사람들이 고른 순서. 판 수가 모자란 작품은 아래에 "심사 중"으로.
+      return [...entries].sort(
+        (a, b) =>
+          Number(battled(b)) - Number(battled(a)) ||
+          (b.battle?.rating ?? 0) - (a.battle?.rating ?? 0) ||
+          a.rank - b.rank,
+      );
+    }
     // 새 목소리 — 덜 들린 것부터. 늦게 들어온 사람도 들려질 기회가 있어야 판이 돈다.
     return [...entries].sort((a, b) => a.plays - b.plays || b.createdAt.localeCompare(a.createdAt));
   }, [entries, tab]);
@@ -245,6 +256,9 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
             <button type="button" role="tab" aria-selected={tab === "fresh"} onClick={() => setTab("fresh")}>
               {t("새 목소리", "New voices")}
             </button>
+            <button type="button" role="tab" aria-selected={tab === "blind"} onClick={() => setTab("blind")}>
+              {t("블라인드", "Blind")}
+            </button>
           </div>
         </div>
 
@@ -252,6 +266,21 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
           <DemoBoard scriptId={week.scriptId} />
         ) : (
           <>
+            {entries.length >= 2 && (
+              <Link href="/weekly/battle" className={styles.battleCta} onClick={() => track("battle_cta", { via: tab })}>
+                <span aria-hidden="true">🎧</span>
+                <span>
+                  <b>{t("블라인드 심사하기", "Judge blind battles")}</b>
+                  <small>
+                    {t(
+                      "이름·캐릭터 없이 둘 중 더 좋은 목소리만 골라 주세요",
+                      "No names, no avatars — just pick the better voice",
+                    )}
+                  </small>
+                </span>
+                <i aria-hidden="true">→</i>
+              </Link>
+            )}
             <Tip id="tip_like">
               {t(
                 "▶ 로 들어 보고 마음에 든 목소리에 ❤ 를 눌러 주세요. 순위는 이 ❤ 로 정해져요",
@@ -263,6 +292,8 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
                 <Row
                   key={e.id}
                   e={e}
+                  place={tab === "blind" ? (battled(e) ? i + 1 : null) : e.rank}
+                  blind={tab === "blind"}
                   cutAfter={tab === "rank" && podiumReady && i === 2 && entries.length > 3}
                   now={now}
                   isMine={e.id === me.mineId}
@@ -290,6 +321,7 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
             <li>❤ 는 한 사람이 한 출전작에 한 번만 누를 수 있어요. 내 작품엔 못 눌러요.</li>
             <li>마감 때 ❤ 순으로 1~3위가 시상대에 올라 명예의 전당과 프로필에 트로피가 남아요.</li>
             <li>가입 없이 출전해도 돼요. 트로피를 계정에 남기려면 마감 전에 로그인해 주세요.</li>
+            <li>블라인드 순위는 따로예요. 이름 없이 두 녹음을 듣고 고른 결과로만 정해지고, {MIN_BATTLES}판 이상 치러야 올라가요.</li>
           </ul>,
           <ul>
             <li>A new script opens Monday 00:00 and closes Sunday midnight (KST).</li>
@@ -297,6 +329,7 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
             <li>One ❤ per person per entry. You can&apos;t ❤ your own.</li>
             <li>At close, the top 3 by ❤ take the podium and get trophies in the Hall of Fame and on their profiles.</li>
             <li>No sign-up needed to enter. Log in before the deadline to keep your trophy.</li>
+            <li>The Blind ranking is separate: it comes only from listeners picking between two nameless recordings. {MIN_BATTLES}+ battles to get ranked.</li>
           </ul>,
         )}
       </details>
@@ -487,6 +520,8 @@ function Recruit({ count }: { count: number }) {
 
 function Row({
   e,
+  place,
+  blind,
   cutAfter,
   now,
   isMine,
@@ -498,6 +533,8 @@ function Row({
   onLike,
 }: {
   e: EntryCard;
+  place: number | null;
+  blind: boolean;
   cutAfter: boolean;
   now: number | null;
   isMine: boolean;
@@ -515,8 +552,8 @@ function Row({
   return (
     <>
       <li className={`${styles.row} ${isMine ? styles.rowMine : ""} ${playing ? styles.rowOn : ""}`}>
-        <span className={`${styles.rank} ${e.rank <= 3 ? styles[`rank${e.rank}`] : ""}`}>
-          {String(e.rank).padStart(2, "0")}
+        <span className={`${styles.rank} ${place !== null && place <= 3 ? styles[`rank${place}`] : ""}`}>
+          {place === null ? "–" : String(place).padStart(2, "0")}
         </span>
         <button
           type="button"
@@ -547,7 +584,12 @@ function Row({
               ))}
             </span>
             <span className={styles.rowMeta}>
-              {clock(e.duration)} · {t(`${e.plays}번 재생`, `${e.plays} plays`)}
+              {clock(e.duration)} ·{" "}
+              {blind
+                ? e.battle && e.battle.wins + e.battle.losses > 0
+                  ? t(`${e.battle.wins}승 ${e.battle.losses}패`, `${e.battle.wins}W ${e.battle.losses}L`)
+                  : t("심사 중", "Not judged yet")
+                : t(`${e.plays}번 재생`, `${e.plays} plays`)}
             </span>
           </span>
         </button>
@@ -648,6 +690,7 @@ function DemoBoard({ scriptId }: { scriptId: string }) {
     plays: d.plays,
     trophies: 0,
     createdAt: "2026-01-01T00:00:00Z",
+    battle: null,
   }))
     .sort((a, b) => b.likes - a.likes)
     .map((e, i) => ({ ...e, rank: i + 1 }));
@@ -722,6 +765,8 @@ function DemoBoard({ scriptId }: { scriptId: string }) {
           <Row
             key={e.id}
             e={e}
+            place={e.rank}
+            blind={false}
             cutAfter={false}
             now={null}
             isMine={e.id === "demo-me"}

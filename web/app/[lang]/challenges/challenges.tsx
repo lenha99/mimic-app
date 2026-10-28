@@ -35,12 +35,10 @@ export default function Challenges({
   lines,
   friends,
   warmups,
-  social,
 }: {
   lines: Card[];
   friends: Card[];
   warmups: Card[];
-  social: boolean;
 }) {
   const t = useT();
   const lang = useLang();
@@ -79,12 +77,10 @@ export default function Challenges({
             "How close can you get to the legends? 🎤 Get your score, then flex on your friends",
           )}
         </p>
-        {social && (
-          <nav className={styles.links}>
-            <Link href="/rank">{t("랭킹", "Ranking")}</Link>
-            <Link href="/vote">{t("목소리 투표", "Voice battle")}</Link>
-          </nav>
-        )}
+        <nav className={styles.links}>
+          <Link href="/weekly/battle">{t("블라인드 배틀", "Blind battle")}</Link>
+          <Link href="/voice">{t("보이스 카드", "Voice card")}</Link>
+        </nav>
       </header>
 
       <div className={styles.chips} role="tablist" aria-label={t("챌린지 종류", "Challenge type")} data-tour="challenges-tabs">

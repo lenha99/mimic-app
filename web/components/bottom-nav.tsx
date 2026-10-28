@@ -22,7 +22,7 @@ const TABS = [
     href: "/weekly",
     label: ["챌린지", "Challenge"],
     icon: MicIcon,
-    match: (p: string) => p.startsWith("/weekly") || p.startsWith("/challenges") || p.startsWith("/rank"),
+    match: (p: string) => p.startsWith("/weekly") || p.startsWith("/challenges"),
   },
   { href: "/practice", label: ["연습실", "Practice"], icon: ScriptIcon, match: (p: string) => p === "/practice" || p === "/practice/board" },
   { href: "/me", label: ["나", "Me"], icon: MeIcon, match: (p: string) => p.startsWith("/me") || p.startsWith("/profile") },

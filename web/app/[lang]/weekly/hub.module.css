@@ -556,6 +556,44 @@
   color: var(--stage);
 }
 
+.battleCta {
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(232, 255, 58, 0.14), rgba(255, 45, 120, 0.12));
+  border: 1px solid rgba(232, 255, 58, 0.35);
+  color: var(--white);
+  text-decoration: none;
+}
+
+.battleCta > span:first-child {
+  font-size: 24px;
+}
+
+.battleCta span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.battleCta b {
+  font-size: 14.5px;
+}
+
+.battleCta small {
+  font-size: 12px;
+  color: var(--ash);
+}
+
+.battleCta i {
+  font-style: normal;
+  color: var(--volt);
+}
+
 .rows {
   margin: 0;
   padding: 0;

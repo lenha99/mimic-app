@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { listApprovedChallenges } from "@/lib/challenges";
 import { getMemes, playCount, type Meme } from "@/lib/memes";
-import { socialReady } from "@/lib/social";
 import { getT } from "@/lib/i18n-server";
 import Challenges, { type Card } from "./challenges";
 
@@ -29,17 +28,12 @@ const card = (m: Meme): Card => ({
 });
 
 export default async function ChallengesPage() {
-  const [{ memes }, friends, social] = await Promise.all([
-    getMemes(),
-    listApprovedChallenges(30),
-    socialReady(),
-  ]);
+  const [{ memes }, friends] = await Promise.all([getMemes(), listApprovedChallenges(30)]);
   return (
     <Challenges
       lines={memes.filter((m) => m.line).map(card)}
       friends={friends.map(card)}
       warmups={memes.filter((m) => !m.line).map(card)}
-      social={social}
     />
   );
 }
