@@ -22,24 +22,8 @@
   cursor: pointer;
 }
 
-.dots {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  gap: 6px;
-}
 
-.dots li {
-  width: 22px;
-  height: 5px;
-  border-radius: 999px;
-  background: var(--rule);
-}
 
-.dots li[data-on="true"] {
-  background: var(--volt);
-}
 
 .head :global(.eyebrow) {
   margin: 0 0 6px;
@@ -61,6 +45,68 @@
   word-break: keep-all;
 }
 
+.picks {
+  margin: 14px 0 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.picks button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid var(--rule);
+  background: var(--panel);
+  color: var(--white);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.picks button:first-child {
+  border-color: var(--volt);
+  background:
+    radial-gradient(80% 120% at 0% 0%, rgba(232, 255, 58, 0.14), transparent 70%),
+    var(--panel);
+}
+
+.picks b {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--volt);
+  color: var(--stage);
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.picks span {
+  flex: 1;
+  display: grid;
+  gap: 3px;
+  font-size: 16px;
+  font-weight: 800;
+  word-break: keep-all;
+}
+
+.picks small {
+  color: var(--ash);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.picks i {
+  font-style: normal;
+  color: var(--volt);
+  font-weight: 900;
+}
+
 /* 첫 화면 -------------------------------------------------------------- */
 
 .introPiano {
@@ -79,66 +125,14 @@
   text-align: center;
 }
 
-.steps {
-  margin: 14px 0 16px;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: 8px;
-}
 
-.steps li {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  border-radius: 16px;
-  border: 1px solid var(--rule);
-}
 
-.steps b {
-  flex: none;
-  width: 28px;
-  height: 28px;
-  display: grid;
-  place-items: center;
-  border-radius: 999px;
-  background: var(--volt);
-  color: var(--stage);
-  font-size: 14px;
-  font-weight: 900;
-}
 
-.steps span {
-  display: grid;
-  gap: 2px;
-  font-size: 15px;
-  font-weight: 800;
-  word-break: keep-all;
-}
 
-.steps small {
-  color: var(--ash);
-  font-size: 12.5px;
-  font-weight: 500;
-}
 
 /* 측정 화면 ------------------------------------------------------------ */
 
-.prevResult {
-  margin: 0 0 12px;
-  padding: 10px 14px;
-  border-radius: 14px;
-  background: var(--panel);
-  color: var(--ash);
-  font-size: 13.5px;
-  text-align: center;
-  word-break: keep-all;
-}
 
-.prevResult b {
-  color: var(--white);
-}
 
 .how {
   margin: 4px 0 0;
@@ -631,42 +625,8 @@
   background: var(--volt);
 }
 
-.inst {
-  margin-top: 14px;
-  padding: 12px 14px;
-  border-radius: 18px;
-  background: var(--stage);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
 
-.instEmoji {
-  flex: none;
-  font-size: 40px;
-  line-height: 1;
-}
 
-.inst p {
-  margin: 0;
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
 
-.inst small {
-  color: var(--ash);
-  font-size: 12px;
-}
 
-.inst b {
-  font-family: var(--display);
-  font-size: 22px;
-}
 
-.inst span {
-  color: var(--ash);
-  font-size: 13px;
-  line-height: 1.45;
-  word-break: keep-all;
-}

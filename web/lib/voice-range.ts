@@ -7,7 +7,7 @@ import type { Lang } from "./i18n";
  * 전부 실제로 잰 음이라 "랜덤이네"가 나올 틈이 없다. 숫자는 피아노 건반 위치(MIDI 번호)로 다룬다.
  *
  * 처음엔 사극 배역 16역을 붙였다가 접었다 — 측정값 넷을 지어낸 규칙으로 이름에 이은 것이라
- * 다시 하면 바뀌고, 해외에선 사극을 모른다. 건반·옥타브·악기는 어디서나 통한다.
+ * 다시 하면 바뀌고, 해외에선 사극을 모른다. 건반·노래방 등급은 어디서나 통한다.
  */
 
 export type Gender = "m" | "f" | "x";
@@ -145,77 +145,6 @@ export const tierLabel = (t: Tier, lang: Lang) => `${t.emoji} ${lang === "en" ? 
 /** 보통 사람이 내는 음역(옥타브). 훈련 안 한 성인은 대개 1.5~2옥타브. */
 export const TYPICAL_OCTAVES: [number, number] = [1.5, 2];
 
-/* --- 악기 ----------------------------------------------------------------- */
-
-export type Instrument = {
-  key: string;
-  emoji: string;
-  ko: string;
-  en: string;
-  whyKo: string;
-  whyEn: string;
-};
-
-/**
- * 평소 말하는 음이 그 악기가 주로 연주하는 음역 안에 드는 것 중에서 고른다.
- * 남자 말소리(대략 라2~파3)와 여자 말소리(대략 솔3~도4)가 각각 너덧 악기로 갈리게 반음 둘씩 끊었다.
- * 설명은 다 좋은 말이다 — 평범한 목소리도 "오 나 첼로래" 하고 올릴 수 있어야 한다.
- */
-const INSTRUMENTS: [number, Instrument][] = [
-  [45, {
-    key: "tuba", emoji: "🎺", ko: "튜바", en: "Tuba",
-    whyKo: "오케스트라 맨 뒤에서 전체를 받쳐 주는 소리. 낮게 깔리는데 듬직해요.",
-    whyEn: "The sound holding up the whole orchestra from the back row. Low, steady, reliable.",
-  }],
-  [47, {
-    key: "bassoon", emoji: "🪈", ko: "바순", en: "Bassoon",
-    whyKo: "낮고 부드러운데 은근 유머가 있는 소리. ‘피터와 늑대’에서 할아버지 역이에요.",
-    whyEn: "Low and soft with a quiet sense of humor. It plays the grandfather in Peter and the Wolf.",
-  }],
-  [49, {
-    key: "cello", emoji: "🎻", ko: "첼로", en: "Cello",
-    whyKo: "사람 목소리를 가장 닮았다는 악기. 낮고 따뜻하게 울려요.",
-    whyEn: "Said to be the instrument closest to the human voice. Low and warm.",
-  }],
-  [51, {
-    key: "trombone", emoji: "🎺", ko: "트롬본", en: "Trombone",
-    whyKo: "시원하게 뻗는 중저음. 한마디 하면 방 안이 꽉 차요.",
-    whyEn: "A big, open low-mid sound. One sentence and the room is full.",
-  }],
-  [53, {
-    key: "horn", emoji: "📯", ko: "호른", en: "French horn",
-    whyKo: "부드럽게 감싸는 소리. 영화 음악 감동 장면마다 나와요.",
-    whyEn: "A round, warm sound that wraps around you. It's in every big movie moment.",
-  }],
-  [55, {
-    key: "sax", emoji: "🎷", ko: "알토 색소폰", en: "Alto sax",
-    whyKo: "말랑하고 감성적인 소리. 밤에 듣기 좋은 목소리예요.",
-    whyEn: "Smooth and soulful. A voice made for late nights.",
-  }],
-  [57, {
-    key: "viola", emoji: "🎻", ko: "비올라", en: "Viola",
-    whyKo: "바이올린보다 낮고 차분한 소리. 듣는 사람을 편하게 해요.",
-    whyEn: "Calmer and deeper than a violin. It puts people at ease.",
-  }],
-  [59, {
-    key: "clarinet", emoji: "🎶", ko: "클라리넷", en: "Clarinet",
-    whyKo: "맑고 동글동글한 소리. 어떤 노래에도 잘 섞여요.",
-    whyEn: "Clear and round. Blends into any song.",
-  }],
-  [Infinity, {
-    key: "violin", emoji: "🎻", ko: "바이올린", en: "Violin",
-    whyKo: "높고 또렷하게 노래하는 소리. 멀리서도 귀에 꽂혀요.",
-    whyEn: "Bright and singing. You can pick it out from across the room.",
-  }],
-];
-
-export function instrumentOf(speak: number): Instrument {
-  const m = Math.round(speak);
-  return INSTRUMENTS.find(([top]) => m <= top)![1];
-}
-
-export const INSTRUMENT_LIST = INSTRUMENTS.map(([, i]) => i);
-
 /* --- 공유 링크 ------------------------------------------------------------ */
 
 /** 링크에 담는 값 — 말하는 음·폭은 ×10 정수, 최저·최고는 MIDI 정수. */
@@ -242,7 +171,8 @@ export function readCard(q: URLSearchParams): RangeCard | null {
   const s = num(q.get("s"), 240, 960);
   const low = num(q.get("lo"), 24, 96);
   const high = num(q.get("hi"), 24, 96);
-  if (s === null && (low === null || high === null)) return null;
+  // 셋 중 하나만 있어도 카드다 — 따로따로 잰다.
+  if (s === null && low === null && high === null) return null;
   const w = num(q.get("w"), 0, 360);
   const g = q.get("g");
   return {
@@ -313,6 +243,5 @@ export function summary(c: RangeCard, lang: Lang) {
       facts.push(t(`평소 목소리: 같은 성별 100명 중 ${r}번째로 낮음`, `Speaking voice: #${r} lowest out of 100 ${c.gender === "m" ? "men" : "women"}`));
     }
   }
-  const instrument = c.speak !== null ? instrumentOf(c.speak) : null;
-  return { headline, emoji, lead, sub, facts, instrument, range, high, low };
+  return { headline, emoji, lead, sub, facts, range, high, low };
 }

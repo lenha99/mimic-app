@@ -59,10 +59,10 @@ const sets = (t: T) => {
       title: t("목소리 음역대 테스트", "Vocal range test"),
       body: t(
         <p>
-          대본 한 줄 읽고, ‘음~’ 끝까지 내리고, ‘아~’ 끝까지 올리면 <b>🚿 샤워실 가수부터 🐬 돌고래까지</b> 내 고음·저음 등급이 나와요. 녹음 파일은 <b>🔒 만들지 않고</b>, 결과는 스토리 이미지로 자랑할 수 있어요.
+          ‘아~’ 끝까지 올리거나 ‘음~’ 끝까지 내리면 — 하나만 해도 돼요 — <b>🚿 샤워실 가수부터 🐬 돌고래까지</b> 내 고음·저음 등급이 나와요. 녹음 파일은 <b>🔒 만들지 않고</b>, 공유 버튼 하나로 결과 이미지와 친구가 해 볼 링크가 같이 가요.
         </p>,
         <p>
-          Read a line, hum down as low as you can, then slide up as high as you can — get your <b>high and low tiers, from 🚿 Shower Singer to 🐬 Dolphin</b>. <b>🔒 Nothing is recorded</b>; share it as a story image.
+          Slide up as high as you can or hum down as low as you can — just one is fine — and get your <b>high and low tiers, from 🚿 Shower Singer to 🐬 Dolphin</b>. <b>🔒 Nothing is recorded</b>; one share button sends your result image plus a link friends can try.
         </p>,
       ),
     },
