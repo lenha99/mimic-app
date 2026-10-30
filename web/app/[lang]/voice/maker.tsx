@@ -28,6 +28,8 @@ import styles from "./voice.module.css";
 
 const GENDER_KEY = "mimic.voice.gender";
 const CARD_KEY = "mimic.voice.range";
+/** "셋 다 재기" 순서 — 제일 재밌는 최고음부터. */
+const ALL: Step[] = ["high", "low", "speak"];
 
 /** 한 번 재는 상한(초). */
 const MAX_S: Record<Step, number> = { speak: 12, low: 15, high: 15 };
@@ -96,7 +98,8 @@ export default function Maker() {
   const [listening, setListening] = useState(false);
   const [live, setLive] = useState<Live>({ m: null, level: 0, record: null, elapsed: 0 });
   const [error, setError] = useState<string | null>(null);
-  const [image, setImage] = useState<File | null>(null);
+  /** 셋 다 재는 중이면 true — 하나 끝나면 다음 칸으로 넘어간다 */
+  const [all, setAll] = useState(false);
   const [origin, setOrigin] = useState("");
   const [line, setLine] = useState<Line | null>(null);
   /** 방금 새로 오른 등급 — 잠깐 반짝인다 */
@@ -179,8 +182,10 @@ export default function Maker() {
     buzz(40);
     // 잰 값을 남긴다 — 등급 경계·평균 음높이를 실제 사용자 분포로 다시 맞추는 데 쓴다. via 는 16자라 값은 meme_id 칸에.
     track("voice_card_done", { via: s, meme_id: cardQuery({ ...next, avatar: "" }) });
-    // 하나 재면 바로 결과. 나머지는 결과 카드의 "재기 →" 로.
-    setStep(null);
+    // 셋 다 재는 중이면 다음 칸, 아니면 바로 결과. 나머지는 결과 카드의 "재기 →" 로.
+    const nextStep = all ? ALL.slice(ALL.indexOf(s) + 1)[0] : undefined;
+    if (!nextStep) setAll(false);
+    setStep(nextStep ?? null);
   };
 
   const listen = async (s: Step) => {
@@ -277,23 +282,6 @@ export default function Maker() {
 
   const query = card ? cardQuery(card) : "";
   const shareUrl = card && origin ? `${origin}/voice/c?${query}` : "";
-  const storyUrl = card && step === null ? `/api/og/voice?${query}&fmt=story&ui=${lang}` : "";
-
-  // 공유 시트는 누른 그 순간에만 열린다(사파리). 이미지를 누른 뒤에 받으면 늦으니 미리 받아 둔다.
-  useEffect(() => {
-    if (!storyUrl) return;
-    let alive = true;
-    fetch(storyUrl)
-      .then((r) => (r.ok ? r.blob() : null))
-      .then((b) => {
-        if (alive && b) setImage(new File([b], "mimic-vocal-range.png", { type: "image/png" }));
-      })
-      .catch(() => {});
-    return () => {
-      alive = false;
-      setImage(null);
-    };
-  }, [storyUrl]);
 
   const share = async () => {
     if (!card) return;
@@ -302,28 +290,20 @@ export default function Maker() {
       ? t(`${s.lead} ${s.emoji} ${s.headline} 나옴 (${s.sub}). 너도 재 봐!`, `${s.lead}: ${s.emoji} ${s.headline} (${s.sub}). Try yours!`)
       : t(`평소 내 목소리 음은 ${s.headline}. 너도 재 봐!`, `My speaking note is ${s.headline}. Try yours!`);
     track("voice_card_share", { via: card.high !== null ? "high" : card.low !== null ? "low" : "speak" });
-    // 버튼은 하나 — 카드 그림과 친구가 바로 해 볼 링크를 같이 보낸다.
-    // 인스타처럼 글을 버리는 앱이 있어 링크는 클립보드에도 넣어 둔다(스토리 링크 스티커에 붙여 넣기).
-    let copied = false;
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      copied = true;
-    } catch {}
-    try {
-      if (image && navigator.canShare?.({ files: [image] })) {
-        await navigator.share({ files: [image], text: `${text}\n${shareUrl}` });
-        if (copied) showToast(t("링크도 복사해 뒀어요. 스토리엔 링크 스티커로 붙여 넣으세요!", "Link copied too — add it as a link sticker in your story!"));
-        return;
-      }
-    } catch (e) {
-      if (e instanceof DOMException && e.name === "AbortError") return;
-    }
+    // 링크로 보낸다. 사진 파일을 같이 넣으면 카톡·인스타 같은 앱이 글(링크)을 버리고 사진만 보낸다.
+    // 링크 미리보기에 결과 카드 그림이 그대로 뜨니(OG 이미지) 친구는 그림도 보고 바로 눌러 해 볼 수 있다.
     const r = await shareLink(shareUrl, text);
-    if (r === "copied" || copied) showToast(t("링크를 복사했어요. 단톡방에 붙여 넣어 보세요!", "Link copied. Paste it in your group chat!"));
+    if (r === "copied") showToast(t("링크를 복사했어요. 단톡방에 붙여 넣어 보세요!", "Link copied. Paste it in your group chat!"));
+  };
+
+  const startAll = () => {
+    setAll(true);
+    setStep(ALL[0]);
   };
 
   const reset = () => {
     setCard(null);
+    setAll(false);
     setStep(null);
     try {
       localStorage.removeItem(CARD_KEY);
@@ -356,12 +336,12 @@ export default function Maker() {
     return (
       <main className={`shell ${styles.page}`}>
         <nav className={styles.nav}>
-          <button type="button" onClick={() => (listening ? stop() : setStep(null))}>
+          <button type="button" onClick={() => (listening ? stop() : (setAll(false), setStep(null)))}>
             {t("← 그만하기", "← Stop")}
           </button>
         </nav>
 
-        <p className="eyebrow">{g.title}</p>
+        <p className="eyebrow">{all ? `${ALL.indexOf(step) + 1}/3 · ${g.title}` : g.title}</p>
         <h1 className={styles.how}>{g.how}</h1>
         {step === "speak" && line && (
           <div className={styles.script}>
@@ -431,7 +411,7 @@ export default function Maker() {
           </button>
         )}
         {!listening && card && (
-          <button type="button" className={styles.ghost} onClick={() => setStep(null)}>
+          <button type="button" className={styles.ghost} onClick={() => (setAll(false), setStep(null))}>
             {t("내 결과로 돌아가기", "Back to my result")}
           </button>
         )}
@@ -498,8 +478,8 @@ export default function Maker() {
         <h1 className={styles.title}>{t("목소리 음역대 테스트", "Vocal range test")}</h1>
         <p className={styles.sub}>
           {t(
-            "내 최고음·최저음이 피아노 건반 어디까지인지, 노래방 기준으로 어느 정도인지 알려 줘요. 하고 싶은 것만 골라 재세요.",
-            "See where your highest and lowest notes land on a piano and how they rank at karaoke. Pick any one to start.",
+            "내 최고음·최저음이 피아노 건반 어디까지인지, 노래방 기준으로 어느 정도인지 알려 줘요. 셋 다 재도 되고, 하나만 골라 재도 돼요.",
+            "See where your highest and lowest notes land on a piano and how they rank at karaoke. Do all three or just one.",
           )}
         </p>
       </header>
@@ -511,6 +491,10 @@ export default function Maker() {
 
       <GenderPick gender={gender} onPick={pickGender} />
       {/* 셋 중 아무거나 하나만 재도 결과가 나온다. */}
+      <button type="button" className={styles.primary} onClick={startAll}>
+        {t("🎤 셋 다 재기 · 30초", "🎤 Measure all three · 30s")}
+      </button>
+      <p className={styles.or}>{t("하나만 골라 재도 돼요", "Or pick just one")}</p>
       <div className={styles.picks}>
         {(
           [
@@ -530,7 +514,7 @@ export default function Maker() {
         ))}
       </div>
       {error && <p className={styles.error}>{error}</p>}
-      <p className={styles.note}>{t("하나씩 따로 재도 돼요. 각각 10초면 끝. 녹음 파일은 만들지 않아요.", "Measure one at a time — about 10 seconds each. Nothing is recorded.")}</p>
+      <p className={styles.note}>{t("하나에 10초면 끝. 녹음 파일은 만들지 않아요.", "About 10 seconds each. Nothing is recorded.")}</p>
       {toast}
     </main>
   );
