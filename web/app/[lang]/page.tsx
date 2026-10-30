@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ClaimPending } from "@/app/[lang]/profile/claim-pending";
-import { Seal } from "@/app/[lang]/voice/card";
+import { Piano } from "@/components/piano";
 import { HomeBeacon } from "@/components/home-beacon";
 import { InstallBanner } from "@/components/install-banner";
 import { ViewerBadge } from "@/components/viewer";
@@ -100,14 +100,12 @@ export default async function Home() {
       </nav>
 
       <Link href="/voice" className={styles.voice} data-tour="home-voice">
-        <span className={styles.voiceSeals} aria-hidden="true">
-          <Seal char="王" size={34} />
-          <Seal char="奸" size={34} />
-          <Seal char="笑" size={34} />
+        <span className={styles.voiceKeys} aria-hidden="true">
+          <Piano lang="ko" low={50} high={65} speak={55} labels={false} span={[48, 72]} />
         </span>
         <span className={styles.voiceText}>
-          <b>{t("내 목소리, 사극에선 무슨 역?", "What role would your voice play?")}</b>
-          <small>{t("왕 · 간신 · 망나니 · 삐에로… 10초 판정", "King · Schemer · Jester… cast in 10 seconds")}</small>
+          <b>{t("내 고음은 🐬 돌고래? 🚿 샤워실?", "Your high notes: 🐬 Dolphin or 🚿 Shower?")}</b>
+          <small>{t("평소 음 · 최저음 · 최고음 · 30초", "Speaking · lowest · highest · 30s")}</small>
         </span>
         <i aria-hidden="true">→</i>
       </Link>

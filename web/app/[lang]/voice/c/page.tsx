@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getLang } from "@/lib/i18n-server";
 import { tr } from "@/lib/i18n";
-import { cardQuery, readCard, verdict } from "@/lib/voice-card";
-import { VoiceCard } from "../card";
+import { cardQuery, readCard, summary } from "@/lib/voice-range";
+import { RangeCardView } from "../card";
 import styles from "../voice.module.css";
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
@@ -16,16 +16,19 @@ async function cardFrom(searchParams: Props["searchParams"]) {
 }
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
-  const t = tr(await getLang());
+  const lang = await getLang();
+  const t = tr(lang);
   const card = await cardFrom(searchParams);
-  if (!card) return { title: t("목소리 사극 판정", "Voice casting"), robots: { index: false } };
-  const { role } = verdict(card);
-  const title = t(`내 목소리, 사극에선 「${role.ko}」 역`, `My voice got cast as ${role.en}`);
+  if (!card) return { title: t("목소리 음역대 테스트", "Vocal range test"), robots: { index: false } };
+  const s = summary(card, lang);
+  const title = s.emoji
+    ? t(`${s.lead}: ${s.emoji} ${s.headline} · ${s.sub}`, `${s.lead}: ${s.emoji} ${s.headline} · ${s.sub}`)
+    : t(`평소 내 목소리 음은 ${s.headline}`, `My speaking note is ${s.headline}`);
   const description = t(
-    "왕·간신·망나니·삐에로… 너는 무슨 역? 대사 한 줄이면 10초 만에 판정.",
-    "King, Schemer, Executioner, Jester… what's your role? One line, 10 seconds.",
+    "🚿 샤워실 가수부터 🐬 돌고래까지 — 너의 고음 등급은? 30초면 재요.",
+    "From 🚿 Shower Singer to 🐬 Dolphin — what's your tier? Takes 30 seconds.",
   );
-  const image = `/api/og/voice?${cardQuery(card)}&ui=${t("ko", "en")}`;
+  const image = `/api/og/voice?${cardQuery(card)}&ui=${lang}`;
   return {
     title,
     description,
@@ -35,24 +38,27 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   };
 }
 
-/** 친구가 보낸 판정 — 보고 나서 "나도 받아 보기"가 이 화면의 전부다. */
+/** 친구가 보낸 음역 — 보고 나서 "나도 재 보기"가 이 화면의 전부다. 최고음이 있으면 그걸 깨 보라고 부른다. */
 export default async function SharedCard({ searchParams }: Props) {
-  const t = tr(await getLang());
+  const lang = await getLang();
+  const t = tr(lang);
   const card = await cardFrom(searchParams);
+  const s = card ? summary(card, lang) : null;
+  const high = s?.high ? `${s.emoji} ${s.headline}` : null;
   return (
     <main className={`shell ${styles.page}`}>
       <p className={styles.friend}>
         {card
-          ? t("친구가 보낸 목소리 사극 판정", "A friend sent you their voice casting")
-          : t("판정 정보가 잘못됐어요.", "This link is broken.")}
+          ? t("친구가 보낸 목소리 음역대", "A friend sent you their vocal range")
+          : t("목소리 테스트가 새로 바뀌었어요. 내 음역대를 재 보세요!", "The voice test got an upgrade. Measure your range!")}
       </p>
-      {card && <VoiceCard card={card} stamp />}
+      {card && <RangeCardView card={card} />}
       <div className={styles.actions}>
         <Link href="/voice" className={styles.primary}>
-          {t("🎙️ 나는 무슨 역? 판정 받기", "🎙️ What's my role? Get cast")}
+          {high ? t(`${high} 등급, 넘을 수 있어?`, `Can you beat ${high}?`) : t("🎙️ 내 등급 재 보기", "🎙️ Find my tier")}
         </Link>
       </div>
-      <p className={styles.note}>{t("녹음은 서버로 보내지 않아요 · 10초면 끝", "Nothing gets uploaded · takes 10 seconds")}</p>
+      <p className={styles.note}>{t("녹음 파일은 만들지 않아요 · 30초면 끝", "Nothing is recorded · takes 30 seconds")}</p>
     </main>
   );
 }

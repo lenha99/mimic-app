@@ -56,15 +56,13 @@ const sets = (t: T) => {
     },
     {
       target: "home-voice",
-      title: t("목소리 사극 판정", "Voice casting"),
+      title: t("목소리 음역대 테스트", "Vocal range test"),
       body: t(
         <p>
-          사극 대사 한 줄을 읽으면 <b>음높이·억양 폭·말 속도·말끝 힘</b>을 재서 왕·간신·망나니 같은 16역 중 하나로
-          판정해요. 녹음은 <b>🔒 이 기기에서만</b> 분석하고, 결과는 스토리 이미지로 자랑할 수 있어요.
+          대본 한 줄 읽고, ‘음~’ 끝까지 내리고, ‘아~’ 끝까지 올리면 <b>🚿 샤워실 가수부터 🐬 돌고래까지</b> 내 고음·저음 등급이 나와요. 녹음 파일은 <b>🔒 만들지 않고</b>, 결과는 스토리 이미지로 자랑할 수 있어요.
         </p>,
         <p>
-          Read one royal-drama line and we measure <b>pitch, range, pace and how you end sentences</b> to cast you as one
-          of 16 roles. The recording stays <b>🔒 on this device</b>; share your role as a story image.
+          Read a line, hum down as low as you can, then slide up as high as you can — get your <b>high and low tiers, from 🚿 Shower Singer to 🐬 Dolphin</b>. <b>🔒 Nothing is recorded</b>; share it as a story image.
         </p>,
       ),
     },

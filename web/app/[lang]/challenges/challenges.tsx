@@ -78,7 +78,7 @@ export default function Challenges({
           )}
         </p>
         <nav className={styles.links}>
-          <Link href="/voice">{t("목소리 사극 판정", "Voice casting")}</Link>
+          <Link href="/voice">{t("목소리 음역대 테스트", "Vocal range test")}</Link>
         </nav>
       </header>
 
