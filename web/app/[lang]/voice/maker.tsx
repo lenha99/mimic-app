@@ -2,53 +2,67 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Piano } from "@/components/piano";
 import { VoiceAvatar } from "@/components/voice-avatar";
 import { useViewer } from "@/components/viewer";
 import { useToast } from "@/components/weekly/toast";
 import { buzz, shareLink } from "@/components/weekly/use-weekly";
 import { useLang, useT } from "@/components/lang";
 import { DEFAULT_AVATAR, encodeAvatar } from "@/lib/avatar";
+import { makeReader, stableExtreme, summarizeSpeak, toMidi, HOLD_S, type Frame } from "@/lib/pitch";
 import { track } from "@/lib/track";
-import { analyzeBlob } from "@/lib/voice-analysis";
-import { cardQuery, READ_LINE, ROLES, SEALS, verdict, type CardData, type Gender } from "@/lib/voice-card";
-import { Seal, VoiceCard } from "./card";
+import { cardQuery, instrumentOf, noteName, readCard, summary, type Gender, type RangeCard } from "@/lib/voice-range";
+import { RangeCardView, type Step } from "./card";
 import styles from "./voice.module.css";
 
-/** 녹음 상한 — 문장은 8~12초면 읽는다. */
-const MAX_MS = 18_000;
-/** 이보다 짧으면 음높이를 믿을 수 없다. */
-const MIN_SPAN_S = 2.5;
-/** 판정 연출 최소 시간 — 도장이 돌아가는 맛이 있어야 한다. */
-const REVEAL_MS = 1_600;
-
-type Phase = "ready" | "recording" | "analyzing" | "done";
-
 const GENDER_KEY = "mimic.voice.gender";
+const CARD_KEY = "mimic.voice.range";
+const ORDER: Step[] = ["speak", "low", "high"];
+
+/** 한 번 재는 상한(초). */
+const MAX_S: Record<Step, number> = { speak: 12, low: 15, high: 15 };
+/** 이만큼 소리를 낸 뒤 이만큼 조용하면 저절로 끝낸다. */
+const AUTO_STOP: Record<Step, { voiced: number; silence: number }> = {
+  speak: { voiced: 2, silence: 1.2 },
+  low: { voiced: 1, silence: 2.5 },
+  high: { voiced: 1, silence: 2.5 },
+};
+
+type Live = { m: number | null; level: number; record: number | null; elapsed: number };
+
+function readSaved(): RangeCard | null {
+  try {
+    const raw = localStorage.getItem(CARD_KEY);
+    return raw ? readCard(new URLSearchParams(raw)) : null;
+  } catch {
+    return null;
+  }
+}
 
 /**
- * 보이스 카드 만들기 — 사극 한 줄 읽기 → 브라우저에서 측정 → 16역 중 하나로 판정.
+ * 목소리 음역대 테스트 — 1부터 10까지 세기(평소 음) → "음~" 끝까지 내리기(최저음) → "아~" 끝까지 올리기(최고음).
  *
- * 녹음은 어디에도 올리지 않는다. 숫자 몇 개만 남고 그것도 공유할 때 링크에만 담긴다.
- * 로그인도 서버도 필요 없다 — 인스타에서 보고 들어온 사람이 10초 만에 결과를 받는 입구다.
+ * 녹음 파일을 만들지 않는다. 마이크를 실시간으로 읽어 프레임마다 음 하나만 모으고, 결과는 숫자 몇 개다.
+ * 지금 내는 음이 건반 위에서 바로 움직여야 한다 — 그게 이 테스트의 재미 절반이다.
+ * 최저·최고는 개인 최고 기록으로 남는다. "기록 깨기"로 다시 오게 한다.
  */
 export default function Maker() {
   const t = useT();
   const lang = useLang();
   const viewer = useViewer();
   const avatar = viewer?.avatar ?? DEFAULT_AVATAR;
-  const line = READ_LINE[lang];
-  const [phase, setPhase] = useState<Phase>("ready");
   const [gender, setGender] = useState<Gender>("x");
-  const [level, setLevel] = useState(0);
-  const [elapsed, setElapsed] = useState(0);
-  const [spin, setSpin] = useState(0);
+  const [card, setCard] = useState<RangeCard | null>(null);
+  /** null 이면 결과(카드가 있을 때)나 첫 화면 */
+  const [step, setStep] = useState<Step | null>(null);
+  const [listening, setListening] = useState(false);
+  const [live, setLive] = useState<Live>({ m: null, level: 0, record: null, elapsed: 0 });
   const [error, setError] = useState<string | null>(null);
-  const [card, setCard] = useState<CardData | null>(null);
   const [image, setImage] = useState<File | null>(null);
   const [origin, setOrigin] = useState("");
-  const recorder = useRef<MediaRecorder | null>(null);
   const stream = useRef<MediaStream | null>(null);
   const ctx = useRef<AudioContext | null>(null);
+  const stopRef = useRef<(() => void) | null>(null);
   const [toast, showToast] = useToast();
 
   useEffect(() => {
@@ -58,12 +72,22 @@ export default function Maker() {
       const g = localStorage.getItem(GENDER_KEY);
       if (g === "m" || g === "f" || g === "x") setGender(g);
     } catch {}
+    const saved = readSaved();
+    if (saved) setCard(saved);
   }, []);
 
   const pickGender = (g: Gender) => {
     setGender(g);
+    setCard((c) => (c ? { ...c, gender: g } : c));
     try {
       localStorage.setItem(GENDER_KEY, g);
+    } catch {}
+  };
+
+  const save = (c: RangeCard) => {
+    setCard(c);
+    try {
+      localStorage.setItem(CARD_KEY, cardQuery({ ...c, avatar: "" }));
     } catch {}
   };
 
@@ -76,134 +100,131 @@ export default function Maker() {
 
   useEffect(() => () => release(), [release]);
 
-  // 판정 중엔 도장이 슬롯머신처럼 돈다.
-  useEffect(() => {
-    if (phase !== "analyzing") return;
-    const id = window.setInterval(() => setSpin((n) => n + 1), 90);
-    return () => window.clearInterval(id);
-  }, [phase]);
+  const base = (): RangeCard =>
+    card ?? { speak: null, spread: null, low: null, high: null, gender, lang, avatar: encodeAvatar(avatar) };
 
-  const finish = async (blob: Blob) => {
-    setPhase("analyzing");
-    const t0 = performance.now();
-    try {
-      const a = await analyzeBlob(blob, line.syllables);
-      if (a.span < MIN_SPAN_S || a.pitchHz === null || a.pitchRange === null) {
-        setPhase("ready");
+  const finish = (s: Step, frames: Frame[]) => {
+    const prev = base();
+    const next: RangeCard = { ...prev, gender, lang, avatar: encodeAvatar(avatar) };
+    if (s === "speak") {
+      const r = summarizeSpeak(frames);
+      if (!r) {
+        setError(t("목소리가 잘 안 들렸어요. 조용한 곳에서 평소처럼 세어 주세요.", "We couldn't hear enough. Count in your normal voice somewhere quiet."));
+        return;
+      }
+      next.speak = r.speak;
+      next.spread = r.spread;
+    } else {
+      const v = stableExtreme(frames, s);
+      if (v === null) {
         setError(
           t(
-            "목소리가 잘 안 들렸어요. 조용한 곳에서 문장을 끝까지 읽어 주세요.",
-            "We couldn't hear enough. Read the whole line somewhere quiet.",
+            `음이 안 잡혔어요. 맨 ${s === "low" ? "아래" : "위"}에서 ${HOLD_S}초만 버텨 주세요!`,
+            `Couldn't catch a note. Hold your ${s === "low" ? "lowest" : "highest"} note for ${HOLD_S}s!`,
           ),
         );
         return;
       }
-      const next: CardData = {
-        hz: a.pitchHz,
-        st: a.pitchRange,
-        pace: a.pace,
-        end: a.endDrop,
-        gender,
-        lang,
-        avatar: encodeAvatar(avatar),
-      };
-      const wait = REVEAL_MS - (performance.now() - t0);
-      if (wait > 0) await new Promise((r) => setTimeout(r, wait));
-      setCard(next);
-      setPhase("done");
-      buzz(40);
-      // 잰 값도 남긴다 — 경계(voice-card.ts)를 실제 사용자 분포로 다시 맞추는 데 쓴다. via 는 16자라 meme_id 칸에.
-      track("voice_card_done", { via: verdict(next).key, meme_id: cardQuery({ ...next, avatar: "" }) });
-    } catch {
-      setPhase("ready");
-      setError(t("분석하다 문제가 생겼어요. 한 번 더 해 볼까요?", "Something went wrong while analyzing. Try again?"));
+      const old = s === "low" ? prev.low : prev.high;
+      const better = old === null || (s === "low" ? v < old : v > old);
+      if (s === "low") next.low = better ? v : old;
+      else next.high = better ? v : old;
+      if (old !== null && better) showToast(t(`🎉 새 기록! ${noteName(v, lang).full}`, `🎉 New record! ${noteName(v, lang).full}`));
+      else if (old !== null) showToast(t(`이번엔 ${noteName(v, lang).full} — 기록은 그대로예요`, `${noteName(v, lang).full} this time — record stands`));
     }
+    save(next);
+    buzz(40);
+    // 잰 값을 남긴다 — 악기 경계·평균 음높이를 실제 사용자 분포로 다시 맞추는 데 쓴다. via 는 16자라 값은 meme_id 칸에.
+    track("voice_card_done", { via: s, meme_id: cardQuery({ ...next, avatar: "" }) });
+    const i = ORDER.indexOf(s);
+    // 처음 재는 길이면 다음 칸으로, 기록 깨기였으면 결과로.
+    const nextStep = ORDER.slice(i + 1).find((x) => (x === "low" ? next.low : x === "high" ? next.high : next.speak) === null);
+    setStep(nextStep ?? null);
   };
 
-  const start = async () => {
-    if (typeof MediaRecorder === "undefined" || !navigator.mediaDevices?.getUserMedia) {
-      setError(t("이 브라우저는 녹음을 지원하지 않아요. 크롬이나 사파리로 열어 주세요", "This browser can't record. Open in Chrome or Safari"));
+  const listen = async (s: Step) => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError(t("이 브라우저는 마이크를 못 써요. 크롬이나 사파리로 열어 주세요", "This browser can't use the mic. Open in Chrome or Safari"));
       return;
     }
     setError(null);
-    let live: MediaStream;
+    let ms: MediaStream;
     try {
-      // 음높이·억양 폭·말끝을 재는 게 목적이라 자동 음량 보정은 끈다.
-      live = await navigator.mediaDevices.getUserMedia({
-        audio: { autoGainControl: false, noiseSuppression: false, echoCancellation: true },
+      // 음높이만 잰다 — 자동 음량·잡음 제거는 끈다(목소리 모양을 바꾼다).
+      ms = await navigator.mediaDevices.getUserMedia({
+        audio: { autoGainControl: false, noiseSuppression: false, echoCancellation: false },
       });
     } catch {
-      setError(t("마이크를 허용해야 녹음할 수 있어요 🎙️", "Allow the mic to record 🎙️"));
+      setError(t("마이크를 허용해야 잴 수 있어요 🎙️", "Allow the mic to measure 🎙️"));
       return;
     }
-    stream.current = live;
-    let analyser: AnalyserNode | null = null;
-    try {
-      const Ctor =
-        window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-      if (Ctor) {
-        const c = new Ctor();
-        analyser = c.createAnalyser();
-        analyser.fftSize = 1024;
-        c.createMediaStreamSource(live).connect(analyser);
-        ctx.current = c;
-      }
-    } catch {
-      analyser = null;
+    const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctor) {
+      ms.getTracks().forEach((x) => x.stop());
+      setError(t("이 브라우저는 소리 분석을 못 해요", "This browser can't analyze audio"));
+      return;
     }
+    const c = new Ctor();
+    void c.resume().catch(() => {});
+    const analyser = c.createAnalyser();
+    analyser.fftSize = 4096;
+    c.createMediaStreamSource(ms).connect(analyser);
+    stream.current = ms;
+    ctx.current = c;
+    const read = makeReader(analyser, c.sampleRate);
 
-    const chunks: Blob[] = [];
-    const rec = new MediaRecorder(live);
-    recorder.current = rec;
-    rec.ondataavailable = (e) => {
-      if (e.data.size > 0) chunks.push(e.data);
-    };
-    rec.onstop = () => {
+    const frames: Frame[] = [];
+    const t0 = performance.now();
+    let prev = t0;
+    let voiced = 0;
+    let lastVoiced = t0;
+    let n = 0;
+    let record: number | null = null;
+    let done = false;
+    const end = () => {
+      if (done) return;
+      done = true;
+      stopRef.current = null;
       release();
-      setLevel(0);
-      const blob = new Blob(chunks, { type: rec.mimeType || "audio/webm" });
-      if (blob.size === 0) {
-        setPhase("ready");
-        setError(t("소리가 안 잡혔어요. 다시 해 볼까요?", "We couldn't hear you. Try again?"));
+      setListening(false);
+      setLive({ m: null, level: 0, record: null, elapsed: 0 });
+      finish(s, frames);
+    };
+    stopRef.current = end;
+    setListening(true);
+    setLive({ m: null, level: 0, record: null, elapsed: 0 });
+    track("voice_card_start", { via: `${s}-${lang}-${gender}` });
+
+    const loop = () => {
+      if (done) return;
+      const now = performance.now();
+      const { hz, level } = read(s);
+      const m = hz ? toMidi(hz) : null;
+      if (m !== null) {
+        frames.push({ t: (now - t0) / 1000, m });
+        voiced += Math.min(0.05, (now - prev) / 1000);
+        lastVoiced = now;
+      }
+      prev = now;
+      n += 1;
+      if (s !== "speak" && n % 6 === 0) record = stableExtreme(frames, s);
+      setLive({ m, level, record, elapsed: (now - t0) / 1000 });
+      const rule = AUTO_STOP[s];
+      const quiet = (now - lastVoiced) / 1000;
+      if ((now - t0) / 1000 >= MAX_S[s] || (voiced >= rule.voiced && quiet >= rule.silence && (s === "speak" || record !== null))) {
+        end();
         return;
       }
-      void finish(blob);
-    };
-    rec.start();
-    setPhase("recording");
-    track("voice_card_start", { via: `${lang}-${gender}` });
-
-    const t0 = performance.now();
-    const buf = new Uint8Array(analyser?.fftSize ?? 1024);
-    let smooth = 0;
-    const loop = () => {
-      if (rec.state === "inactive") return;
-      const ms = performance.now() - t0;
-      setElapsed(ms);
-      if (analyser) {
-        analyser.getByteTimeDomainData(buf);
-        let s = 0;
-        for (let i = 0; i < buf.length; i += 1) {
-          const v = (buf[i] - 128) / 128;
-          s += v * v;
-        }
-        smooth = smooth * 0.7 + Math.min(1, Math.sqrt(s / buf.length) * 4) * 0.3;
-        setLevel(smooth);
-      }
-      if (ms >= MAX_MS) rec.stop();
-      else requestAnimationFrame(loop);
+      requestAnimationFrame(loop);
     };
     requestAnimationFrame(loop);
   };
 
-  const stop = () => {
-    const rec = recorder.current;
-    if (rec && rec.state !== "inactive") rec.stop();
-  };
+  const stop = () => stopRef.current?.();
 
   const query = card ? cardQuery(card) : "";
   const shareUrl = card && origin ? `${origin}/voice/c?${query}` : "";
-  const storyUrl = card ? `/api/og/voice?${query}&fmt=story&ui=${lang}` : "";
+  const storyUrl = card && step === null ? `/api/og/voice?${query}&fmt=story&ui=${lang}` : "";
 
   // 공유 시트는 누른 그 순간에만 열린다(사파리). 이미지를 누른 뒤에 받으면 늦으니 미리 받아 둔다.
   useEffect(() => {
@@ -212,7 +233,7 @@ export default function Maker() {
     fetch(storyUrl)
       .then((r) => (r.ok ? r.blob() : null))
       .then((b) => {
-        if (alive && b) setImage(new File([b], "mimic-voice-card.png", { type: "image/png" }));
+        if (alive && b) setImage(new File([b], "mimic-vocal-range.png", { type: "image/png" }));
       })
       .catch(() => {});
     return () => {
@@ -223,9 +244,13 @@ export default function Maker() {
 
   const share = async () => {
     if (!card) return;
-    const role = verdict(card).role;
-    const text = t(`내 목소리 사극 판정: 「${role.ko}」 역 나옴ㅋㅋ 너는 무슨 역?`, `My voice got cast as ${role.en} lol. What role do you get?`);
-    track("voice_card_share", { via: verdict(card).key });
+    const s = summary(card, lang);
+    const inst = s.instrument ? t(s.instrument.ko, s.instrument.en) : "";
+    const text =
+      s.range !== null
+        ? t(`내 목소리 음역 ${s.range}옥타브 (${s.sub}) 나옴. 너는 몇 옥타브?`, `My vocal range: ${s.range} octaves (${s.sub}). How many do you have?`)
+        : t(`평소 내 목소리 음은 ${s.headline}, 악기로 치면 ${inst}래. 너는?`, `My speaking note is ${s.headline} — that's a ${inst}. What's yours?`);
+    track("voice_card_share", { via: s.instrument?.key ?? "range" });
     try {
       if (image && navigator.canShare?.({ files: [image] })) {
         await navigator.share({ files: [image], text: `${text}\n${shareUrl}` });
@@ -247,22 +272,140 @@ export default function Maker() {
     }
   };
 
-  if (phase === "done" && card) {
+  const reset = () => {
+    setCard(null);
+    setStep(null);
+    try {
+      localStorage.removeItem(CARD_KEY);
+    } catch {}
+  };
+
+  /* --- 측정 화면 --------------------------------------------------------- */
+  if (step) {
+    const i = ORDER.indexOf(step);
+    const liveName = live.m !== null ? noteName(live.m, lang) : null;
+    const recName = live.record !== null ? noteName(live.record, lang).full : null;
+    const doneSpeak = card?.speak ?? null;
+    const guide: Record<Step, { title: string; how: string; tip: string }> = {
+      speak: {
+        title: t("평소 목소리", "Speaking voice"),
+        how: t("1부터 10까지 평소처럼 세어 주세요", "Count from 1 to 10 in your normal voice"),
+        tip: t("다 세고 잠깐 조용히 있으면 저절로 끝나요", "Stop when you're done — it ends by itself"),
+      },
+      low: {
+        title: t("가장 낮은 음", "Lowest note"),
+        how: t("‘음~’ 하고 낼 수 있는 데까지 천천히 내려가세요", "Hum ‘mmm’ and slide down as low as you can"),
+        tip: t(`맨 아래에서 ${HOLD_S}초만 버티면 기록돼요`, `Hold the bottom for ${HOLD_S}s to lock it in`),
+      },
+      high: {
+        title: t("가장 높은 음", "Highest note"),
+        how: t("‘아~’ 하고 낼 수 있는 데까지 천천히 올라가세요", "Sing ‘ahh’ and slide up as high as you can"),
+        tip: t(`가성도 돼요. 꼭대기에서 ${HOLD_S}초 버티기!`, `Falsetto counts. Hold the top for ${HOLD_S}s!`),
+      },
+    };
+    const g = guide[step];
     return (
       <main className={`shell ${styles.page}`}>
-        <VoiceCard card={card} stamp />
+        <nav className={styles.nav}>
+          <button type="button" onClick={() => (listening ? stop() : setStep(null))}>
+            {t("← 그만하기", "← Stop")}
+          </button>
+          <ol className={styles.dots} aria-label={t(`${i + 1}/3 단계`, `Step ${i + 1} of 3`)}>
+            {ORDER.map((x, k) => (
+              <li key={x} data-on={k <= i} />
+            ))}
+          </ol>
+        </nav>
+
+        {step !== "speak" && doneSpeak !== null && !listening && (
+          <p className={styles.prevResult}>
+            {t("평소 목소리", "Speaking")} <b>{noteName(doneSpeak, lang).full}</b> · {instrumentOf(doneSpeak).emoji}{" "}
+            {t(instrumentOf(doneSpeak).ko, instrumentOf(doneSpeak).en)}
+          </p>
+        )}
+
+        <p className="eyebrow">{t(`${i + 1}/3 · ${g.title}`, `${i + 1}/3 · ${g.title}`)}</p>
+        <h1 className={styles.how}>{g.how}</h1>
+        {step === "speak" && (
+          <p className={styles.count} aria-hidden="true">
+            {Array.from({ length: 10 }, (_, k) => (
+              <span key={k}>{k + 1}</span>
+            ))}
+          </p>
+        )}
+
+        <div className={styles.meterBox}>
+          <div className={styles.liveTop}>
+            <VoiceAvatar avatar={avatar} level={live.level} size={64} />
+            <div className={styles.liveNote} aria-live="off">
+              {liveName ? (
+                <>
+                  <small>{liveName.octave}</small>
+                  <b>{liveName.note}</b>
+                </>
+              ) : (
+                <b className={styles.liveIdle}>{listening ? "…" : "♪"}</b>
+              )}
+            </div>
+            {step !== "speak" && (
+              <div className={styles.record}>
+                <small>{t("기록", "Record")}</small>
+                <b>{recName ?? "—"}</b>
+              </div>
+            )}
+          </div>
+          <Piano
+            lang={lang}
+            live={live.m}
+            low={step === "low" && live.record !== null ? live.record : undefined}
+            high={step === "high" && live.record !== null ? live.record : undefined}
+            speak={step === "speak" ? undefined : doneSpeak}
+          />
+          {listening && (
+            <div className={styles.timer} aria-hidden="true">
+              <i style={{ width: `${Math.min(100, (live.elapsed / MAX_S[step]) * 100)}%` }} />
+            </div>
+          )}
+        </div>
+        <p className={styles.tip}>{g.tip}</p>
+
+        {error && <p className={styles.error}>{error}</p>}
+
+        {listening ? (
+          <button type="button" className={`${styles.primary} ${styles.rec}`} onClick={stop}>
+            {step === "speak" ? t("다 셌어요", "Done") : t("끝", "Done")}
+          </button>
+        ) : (
+          <button type="button" className={styles.primary} onClick={() => void listen(step)}>
+            {t("🎙️ 시작", "🎙️ Start")}
+          </button>
+        )}
+        {!listening && card?.speak != null && (
+          <button type="button" className={styles.ghost} onClick={() => setStep(null)}>
+            {t("결과 먼저 보기", "See my result")}
+          </button>
+        )}
+        <p className={styles.note}>{t("녹음 파일은 만들지 않아요. 지금 내는 음만 이 기기에서 읽어요.", "Nothing is recorded or uploaded. We only read the note you're making, on this device.")}</p>
+        {toast}
+      </main>
+    );
+  }
+
+  /* --- 결과 ------------------------------------------------------------- */
+  if (card) {
+    return (
+      <main className={`shell ${styles.page}`}>
+        <nav className={styles.nav}>
+          <Link href="/">{t("← 홈", "← Home")}</Link>
+        </nav>
+        <RangeCardView card={card} onChallenge={(s) => setStep(s)} />
         <div className={styles.actions}>
           <button type="button" className={styles.primary} onClick={() => void share()}>
-            {t("내 판정 자랑하기", "Share my role")}
+            {t("내 음역 자랑하기", "Share my range")}
           </button>
           <div className={styles.actionRow}>
             {storyUrl && (
-              <a
-                className={styles.secondary}
-                href={storyUrl}
-                download="mimic-voice-card.png"
-                onClick={() => track("voice_card_share", { via: "save" })}
-              >
+              <a className={styles.secondary} href={storyUrl} download="mimic-vocal-range.png" onClick={() => track("voice_card_share", { via: "save" })}>
                 {t("스토리용 이미지 저장", "Save story image")}
               </a>
             )}
@@ -270,15 +413,18 @@ export default function Maker() {
               {t("링크 복사", "Copy link")}
             </button>
           </div>
-          <button
-            type="button"
-            className={styles.ghost}
-            onClick={() => {
-              setCard(null);
-              setPhase("ready");
-            }}
-          >
-            {t("다른 톤으로 다시 판정받기", "Try again in a different tone")}
+          {card.low !== null && card.high !== null && (
+            <div className={styles.actionRow}>
+              <button type="button" className={styles.secondary} onClick={() => setStep("low")}>
+                {t("⬇ 최저음 기록 깨기", "⬇ Beat my low")}
+              </button>
+              <button type="button" className={styles.secondary} onClick={() => setStep("high")}>
+                {t("⬆ 최고음 기록 깨기", "⬆ Beat my high")}
+              </button>
+            </div>
+          )}
+          <button type="button" className={styles.ghost} onClick={reset}>
+            {t("처음부터 다시 재기", "Start over")}
           </button>
         </div>
 
@@ -289,11 +435,11 @@ export default function Maker() {
           </span>
           <i aria-hidden="true">→</i>
         </Link>
-
+        <GenderPick gender={gender} onPick={pickGender} />
         <p className={styles.note}>
           {t(
-            "음높이·억양 폭·말 속도·말끝 힘을 재서 16역 중 하나로 나눠요. 재미로 보는 판정이고 목소리의 좋고 나쁨을 매기는 점수가 아니에요. 녹음은 이 기기 밖으로 나가지 않아요.",
-            "We measure pitch, range, pace and how you end sentences, then sort you into one of 16 roles. It's for fun — not a grade of your voice. The recording never leaves this device.",
+            "음은 실제로 잰 값이에요. 같은 성별 순위는 성인 평균 음높이(남 약 120Hz, 여 약 210Hz)와 견준 대략적인 위치예요.",
+            "Notes are measured, not guessed. The ranking compares you with typical adult speaking pitch (about 120Hz for men, 210Hz for women).",
           )}
         </p>
         {toast}
@@ -301,96 +447,79 @@ export default function Maker() {
     );
   }
 
-  const seals = [...SEALS];
+  /* --- 첫 화면 ---------------------------------------------------------- */
   return (
     <main className={`shell ${styles.page}`}>
       <nav className={styles.nav}>
         <Link href="/">{t("← 홈", "← Home")}</Link>
       </nav>
       <header className={styles.head}>
-        <p className="eyebrow">{t("목소리 사극 판정", "Voice casting")}</p>
-        <h1 className={styles.title}>{t("내 목소리, 사극에선 무슨 역?", "What role would your voice play?")}</h1>
+        <p className="eyebrow">{t("목소리 음역대 테스트", "Vocal range test")}</p>
+        <h1 className={styles.title}>{t("내 목소리는 몇 옥타브?", "How many octaves is your voice?")}</h1>
         <p className={styles.sub}>
           {t(
-            "왕·간신·망나니·삐에로… 16역 중 하나로 판정해 드려요. 대사 한 줄이면 10초.",
-            "King, Schemer, Executioner, Jester… we cast you as one of 16 roles. One line, 10 seconds.",
+            "평소 목소리 · 가장 낮은 음 · 가장 높은 음. 세 번 소리 내면 건반 위에 내 음역이 나와요.",
+            "Your speaking voice, your lowest note, your highest note. Three sounds and your range lights up on a keyboard.",
           )}
         </p>
       </header>
 
-      <div className={styles.marquee} aria-hidden="true">
-        <div>
-          {[...seals, ...seals].map((c, i) => (
-            <Seal key={i} char={c} size={40} />
-          ))}
-        </div>
+      <div className={styles.introPiano}>
+        <Piano lang={lang} low={45} high={69} speak={50} />
+        <p>{t("예시: 0옥타브 라 ~ 2옥타브 라 · 2옥타브", "Example: A2 – A4 · 2 octaves")}</p>
       </div>
 
-      <div className={styles.stage}>
-        {phase === "analyzing" ? (
-          <div className={styles.spin}>
-            <Seal char={seals[spin % seals.length]} size={120} />
-            <p>{t("판정 중…", "Casting…")}</p>
-          </div>
-        ) : (
-          <>
-            <VoiceAvatar avatar={avatar} level={level} size={130} />
-            <p className={styles.lineTip}>
-              {phase === "recording"
-                ? t("크게, 사극 톤으로!", "Loud, like a royal drama!")
-                : t("이 대사를 소리 내어 읽어 주세요", "Read this line out loud")}
-            </p>
-            <p className={styles.line}>{line.text}</p>
-            {phase === "recording" && (
-              <div className={styles.meter} aria-hidden="true">
-                <i style={{ width: `${Math.min(100, (elapsed / MAX_MS) * 100)}%` }} />
-              </div>
-            )}
-          </>
-        )}
-      </div>
+      <ol className={styles.steps}>
+        <li>
+          <b>1</b>
+          <span>
+            {t("1부터 10까지 세기", "Count 1 to 10")}
+            <small>{t("평소 내 목소리 음과 어울리는 악기", "Your speaking note and your instrument")}</small>
+          </span>
+        </li>
+        <li>
+          <b>2</b>
+          <span>
+            {t("‘음~’ 끝까지 내리기", "Hum down as low as you can")}
+            <small>{t("내가 낼 수 있는 가장 낮은 음", "Your lowest note")}</small>
+          </span>
+        </li>
+        <li>
+          <b>3</b>
+          <span>
+            {t("‘아~’ 끝까지 올리기", "Slide up as high as you can")}
+            <small>{t("노래방 고음 기준과 비교", "Compared with the karaoke high-note bar")}</small>
+          </span>
+        </li>
+      </ol>
 
-      {phase === "ready" && (
-        <div className={styles.gender} role="radiogroup" aria-label={t("목소리 기준", "Voice baseline")}>
-          <span>{t("음높이 기준", "Pitch baseline")}</span>
-          {(
-            [
-              ["m", t("남자 목소리", "Male voice")],
-              ["f", t("여자 목소리", "Female voice")],
-              ["x", t("상관없음", "Skip")],
-            ] as const
-          ).map(([g, label]) => (
-            <button key={g} type="button" role="radio" aria-checked={gender === g} onClick={() => pickGender(g)}>
-              {label}
-            </button>
-          ))}
-        </div>
-      )}
-
+      <GenderPick gender={gender} onPick={pickGender} />
       {error && <p className={styles.error}>{error}</p>}
-
-      {phase === "ready" && (
-        <button type="button" className={styles.primary} onClick={() => void start()}>
-          {t("🎙️ 판정 받기", "🎙️ Get cast")}
-        </button>
-      )}
-      {phase === "recording" && (
-        <button type="button" className={`${styles.primary} ${styles.rec}`} onClick={stop}>
-          {t("다 읽었어요", "Done")}
-        </button>
-      )}
-      <p className={styles.note}>
-        {t(
-          "녹음은 서버로 보내지 않고 이 기기에서만 분석해요. 음높이 기준은 같은 성별 안에서 높고 낮음을 보기 위한 거예요.",
-          "Your recording is analyzed on this device and never uploaded. The baseline just compares your pitch within a voice group.",
-        )}
-      </p>
-      <p className={styles.roster}>
-        {Object.values(ROLES)
-          .map((r) => t(r.ko, r.en))
-          .join(" · ")}
-      </p>
+      <button type="button" className={styles.primary} onClick={() => setStep("speak")}>
+        {t("시작하기 · 30초", "Start · 30 seconds")}
+      </button>
+      <p className={styles.note}>{t("녹음 파일은 만들지 않아요. 노래 실력 점수가 아니라 내 목소리 지도예요.", "Nothing is recorded. It's not a singing score — it's a map of your voice.")}</p>
       {toast}
     </main>
+  );
+}
+
+function GenderPick({ gender, onPick }: { gender: Gender; onPick: (g: Gender) => void }) {
+  const t = useT();
+  return (
+    <div className={styles.gender} role="radiogroup" aria-label={t("비교 기준", "Compare with")}>
+      <span>{t("비교 기준", "Compare with")}</span>
+      {(
+        [
+          ["m", t("남자", "Men")],
+          ["f", t("여자", "Women")],
+          ["x", t("안 함", "Skip")],
+        ] as const
+      ).map(([g, label]) => (
+        <button key={g} type="button" role="radio" aria-checked={gender === g} onClick={() => onPick(g)}>
+          {label}
+        </button>
+      ))}
+    </div>
   );
 }

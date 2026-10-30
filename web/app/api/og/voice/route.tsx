@@ -1,20 +1,21 @@
 import { ImageResponse } from "next/og";
+import { Piano } from "@/components/piano";
 import { VoiceAvatar } from "@/components/voice-avatar";
 import { decodeAvatar } from "@/lib/avatar";
 import { svgToString } from "@/lib/svg-string";
 import { tr } from "@/lib/i18n";
-import { AXES, readCard, ROLES, SEALS, sliders, verdict } from "@/lib/voice-card";
+import { noteName, readCard, summary } from "@/lib/voice-range";
 
 /**
- * 목소리 사극 판정 이미지 — 두 벌.
+ * 목소리 음역대 이미지 — 두 벌.
  *  - 기본 1200×630: 링크 미리보기(OG)
  *  - fmt=story 1080×1920: 인스타 스토리에 그대로 올리는 세로 카드
- * 레이아웃·폰트 처리는 /api/og/weekly 와 같다. 디스플레이 서체엔 이모지가 없다.
+ * 건반은 화면과 같은 SVG 를 그림으로 넣는다. 디스플레이 서체엔 이모지가 없어 악기는 이름만.
  */
 export const contentType = "image/png";
 
-const RED = "#E0314B";
 const VOLT = "#E8FF3A";
+const PINK = "#FF2D78";
 const ASH = "#8A8A92";
 const HOST = "mimic-web-omega.vercel.app/voice";
 
@@ -32,29 +33,7 @@ async function subsetFont(family: string, text: string): Promise<ArrayBuffer | n
   }
 }
 
-function Seal({ char, size }: { char: string; size: number }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        width: size,
-        height: size,
-        borderRadius: size * 0.14,
-        background: RED,
-        border: `${Math.round(size * 0.035)}px solid #FFF6EE`,
-        boxShadow: `0 0 0 ${Math.round(size * 0.03)}px ${RED}`,
-        color: "#FFF6EE",
-        fontFamily: "Seal",
-        fontSize: size * 0.6,
-        transform: "rotate(-6deg)",
-      }}
-    >
-      {char}
-    </div>
-  );
-}
+const dataUri = (svg: string) => `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
 
 export async function GET(req: Request) {
   const q = new URL(req.url).searchParams;
@@ -64,110 +43,108 @@ export async function GET(req: Request) {
   const ui = q.get("ui");
   const lang = ui === "en" || ui === "ko" ? ui : (card?.lang ?? "ko");
   const t = tr(lang);
-  const v = card ? verdict(card) : null;
-  const role = v?.role ?? null;
+  const s = card ? summary(card, lang) : null;
 
-  const kicker = t("목소리 사극 판정", "VOICE CASTING");
-  const lead = t("내 목소리, 사극에선", "In a period drama, my voice plays");
-  const name = role ? t(`「${role.ko}」 역`, role.en) : t("너는 무슨 역?", "What's your role?");
-  const why = role ? t(role.whyKo, role.whyEn) : "";
-  const line = role ? `“${t(role.lineKo, role.lineEn)}”` : "";
-  const lean = v?.lean ? t(`${ROLES[v.lean].ko} 기질 살짝`, `with a hint of ${ROLES[v.lean].en}`) : "";
-  const best = role ? ROLES[role.best] : null;
-  const rival = role ? ROLES[role.rival] : null;
-  const pairText = best && rival ? `${t("찰떡", "Best")} ${t(best.ko, best.en)}${t("천적", "Rival")} ${t(rival.ko, rival.en)}` : "";
-  const cta = t("너는 무슨 역?", "What's yours?");
-  const axisText = AXES.map((a) => (lang === "en" ? a.en : a.ko).join("")).join("");
-  const text = `${kicker}${lead}${name}${why}${line}${lean}${pairText}${cta}${axisText}${HOST}MIMIC`;
-  const [font, sealFont] = await Promise.all([
-    subsetFont("Black+Han+Sans", text),
-    subsetFont("Noto+Serif+KR:wght@900", SEALS),
-  ]);
-  const fonts = [
-    ...(font ? [{ name: "Display", data: font, weight: 400 as const, style: "normal" as const }] : []),
-    ...(sealFont ? [{ name: "Seal", data: sealFont, weight: 900 as const, style: "normal" as const }] : []),
-  ];
+  const kicker = t("목소리 음역대", "VOCAL RANGE");
+  const lead = s?.lead ?? t("내 목소리는", "My voice is");
+  const headline = s?.headline ?? t("몇 옥타브?", "How many octaves?");
+  const sub = s?.sub ?? "";
+  const facts = s?.facts ?? [];
+  const inst = s?.instrument ? t(s.instrument.ko, s.instrument.en) : "";
+  const instLead = t("내 목소리를 악기로 치면", "If my voice were an instrument");
+  const instWhy = s?.instrument ? t(s.instrument.whyKo, s.instrument.whyEn) : "";
+  const cta = t("너는 몇 옥타브?", "How many octaves are you?");
+  const tiles = card
+    ? ([
+        [t("최저음", "Lowest"), card.low],
+        [t("평소 목소리", "Speaking"), card.speak],
+        [t("최고음", "Highest"), card.high],
+      ] as const)
+    : [];
+  const tileText = tiles.map(([l, v]) => l + (v === null ? "—" : noteName(v, lang).full)).join("");
+  const text = `${kicker}${lead}${headline}${sub}${facts.join("")}${inst}${instLead}${instWhy}${cta}${tileText}${HOST}MIMIC—0123456789`;
+  const font = await subsetFont("Black+Han+Sans", text);
+  const fonts = font ? [{ name: "Display", data: font, weight: 400 as const, style: "normal" as const }] : [];
 
-  const avatarSize = story ? 460 : 330;
-  const svg = svgToString(<VoiceAvatar avatar={decodeAvatar(card?.avatar)} level={0.6} size={avatarSize} />);
-  const avatarSrc = `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
-  const seal = role?.seal ?? "?";
+  const avatarSize = story ? 260 : 220;
+  const avatarSrc = dataUri(svgToString(<VoiceAvatar avatar={decodeAvatar(card?.avatar)} level={0.6} size={avatarSize} />));
+  const pianoW = story ? 940 : 1100;
+  // 카드가 없으면(테스트 소개 미리보기) 예시 음역을 칠해 둔다.
+  const pianoSvg = svgToString(
+    <Piano low={card ? card.low : 45} high={card ? card.high : 69} speak={card?.speak} lang={lang} labels={false} width={pianoW} />,
+  );
+  const pianoSrc = dataUri(pianoSvg);
+  // 건반 비율은 칸 수에 따라 달라진다 — SVG 에 적힌 높이를 그대로 쓴다.
+  const pianoH = Number(pianoSvg.match(/height="([\d.]+)"/)?.[1] ?? pianoW * 0.19);
+
   const bg = {
     background: "#0A0A0B",
     backgroundImage: story
-      ? "radial-gradient(circle at 50% 22%, rgba(224,49,75,0.35), transparent 45%), radial-gradient(circle at 90% 100%, rgba(232,255,58,0.14), transparent 50%)"
-      : "radial-gradient(circle at 22% 45%, rgba(224,49,75,0.32), transparent 55%), radial-gradient(circle at 95% 95%, rgba(232,255,58,0.14), transparent 55%)",
+      ? "radial-gradient(circle at 50% 18%, rgba(232,255,58,0.18), transparent 45%), radial-gradient(circle at 90% 100%, rgba(0,229,255,0.14), transparent 50%)"
+      : "radial-gradient(circle at 20% 30%, rgba(232,255,58,0.16), transparent 55%), radial-gradient(circle at 95% 95%, rgba(0,229,255,0.14), transparent 55%)",
     color: "#F5F5F7",
     fontFamily: font ? "Display" : "sans-serif",
   };
   const headers = { "cache-control": "public, max-age=86400, s-maxage=86400" };
 
   if (story) {
-    const pos = card ? sliders(card) : [];
     return new ImageResponse(
       (
-        <div style={{ ...bg, width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", padding: "110px 80px 90px" }}>
-          <div style={{ display: "flex", fontSize: 38, letterSpacing: 8, color: ASH }}>{kicker}</div>
-          <div style={{ display: "flex", alignItems: "flex-end", marginTop: 30 }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={avatarSrc} width={avatarSize} height={avatarSize} alt="" />
-            <div style={{ display: "flex", marginLeft: -90, marginBottom: 20 }}>
-              <Seal char={seal} size={230} />
-            </div>
-          </div>
-          <div style={{ display: "flex", fontSize: 46, color: ASH, marginTop: 30 }}>{lead}</div>
-          <div style={{ display: "flex", fontSize: 128, lineHeight: 1.1, marginTop: 6, textAlign: "center" }}>{name}</div>
-          {lean ? <div style={{ display: "flex", fontSize: 40, color: VOLT, marginTop: 10 }}>{lean}</div> : null}
-          {why ? (
-            <div style={{ display: "flex", fontSize: 44, lineHeight: 1.45, marginTop: 34, textAlign: "center", color: "#E6E6EA" }}>{why}</div>
-          ) : null}
-          {card ? (
-            <div style={{ display: "flex", flexDirection: "column", width: "100%", marginTop: 46 }}>
-              {AXES.map((a, i) => {
-                const p = pos[i];
-                if (p === null || p === undefined) return null;
-                const l = lang === "en" ? a.en : a.ko;
+        <div style={{ ...bg, width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", padding: "100px 70px 90px" }}>
+          <div style={{ display: "flex", fontSize: 36, letterSpacing: 8, color: ASH }}>{kicker}</div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={avatarSrc} width={avatarSize} height={avatarSize} alt="" style={{ marginTop: 26 }} />
+          <div style={{ display: "flex", fontSize: 44, color: ASH, marginTop: 18 }}>{lead}</div>
+          <div style={{ display: "flex", fontSize: 150, lineHeight: 1.05, color: VOLT, marginTop: 4 }}>{headline}</div>
+          {sub ? <div style={{ display: "flex", fontSize: 50, marginTop: 10 }}>{sub}</div> : null}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={pianoSrc} width={pianoW} height={pianoH} alt="" style={{ marginTop: 44 }} />
+          {tiles.length ? (
+            <div style={{ display: "flex", width: pianoW, marginTop: 28 }}>
+              {tiles.map(([label, v], i) => {
+                const n = v === null ? null : noteName(v, lang);
                 return (
-                  <div key={i} style={{ display: "flex", alignItems: "center", marginBottom: 26, fontSize: 36 }}>
-                    <div style={{ display: "flex", width: 170, color: p < 0.5 ? "#F5F5F7" : "#5D5D65" }}>{l[0]}</div>
-                    <div style={{ display: "flex", flex: 1, height: 12, borderRadius: 999, background: "#26262A", position: "relative" }}>
-                      <div
-                        style={{
-                          position: "absolute",
-                          left: `${p * 100}%`,
-                          top: -12,
-                          width: 36,
-                          height: 36,
-                          marginLeft: -18,
-                          borderRadius: 999,
-                          background: p < 0.5 ? RED : VOLT,
-                        }}
-                      />
-                    </div>
-                    <div style={{ display: "flex", width: 170, justifyContent: "flex-end", color: p >= 0.5 ? "#F5F5F7" : "#5D5D65" }}>
-                      {l[1]}
-                    </div>
+                  <div
+                    key={i}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      flex: 1,
+                      margin: i === 1 ? "0 16px" : 0,
+                      padding: "22px 10px",
+                      borderRadius: 28,
+                      background: "#161618",
+                    }}
+                  >
+                    <div style={{ display: "flex", fontSize: 30, color: ASH }}>{label}</div>
+                    <div style={{ display: "flex", fontSize: 26, color: ASH, marginTop: 10 }}>{n ? n.octave : ""}</div>
+                    <div style={{ display: "flex", fontSize: 62, color: i === 1 ? PINK : "#F5F5F7" }}>{n ? n.note : "—"}</div>
                   </div>
                 );
               })}
             </div>
           ) : null}
-          {line ? <div style={{ display: "flex", fontSize: 52, marginTop: 20, textAlign: "center" }}>{line}</div> : null}
-          {best && rival ? (
-            <div style={{ display: "flex", flexDirection: lang === "en" ? "column" : "row", alignItems: "center", marginTop: 44, fontSize: 38 }}>
-              <div style={{ display: "flex", alignItems: "center", margin: lang === "en" ? "0 0 12px" : "0 50px 0 0" }}>
-                <span style={{ color: ASH, marginRight: 14 }}>{t("찰떡", "Best")}</span>
-                {t(best.ko, best.en)}
+          <div style={{ display: "flex", flexDirection: "column", width: pianoW, marginTop: 34 }}>
+            {facts.slice(0, 3).map((f) => (
+              <div key={f} style={{ display: "flex", alignItems: "center", fontSize: 38, marginBottom: 14 }}>
+                <div style={{ display: "flex", width: 16, height: 16, borderRadius: 4, background: VOLT, marginRight: 20 }} />
+                {f}
               </div>
-              <div style={{ display: "flex", alignItems: "center" }}>
-                <span style={{ color: ASH, marginRight: 14 }}>{t("천적", "Rival")}</span>
-                {t(rival.ko, rival.en)}
-              </div>
+            ))}
+          </div>
+          {inst ? (
+            <div style={{ display: "flex", alignItems: "baseline", marginTop: 20, fontSize: 40 }}>
+              <span style={{ color: ASH, marginRight: 18 }}>{instLead}</span>
+              <span style={{ fontSize: 64 }}>{inst}</span>
             </div>
           ) : null}
+          {instWhy ? (
+            <div style={{ display: "flex", fontSize: 36, color: ASH, marginTop: 14, textAlign: "center", lineHeight: 1.45 }}>{instWhy}</div>
+          ) : null}
           <div style={{ display: "flex", flex: 1 }} />
-          <div style={{ display: "flex", fontSize: 58, color: RED }}>{cta}</div>
-          <div style={{ display: "flex", fontSize: 34, color: VOLT, marginTop: 14, letterSpacing: 2 }}>{HOST}</div>
+          <div style={{ display: "flex", fontSize: 62, color: VOLT }}>{cta}</div>
+          <div style={{ display: "flex", fontSize: 32, color: ASH, marginTop: 14, letterSpacing: 2 }}>{HOST}</div>
         </div>
       ),
       { width: 1080, height: 1920, headers, fonts },
@@ -176,23 +153,23 @@ export async function GET(req: Request) {
 
   return new ImageResponse(
     (
-      <div style={{ ...bg, width: "100%", height: "100%", display: "flex", alignItems: "center", padding: "40px 60px 40px 50px" }}>
-        <div style={{ display: "flex", alignItems: "flex-end" }}>
+      <div style={{ ...bg, width: "100%", height: "100%", display: "flex", flexDirection: "column", padding: "44px 50px" }}>
+        <div style={{ display: "flex", alignItems: "center" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={avatarSrc} width={avatarSize} height={avatarSize} alt="" />
-          <div style={{ display: "flex", marginLeft: -80, marginBottom: 10 }}>
-            <Seal char={seal} size={170} />
+          <div style={{ display: "flex", flexDirection: "column", marginLeft: 36, flex: 1 }}>
+            <div style={{ display: "flex", fontSize: 26, letterSpacing: 5, color: ASH }}>{kicker}</div>
+            <div style={{ display: "flex", fontSize: 102, lineHeight: 1.05, color: VOLT, marginTop: 6 }}>{headline}</div>
+            {sub ? <div style={{ display: "flex", fontSize: 40, marginTop: 6 }}>{sub}</div> : null}
+            {inst ? <div style={{ display: "flex", fontSize: 32, color: ASH, marginTop: 10 }}>{`${instLead} · ${inst}`}</div> : null}
           </div>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", flex: 1, marginLeft: 40 }}>
-          <div style={{ display: "flex", fontSize: 26, letterSpacing: 5, color: ASH }}>{kicker}</div>
-          <div style={{ display: "flex", fontSize: 34, color: ASH, marginTop: 14 }}>{lead}</div>
-          <div style={{ display: "flex", fontSize: 92, lineHeight: 1.1, marginTop: 4 }}>{name}</div>
-          {line ? <div style={{ display: "flex", fontSize: 38, marginTop: 18 }}>{line}</div> : null}
-          <div style={{ display: "flex", alignItems: "baseline", marginTop: 30 }}>
-            <div style={{ display: "flex", fontSize: 40, color: RED }}>{cta}</div>
-            <div style={{ display: "flex", fontSize: 26, letterSpacing: 6, color: VOLT, marginLeft: 24 }}>MIMIC</div>
-          </div>
+        <div style={{ display: "flex", flex: 1 }} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={pianoSrc} width={pianoW} height={pianoH} alt="" />
+        <div style={{ display: "flex", alignItems: "baseline", marginTop: 18 }}>
+          <div style={{ display: "flex", fontSize: 36, color: VOLT }}>{cta}</div>
+          <div style={{ display: "flex", fontSize: 24, letterSpacing: 6, color: ASH, marginLeft: 24 }}>MIMIC</div>
         </div>
       </div>
     ),

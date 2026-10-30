@@ -5,12 +5,13 @@ import Maker from "./maker";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = tr(await getLang());
-  const title = t("보이스 카드 · 내 목소리 유형 알아보기", "Voice card · Find your voice type");
+  const title = t("목소리 음역대 테스트 · 내 목소리는 몇 옥타브?", "Vocal range test · How many octaves is your voice?");
   const description = t(
-    "문장 하나 읽으면 10초 만에 내 목소리 유형과 어울리는 배역이 나와요.",
-    "Read one line and get your voice type and the roles that fit you in 10 seconds.",
+    "1부터 10까지 세고, 끝까지 내리고, 끝까지 올리면 건반 위에 내 음역이 나와요.",
+    "Count to 10, slide down, slide up — your range lights up on a piano keyboard.",
   );
-  return { title, description, openGraph: { title, description } };
+  const image = "/api/og/voice";
+  return { title, description, openGraph: { title, description, images: [{ url: image, width: 1200, height: 630 }] } };
 }
 
 export default function VoicePage() {
