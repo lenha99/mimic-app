@@ -10,7 +10,7 @@ import { noteName, readCard, summary, tierOf } from "@/lib/voice-range";
  * 목소리 음역대 이미지 — 두 벌.
  *  - 기본 1200×630: 링크 미리보기(OG)
  *  - fmt=story 1080×1920: 인스타 스토리에 그대로 올리는 세로 카드
- * 건반은 화면과 같은 SVG 를 그림으로 넣는다. 디스플레이 서체엔 이모지가 없어 악기는 이름만.
+ * 건반은 화면과 같은 SVG 를 그림으로 넣는다.
  */
 export const contentType = "image/png";
 
@@ -53,10 +53,7 @@ export async function GET(req: Request) {
   const fit = (max: number, width: number) => Math.min(max, Math.floor(width / Math.max(1, headline.length * (lang === "en" ? 0.56 : 1) + (emoji ? 1.2 : 0))));
   const sub = s?.sub ?? "";
   const facts = s?.facts ?? [];
-  const inst = s?.instrument ? t(s.instrument.ko, s.instrument.en) : "";
-  const instLead = t("내 목소리를 악기로 치면", "If my voice were an instrument");
-  const instWhy = s?.instrument ? t(s.instrument.whyKo, s.instrument.whyEn) : "";
-  const cta = t("너는 무슨 등급?", "What's your tier?");
+  const cta = t("너도 재 봐! 목소리 음역대 테스트", "Try it: vocal range test");
   const tiles = card
     ? ([
         [t("최저음", "Lowest"), card.low, card.low === null ? "" : t(tierOf("low", card.low, card.gender).tier.ko, tierOf("low", card.low, card.gender).tier.en)],
@@ -65,7 +62,7 @@ export async function GET(req: Request) {
       ] as const)
     : [];
   const tileText = tiles.map(([l, v, tier]) => l + tier + (v === null ? "—" : noteName(v, lang).full)).join("");
-  const text = `${kicker}${lead}${headline}${sub}${facts.join("")}${inst}${instLead}${instWhy}${cta}${tileText}${HOST}MIMIC—0123456789`;
+  const text = `${kicker}${lead}${headline}${sub}${facts.join("")}${cta}${tileText}${HOST}MIMIC—0123456789`;
   const font = await subsetFont("Black+Han+Sans", text);
   const fonts = font ? [{ name: "Display", data: font, weight: 400 as const, style: "normal" as const }] : [];
 
@@ -130,22 +127,13 @@ export async function GET(req: Request) {
             </div>
           ) : null}
           <div style={{ display: "flex", flexDirection: "column", width: pianoW, marginTop: 34 }}>
-            {facts.slice(0, 3).map((f) => (
+            {facts.slice(0, 4).map((f) => (
               <div key={f} style={{ display: "flex", alignItems: "center", fontSize: 38, marginBottom: 14 }}>
                 <div style={{ display: "flex", width: 16, height: 16, borderRadius: 4, background: VOLT, marginRight: 20 }} />
                 {f}
               </div>
             ))}
           </div>
-          {inst ? (
-            <div style={{ display: "flex", alignItems: "baseline", marginTop: 20, fontSize: 40 }}>
-              <span style={{ color: ASH, marginRight: 18 }}>{instLead}</span>
-              <span style={{ fontSize: 64 }}>{inst}</span>
-            </div>
-          ) : null}
-          {instWhy ? (
-            <div style={{ display: "flex", fontSize: 36, color: ASH, marginTop: 14, textAlign: "center", lineHeight: 1.45 }}>{instWhy}</div>
-          ) : null}
           <div style={{ display: "flex", flex: 1 }} />
           <div style={{ display: "flex", fontSize: 62, color: VOLT }}>{cta}</div>
           <div style={{ display: "flex", fontSize: 32, color: ASH, marginTop: 14, letterSpacing: 2 }}>{HOST}</div>
@@ -165,7 +153,6 @@ export async function GET(req: Request) {
             <div style={{ display: "flex", fontSize: 26, letterSpacing: 5, color: ASH }}>{kicker}</div>
             <div style={{ display: "flex", fontSize: fit(102, 820), lineHeight: 1.1, color: VOLT, marginTop: 6 }}>{emoji ? `${emoji} ${headline}` : headline}</div>
             {sub ? <div style={{ display: "flex", fontSize: 40, marginTop: 6 }}>{sub}</div> : null}
-            {inst ? <div style={{ display: "flex", fontSize: 32, color: ASH, marginTop: 10 }}>{`${instLead} · ${inst}`}</div> : null}
           </div>
         </div>
         <div style={{ display: "flex", flex: 1 }} />

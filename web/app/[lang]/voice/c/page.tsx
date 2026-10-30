@@ -25,8 +25,8 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     ? t(`${s.lead}: ${s.emoji} ${s.headline} · ${s.sub}`, `${s.lead}: ${s.emoji} ${s.headline} · ${s.sub}`)
     : t(`평소 내 목소리 음은 ${s.headline}`, `My speaking note is ${s.headline}`);
   const description = t(
-    "🚿 샤워실 가수부터 🐬 돌고래까지 — 너의 고음 등급은? 30초면 재요.",
-    "From 🚿 Shower Singer to 🐬 Dolphin — what's your tier? Takes 30 seconds.",
+    "🚿 샤워실 가수부터 🐬 돌고래까지 — 너의 고음 등급은? 10초면 재요.",
+    "From 🚿 Shower Singer to 🐬 Dolphin — what's your tier? Takes 10 seconds.",
   );
   const image = `/api/og/voice?${cardQuery(card)}&ui=${lang}`;
   return {
@@ -58,7 +58,7 @@ export default async function SharedCard({ searchParams }: Props) {
           {high ? t(`${high} 등급, 넘을 수 있어?`, `Can you beat ${high}?`) : t("🎙️ 내 등급 재 보기", "🎙️ Find my tier")}
         </Link>
       </div>
-      <p className={styles.note}>{t("녹음 파일은 만들지 않아요 · 30초면 끝", "Nothing is recorded · takes 30 seconds")}</p>
+      <p className={styles.note}>{t("녹음 파일은 만들지 않아요 · 10초면 끝", "Nothing is recorded · takes 10 seconds")}</p>
     </main>
   );
 }

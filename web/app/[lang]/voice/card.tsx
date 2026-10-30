@@ -76,19 +76,6 @@ export function RangeCardView({ card, onChallenge }: { card: RangeCard; onChalle
           ))}
         </ul>
       )}
-
-      {s.instrument && (
-        <div className={styles.inst}>
-          <span className={styles.instEmoji} aria-hidden="true">
-            {s.instrument.emoji}
-          </span>
-          <p>
-            <small>{t("내 목소리를 악기로 치면", "If my voice were an instrument")}</small>
-            <b>{t(s.instrument.ko, s.instrument.en)}</b>
-            <span>{t(s.instrument.whyKo, s.instrument.whyEn)}</span>
-          </p>
-        </div>
-      )}
     </article>
   );
 }
