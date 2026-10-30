@@ -4,7 +4,7 @@ import { VoiceAvatar } from "@/components/voice-avatar";
 import { decodeAvatar } from "@/lib/avatar";
 import { svgToString } from "@/lib/svg-string";
 import { tr } from "@/lib/i18n";
-import { noteName, readCard, summary } from "@/lib/voice-range";
+import { noteName, readCard, summary, tierOf } from "@/lib/voice-range";
 
 /**
  * 목소리 음역대 이미지 — 두 벌.
@@ -47,21 +47,24 @@ export async function GET(req: Request) {
 
   const kicker = t("목소리 음역대", "VOCAL RANGE");
   const lead = s?.lead ?? t("내 목소리는", "My voice is");
-  const headline = s?.headline ?? t("몇 옥타브?", "How many octaves?");
+  const headline = s?.headline ?? t("너의 고음 등급은?", "What's your tier?");
+  const emoji = s?.emoji ?? "";
+  // 등급 이름 길이가 제각각이다(영어가 특히 길다) — 한 줄에 들어가게 글자 크기를 맞춘다.
+  const fit = (max: number, width: number) => Math.min(max, Math.floor(width / Math.max(1, headline.length * (lang === "en" ? 0.56 : 1) + (emoji ? 1.2 : 0))));
   const sub = s?.sub ?? "";
   const facts = s?.facts ?? [];
   const inst = s?.instrument ? t(s.instrument.ko, s.instrument.en) : "";
   const instLead = t("내 목소리를 악기로 치면", "If my voice were an instrument");
   const instWhy = s?.instrument ? t(s.instrument.whyKo, s.instrument.whyEn) : "";
-  const cta = t("너는 몇 옥타브?", "How many octaves are you?");
+  const cta = t("너는 무슨 등급?", "What's your tier?");
   const tiles = card
     ? ([
-        [t("최저음", "Lowest"), card.low],
-        [t("평소 목소리", "Speaking"), card.speak],
-        [t("최고음", "Highest"), card.high],
+        [t("최저음", "Lowest"), card.low, card.low === null ? "" : t(tierOf("low", card.low, card.gender).tier.ko, tierOf("low", card.low, card.gender).tier.en)],
+        [t("평소 목소리", "Speaking"), card.speak, ""],
+        [t("최고음", "Highest"), card.high, card.high === null ? "" : t(tierOf("high", card.high, card.gender).tier.ko, tierOf("high", card.high, card.gender).tier.en)],
       ] as const)
     : [];
-  const tileText = tiles.map(([l, v]) => l + (v === null ? "—" : noteName(v, lang).full)).join("");
+  const tileText = tiles.map(([l, v, tier]) => l + tier + (v === null ? "—" : noteName(v, lang).full)).join("");
   const text = `${kicker}${lead}${headline}${sub}${facts.join("")}${inst}${instLead}${instWhy}${cta}${tileText}${HOST}MIMIC—0123456789`;
   const font = await subsetFont("Black+Han+Sans", text);
   const fonts = font ? [{ name: "Display", data: font, weight: 400 as const, style: "normal" as const }] : [];
@@ -95,13 +98,13 @@ export async function GET(req: Request) {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={avatarSrc} width={avatarSize} height={avatarSize} alt="" style={{ marginTop: 26 }} />
           <div style={{ display: "flex", fontSize: 44, color: ASH, marginTop: 18 }}>{lead}</div>
-          <div style={{ display: "flex", fontSize: 150, lineHeight: 1.05, color: VOLT, marginTop: 4 }}>{headline}</div>
+          <div style={{ display: "flex", fontSize: fit(150, 900), lineHeight: 1.1, color: VOLT, marginTop: 4 }}>{emoji ? `${emoji} ${headline}` : headline}</div>
           {sub ? <div style={{ display: "flex", fontSize: 50, marginTop: 10 }}>{sub}</div> : null}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={pianoSrc} width={pianoW} height={pianoH} alt="" style={{ marginTop: 44 }} />
           {tiles.length ? (
             <div style={{ display: "flex", width: pianoW, marginTop: 28 }}>
-              {tiles.map(([label, v], i) => {
+              {tiles.map(([label, v, tier], i) => {
                 const n = v === null ? null : noteName(v, lang);
                 return (
                   <div
@@ -120,6 +123,7 @@ export async function GET(req: Request) {
                     <div style={{ display: "flex", fontSize: 30, color: ASH }}>{label}</div>
                     <div style={{ display: "flex", fontSize: 26, color: ASH, marginTop: 10 }}>{n ? n.octave : ""}</div>
                     <div style={{ display: "flex", fontSize: 62, color: i === 1 ? PINK : "#F5F5F7" }}>{n ? n.note : "—"}</div>
+                    {tier ? <div style={{ display: "flex", fontSize: 28, color: VOLT, marginTop: 6 }}>{tier}</div> : null}
                   </div>
                 );
               })}
@@ -147,7 +151,7 @@ export async function GET(req: Request) {
           <div style={{ display: "flex", fontSize: 32, color: ASH, marginTop: 14, letterSpacing: 2 }}>{HOST}</div>
         </div>
       ),
-      { width: 1080, height: 1920, headers, fonts },
+      { width: 1080, height: 1920, headers, fonts, emoji: "twemoji" },
     );
   }
 
@@ -159,7 +163,7 @@ export async function GET(req: Request) {
           <img src={avatarSrc} width={avatarSize} height={avatarSize} alt="" />
           <div style={{ display: "flex", flexDirection: "column", marginLeft: 36, flex: 1 }}>
             <div style={{ display: "flex", fontSize: 26, letterSpacing: 5, color: ASH }}>{kicker}</div>
-            <div style={{ display: "flex", fontSize: 102, lineHeight: 1.05, color: VOLT, marginTop: 6 }}>{headline}</div>
+            <div style={{ display: "flex", fontSize: fit(102, 820), lineHeight: 1.1, color: VOLT, marginTop: 6 }}>{emoji ? `${emoji} ${headline}` : headline}</div>
             {sub ? <div style={{ display: "flex", fontSize: 40, marginTop: 6 }}>{sub}</div> : null}
             {inst ? <div style={{ display: "flex", fontSize: 32, color: ASH, marginTop: 10 }}>{`${instLead} · ${inst}`}</div> : null}
           </div>
@@ -173,6 +177,6 @@ export async function GET(req: Request) {
         </div>
       </div>
     ),
-    { width: 1200, height: 630, headers, fonts },
+    { width: 1200, height: 630, headers, fonts, emoji: "twemoji" },
   );
 }

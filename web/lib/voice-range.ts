@@ -86,13 +86,61 @@ function normCdf(z: number) {
   return z > 0 ? 1 - p : p;
 }
 
-/* --- 노래방 고음 기준 ------------------------------------------------------ */
+/* --- 등급 — 옥타브는 몰라도 "돌고래 고음", "동굴 목소리"는 다 안다 ---------------------- */
+
+export type Tier = { emoji: string; ko: string; en: string };
+type Ladder = { at: Record<Gender, number>; tier: Tier }[];
 
 /**
- * 고음 자랑의 기준선 — 남자 "2옥타브 라"(A4), 여자 "3옥타브 도"(C5). 노래방·커버 영상에서
- * 고음의 상징처럼 쓰이는 음이다. 성별을 안 골랐으면 남자 기준.
+ * 고음 등급 — 아래에서 위로. at 은 그 등급이 시작하는 음(MIDI).
+ * 남자 기준선은 노래방 문화에서 쓰는 말 그대로다: 2옥타브 라(A4)가 "고음 잘한다"의 상징, 3옥타브 미(E5)부터 돌고래.
+ * 여자는 같은 느낌이 나는 자리로 올렸다(3옥타브 도가 여자 고음 기준선). 성별을 안 고르면 남자 기준.
  */
-export const HIGH_BAR: Record<Gender, number> = { m: 69, f: 72, x: 69 };
+const HIGH_LADDER: Ladder = [
+  { at: { m: -Infinity, f: -Infinity, x: -Infinity }, tier: { emoji: "🚿", ko: "샤워실 가수", en: "Shower Singer" } },
+  { at: { m: 64, f: 67, x: 64 }, tier: { emoji: "🎤", ko: "노래방 평균", en: "Karaoke Regular" } },
+  { at: { m: 69, f: 72, x: 69 }, tier: { emoji: "🔥", ko: "노래방 에이스", en: "Karaoke Ace" } },
+  { at: { m: 72, f: 76, x: 72 }, tier: { emoji: "🎸", ko: "락 보컬", en: "Rock Vocalist" } },
+  { at: { m: 76, f: 81, x: 76 }, tier: { emoji: "🐬", ko: "돌고래", en: "Dolphin" } },
+];
+
+/** 저음 등급 — 위에서 아래로. at 은 그 음 이하면 그 등급(MIDI). 한국 밈 "동굴 목소리"가 가운데다. */
+const LOW_LADDER: Ladder = [
+  { at: { m: Infinity, f: Infinity, x: Infinity }, tier: { emoji: "🙂", ko: "담백한 저음", en: "Easygoing Low" } },
+  { at: { m: 49, f: 56, x: 49 }, tier: { emoji: "📻", ko: "라디오 DJ", en: "Radio DJ" } },
+  { at: { m: 44, f: 51, x: 44 }, tier: { emoji: "🕳️", ko: "동굴 목소리", en: "Cave Voice" } },
+  { at: { m: 39, f: 46, x: 39 }, tier: { emoji: "🌊", ko: "심해 목소리", en: "Deep-Sea Voice" } },
+  { at: { m: 35, f: 42, x: 35 }, tier: { emoji: "🪨", ko: "지하 암반수", en: "Bedrock Bass" } },
+];
+
+export type TierInfo = {
+  index: number;
+  tier: Tier;
+  /** 등급 수 */
+  count: number;
+  /** 다음 등급과 거기까지 남은 반음. 꼭대기(바닥)면 null */
+  next: { tier: Tier; keys: number } | null;
+};
+
+export function tierOf(mode: "low" | "high", midi: number, gender: Gender): TierInfo {
+  const ladder = mode === "high" ? HIGH_LADDER : LOW_LADDER;
+  const m = Math.round(midi);
+  let index = 0;
+  for (let i = 0; i < ladder.length; i += 1) {
+    const at = ladder[i].at[gender];
+    if (mode === "high" ? m >= at : m <= at) index = i;
+  }
+  const nx = ladder[index + 1];
+  const next = nx ? { tier: nx.tier, keys: Math.abs(nx.at[gender] - m) } : null;
+  return { index, tier: ladder[index].tier, count: ladder.length, next };
+}
+
+/** 사다리 전체 — 재는 화면에 깔아 두고 올라가는(내려가는) 게 보이게 한다. */
+export function ladder(mode: "low" | "high", gender: Gender): { tier: Tier; at: number }[] {
+  return (mode === "high" ? HIGH_LADDER : LOW_LADDER).map((x) => ({ tier: x.tier, at: x.at[gender] }));
+}
+
+export const tierLabel = (t: Tier, lang: Lang) => `${t.emoji} ${lang === "en" ? t.en : t.ko}`;
 
 /** 보통 사람이 내는 음역(옥타브). 훈련 안 한 성인은 대개 1.5~2옥타브. */
 export const TYPICAL_OCTAVES: [number, number] = [1.5, 2];
@@ -219,51 +267,52 @@ export function summary(c: RangeCard, lang: Lang) {
   const en = lang === "en";
   const t = (ko: string, e: string) => (en ? e : ko);
   const name = (m: number) => noteName(m, lang).full;
+  const tn = (x: Tier) => (en ? x.en : x.ko);
   const range = hasRange(c) ? octaves(c.low!, c.high!) : null;
+  const high = c.high !== null ? tierOf("high", c.high, c.gender) : null;
+  const low = c.low !== null ? tierOf("low", c.low, c.gender) : null;
 
-  const headline =
-    range !== null ? t(`${range}옥타브`, `${range} octaves`) : c.speak !== null ? name(c.speak) : t("?", "?");
-  const lead = range !== null ? t("내 목소리 음역", "My vocal range") : t("평소 내 목소리 음", "My speaking note");
-  const sub = range !== null ? `${name(c.low!)} ~ ${name(c.high!)}` : c.speak !== null ? t(`피아노 ${pianoKey(c.speak)}번째 건반`, `Piano key #${pianoKey(c.speak)}`) : "";
+  // 제목은 등급이다 — "2.3옥타브"는 노래하는 사람만 안다. 고음 등급이 제일 자랑하고 싶은 말이다.
+  const main = high ? { info: high, kind: "high" as const } : low ? { info: low, kind: "low" as const } : null;
+  const headline = main ? tn(main.info.tier) : c.speak !== null ? name(c.speak) : "?";
+  const emoji = main ? main.info.tier.emoji : "";
+  const lead = main
+    ? main.kind === "high"
+      ? t("내 고음 등급", "My high-note tier")
+      : t("내 저음 등급", "My low-note tier")
+    : t("평소 내 목소리 음", "My speaking note");
+  const sub = main
+    ? main.kind === "high"
+      ? t(`최고음 ${name(c.high!)}`, `Highest note ${name(c.high!)}`)
+      : t(`최저음 ${name(c.low!)}`, `Lowest note ${name(c.low!)}`)
+    : c.speak !== null
+      ? t(`피아노 ${pianoKey(c.speak)}번째 건반`, `Piano key #${pianoKey(c.speak)}`)
+      : "";
 
   const facts: string[] = [];
+  if (high && low) facts.push(t(`저음 등급: ${tn(low.tier)} (${name(c.low!)})`, `Low tier: ${tn(low.tier)} (${name(c.low!)})`));
+  if (main?.info.next) {
+    const n = main.info.next;
+    facts.push(t(`다음 등급 ${tn(n.tier)}까지 ${n.keys}칸`, `${n.keys} key${n.keys > 1 ? "s" : ""} to the next tier: ${tn(n.tier)}`));
+  } else if (main) {
+    facts.push(t("맨 끝 등급 달성!", "Top tier reached!"));
+  }
   if (range !== null) {
+    const keys = c.high! - c.low! + 1;
     const [a, b] = TYPICAL_OCTAVES;
     facts.push(
-      range > b
-        ? t(`보통 사람(${a}~${b}옥타브)보다 넓어요`, `Wider than most people (${a}–${b} octaves)`)
-        : range >= a
-          ? t(`딱 보통 사람만큼이에요 (보통 ${a}~${b}옥타브)`, `Right where most people are (${a}–${b} octaves)`)
-          : t(`보통은 ${a}~${b}옥타브 — 가성까지 쓰면 더 나와요`, `Most people get ${a}–${b} — try falsetto for more`),
-    );
-  }
-  if (c.high !== null) {
-    const bar = HIGH_BAR[c.gender];
-    const d = c.high - bar;
-    const barName = name(bar);
-    facts.push(
-      d > 0
-        ? t(`노래방 고음 기준 ${barName}보다 ${d}칸 위!`, `${d} key${d > 1 ? "s" : ""} above the karaoke high-note bar (${barName})!`)
-        : d === 0
-          ? t(`노래방 고음 기준 ${barName} 딱 찍었어요`, `Hit the karaoke high-note bar (${barName}) exactly`)
-          : t(`노래방 고음 기준 ${barName}까지 ${-d}칸 남았어요`, `${-d} key${d < -1 ? "s" : ""} short of the karaoke high-note bar (${barName})`),
+      t(
+        `음역 ${range}옥타브 · 피아노 건반 ${keys}개 (보통 사람 ${a}~${b}옥타브)`,
+        `Range ${range} octaves · ${keys} piano keys (most people: ${a}–${b})`,
+      ),
     );
   }
   if (c.speak !== null) {
     const r = lowRank(c.speak, c.gender);
     if (r !== null) {
-      facts.push(
-        t(
-          `같은 성별 100명 중 ${r}번째로 낮은 목소리`,
-          `#${r} lowest out of 100 ${c.gender === "m" ? "men" : "women"}`,
-        ),
-      );
-    }
-    if (c.spread !== null) {
-      const k = Math.max(1, Math.round(c.spread));
-      facts.push(t(`말할 때 오르내리는 폭: 건반 ${k}칸`, `Your voice moves ${k} keys when you talk`));
+      facts.push(t(`평소 목소리: 같은 성별 100명 중 ${r}번째로 낮음`, `Speaking voice: #${r} lowest out of 100 ${c.gender === "m" ? "men" : "women"}`));
     }
   }
   const instrument = c.speak !== null ? instrumentOf(c.speak) : null;
-  return { headline, lead, sub, facts, instrument, range };
+  return { headline, emoji, lead, sub, facts, instrument, range, high, low };
 }

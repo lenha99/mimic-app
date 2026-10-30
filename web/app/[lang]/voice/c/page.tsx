@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getLang } from "@/lib/i18n-server";
 import { tr } from "@/lib/i18n";
-import { cardQuery, noteName, readCard, summary } from "@/lib/voice-range";
+import { cardQuery, readCard, summary } from "@/lib/voice-range";
 import { RangeCardView } from "../card";
 import styles from "../voice.module.css";
 
@@ -21,13 +21,12 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const card = await cardFrom(searchParams);
   if (!card) return { title: t("목소리 음역대 테스트", "Vocal range test"), robots: { index: false } };
   const s = summary(card, lang);
-  const title =
-    s.range !== null
-      ? t(`내 목소리 음역 ${s.range}옥타브 · ${s.sub}`, `My vocal range: ${s.range} octaves · ${s.sub}`)
-      : t(`평소 내 목소리 음은 ${s.headline}`, `My speaking note is ${s.headline}`);
+  const title = s.emoji
+    ? t(`${s.lead}: ${s.emoji} ${s.headline} · ${s.sub}`, `${s.lead}: ${s.emoji} ${s.headline} · ${s.sub}`)
+    : t(`평소 내 목소리 음은 ${s.headline}`, `My speaking note is ${s.headline}`);
   const description = t(
-    "평소 목소리 · 가장 낮은 음 · 가장 높은 음. 너는 몇 옥타브? 30초면 재요.",
-    "Speaking voice, lowest note, highest note. How many octaves do you have? Takes 30 seconds.",
+    "🚿 샤워실 가수부터 🐬 돌고래까지 — 너의 고음 등급은? 30초면 재요.",
+    "From 🚿 Shower Singer to 🐬 Dolphin — what's your tier? Takes 30 seconds.",
   );
   const image = `/api/og/voice?${cardQuery(card)}&ui=${lang}`;
   return {
@@ -44,7 +43,8 @@ export default async function SharedCard({ searchParams }: Props) {
   const lang = await getLang();
   const t = tr(lang);
   const card = await cardFrom(searchParams);
-  const high = card?.high != null ? noteName(card.high, lang).full : null;
+  const s = card ? summary(card, lang) : null;
+  const high = s?.high ? `${s.emoji} ${s.headline}` : null;
   return (
     <main className={`shell ${styles.page}`}>
       <p className={styles.friend}>
@@ -55,7 +55,7 @@ export default async function SharedCard({ searchParams }: Props) {
       {card && <RangeCardView card={card} />}
       <div className={styles.actions}>
         <Link href="/voice" className={styles.primary}>
-          {high ? t(`🎙️ ${high}, 넘을 수 있어?`, `🎙️ Can you beat ${high}?`) : t("🎙️ 나는 몇 옥타브? 재 보기", "🎙️ How many octaves am I?")}
+          {high ? t(`${high} 등급, 넘을 수 있어?`, `Can you beat ${high}?`) : t("🎙️ 내 등급 재 보기", "🎙️ Find my tier")}
         </Link>
       </div>
       <p className={styles.note}>{t("녹음 파일은 만들지 않아요 · 30초면 끝", "Nothing is recorded · takes 30 seconds")}</p>

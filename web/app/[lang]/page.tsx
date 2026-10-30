@@ -104,7 +104,7 @@ export default async function Home() {
           <Piano lang="ko" low={50} high={65} speak={55} labels={false} span={[48, 72]} />
         </span>
         <span className={styles.voiceText}>
-          <b>{t("내 목소리는 몇 옥타브?", "How many octaves is your voice?")}</b>
+          <b>{t("내 고음은 🐬 돌고래? 🚿 샤워실?", "Your high notes: 🐬 Dolphin or 🚿 Shower?")}</b>
           <small>{t("평소 음 · 최저음 · 최고음 · 30초", "Speaking · lowest · highest · 30s")}</small>
         </span>
         <i aria-hidden="true">→</i>

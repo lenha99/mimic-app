@@ -10,8 +10,20 @@ import { buzz, shareLink } from "@/components/weekly/use-weekly";
 import { useLang, useT } from "@/components/lang";
 import { DEFAULT_AVATAR, encodeAvatar } from "@/lib/avatar";
 import { makeReader, stableExtreme, summarizeSpeak, toMidi, HOLD_S, type Frame } from "@/lib/pitch";
+import { SCRIPTS } from "@/lib/scripts";
 import { track } from "@/lib/track";
-import { cardQuery, instrumentOf, noteName, readCard, summary, type Gender, type RangeCard } from "@/lib/voice-range";
+import {
+  cardQuery,
+  instrumentOf,
+  ladder,
+  noteName,
+  readCard,
+  summary,
+  tierLabel,
+  tierOf,
+  type Gender,
+  type RangeCard,
+} from "@/lib/voice-range";
 import { RangeCardView, type Step } from "./card";
 import styles from "./voice.module.css";
 
@@ -23,12 +35,39 @@ const ORDER: Step[] = ["speak", "low", "high"];
 const MAX_S: Record<Step, number> = { speak: 12, low: 15, high: 15 };
 /** 이만큼 소리를 낸 뒤 이만큼 조용하면 저절로 끝낸다. */
 const AUTO_STOP: Record<Step, { voiced: number; silence: number }> = {
-  speak: { voiced: 2, silence: 1.2 },
+  speak: { voiced: 2.5, silence: 1.6 },
   low: { voiced: 1, silence: 2.5 },
   high: { voiced: 1, silence: 2.5 },
 };
 
 type Live = { m: number | null; level: number; record: number | null; elapsed: number };
+type Line = { title: string; text: string };
+
+/**
+ * 평소 목소리용 대본 — 연습실 대본 중 하나를 무작위로, 앞부분만.
+ * 일부러 높게(분노·비명) 또는 낮게 깔아 읽는 대본은 뺀다(pitch: mid 만) — 평소 음을 재야 한다.
+ * 대본은 한국어뿐이라 영어 화면엔 일상 문장을 따로 둔다.
+ */
+const LINES_KO: Line[] = SCRIPTS.filter((s) => s.pitch === "mid").map((s) => {
+  let text = "";
+  for (const para of s.text.split(/\n\s*\n/)) {
+    text = text ? `${text} ${para}` : para;
+    if ((text.match(/[가-힣]/g) ?? []).length >= 22) break;
+  }
+  return { title: s.title, text: text.replace(/\*/g, "").replace(/\s*\/\s*/g, " ") };
+});
+const LINES_EN: Line[] = [
+  { title: "Running late", text: "Hey, it's me. I'm running a little late, but I'll be there in ten minutes. Save me a seat." },
+  { title: "Weather", text: "Today will be clear and mild, with a light breeze in the afternoon. Perfect for a walk." },
+  { title: "New café", text: "I tried the new place around the corner. Honestly? The coffee was better than the cake." },
+  { title: "Voicemail", text: "Thanks for calling. I can't get to the phone right now, so leave a message after the tone." },
+  { title: "Front desk", text: "Welcome back. Your room is ready on the fifth floor, and breakfast starts at seven." },
+];
+const pickLine = (lang: "ko" | "en", not?: Line | null): Line => {
+  const pool = lang === "en" ? LINES_EN : LINES_KO;
+  const rest = pool.filter((l) => l !== not);
+  return rest[Math.floor(Math.random() * rest.length)] ?? pool[0];
+};
 
 function readSaved(): RangeCard | null {
   try {
@@ -60,6 +99,9 @@ export default function Maker() {
   const [error, setError] = useState<string | null>(null);
   const [image, setImage] = useState<File | null>(null);
   const [origin, setOrigin] = useState("");
+  const [line, setLine] = useState<Line | null>(null);
+  /** 방금 새로 오른 등급 — 잠깐 반짝인다 */
+  const [flash, setFlash] = useState<number | null>(null);
   const stream = useRef<MediaStream | null>(null);
   const ctx = useRef<AudioContext | null>(null);
   const stopRef = useRef<(() => void) | null>(null);
@@ -68,13 +110,15 @@ export default function Maker() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setOrigin(location.origin);
+    // 무작위는 화면이 붙은 뒤에 — 서버 렌더와 어긋나지 않게.
+    setLine(pickLine(lang));
     try {
       const g = localStorage.getItem(GENDER_KEY);
       if (g === "m" || g === "f" || g === "x") setGender(g);
     } catch {}
     const saved = readSaved();
     if (saved) setCard(saved);
-  }, []);
+  }, [lang]);
 
   const pickGender = (g: Gender) => {
     setGender(g);
@@ -180,6 +224,7 @@ export default function Maker() {
     let lastVoiced = t0;
     let n = 0;
     let record: number | null = null;
+    let tierIdx = -1;
     let done = false;
     const end = () => {
       if (done) return;
@@ -207,7 +252,18 @@ export default function Maker() {
       }
       prev = now;
       n += 1;
-      if (s !== "speak" && n % 6 === 0) record = stableExtreme(frames, s);
+      if (s !== "speak" && n % 6 === 0) {
+        record = stableExtreme(frames, s);
+        // 등급이 오르는 순간이 이 테스트의 하이라이트다 — 진동과 반짝임.
+        const idx = record === null ? -1 : tierOf(s, record, gender).index;
+        if (idx > tierIdx) {
+          if (tierIdx >= 0 || idx > 0) {
+            buzz(35);
+            setFlash(idx);
+          }
+          tierIdx = idx;
+        }
+      }
       setLive({ m, level, record, elapsed: (now - t0) / 1000 });
       const rule = AUTO_STOP[s];
       const quiet = (now - lastVoiced) / 1000;
@@ -246,10 +302,9 @@ export default function Maker() {
     if (!card) return;
     const s = summary(card, lang);
     const inst = s.instrument ? t(s.instrument.ko, s.instrument.en) : "";
-    const text =
-      s.range !== null
-        ? t(`내 목소리 음역 ${s.range}옥타브 (${s.sub}) 나옴. 너는 몇 옥타브?`, `My vocal range: ${s.range} octaves (${s.sub}). How many do you have?`)
-        : t(`평소 내 목소리 음은 ${s.headline}, 악기로 치면 ${inst}래. 너는?`, `My speaking note is ${s.headline} — that's a ${inst}. What's yours?`);
+    const text = s.emoji
+      ? t(`${s.lead} ${s.emoji} ${s.headline} 나옴 (${s.sub}). 너는 무슨 등급?`, `${s.lead}: ${s.emoji} ${s.headline} (${s.sub}). What's yours?`)
+      : t(`평소 내 목소리 음은 ${s.headline}, 악기로 치면 ${inst}래. 너는?`, `My speaking note is ${s.headline} — that's a ${inst}. What's yours?`);
     track("voice_card_share", { via: s.instrument?.key ?? "range" });
     try {
       if (image && navigator.canShare?.({ files: [image] })) {
@@ -289,8 +344,8 @@ export default function Maker() {
     const guide: Record<Step, { title: string; how: string; tip: string }> = {
       speak: {
         title: t("평소 목소리", "Speaking voice"),
-        how: t("1부터 10까지 평소처럼 세어 주세요", "Count from 1 to 10 in your normal voice"),
-        tip: t("다 세고 잠깐 조용히 있으면 저절로 끝나요", "Stop when you're done — it ends by itself"),
+        how: t("이 대본을 평소 말투로 읽어 주세요", "Read this in your normal voice"),
+        tip: t("다 읽고 잠깐 조용히 있으면 저절로 끝나요", "Stop when you're done — it ends by itself"),
       },
       low: {
         title: t("가장 낮은 음", "Lowest note"),
@@ -326,12 +381,16 @@ export default function Maker() {
 
         <p className="eyebrow">{t(`${i + 1}/3 · ${g.title}`, `${i + 1}/3 · ${g.title}`)}</p>
         <h1 className={styles.how}>{g.how}</h1>
-        {step === "speak" && (
-          <p className={styles.count} aria-hidden="true">
-            {Array.from({ length: 10 }, (_, k) => (
-              <span key={k}>{k + 1}</span>
-            ))}
-          </p>
+        {step === "speak" && line && (
+          <div className={styles.script}>
+            <small>{line.title}</small>
+            <p>{line.text}</p>
+            {!listening && (
+              <button type="button" onClick={() => setLine(pickLine(lang, line))}>
+                {t("🔀 다른 대본", "🔀 Another one")}
+              </button>
+            )}
+          </div>
         )}
 
         <div className={styles.meterBox}>
@@ -361,6 +420,15 @@ export default function Maker() {
             high={step === "high" && live.record !== null ? live.record : undefined}
             speak={step === "speak" ? undefined : doneSpeak}
           />
+          {step !== "speak" && (
+            <Ladder
+              mode={step}
+              gender={gender}
+              record={live.record ?? (step === "low" ? card?.low : card?.high) ?? null}
+              live={live.m}
+              flash={listening ? flash : null}
+            />
+          )}
           {listening && (
             <div className={styles.timer} aria-hidden="true">
               <i style={{ width: `${Math.min(100, (live.elapsed / MAX_S[step]) * 100)}%` }} />
@@ -373,7 +441,7 @@ export default function Maker() {
 
         {listening ? (
           <button type="button" className={`${styles.primary} ${styles.rec}`} onClick={stop}>
-            {step === "speak" ? t("다 셌어요", "Done") : t("끝", "Done")}
+            {step === "speak" ? t("다 읽었어요", "Done") : t("끝", "Done")}
           </button>
         ) : (
           <button type="button" className={styles.primary} onClick={() => void listen(step)}>
@@ -455,25 +523,25 @@ export default function Maker() {
       </nav>
       <header className={styles.head}>
         <p className="eyebrow">{t("목소리 음역대 테스트", "Vocal range test")}</p>
-        <h1 className={styles.title}>{t("내 목소리는 몇 옥타브?", "How many octaves is your voice?")}</h1>
+        <h1 className={styles.title}>{t("내 고음은 🐬 돌고래? 🚿 샤워실?", "Your high notes: 🐬 Dolphin or 🚿 Shower?")}</h1>
         <p className={styles.sub}>
           {t(
-            "평소 목소리 · 가장 낮은 음 · 가장 높은 음. 세 번 소리 내면 건반 위에 내 음역이 나와요.",
-            "Your speaking voice, your lowest note, your highest note. Three sounds and your range lights up on a keyboard.",
+            "대본 한 줄 · 가장 낮은 음 · 가장 높은 음. 세 번 소리 내면 내 고음·저음 등급이 나와요.",
+            "One line, your lowest note, your highest note. Three sounds and you get your high and low tiers.",
           )}
         </p>
       </header>
 
       <div className={styles.introPiano}>
         <Piano lang={lang} low={45} high={69} speak={50} />
-        <p>{t("예시: 0옥타브 라 ~ 2옥타브 라 · 2옥타브", "Example: A2 – A4 · 2 octaves")}</p>
+        <p>{t("예시: 최고음 2옥타브 라 🔥 노래방 에이스 · 최저음 0옥타브 라 📻 라디오 DJ", "Example: high A4 🔥 Karaoke Ace · low A2 📻 Radio DJ")}</p>
       </div>
 
       <ol className={styles.steps}>
         <li>
           <b>1</b>
           <span>
-            {t("1부터 10까지 세기", "Count 1 to 10")}
+            {t("대본 한 줄 읽기", "Read one short line")}
             <small>{t("평소 내 목소리 음과 어울리는 악기", "Your speaking note and your instrument")}</small>
           </span>
         </li>
@@ -481,14 +549,14 @@ export default function Maker() {
           <b>2</b>
           <span>
             {t("‘음~’ 끝까지 내리기", "Hum down as low as you can")}
-            <small>{t("내가 낼 수 있는 가장 낮은 음", "Your lowest note")}</small>
+            <small>{t("🙂 담백한 저음부터 🪨 지하 암반수까지", "From 🙂 Easygoing Low to 🪨 Bedrock Bass")}</small>
           </span>
         </li>
         <li>
           <b>3</b>
           <span>
             {t("‘아~’ 끝까지 올리기", "Slide up as high as you can")}
-            <small>{t("노래방 고음 기준과 비교", "Compared with the karaoke high-note bar")}</small>
+            <small>{t("🚿 샤워실 가수부터 🐬 돌고래까지", "From 🚿 Shower Singer to 🐬 Dolphin")}</small>
           </span>
         </li>
       </ol>
@@ -501,6 +569,45 @@ export default function Maker() {
       <p className={styles.note}>{t("녹음 파일은 만들지 않아요. 노래 실력 점수가 아니라 내 목소리 지도예요.", "Nothing is recorded. It's not a singing score — it's a map of your voice.")}</p>
       {toast}
     </main>
+  );
+}
+
+/** 등급 사다리 — 기록이 닿은 칸은 칠하고, 지금 내는 음이 닿는 칸엔 표시. 고음은 위로, 저음은 아래로 쌓는다. */
+function Ladder({
+  mode,
+  gender,
+  record,
+  live,
+  flash,
+}: {
+  mode: "low" | "high";
+  gender: Gender;
+  record: number | null;
+  live: number | null;
+  flash: number | null;
+}) {
+  const lang = useLang();
+  const t = useT();
+  const rungs = ladder(mode, gender);
+  const got = record === null ? -1 : tierOf(mode, record, gender).index;
+  const now = live === null ? -1 : tierOf(mode, live, gender).index;
+  const rows = rungs.map((r, i) => ({ ...r, i }));
+  // 고음은 위가 높은 등급, 저음은 아래가 깊은 등급 — 화면에서도 그 방향으로.
+  const ordered = mode === "high" ? [...rows].reverse() : rows;
+  return (
+    <ol className={styles.ladder}>
+      {ordered.map(({ tier, at, i }) => (
+        <li
+          key={i}
+          data-got={i <= got}
+          data-now={i === now}
+          data-flash={flash === i}
+        >
+          <span>{tierLabel(tier, lang)}</span>
+          <small>{Number.isFinite(at) ? (mode === "high" ? t(`${noteName(at, lang).full}~`, `${noteName(at, lang).full}+`) : t(`${noteName(at, lang).full} 이하`, `≤ ${noteName(at, lang).full}`)) : ""}</small>
+        </li>
+      ))}
+    </ol>
   );
 }
 

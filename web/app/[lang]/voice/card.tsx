@@ -4,7 +4,7 @@ import { Piano } from "@/components/piano";
 import { VoiceAvatar } from "@/components/voice-avatar";
 import { useLang, useT } from "@/components/lang";
 import { decodeAvatar } from "@/lib/avatar";
-import { noteName, summary, type RangeCard } from "@/lib/voice-range";
+import { noteName, summary, tierLabel, tierOf, type RangeCard } from "@/lib/voice-range";
 import styles from "./voice.module.css";
 
 export type Step = "speak" | "low" | "high";
@@ -29,7 +29,11 @@ export function RangeCardView({ card, onChallenge }: { card: RangeCard; onChalle
         <VoiceAvatar avatar={decodeAvatar(card.avatar)} level={0.35} size={84} />
         <div>
           <p className={styles.cardLead}>{s.lead}</p>
-          <h2 className={styles.cardHead}>{s.headline}</h2>
+          {/* 등급 이름 길이가 제각각이다(영어가 특히 길다) — 한 줄에 들어가게 줄인다. */}
+          <h2 className={styles.cardHead} style={{ fontSize: s.headline.length * (lang === "en" ? 0.55 : 1) > 5 ? 27 : 34 }}>
+            {s.emoji && <span aria-hidden="true">{s.emoji} </span>}
+            {s.headline}
+          </h2>
           {s.sub && <p className={styles.cardSub}>{s.sub}</p>}
         </div>
       </div>
@@ -41,14 +45,18 @@ export function RangeCardView({ card, onChallenge }: { card: RangeCard; onChalle
       <div className={styles.tiles}>
         {tiles.map(({ step, label, value }) => {
           const n = value === null ? null : noteName(value, lang);
+          const tier = value !== null && step !== "speak" ? tierOf(step, value, card.gender).tier : null;
           return (
             <div key={step} className={`${styles.tile} ${step === "speak" ? styles.tileSpeak : ""}`}>
               <small>{label}</small>
               {n ? (
-                <b>
-                  <span>{n.octave}</span>
-                  {n.note}
-                </b>
+                <>
+                  <b>
+                    <span>{n.octave}</span>
+                    {n.note}
+                  </b>
+                  {tier && <em>{tierLabel(tier, lang)}</em>}
+                </>
               ) : onChallenge ? (
                 <button type="button" onClick={() => onChallenge(step)}>
                   {t("재기 →", "Measure →")}
