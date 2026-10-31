@@ -106,7 +106,7 @@
 }
 
 .go {
-  margin-top: 14px;
+  margin: 16px 0 12px;
   min-height: 56px;
   display: flex;
   align-items: center;
