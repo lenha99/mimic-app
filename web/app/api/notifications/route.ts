@@ -1,20 +1,22 @@
-import { currentUserId, nicknames } from "@/lib/social-server";
+import { claimGuest, currentUserId, nicknames } from "@/lib/social-server";
 import { createServiceClient } from "@/lib/supabase/service";
 
 /**
  * 앱 안 알림 — GET ?count=1 이면 안 읽은 수만(하단 탭 점), 아니면 최근 40개.
- * POST 는 전부 읽음.
+ * POST 는 전부 읽음. &claim=<기기 id> 가 오면 손님일 때 한 구독을 계정으로 옮긴다(로그인 직후 한 번).
  */
 export async function GET(req: Request) {
   const me = await currentUserId();
   if (!me) return Response.json({ unread: 0, items: [] });
   const service = createServiceClient();
+  const claim = new URL(req.url).searchParams.get("claim");
+  if (claim) await claimGuest(me, claim, service).catch(() => {});
   const { count } = await service
     .from("notifications")
     .select("id", { count: "exact", head: true })
     .eq("user_id", me)
     .is("read_at", null);
-  if (new URL(req.url).searchParams.get("count")) return Response.json({ unread: count ?? 0 });
+  if (new URL(req.url).searchParams.get("count")) return Response.json({ unread: count ?? 0, claimed: Boolean(claim) });
   const { data } = await service
     .from("notifications")
     .select("id, kind, actor, entry_id, thread_id, count, created_at, read_at")

@@ -67,6 +67,9 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
   });
   const [toast, showToast] = useToast();
   const polish = usePolish(take.blob, open);
+  // 테이크마다 심사위원 한마디 — 출전 버튼 바로 위. 출전하고 싶게 만드는 한 번의 반응.
+  // (이 컴포넌트는 테이크마다 key 가 달라 테이크를 바꾸면 새로 뽑는다.)
+  const [preview] = useState(() => judgeTake(take.analysis, { lang }));
 
   if (!live) {
     return (
@@ -165,6 +168,7 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
 
   return (
     <>
+      {!done && <JudgesPanel verdicts={preview} />}
       {entered && local ? (
         <div className={styles.entered} data-tour="room-enter">
           <span className={styles.enteredBadge}>{t("🏆 출전 중", "🏆 Entered")}</span>

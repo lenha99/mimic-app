@@ -14,6 +14,7 @@ import { MyPracticePosts } from "./my-practice-posts";
 import { myPosts } from "@/lib/board-server";
 import { isAdmin } from "@/lib/admin";
 import { createServiceClient } from "@/lib/supabase/service";
+import { followerCount } from "@/lib/social-server";
 import { AdminLinks } from "./admin-links";
 import { MySocial } from "./my-social";
 import { MyWeekly } from "./my-weekly";
@@ -173,7 +174,7 @@ async function adminCounts(): Promise<{ pending: number; feedback: number; repor
 async function socialCounts(userId: string): Promise<{ followers: number; unread: number; dmUnread: number }> {
   const service = createServiceClient();
   const [{ count: followers }, { count: unread }, { data: threads }] = await Promise.all([
-    service.from("voice_follows").select("follower", { count: "exact", head: true }).eq("creator", userId),
+    followerCount(`u:${userId}`, service).then((count) => ({ count })),
     service
       .from("notifications")
       .select("id", { count: "exact", head: true })

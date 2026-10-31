@@ -132,9 +132,17 @@ export function ownerTarget(owner: string, userId: string | null): { userId: str
 export async function announceNewEntry(e: { id: string; userId: string | null; client: string | null; name: string }): Promise<void> {
   try {
     const service = createServiceClient();
-    const followers = e.userId
-      ? ((await service.from("voice_follows").select("follower").eq("creator", e.userId).limit(1000)).data ?? []).map((r) => r.follower)
-      : [];
+    // 구독자 — 계정(앱 안 알림 + 푸시)과 손님 기기(푸시). follows 표가 아직 없으면 예전 표로.
+    const creator = e.userId ? `u:${e.userId}` : e.client ? `g:${e.client}` : null;
+    let keys: string[] = [];
+    if (creator) {
+      const { data, error } = await service.from("follows").select("follower").eq("creator", creator).limit(1000);
+      if (error && e.userId) {
+        keys = ((await service.from("voice_follows").select("follower").eq("creator", e.userId).limit(1000)).data ?? []).map((r) => `u:${r.follower}`);
+      } else keys = (data ?? []).map((r) => r.follower);
+    }
+    const followers = keys.filter((k) => k.startsWith("u:")).map((k) => k.slice(2));
+    const guestFans = keys.filter((k) => k.startsWith("g:")).map((k) => k.slice(2));
     if (followers.length) {
       await service.from("notifications").insert(
         followers.map((f) => ({ user_id: f, kind: "new_entry" as const, actor: e.userId, entry_id: e.id })),
@@ -145,8 +153,11 @@ export async function announceNewEntry(e: { id: string; userId: string | null; c
     const { data: fan } = followers.length
       ? await service.from("push_subs").select("endpoint, p256dh, auth, user_id, client").in("user_id", followers)
       : { data: [] };
+    const { data: guestFan } = guestFans.length
+      ? await service.from("push_subs").select("endpoint, p256dh, auth, user_id, client").in("client", guestFans)
+      : { data: [] };
     const seen = new Set<string>();
-    const targets = [...(fan ?? []), ...(open ?? [])].filter((s) => {
+    const targets = [...(fan ?? []), ...(guestFan ?? []), ...(open ?? [])].filter((s) => {
       if (seen.has(s.endpoint)) return false;
       seen.add(s.endpoint);
       return !(e.userId && s.user_id === e.userId) && !(e.client && s.client === e.client);

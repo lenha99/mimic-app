@@ -18,6 +18,9 @@ self.addEventListener("activate", (event) => {
     caches
       .keys()
       .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      // 내비게이션 미리 받기 — 워커가 깨어나는 동안 페이지 요청을 먼저 보낸다. 없으면 페이지를
+      // 열 때마다 워커 기동 시간(폰에선 수백 ms)이 그대로 얹힌다.
+      .then(() => self.registration.navigationPreload && self.registration.navigationPreload.enable())
       .then(() => self.clients.claim()),
   );
 });
@@ -25,7 +28,9 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   if (event.request.mode !== "navigate") return;
   event.respondWith(
-    fetch(event.request).catch(() => caches.match(OFFLINE).then((r) => r || Response.error())),
+    Promise.resolve(event.preloadResponse)
+      .then((pre) => pre || fetch(event.request))
+      .catch(() => caches.match(OFFLINE).then((r) => r || Response.error())),
   );
 });
 

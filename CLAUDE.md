@@ -29,6 +29,7 @@ web/                 # Next.js 웹앱 (유일한 클라이언트)
   app/practice/new/  # 내 대본 넣기·고치기 — 대본은 기기 localStorage 에만 (lib/my-scripts.ts)
   app/probe/         # 마이크 진단
   app/v/[name]/      # 목소리 포트폴리오(/v/닉네임) — 출전작·❤·수상·구독자, 구독·메시지 버튼
+                     # 구독은 로그인 없이도(follows 표, 이름표 u:계정/g:기기). 로그인하면 claimGuest 로 옮겨지고 누가 구독했는지·메시지가 열린다
   app/messages/      # 메시지함 · 대화 · 첫 메시지. "메시지 요청": 구독자만, 받아주기 전엔 1개 (lib/social-server.ts)
   app/notifications/ # 앱 안 알림(🔔). 하단 "나" 탭 점은 안 읽은 수
   lib/notify-server.ts   # 알림 + 웹 푸시(VAPID, 무료). 키(notif_sent)당 한 번, KST 23~08시 푸시 안 함

@@ -93,14 +93,13 @@ export default function Portfolio({
               <FollowButton
                 creator={creator.id}
                 initial={viewer.following}
-                loggedIn={viewer.loggedIn}
                 onChange={(on, n) => {
                   setFollowing(on);
-                  setFollowers(n);
+                  if (n !== null) setFollowers(n);
                 }}
               />
               {canMessage && following && (
-                <Link href={`/messages/new?to=${creator.id}`} className={styles.btnGhost}>
+                <Link href={viewer.loggedIn ? `/messages/new?to=${creator.id}` : `/login?next=${encodeURIComponent(`/v/${creator.nickname}`)}`} className={styles.btnGhost}>
                   {t("💬 메시지", "💬 Message")}
                 </Link>
               )}

@@ -51,7 +51,6 @@ export default async function EntryPage({ params }: Props) {
         trophies: entry.trophies,
         createdAt: entry.createdAt,
       }}
-      creatorId={entry.userId}
       week={entry.week}
       label={seasonLabel(entry.week, await getLang())}
       scriptText={script?.text ?? ""}

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { clientId } from "@/lib/client-id";
 import { syncPush } from "@/lib/push-client";
 import { useT } from "@/components/lang";
 import styles from "./bottom-nav.module.css";
@@ -93,14 +94,32 @@ function MeIcon() {
 }
 
 /** 안 읽은 알림 수 — 탭이 보이는 화면에 올 때마다 한 번. 로그인 안 했으면 0. */
+let lastUnreadAt = 0;
+
 function useUnread(path: string): number {
   const [n, setN] = useState(0);
   useEffect(() => {
     if (!SHOW.some((re) => re.test(path))) return;
+    // 탭을 옮길 때마다 묻지 않는다 — 30초에 한 번이면 점은 충분히 맞다.
+    const now = Date.now();
+    if (now - lastUnreadAt < 30_000 && !/\/(me|profile|notifications)/.test(path)) return;
+    lastUnreadAt = now;
     let alive = true;
-    fetch("/api/notifications?count=1")
+    let claim = "";
+    try {
+      // 로그인 직후 한 번 — 손님일 때 한 구독을 계정으로 옮긴다(서버는 로그인 안 했으면 무시).
+      if (!localStorage.getItem("mimic.claimed")) claim = clientId();
+    } catch {}
+    fetch(`/api/notifications?count=1${claim ? `&claim=${encodeURIComponent(claim)}` : ""}`)
       .then((r) => r.json())
-      .then((d: { unread?: number }) => alive && setN(d.unread ?? 0))
+      .then((d: { unread?: number; claimed?: boolean }) => {
+        if (d.claimed) {
+          try {
+            localStorage.setItem("mimic.claimed", "1");
+          } catch {}
+        }
+        if (alive) setN(d.unread ?? 0);
+      })
       .catch(() => {});
     void syncPush();
     return () => {
