@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+import { after } from "next/server";
+import { announceNewEntry } from "@/lib/notify-server";
 import { normalizeAvatar } from "@/lib/avatar";
 import { allow, clientIp, tooMany } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
@@ -182,6 +184,11 @@ export async function POST(req: Request) {
         { status: dup ? 409 : 500 },
       );
     }
+    // 새 출전작 — 구독자와 알림 켠 사람들에게. 응답을 기다리게 하지 않는다.
+    const announceName = user
+      ? ((await service.from("profiles").select("nickname").eq("id", user.id).maybeSingle()).data?.nickname ?? "누군가")
+      : (name ?? guestName(client));
+    after(() => announceNewEntry({ id, userId: user?.id ?? null, client: user ? null : client, name: announceName }));
   }
 
   const board = await getBoard(week);

@@ -20,6 +20,8 @@ export interface Database {
           avatar: AvatarJson;
           provider: string;
           created_at: string;
+          /** 메시지 받기 — 구독자만 / 끄기 (마이그레이션 24) */
+          dm_policy: "followers" | "off";
         };
         Insert: {
           id: string;
@@ -28,6 +30,7 @@ export interface Database {
           avatar?: AvatarJson;
           provider: string;
           created_at?: string;
+          dm_policy?: "followers" | "off";
         };
         Update: Partial<Database["public"]["Tables"]["profiles"]["Insert"]>;
         Relationships: [];
@@ -376,6 +379,73 @@ export interface Database {
         Update: never;
         Relationships: [];
       };
+      voice_follows: {
+        Row: { follower: string; creator: string; created_at: string };
+        Insert: { follower: string; creator: string; created_at?: string };
+        Update: never;
+        Relationships: [];
+      };
+      dm_threads: {
+        Row: { id: string; a: string; b: string; requester: string; status: "request" | "open" | "declined"; last_at: string; created_at: string };
+        Insert: { id?: string; a: string; b: string; requester: string; status?: "request" | "open" | "declined"; last_at?: string; created_at?: string };
+        Update: { status?: "request" | "open" | "declined"; last_at?: string; requester?: string };
+        Relationships: [];
+      };
+      dm_messages: {
+        Row: { id: number; thread_id: string; sender: string; body: string; created_at: string; read_at: string | null };
+        Insert: { thread_id: string; sender: string; body: string; created_at?: string; read_at?: string | null };
+        Update: { read_at?: string | null };
+        Relationships: [];
+      };
+      dm_blocks: {
+        Row: { blocker: string; blocked: string; created_at: string };
+        Insert: { blocker: string; blocked: string; created_at?: string };
+        Update: never;
+        Relationships: [];
+      };
+      notifications: {
+        Row: {
+          id: number;
+          user_id: string;
+          kind: NotificationKind;
+          actor: string | null;
+          entry_id: string | null;
+          thread_id: string | null;
+          count: number | null;
+          created_at: string;
+          read_at: string | null;
+        };
+        Insert: {
+          user_id: string;
+          kind: NotificationKind;
+          actor?: string | null;
+          entry_id?: string | null;
+          thread_id?: string | null;
+          count?: number | null;
+          created_at?: string;
+          read_at?: string | null;
+        };
+        Update: { read_at?: string | null };
+        Relationships: [];
+      };
+      push_subs: {
+        Row: { endpoint: string; user_id: string | null; client: string | null; p256dh: string; auth: string; new_entries: boolean; created_at: string };
+        Insert: { endpoint: string; user_id?: string | null; client?: string | null; p256dh: string; auth: string; new_entries?: boolean; created_at?: string };
+        Update: { user_id?: string | null; client?: string | null; p256dh?: string; auth?: string; new_entries?: boolean };
+        Relationships: [];
+      };
+      notif_sent: {
+        Row: { key: string; sent_at: string };
+        Insert: { key: string; sent_at?: string };
+        Update: never;
+        Relationships: [];
+      };
+      entry_listens: {
+        Row: { entry_id: string; listener: string; created_at: string };
+        Insert: { entry_id: string; listener: string; created_at?: string };
+        Update: never;
+        Relationships: [];
+      };
       weekly_likes: {
         Row: { entry_id: string; voter: string; user_id: string | null; ip_hash: string; created_at: string };
         Insert: { entry_id: string; voter: string; user_id?: string | null; ip_hash: string; created_at?: string };
@@ -499,3 +569,5 @@ export interface Database {
     CompositeTypes: Record<string, never>;
   };
 }
+
+export type NotificationKind = "follow" | "dm" | "dm_request" | "listen_first" | "listen_daily" | "new_entry";

@@ -178,3 +178,13 @@
   font-style: normal;
   color: var(--volt);
 }
+
+.alert {
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+}
+
+.alert:empty {
+  display: none;
+}

@@ -11,6 +11,7 @@ import { useToast } from "@/components/weekly/toast";
 import { buzz, shareLink, useWeeklyMe } from "@/components/weekly/use-weekly";
 import { normalizeAvatar, PRESETS } from "@/lib/avatar";
 import { DEMO_TAKES } from "@/lib/examples";
+import { clientId } from "@/lib/client-id";
 import { track } from "@/lib/track";
 import { audioSrc, displayName, BATTLE_OPEN, LISTEN_RATIO, MIN_BATTLES, MIN_PODIUM, type Award, type EntryCard, type Week } from "@/lib/weekly";
 import { ScreenTour } from "@/components/onboarding/tours";
@@ -120,7 +121,7 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
 
   const unlock = (id: string) => {
     me.hear(id);
-    void fetch(`/api/weekly/entries/${id}/play`, { method: "POST" }).catch(() => {});
+    void fetch(`/api/weekly/entries/${id}/play`, { method: "POST", body: JSON.stringify({ client: clientId() }) }).catch(() => {});
   };
 
   const like = async (id: string) => {

@@ -40,3 +40,20 @@
 .tabOn {
   color: var(--volt);
 }
+
+/* 안 읽은 알림 점 — "나" 탭 */
+.tab,
+.tabOn {
+  position: relative;
+}
+
+.dot {
+  position: absolute;
+  top: 6px;
+  left: calc(50% + 6px);
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--pink);
+  box-shadow: 0 0 0 2px var(--stage);
+}

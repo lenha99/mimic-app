@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useLang, useT } from "@/components/lang";
+import { PushButton } from "@/components/social/push-button";
 import { VoiceAvatar } from "@/components/voice-avatar";
 import { normalizeAvatar } from "@/lib/avatar";
 import { seasonLabel, type EntryCard, type Week } from "@/lib/weekly";
@@ -72,6 +73,9 @@ export function HomeHero({ week, top, count, line }: { week: Week; top: EntryCar
         </span>
         <i aria-hidden="true">→</i>
       </Link>
+      <div className={styles.alert}>
+        <PushButton kind="new" compact />
+      </div>
     </section>
   );
 }

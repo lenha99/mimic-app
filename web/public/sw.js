@@ -28,3 +28,38 @@ self.addEventListener("fetch", (event) => {
     fetch(event.request).catch(() => caches.match(OFFLINE).then((r) => r || Response.error())),
   );
 });
+
+// 웹 푸시 — 새 출전작 · 첫 청취 · 구독 · 메시지. 내용은 서버(lib/notify-server)가 정한다.
+self.addEventListener("push", (event) => {
+  let d = {};
+  try {
+    d = event.data ? event.data.json() : {};
+  } catch {
+    d = { title: "MIMIC", body: event.data ? event.data.text() : "" };
+  }
+  event.waitUntil(
+    self.registration.showNotification(d.title || "MIMIC", {
+      body: d.body || "",
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+      tag: d.tag,
+      data: { url: d.url || "/" },
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || "/";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
+      for (const c of list) {
+        if ("focus" in c) {
+          c.navigate(url);
+          return c.focus();
+        }
+      }
+      return self.clients.openWindow(url);
+    }),
+  );
+});
