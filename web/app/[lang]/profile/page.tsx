@@ -15,6 +15,7 @@ import { myPosts } from "@/lib/board-server";
 import { isAdmin } from "@/lib/admin";
 import { createServiceClient } from "@/lib/supabase/service";
 import { AdminLinks } from "./admin-links";
+import { MySocial } from "./my-social";
 import { MyWeekly } from "./my-weekly";
 import { myAwards, myEntries } from "@/lib/weekly-server";
 import { ScreenTour } from "@/components/onboarding/tours";
@@ -57,11 +58,12 @@ export default async function ProfilePage() {
     .order("created_at", { ascending: false })
     .limit(30);
 
-  const [practicePosts, admin, awards, weeklyEntries] = await Promise.all([
+  const [practicePosts, admin, awards, weeklyEntries, social] = await Promise.all([
     myPosts(user.id).catch(() => []),
     adminCounts(),
     myAwards(user.id).catch(() => []),
     myEntries(user.id).catch(() => []),
+    socialCounts(user.id).catch(() => ({ followers: 0, unread: 0, dmUnread: 0 })),
   ]);
 
   // 내 녹음만 조회했으니(user_id 조건 + RLS) 서명해도 된다.
@@ -101,6 +103,13 @@ export default async function ProfilePage() {
       {profile ? (
         <div className={styles.stack}>
           {admin && <AdminLinks pending={admin.pending} feedback={admin.feedback} reported={admin.reported} />}
+          <MySocial
+            nickname={profile.nickname}
+            followers={social.followers}
+            unread={social.unread}
+            dmUnread={social.dmUnread}
+            dmPolicy={(profile as { dm_policy?: "followers" | "off" }).dm_policy ?? "followers"}
+          />
           <div className={styles.card} data-tour="profile-nick">
             <p className={styles.nickname}>{profile.nickname}</p>
             <NicknameEditor userId={user.id} initialNickname={profile.nickname} />
@@ -158,4 +167,24 @@ async function adminCounts(): Promise<{ pending: number; feedback: number; repor
     service.from("weekly_entries").select("id", { count: "exact", head: true }).gt("reports", 0),
   ]);
   return { pending: pending ?? 0, feedback: feedback ?? 0, reported: reported ?? 0 };
+}
+
+/** 내 목소리에 돌아온 것 — 구독자 수, 안 읽은 알림(메시지 제외), 안 읽은 메시지. 표가 아직 없으면 0. */
+async function socialCounts(userId: string): Promise<{ followers: number; unread: number; dmUnread: number }> {
+  const service = createServiceClient();
+  const [{ count: followers }, { count: unread }, { data: threads }] = await Promise.all([
+    service.from("voice_follows").select("follower", { count: "exact", head: true }).eq("creator", userId),
+    service
+      .from("notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .is("read_at", null)
+      .not("kind", "in", "(dm,dm_request)"),
+    service.from("dm_threads").select("id").or(`a.eq.${userId},b.eq.${userId}`).limit(200),
+  ]);
+  const ids = (threads ?? []).map((x) => x.id);
+  const { count: dmUnread } = ids.length
+    ? await service.from("dm_messages").select("id", { count: "exact", head: true }).in("thread_id", ids).neq("sender", userId).is("read_at", null)
+    : { count: 0 };
+  return { followers: followers ?? 0, unread: unread ?? 0, dmUnread: dmUnread ?? 0 };
 }

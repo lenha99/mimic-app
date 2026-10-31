@@ -1,4 +1,15 @@
 {
-  "regions": ["sin1"],
-  "crons": [{ "path": "/api/cron/purge-guests", "schedule": "17 19 * * *" }]
+  "regions": [
+    "sin1"
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/purge-guests",
+      "schedule": "17 19 * * *"
+    },
+    {
+      "path": "/api/cron/listen-digest",
+      "schedule": "0 11 * * *"
+    }
+  ]
 }

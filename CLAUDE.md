@@ -28,6 +28,13 @@ web/                 # Next.js 웹앱 (유일한 클라이언트)
   app/practice/      # 연습실 — 대본(기준 음성 없음)·명대사 반복 연습, 기록은 기기 IndexedDB
   app/practice/new/  # 내 대본 넣기·고치기 — 대본은 기기 localStorage 에만 (lib/my-scripts.ts)
   app/probe/         # 마이크 진단
+  app/v/[name]/      # 목소리 포트폴리오(/v/닉네임) — 출전작·❤·수상·구독자, 구독·메시지 버튼
+  app/messages/      # 메시지함 · 대화 · 첫 메시지. "메시지 요청": 구독자만, 받아주기 전엔 1개 (lib/social-server.ts)
+  app/notifications/ # 앱 안 알림(🔔). 하단 "나" 탭 점은 안 읽은 수
+  lib/notify-server.ts   # 알림 + 웹 푸시(VAPID, 무료). 키(notif_sent)당 한 번, KST 23~08시 푸시 안 함
+  lib/push-client.ts     # 푸시 켜기 — 안드로이드 크롬 바로, 아이폰은 설치한 앱에서만
+  lib/voice-polish.ts    # 출전 전 목소리 보정(브라우저): 잡음 제거 → 쉼 정리 → EQ·컴프 → 24kHz wav. 켜기/끄기만
+  lib/judges.ts          # 출전 직후 심사위원 한 줄 평 — 조합형(LLM 없음, 비용 0)
   lib/memes.ts       # 카탈로그 조회 + 폴백 (생성됨)
   lib/config.ts      # 엔드포인트 한 곳
   lib/scripts.ts     # 연습실 대본 (생성됨 — registry.json 의 scripts)
@@ -79,6 +86,12 @@ modal deploy modal_app.py          # 로컬에서 직접 (토큰 있는 사람�
   `mimic-proxy`). Secret 에 `PROXY_ENFORCE=1` 이 있어야 실제로 막는다
 - 업로드는 디코딩 단계에서 길이를 자른다(`_decode_upload(max_s=)`). 다 처리한 뒤에 길이를 보면 이미 CPU 를 쓴 뒤다
 - `max_containers` 가 최악의 시간당 비용 상한이다. 늘리기 전에 계산부터
+
+## 알림 (웹 푸시)
+- Vercel 환경변수 `NEXT_PUBLIC_VAPID_PUBLIC_KEY` · `VAPID_PRIVATE_KEY` 가 있어야 푸시가 나간다. 없으면
+  푸시 버튼이 안 보이고 앱 안 알림만 남는다
+- 하루 요약은 `/api/cron/listen-digest` (매일 20시 KST, 새 청취자 2명 이상일 때만)
+- 운영자 기기는 프로필을 열면 통계(`/stats`·"N명 도전")에서 빠진다 (Modal `internal_device`)
 
 ## 테스트
 ```bash

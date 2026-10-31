@@ -10,10 +10,13 @@ import { LikeButton } from "@/components/weekly/like-button";
 import { useToast } from "@/components/weekly/toast";
 import { buzz, shareLink, useWeeklyMe } from "@/components/weekly/use-weekly";
 import { normalizeAvatar } from "@/lib/avatar";
+import { clientId } from "@/lib/client-id";
 import { track } from "@/lib/track";
 import { audioSrc, displayName, LISTEN_RATIO, readMine, type Week } from "@/lib/weekly";
 import { useLang, useT } from "@/components/lang";
 import { PrivacyTag } from "@/components/privacy-tag";
+import { CreatorBar } from "@/components/social/creator-bar";
+import { PushButton } from "@/components/social/push-button";
 import styles from "./stage.module.css";
 
 type Entry = {
@@ -38,12 +41,15 @@ type Entry = {
  */
 export default function Stage({
   entry,
+  creatorId,
   week,
   label,
   scriptText,
   thisWeek,
 }: {
   entry: Entry;
+  /** 로그인 출전이면 그 계정 — 포트폴리오·구독 버튼을 띄운다. 게스트면 null. */
+  creatorId: string | null;
   week: Week;
   label: string;
   scriptText: string;
@@ -90,7 +96,7 @@ export default function Stage({
   const unlock = () => {
     if (heard) return;
     me.hear(entry.id);
-    void fetch(`/api/weekly/entries/${entry.id}/play`, { method: "POST" }).catch(() => {});
+    void fetch(`/api/weekly/entries/${entry.id}/play`, { method: "POST", body: JSON.stringify({ client: clientId() }) }).catch(() => {});
   };
 
   const like = async () => {
@@ -199,6 +205,7 @@ export default function Stage({
           {entry.trophies > 0 && <em>🏆{entry.trophies}</em>}
           {mine && <em className={styles.me}>{t("나", "Me")}</em>}
         </p>
+        {creatorId && <CreatorBar creatorId={creatorId} nickname={entry.name} />}
 
         <div className={styles.controls}>
           <button type="button" className={styles.play} onClick={play}>
@@ -228,6 +235,7 @@ export default function Stage({
             )}
           </p>
           <PrivacyTag kind="public" />
+          <PushButton kind="mine" compact />
           <button type="button" className={styles.share} onClick={() => void share()}>
             {t("❤ 모으러 공유하기", "Share to get ❤")}
           </button>

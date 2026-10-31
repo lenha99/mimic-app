@@ -1,0 +1,344 @@
+/* 구독 · 메시지 · 알림 · 포트폴리오 — 공용 모양 */
+
+.page {
+  padding-top: 12px;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0 10px;
+}
+
+.nav a {
+  color: var(--ash);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.title {
+  margin: 6px 0 4px;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 34px;
+  line-height: 1.1;
+}
+
+.sub {
+  margin: 0 0 18px;
+  color: var(--ash);
+  font-size: 14px;
+  word-break: keep-all;
+}
+
+.empty {
+  padding: 28px 16px;
+  border-radius: 18px;
+  border: 1px dashed var(--rule);
+  text-align: center;
+  color: var(--ash);
+  font-size: 14px;
+  line-height: 1.6;
+  word-break: keep-all;
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-radius: 18px;
+  border: 1px solid var(--rule);
+  background: var(--panel);
+  overflow: hidden;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  color: var(--white);
+  text-decoration: none;
+}
+
+li + li > .row,
+.row + .row {
+  border-top: 1px solid var(--rule);
+}
+
+.rowUnread {
+  background: rgba(232, 255, 58, 0.06);
+}
+
+.rowText {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.rowText b {
+  font-size: 14.5px;
+  word-break: keep-all;
+}
+
+.rowText small {
+  font-size: 12px;
+  color: var(--ash);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.badge {
+  flex: none;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--pink);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.emoji {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--panel-hi);
+  font-size: 20px;
+}
+
+.section {
+  margin: 22px 0 8px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--volt);
+}
+
+/* 버튼 */
+.btn,
+.btnOn,
+.btnGhost {
+  min-height: 44px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.btn {
+  background: var(--volt);
+  color: var(--stage);
+}
+
+.btnOn {
+  background: none;
+  border-color: rgba(232, 255, 58, 0.55);
+  color: var(--volt);
+}
+
+.btnGhost {
+  background: none;
+  border-color: var(--rule);
+  color: var(--white);
+}
+
+.btn:disabled,
+.btnOn:disabled,
+.btnGhost:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.note {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--ash);
+  word-break: keep-all;
+}
+
+.error {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--pink);
+}
+
+/* 포트폴리오 */
+.hero {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 18px 16px 20px;
+  border-radius: 24px;
+  border: 1px solid rgba(232, 255, 58, 0.25);
+  background:
+    radial-gradient(100% 70% at 50% 0%, rgba(232, 255, 58, 0.12), transparent 70%),
+    var(--panel);
+  text-align: center;
+}
+
+.name {
+  margin: 4px 0 0;
+  font-size: 22px;
+  font-weight: 900;
+  word-break: keep-all;
+}
+
+.stats {
+  display: flex;
+  gap: 18px;
+  font-size: 13px;
+  color: var(--ash);
+}
+
+.stats b {
+  display: block;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 24px;
+  color: var(--white);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.take {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+}
+
+li + li > .take {
+  border-top: 1px solid var(--rule);
+}
+
+.play {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--volt);
+  color: var(--stage);
+  font-size: 15px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+/* 대화 */
+.chat {
+  display: grid;
+  gap: 8px;
+  padding: 8px 0 120px;
+}
+
+.bubble,
+.bubbleMine {
+  max-width: 78%;
+  padding: 9px 12px;
+  border-radius: 16px;
+  font-size: 14.5px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.bubble {
+  justify-self: start;
+  background: var(--panel-hi);
+  border-bottom-left-radius: 4px;
+}
+
+.bubbleMine {
+  justify-self: end;
+  background: var(--volt);
+  color: var(--stage);
+  border-bottom-right-radius: 4px;
+}
+
+.time {
+  font-size: 10.5px;
+  color: var(--ash-dim);
+}
+
+.composer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 10px var(--gutter) calc(10px + env(safe-area-inset-bottom));
+  background: linear-gradient(transparent, var(--stage) 30%);
+}
+
+.composerInner {
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  gap: 8px;
+}
+
+.composer textarea {
+  flex: 1;
+  min-height: 46px;
+  max-height: 120px;
+  padding: 12px 14px;
+  border-radius: 22px;
+  border: 1px solid var(--rule);
+  background: var(--panel);
+  color: var(--white);
+  font: inherit;
+  font-size: 15px;
+  resize: none;
+}
+
+.request {
+  margin: 10px 0;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 45, 120, 0.4);
+  background: rgba(255, 45, 120, 0.08);
+  font-size: 14px;
+  line-height: 1.55;
+  word-break: keep-all;
+}
+
+.requestActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* 설정 줄 */
+.setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+}
+
+li + li > .setting {
+  border-top: 1px solid var(--rule);
+}

@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { syncPush } from "@/lib/push-client";
 import { useT } from "@/components/lang";
 import styles from "./bottom-nav.module.css";
 
@@ -34,6 +36,7 @@ const SHOW = [/^\/$/, /^\/weekly$/, /^\/weekly\/hall$/, /^\/challenges$/, /^\/pr
 export function BottomNav() {
   const path = usePathname() ?? "/";
   const t = useT();
+  const unread = useUnread(path);
   if (!SHOW.some((re) => re.test(path))) return null;
   return (
     <>
@@ -45,6 +48,7 @@ export function BottomNav() {
             <Link key={href} href={href} className={on ? styles.tabOn : styles.tab} aria-current={on ? "page" : undefined}>
               <Icon />
               <span>{t(label[0], label[1])}</span>
+              {href === "/me" && unread > 0 && <i className={styles.dot} aria-label={t(`새 알림 ${unread}개`, `${unread} new`)} />}
             </Link>
           );
         })}
@@ -86,4 +90,22 @@ function MeIcon() {
       <path d="M4.5 20.5c1.2-3.6 4.1-5.5 7.5-5.5s6.3 1.9 7.5 5.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
+}
+
+/** 안 읽은 알림 수 — 탭이 보이는 화면에 올 때마다 한 번. 로그인 안 했으면 0. */
+function useUnread(path: string): number {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    if (!SHOW.some((re) => re.test(path))) return;
+    let alive = true;
+    fetch("/api/notifications?count=1")
+      .then((r) => r.json())
+      .then((d: { unread?: number }) => alive && setN(d.unread ?? 0))
+      .catch(() => {});
+    void syncPush();
+    return () => {
+      alive = false;
+    };
+  }, [path]);
+  return n;
 }

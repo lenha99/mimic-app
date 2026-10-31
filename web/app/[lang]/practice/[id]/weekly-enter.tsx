@@ -12,6 +12,7 @@ import { currentWeek, isLive, readMine, remaining, seasonLabel, writeMine, type 
 import { PrivacyTag } from "@/components/privacy-tag";
 import { cleanNickname, NICK_MAX, nicknameProblem, readNickname, writeNickname } from "@/lib/nickname";
 import { JudgesPanel } from "@/components/weekly/judges-panel";
+import { PushButton } from "@/components/social/push-button";
 import { judgeTake, type Verdict } from "@/lib/judges";
 import { polishVoice } from "@/lib/voice-polish";
 import styles from "./weekly-enter.module.css";
@@ -275,6 +276,13 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
                   : t("친구들한테 공유하면 ❤ 가 훨씬 빨리 모여요!", "Share with friends and the ❤ will pile up way faster!")}
             </p>
             <JudgesPanel verdicts={done.verdicts} />
+            {/* 올린 사람의 진짜 보상은 "누가 들었다"는 소식이다 — 알림을 이 순간에 켜게 한다. */}
+            <PushButton kind="mine" compact />
+            {!me.loggedIn && (
+              <Link href={`/login?next=${encodeURIComponent(`/weekly/e/${done.id}`)}`} className={styles.cardRankLink}>
+                {t("로그인하면 구독자와 메시지를 받을 수 있어요 →", "Log in to get subscribers and messages →")}
+              </Link>
+            )}
             <PrivacyTag kind="public" />
             {vs && vs !== done.id ? (
               <Link href={`/weekly/vs/${vs}?b=${done.id}`} className={styles.cardShare}>
