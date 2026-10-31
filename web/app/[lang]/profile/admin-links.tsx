@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { InternalDevice } from "./internal-device";
 import styles from "./profile.module.css";
 
 /**
@@ -30,6 +31,7 @@ export function AdminLinks({ pending, feedback, reported }: { pending: number; f
         </span>
         <i aria-hidden="true">→</i>
       </Link>
+      <InternalDevice />
     </div>
   );
 }

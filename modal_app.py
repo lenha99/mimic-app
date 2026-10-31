@@ -396,6 +396,28 @@ def _iter_events(since: float = 0):
                 yield e
 
 
+# ---- 내부 기기 (운영자·협업자) ----
+# 통계에 내 테스트가 섞이면 "9명이 채점했다"가 실제로 몇 명인지 아무도 모른다.
+# 운영자 계정으로 로그인한 기기의 익명 식별자(client)를 여기 모아 두고, 집계할 때
+# 뺀다. 이벤트 자체는 지우지 않는다 — 목록에서 빼면 다시 세어진다.
+# 식별자가 브라우저에 오래 남으므로 등록 전 과거 이벤트도 함께 빠진다.
+INTERNAL_PATH = "/refs/internal_clients.json"
+
+
+def _internal_clients() -> set:
+    import json, os
+    try:
+        with open(INTERNAL_PATH, encoding="utf-8") as f:
+            return set(json.load(f).get("clients", []))
+    except Exception:
+        return set()
+
+
+def _external(events, internal: set):
+    """내부 기기 이벤트를 걸러낸다. 식별자 없는 이벤트는 남긴다(누군지 모르니)."""
+    return [e for e in events if e.get("client") not in internal]
+
+
 def _people(events) -> int:
     """사람 수 — 같은 기기(client)는 한 명. 식별자가 없는 이벤트는 각각 한 명으로 센다."""
     ids, anon = set(), 0
@@ -425,14 +447,18 @@ WEEKLY = ("weekly_view", "weekly_play", "weekly_like", "weekly_enter", "weekly_s
 
 @app.function(image=slim_image, volumes={REF_DIR: volume})
 @modal.fastapi_endpoint(method="GET")
-def stats(days: int = 7):
+def stats(days: int = 7, include_internal: int = 0):
     """밈별 채점 집계 + 퍼널.
 
     녹음 자체는 여기 없다(PRIVACY.md). 남는 건 숫자와 익명 기기 식별자뿐이다.
+    내부 기기(운영자·협업자)는 기본으로 뺀다. include_internal=1 이면 전부.
     """
     import time
     volume.reload()
     events = list(_iter_events(time.time() - days * 86400))
+    internal = _internal_clients()
+    if not include_internal:
+        events = _external(events, internal)
 
     per = {}
     for e in events:
@@ -462,7 +488,9 @@ def stats(days: int = 7):
             rows.append({"step": kind, "events": len(es), "people": _people(es)})
         return rows
 
-    return {"days": days, "memes": out, "funnel": steps(FUNNEL), "feed": steps(FEED),
+    return {"days": days, "internal_excluded": not include_internal,
+            "internal_devices": len(internal),
+            "memes": out, "funnel": steps(FUNNEL), "feed": steps(FEED),
             "practice": steps(PRACTICE), "weekly": steps(WEEKLY)}
 
 
@@ -492,6 +520,39 @@ async def track(request: Request):
         rec["via"] = body["via"][:16]
     _log_event(kind, rec)
     return Response(status_code=204)
+
+
+@app.function(image=slim_image, volumes={REF_DIR: volume},
+              secrets=[modal.Secret.from_name("mimic-proxy")])
+@modal.fastapi_endpoint(method="POST")
+async def internal_device(request: Request):
+    """이 기기를 내부 기기로 등록(add)하거나 뺀다(remove). 웹앱 서버만 부른다.
+
+    웹은 운영자인지 확인한 뒤에만 여기를 부른다(web/app/api/admin/internal-device).
+    _from_proxy 와 달리 PROXY_ENFORCE 가 꺼져 있어도 토큰을 요구한다 — 아무나 남의
+    식별자를 넣어 통계에서 지울 수 있으면 안 된다.
+    """
+    import json, re
+    want = os.environ.get("PROXY_TOKEN", "")
+    if not want or request.headers.get("x-mimic-proxy", "") != want:
+        return Response(status_code=403)
+    try:
+        body = json.loads((await request.body())[:1024] or b"{}")
+    except Exception:
+        return Response(status_code=400)
+    client = body.get("client")
+    if not isinstance(client, str) or not re.fullmatch(r"[a-z0-9]{8,40}", client):
+        return Response(status_code=400)
+    volume.reload()
+    clients = _internal_clients()
+    if body.get("action") == "remove":
+        clients.discard(client)
+    else:
+        clients.add(client)
+    with open(INTERNAL_PATH, "w", encoding="utf-8") as f:
+        json.dump({"clients": sorted(clients)}, f)
+    volume.commit()
+    return {"internal": client in clients, "devices": len(clients)}
 
 
 # ---- 동적 밈 카탈로그 (운영자 추가/삭제 + 친구 UGC 업로드, 앱 재빌드 불필요) ----
@@ -527,8 +588,10 @@ def memes(include_draft: int = 0):
     # plays 는 실제로 채점까지 간 사람 수다. 예전엔 registry 에 손으로 적은 숫자
     # (꼬끼오 128,400 등)가 그대로 나가서, 실제 1명인 소리가 "13만명 도전"으로 보였다.
     # 한 번 들키면 신뢰가 통째로 무너지는 종류의 거짓말이라, 여기서 실측으로 덮어쓴다.
+    # 내 테스트로 "N명 도전"이 부풀지 않게 내부 기기는 뺀다.
     counted = {}
-    for e in _iter_events(time.time() - 365 * 86400):
+    internal = _internal_clients()
+    for e in _external(_iter_events(time.time() - 365 * 86400), internal):
         if e.get("kind") == "score":
             counted.setdefault(e.get("meme_id"), []).append(e)
     cat = [{**m, "plays": _people(counted.get(m.get("id"), []))} for m in cat]
