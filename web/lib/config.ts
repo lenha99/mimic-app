@@ -25,6 +25,10 @@ export const config = {
   ugcCreateUrl: env.UGC_CREATE_URL ?? "https://lenha99--meme-scoring-ugc-create.modal.run",
   ugcRemoveUrl: env.UGC_REMOVE_URL ?? "https://lenha99--meme-scoring-ugc-remove.modal.run",
 
+  /** 내부 기기(운영자) 등록 — 통계에서 뺀다. 서버 전용 (PROXY_TOKEN 필요). */
+  internalDeviceUrl:
+    env.INTERNAL_DEVICE_URL ?? "https://lenha99--meme-scoring-internal-device.modal.run",
+
   /** 이 웹앱의 공개 주소. OG 태그의 metadataBase 로도 쓰인다. */
   siteUrl: resolveSiteUrl(),
 } as const;

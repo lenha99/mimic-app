@@ -288,6 +288,23 @@
   text-decoration: none;
 }
 
+/* 버튼으로 쓰는 줄(내 기기 통계 제외) — 링크 줄과 똑같이 보이게. */
+button.adminRow {
+  width: 100%;
+  background: none;
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+button.adminRow:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .adminRow span {
   display: grid;
   gap: 2px;
