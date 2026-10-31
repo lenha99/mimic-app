@@ -123,7 +123,7 @@ export async function POST(req: Request) {
 
   const id = existing?.id ?? randomUUID();
   const type = file.type.split(";")[0];
-  const ext = type.includes("mp4") ? "m4a" : type.includes("ogg") ? "ogg" : "webm";
+  const ext = type.includes("wav") ? "wav" : type.includes("mp4") ? "m4a" : type.includes("ogg") ? "ogg" : "webm";
   const path = `weekly/${week.id}/${id}-${Date.now().toString(36)}.${ext}`;
   const { error: upError } = await service.storage
     .from("recordings")

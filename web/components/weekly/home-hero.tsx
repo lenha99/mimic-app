@@ -9,12 +9,14 @@ import { Countdown } from "./countdown";
 import styles from "./home-hero.module.css";
 
 /**
- * 홈 맨 위 — 이번 주 챌린지. 홈은 "뭐부터 하지"에 답하는 곳이고, 지금 답은 이거다.
+ * 홈 맨 위 — 이번 주 대본을 녹음해서 올리게 만드는 카드.
  *
- * 맨 위 셋(시상대 미리보기)을 보여주는 건 "저 자리에 내가 설 수 있다"를 먼저 보이기
- * 위해서다. 아무도 없으면 빈 1등 자리를 보여준다 — 그것도 초대장이다.
+ * 사람이 적은 지금 이 앱에 필요한 건 "올리는 사람"이다. 듣는 사람은 올라온 게 있어야 온다.
+ * 그래서 순위표보다 먼저 (1) 무엇을 읽는지(대본 첫 줄), (2) 올리면 뭐가 돌아오는지
+ * (보정·심사위원 반응), (3) 바로 녹음하는 버튼을 보인다. 숫자는 부풀리지 않는다 —
+ * 아무도 없으면 "첫 목소리가 되면 1위로 시작"이라고 솔직하게 말한다.
  */
-export function HomeHero({ week, top, count }: { week: Week; top: EntryCard[]; count: number }) {
+export function HomeHero({ week, top, count, line }: { week: Week; top: EntryCard[]; count: number; line: string }) {
   const t = useT();
   const lang = useLang();
   return (
@@ -32,33 +34,44 @@ export function HomeHero({ week, top, count }: { week: Week; top: EntryCard[]; c
         <span aria-hidden="true">{week.emoji}</span> {t(week.title, week.titleEn ?? week.title)}
       </h1>
 
-      <div className={styles.lineup}>
-        {top.length > 0 ? (
-          top.map((e) => (
-            <span key={e.id} className={`${styles.seat} ${e.rank === 1 ? styles.seatFirst : ""}`}>
-              <VoiceAvatar avatar={normalizeAvatar(e.avatar)} size={e.rank === 1 ? 64 : 48} />
-              <small>
-                {["🥇", "🥈", "🥉"][e.rank - 1]} ❤ {e.likes}
-              </small>
-            </span>
-          ))
-        ) : (
-          <span className={`${styles.seat} ${styles.seatEmpty}`}>
-            <b>?</b>
-            <small>{t("1등 자리, 아직 주인 없어요", "#1 spot is up for grabs")}</small>
-          </span>
-        )}
-        <span className={styles.count}>
-          {t(<><b>{count}</b>명 도전 중</>, <><b>{count}</b> in the running</>)}
-        </span>
-      </div>
+      {line && <p className={styles.line}>“{line}”</p>}
 
+      <ul className={styles.perks}>
+        <li>{t("✨ 목소리 자동 보정", "✨ Auto voice polish")}</li>
+        <li>{t("😳 심사위원 즉시 반응", "😳 Instant judge reactions")}</li>
+        <li>{t("🙈 가입 없이 1분", "🙈 1 min, no sign-up")}</li>
+      </ul>
+
+      <Link href={`/practice/${week.scriptId}?from=weekly`} className={styles.go}>
+        {t("🎙 녹음하고 올리기", "🎙 Record & enter")}
+      </Link>
       <Countdown to={week.endsAt} opensAt={week.startsAt} compact />
 
-      <Link href="/weekly" className={styles.go}>
-        {t("나도 도전하기", "Jump in")} <i aria-hidden="true">→</i>
+      <Link href="/weekly" className={styles.listen}>
+        <span className={styles.faces}>
+          {top.length > 0 ? (
+            top.map((e) => <VoiceAvatar key={e.id} avatar={normalizeAvatar(e.avatar)} size={34} />)
+          ) : (
+            <span className={styles.faceEmpty} aria-hidden="true">
+              ?
+            </span>
+          )}
+        </span>
+        <span className={styles.listenText}>
+          {count > 0 ? (
+            <>
+              <b>{t(`올라온 목소리 ${count}개 듣기`, `Hear ${count} voice${count === 1 ? "" : "s"}`)}</b>
+              <small>{t("마음에 들면 ❤ 하나", "Tap ❤ on your favorite")}</small>
+            </>
+          ) : (
+            <>
+              <b>{t("아직 아무도 안 올렸어요", "No one has entered yet")}</b>
+              <small>{t("첫 목소리가 되면 1위로 시작해요", "Be the first voice and start at #1")}</small>
+            </>
+          )}
+        </span>
+        <i aria-hidden="true">→</i>
       </Link>
-      <p className={styles.note}>{t("매주 월요일 새 대본 · 가입 없이 출전 · ❤ 많이 받으면 시상대에 올라요", "New script every Monday · no sign-up · most ❤ takes the podium")}</p>
     </section>
   );
 }

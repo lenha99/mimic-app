@@ -1,12 +1,11 @@
 import Link from "next/link";
 import { ClaimPending } from "@/app/[lang]/profile/claim-pending";
-import { Piano } from "@/components/piano";
 import { HomeBeacon } from "@/components/home-beacon";
 import { InstallBanner } from "@/components/install-banner";
 import { ViewerBadge } from "@/components/viewer";
 import { HomeHero } from "@/components/weekly/home-hero";
 import { getMemes } from "@/lib/memes";
-import { SCRIPTS } from "@/lib/practice";
+import { findScript, SCRIPTS } from "@/lib/practice";
 import { getBoard, liveWeek } from "@/lib/weekly-server";
 import { ScreenTour } from "@/components/onboarding/tours";
 import { TourHelp } from "@/components/onboarding/tour";
@@ -43,6 +42,7 @@ export default async function Home() {
   ]);
   const lines = memes.filter((m) => m.line);
   const t = await getT();
+  const line = firstLine(findScript(weekly.week.scriptId)?.text ?? "");
 
   return (
     <main className="shell">
@@ -62,53 +62,36 @@ export default async function Home() {
 
       {/* 이번 주 보이스 챌린지 — 지금 이 앱의 첫 한 걸음이다. */}
       <div data-tour="home-weekly">
-        <HomeHero week={weekly.week} top={weekly.entries.slice(0, 3)} count={weekly.entries.length} />
+        <HomeHero week={weekly.week} top={weekly.entries.slice(0, 3)} count={weekly.entries.length} line={line} />
       </div>
 
-      <nav className={styles.doors} aria-label={t("둘러보기", "Explore")}>
-        <Link href="/challenges" className={`${styles.door} ${styles.doorChallenge}`} data-tour="home-memes">
-          <span className={styles.doorKicker}>{t("레전드 명대사 성대모사", "Iconic K-movie lines")}</span>
-          <span className={styles.doorTitle}>{t("명대사 챌린지", "Line Challenge")}</span>
-          <span className={styles.doorSub}>
-            {t(`대사 ${lines.length}개 · 내 점수, 친구는 넘을 수 있을까요?`, `${lines.length} lines · Can your friends beat your score?`)}
+      {/* 그 밖의 입구는 작게. 지금 홈의 일은 "올리게 만들기" 하나다. */}
+      <nav className={styles.more} aria-label={t("둘러보기", "Explore")}>
+        <Link href="/practice" className={styles.moreRow} data-tour="home-practice">
+          <span aria-hidden="true">📝</span>
+          <span>
+            <b>{t("연습실", "Practice Room")}</b>
+            <small>{t(`대본 ${SCRIPTS.length}편 · 올리기 전에 몇 번이고 연습`, `${SCRIPTS.length} scripts · rehearse before you enter`)}</small>
           </span>
-          <span className={styles.doorArt}>
-            <span className={styles.doorScore} aria-hidden="true">
-              92<small>{t("점", "pts")}</small>
-            </span>
-            <span className={styles.doorGo} aria-hidden="true">
-              →
-            </span>
-          </span>
+          <i aria-hidden="true">→</i>
         </Link>
-
-        <Link href="/practice" className={`${styles.door} ${styles.doorPractice}`} data-tour="home-practice">
-          <span className={styles.doorKicker}>{t("성우·아나운서 지망생이라면", "For voice actors & anchors")}</span>
-          <span className={styles.doorTitle}>{t("연습실", "Practice Room")}</span>
-          <span className={styles.doorSub}>
-            {t(`대본 ${SCRIPTS.length}편 · 고칠 곳을 콕 집어드려요`, `${SCRIPTS.length} Korean scripts · we pinpoint what to fix`)}
+        <Link href="/voice" className={styles.moreRow} data-tour="home-voice">
+          <span aria-hidden="true">🎤</span>
+          <span>
+            <b>{t("목소리 음역대 테스트", "Vocal range test")}</b>
+            <small>{t("내 최고음은 🐬 돌고래급? · 10초", "Is your high note 🐬 Dolphin? · 10s")}</small>
           </span>
-          <span className={styles.doorArt}>
-            <span className={styles.doorPaper} aria-hidden="true">
-              그때 <i>/</i> 연락 못 한 거 <i>/</i> 바빠서 그랬다고
-            </span>
-            <span className={styles.doorGo} aria-hidden="true">
-              →
-            </span>
+          <i aria-hidden="true">→</i>
+        </Link>
+        <Link href="/challenges" className={styles.moreRow} data-tour="home-memes">
+          <span aria-hidden="true">🎬</span>
+          <span>
+            <b>{t("명대사 따라하기", "Movie line challenge")}</b>
+            <small>{t(`대사 ${lines.length}개 · 점수로 친구랑 겨루기`, `${lines.length} lines · beat your friends' score`)}</small>
           </span>
+          <i aria-hidden="true">→</i>
         </Link>
       </nav>
-
-      <Link href="/voice" className={styles.voice} data-tour="home-voice">
-        <span className={styles.voiceKeys} aria-hidden="true">
-          <Piano lang="ko" low={50} high={65} speak={55} labels={false} span={[48, 72]} />
-        </span>
-        <span className={styles.voiceText}>
-          <b>{t("🎤 목소리 음역대 테스트", "🎤 Vocal range test")}</b>
-          <small>{t("내 최고음은 🐬 돌고래급? 🚿 샤워실급? · 10초", "Is your high note 🐬 Dolphin or 🚿 Shower? · 10s")}</small>
-        </span>
-        <i aria-hidden="true">→</i>
-      </Link>
 
       <HomeBeacon />
 
@@ -132,4 +115,11 @@ export default async function Home() {
       </footer>
     </main>
   );
+}
+
+/** 대본 첫 줄 — 쉼(/)·강조(*) 표시를 걷어내고 짧게. */
+function firstLine(text: string): string {
+  const first = text.split(/\r?\n/).find((l) => l.trim()) ?? "";
+  const plain = first.replace(/[/*]/g, " ").replace(/\s+/g, " ").trim();
+  return plain.length > 44 ? `${plain.slice(0, 43)}…` : plain;
 }
