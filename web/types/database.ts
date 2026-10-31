@@ -379,6 +379,12 @@ export interface Database {
         Update: never;
         Relationships: [];
       };
+      follows: {
+        Row: { follower: string; creator: string; created_at: string };
+        Insert: { follower: string; creator: string; created_at?: string };
+        Update: { follower?: string; creator?: string };
+        Relationships: [];
+      };
       voice_follows: {
         Row: { follower: string; creator: string; created_at: string };
         Insert: { follower: string; creator: string; created_at?: string };

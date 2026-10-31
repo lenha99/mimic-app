@@ -41,7 +41,6 @@ type Entry = {
  */
 export default function Stage({
   entry,
-  creatorId,
   week,
   label,
   scriptText,
@@ -49,7 +48,6 @@ export default function Stage({
 }: {
   entry: Entry;
   /** 로그인 출전이면 그 계정 — 포트폴리오·구독 버튼을 띄운다. 게스트면 null. */
-  creatorId: string | null;
   week: Week;
   label: string;
   scriptText: string;
@@ -205,7 +203,7 @@ export default function Stage({
           {entry.trophies > 0 && <em>🏆{entry.trophies}</em>}
           {mine && <em className={styles.me}>{t("나", "Me")}</em>}
         </p>
-        {creatorId && <CreatorBar creatorId={creatorId} nickname={entry.name} />}
+        <CreatorBar entryId={entry.id} nickname={entry.name} listened={progress >= 1} />
 
         <div className={styles.controls}>
           <button type="button" className={styles.play} onClick={play}>

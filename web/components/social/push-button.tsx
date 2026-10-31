@@ -13,6 +13,7 @@ import styles from "./social.module.css";
 export function PushButton({ kind = "new", compact = false }: { kind?: "new" | "mine"; compact?: boolean }) {
   const t = useT();
   const [state, setState] = useState<PushState | "busy" | null>(null);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -57,12 +58,16 @@ export function PushButton({ kind = "new", compact = false }: { kind?: "new" | "
       }
     } catch {
       setState("off");
+      setFailed(true);
     }
   };
 
   return (
-    <button type="button" className={on ? styles.btnOn : compact ? styles.btnGhost : styles.btn} onClick={() => void toggle()} disabled={state === "busy"}>
-      {state === "busy" ? t("잠깐만요…", "One sec…") : label}
-    </button>
+    <>
+      <button type="button" className={on ? styles.btnOn : compact ? styles.btnGhost : styles.btn} onClick={() => void toggle()} disabled={state === "busy"}>
+        {state === "busy" ? t("잠깐만요…", "One sec…") : label}
+      </button>
+      {failed && <p className={styles.note}>{t("알림 연결이 늦어요. 잠시 뒤 다시 눌러 주세요.", "Alerts are slow to connect. Try again in a moment.")}</p>}
+    </>
   );
 }

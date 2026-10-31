@@ -36,8 +36,8 @@ export default async function PortfolioPage({ params }: Props) {
       .order("challenge_id", { ascending: false })
       .limit(30),
     service.from("weekly_awards").select("place", { count: "exact", head: true }).eq("user_id", creator.id),
-    followerCount(creator.id, service),
-    viewer && viewer !== creator.id ? follows(viewer, creator.id, service) : Promise.resolve(false),
+    followerCount(`u:${creator.id}`, service),
+    viewer && viewer !== creator.id ? follows(`u:${viewer}`, `u:${creator.id}`, service) : Promise.resolve(false),
   ]);
 
   const takes = (rows ?? []).flatMap((r) => {

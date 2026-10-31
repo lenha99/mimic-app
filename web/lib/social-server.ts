@@ -45,14 +45,90 @@ export async function nicknames(ids: string[], service: Service = createServiceC
   );
 }
 
+/**
+ * 구독 이름표 — weekly_entries.owner 와 같다: 'u:<계정 id>' 또는 'g:<기기 id>'.
+ * 손님도 구독하고 구독받는다(로그인 문턱이 곧 이탈). 로그인하면 claimGuest 로 계정에 옮긴다.
+ */
+const CLIENT = /^[a-z0-9]{8,40}$/;
+const UUID = /^[0-9a-f-]{36}$/i;
+export const userKey = (id: string) => `u:${id}`;
+export function whoOf(userId: string | null, client: unknown): string | null {
+  if (userId) return userKey(userId);
+  return typeof client === "string" && CLIENT.test(client) ? `g:${client}` : null;
+}
+export function validKey(k: unknown): k is string {
+  if (typeof k !== "string") return false;
+  if (k.startsWith("u:")) return UUID.test(k.slice(2));
+  if (k.startsWith("g:")) return CLIENT.test(k.slice(2));
+  return false;
+}
+const uid = (k: string) => (k.startsWith("u:") ? k.slice(2) : null);
+
+/**
+ * follows 표(마이그레이션 25)가 아직 없으면 예전 계정 전용 표(voice_follows)로 돈다 —
+ * 배포가 마이그레이션보다 먼저 나가도 구독이 깨지지 않게.
+ */
+function missingTable(error: { code?: string } | null): boolean {
+  return !!error && (error.code === "PGRST205" || error.code === "42P01");
+}
+
 export async function follows(follower: string, creator: string, service: Service = createServiceClient()): Promise<boolean> {
-  const { data } = await service.from("voice_follows").select("creator").eq("follower", follower).eq("creator", creator).maybeSingle();
+  const { data, error } = await service.from("follows").select("creator").eq("follower", follower).eq("creator", creator).maybeSingle();
+  if (missingTable(error)) {
+    const [f, c] = [uid(follower), uid(creator)];
+    if (!f || !c) return false;
+    const { data: old } = await service.from("voice_follows").select("creator").eq("follower", f).eq("creator", c).maybeSingle();
+    return Boolean(old);
+  }
   return Boolean(data);
 }
 
 export async function followerCount(creator: string, service: Service = createServiceClient()): Promise<number> {
-  const { count } = await service.from("voice_follows").select("follower", { count: "exact", head: true }).eq("creator", creator);
+  const { count, error } = await service.from("follows").select("follower", { count: "exact", head: true }).eq("creator", creator);
+  if (missingTable(error)) {
+    const c = uid(creator);
+    if (!c) return 0;
+    const { count: old } = await service.from("voice_follows").select("follower", { count: "exact", head: true }).eq("creator", c);
+    return old ?? 0;
+  }
   return count ?? 0;
+}
+
+/** 이 목소리를 구독한 이름표들. */
+export async function followersOf(creator: string, service: Service = createServiceClient()): Promise<string[]> {
+  const { data, error } = await service.from("follows").select("follower").eq("creator", creator).limit(1000);
+  if (missingTable(error)) {
+    const c = uid(creator);
+    if (!c) return [];
+    const { data: old } = await service.from("voice_follows").select("follower").eq("creator", c).limit(1000);
+    return (old ?? []).map((r) => userKey(r.follower));
+  }
+  return (data ?? []).map((r) => r.follower);
+}
+
+/** 출전작 하나 → 그 목소리 주인 이름표. */
+export async function creatorOfEntry(entryId: string, service: Service = createServiceClient()): Promise<{ key: string; userId: string | null; name: string } | null> {
+  if (!UUID.test(entryId)) return null;
+  const { data } = await service.from("weekly_entries").select("owner, user_id, guest_name").eq("id", entryId).maybeSingle();
+  if (!data) return null;
+  const key = data.user_id ? userKey(data.user_id) : data.owner;
+  const name = data.user_id ? ((await profileById(data.user_id, service))?.nickname ?? "") : (data.guest_name ?? "");
+  return { key, userId: data.user_id, name };
+}
+
+/** 손님일 때 한 구독(하고 받은 것)을 로그인한 계정으로 옮긴다. 겹치면 계정 쪽을 남긴다. */
+export async function claimGuest(userId: string, client: string, service: Service = createServiceClient()): Promise<void> {
+  if (!CLIENT.test(client)) return;
+  const g = `g:${client}`;
+  const u = userKey(userId);
+  for (const col of ["follower", "creator"] as const) {
+    const other = col === "follower" ? "creator" : "follower";
+    const { data, error } = await service.from("follows").select("follower, creator, created_at").eq(col, g).limit(1000);
+    if (error || !data?.length) continue;
+    const rows = data.map((r) => ({ ...r, [col]: u })).filter((r) => r[other] !== u);
+    if (rows.length) await service.from("follows").upsert(rows, { onConflict: "follower,creator", ignoreDuplicates: true });
+    await service.from("follows").delete().eq(col, g);
+  }
 }
 
 export async function blocked(x: string, y: string, service: Service = createServiceClient()): Promise<boolean> {
@@ -64,32 +140,59 @@ export async function blocked(x: string, y: string, service: Service = createSer
   return Boolean(data?.length);
 }
 
-/** 구독 · 해지. 구독하면 올린 사람이 알림으로 안다. */
-export async function setFollow(follower: string, creator: string, on: boolean): Promise<{ following: boolean; followers: number } | { error: string; status: number }> {
+/**
+ * 구독 · 해지. 구독하면 올린 사람이 안다 — 계정이면 앱 안 알림 + 푸시, 손님이면 그 기기에 푸시.
+ * 구독한 쪽이 손님이면 이름 대신 "누군가" — 로그인해야 누군지 보인다(로그인할 이유).
+ */
+export async function setFollow(
+  follower: string,
+  creator: string,
+  on: boolean,
+): Promise<{ following: boolean; followers: number } | { error: string; status: number }> {
+  if (!validKey(follower) || !validKey(creator)) return { error: "bad request", status: 400 };
   if (follower === creator) return { error: "self", status: 400 };
   const service = createServiceClient();
-  const target = await profileById(creator, service);
-  if (!target) return { error: "not-found", status: 404 };
+  const creatorId = uid(creator);
+  if (creatorId) {
+    if (!(await profileById(creatorId, service))) return { error: "not-found", status: 404 };
+  } else {
+    const { count } = await service.from("weekly_entries").select("id", { count: "exact", head: true }).eq("owner", creator);
+    if (!count) return { error: "not-found", status: 404 };
+  }
   if (on) {
-    const { error } = await service.from("voice_follows").insert({ follower, creator });
+    let { error } = await service.from("follows").insert({ follower, creator });
+    if (missingTable(error)) {
+      const f = uid(follower);
+      if (!f || !creatorId) return { error: "login", status: 401 };
+      ({ error } = await service.from("voice_follows").insert({ follower: f, creator: creatorId }));
+    }
     // 이미 구독 중이면(중복) 알림을 또 보내지 않는다.
     if (!error) {
-      const me = await profileById(follower, service);
+      const followerId = uid(follower);
+      const me = followerId ? await profileById(followerId, service) : null;
+      const total = await followerCount(creator, service);
       await notify({
-        userId: creator,
+        userId: creatorId,
+        client: creatorId ? null : creator.slice(2),
         kind: "follow",
-        actor: follower,
+        actor: followerId,
         push: {
           title: "🔔 새 구독자",
-          body: `${me?.nickname ?? "누군가"}님이 당신 목소리를 구독했어요`,
-          url: "/notifications",
+          body: me
+            ? `${me.nickname}님이 당신 목소리를 구독했어요`
+            : creatorId
+              ? `누군가 당신 목소리를 구독했어요 (구독자 ${total}명)`
+              : `누군가 당신 목소리를 구독했어요 (구독자 ${total}명) — 로그인하면 구독자를 지킬 수 있어요`,
+          url: creatorId ? "/notifications" : "/me",
           tag: "follow",
         },
         pushKey: `push:follow:${creator}:${kstStamp(Date.now(), true)}`,
       });
     }
   } else {
-    await service.from("voice_follows").delete().eq("follower", follower).eq("creator", creator);
+    const { error } = await service.from("follows").delete().eq("follower", follower).eq("creator", creator);
+    const f = uid(follower);
+    if (missingTable(error) && f && creatorId) await service.from("voice_follows").delete().eq("follower", f).eq("creator", creatorId);
   }
   return { following: on, followers: await followerCount(creator, service) };
 }
@@ -113,7 +216,7 @@ export async function canStart(sender: string, recipient: string, service: Servi
   if (!target) return "not-found";
   if (await blocked(sender, recipient, service)) return "blocked";
   if (target.dmPolicy === "off") return "off";
-  if (!(await follows(sender, recipient, service))) return "follow-first";
+  if (!(await follows(userKey(sender), userKey(recipient), service))) return "follow-first";
   return null;
 }
 
@@ -231,7 +334,8 @@ export async function actOnThread(me: string, id: string, action: "accept" | "de
   if (action === "block") {
     await service.from("dm_blocks").insert({ blocker: me, blocked: other }); // 이미 차단했으면 중복 오류 — 무시
     await service.from("dm_threads").update({ status: "declined", requester: other }).eq("id", id);
-    await service.from("voice_follows").delete().eq("follower", other).eq("creator", me);
+    const { error } = await service.from("follows").delete().eq("follower", userKey(other)).eq("creator", userKey(me));
+    if (missingTable(error)) await service.from("voice_follows").delete().eq("follower", other).eq("creator", me);
     return { ok: true };
   }
   if (t.requester === me) return { error: "not-yours", status: 403 };
