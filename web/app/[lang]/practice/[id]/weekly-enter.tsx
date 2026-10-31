@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/weekly/toast";
 import { buzz, shareLink, useWeeklyMe } from "@/components/weekly/use-weekly";
 import { readLocalAvatar } from "@/lib/avatar";
@@ -11,6 +11,9 @@ import { track } from "@/lib/track";
 import { currentWeek, isLive, readMine, remaining, seasonLabel, writeMine, type Week } from "@/lib/weekly";
 import { PrivacyTag } from "@/components/privacy-tag";
 import { cleanNickname, NICK_MAX, nicknameProblem, readNickname, writeNickname } from "@/lib/nickname";
+import { JudgesPanel } from "@/components/weekly/judges-panel";
+import { judgeTake, type Verdict } from "@/lib/judges";
+import { polishVoice } from "@/lib/voice-polish";
 import styles from "./weekly-enter.module.css";
 import { useLang, useT } from "@/components/lang";
 import type { T } from "@/lib/i18n";
@@ -42,7 +45,7 @@ function useNow(): number | null {
   return at;
 }
 
-type Done = { id: string; rank: number; total: number; replaced: boolean };
+type Done = { id: string; rank: number; total: number; replaced: boolean; verdicts: Verdict[] };
 
 function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) {
   const t = useT();
@@ -62,6 +65,7 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
     return v && /^[0-9a-f-]{36}$/i.test(v) ? v : null;
   });
   const [toast, showToast] = useToast();
+  const polish = usePolish(take.blob, open);
 
   if (!live) {
     return (
@@ -103,8 +107,10 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
     try {
       const duration = take.analysis?.duration ?? (await blobDuration(take.blob));
       const body = new FormData();
-      const ext = take.blob.type.includes("mp4") ? "m4a" : "webm";
-      body.append("file", take.blob, `take.${ext}`);
+      // 보정을 켰으면 보정본을 올린다. 아직 만드는 중이면 끝날 때까지 기다린다.
+      const file = (await polish.fileForUpload()) ?? take.blob;
+      const ext = file.type.includes("wav") ? "wav" : file.type.includes("mp4") ? "m4a" : "webm";
+      body.append("file", file, `take.${ext}`);
       body.append("week", week.id);
       body.append("client", clientId());
       if (!me.loggedIn) {
@@ -138,7 +144,15 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
       writeMine(week.id, rec);
       setLocal(rec);
       setOpen(false);
-      setDone({ id: d.id, rank: d.rank ?? 1, total: d.total ?? 1, replaced: Boolean(d.replaced) });
+      const rank = d.rank ?? 1;
+      const total = d.total ?? 1;
+      const verdicts = judgeTake(take.analysis, {
+        lang,
+        first: total === 1,
+        podium: total > 1 && rank <= 3,
+        replaced: Boolean(d.replaced),
+      });
+      setDone({ id: d.id, rank, total, replaced: Boolean(d.replaced), verdicts });
       buzz(30);
       track("weekly_enter", { via: week.id });
     } catch {
@@ -204,6 +218,7 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
               <li>{t("가입 없이도 출전할 수 있어요. 로그인하면 트로피가 계정에 남아요", "No sign-up needed. Log in to keep your trophy")}</li>
             )}
           </ul>
+          <PolishRow polish={polish} />
           {!me.loggedIn && (
             <label className={styles.nick}>
               <span>{t("순위에 보일 닉네임", "Name on the leaderboard")}</span>
@@ -259,6 +274,7 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
                   ? t("벌써 시상대 위예요! 마감까지 자리를 지켜요 👑", "Already on the podium! Hold it till the deadline 👑")
                   : t("친구들한테 공유하면 ❤ 가 훨씬 빨리 모여요!", "Share with friends and the ❤ will pile up way faster!")}
             </p>
+            <JudgesPanel verdicts={done.verdicts} />
             <PrivacyTag kind="public" />
             {vs && vs !== done.id ? (
               <Link href={`/weekly/vs/${vs}?b=${done.id}`} className={styles.cardShare}>
@@ -280,6 +296,136 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
       )}
       {toast}
     </>
+  );
+}
+
+/**
+ * 목소리 보정 — 켜기/끄기 하나뿐. 기본은 켜짐(대부분은 안 바꾼다).
+ * 패널을 열면 미리 만들어 두고, "들어보기"는 지금 고른 쪽을 튼다.
+ */
+type Polish = {
+  on: boolean;
+  setOn: (v: boolean) => void;
+  state: "idle" | "busy" | "ready" | "failed";
+  playing: boolean;
+  togglePlay: () => void;
+  fileForUpload: () => Promise<Blob | null>;
+};
+
+function usePolish(blob: Blob, active: boolean): Polish {
+  const [on, setOnState] = useState(() => {
+    try {
+      return localStorage.getItem("mimic.polish") !== "off";
+    } catch {
+      return true;
+    }
+  });
+  const [state, setState] = useState<Polish["state"]>("idle");
+  const [playing, setPlaying] = useState(false);
+  const job = useRef<Promise<Blob | null> | null>(null);
+  const audio = useRef<HTMLAudioElement | null>(null);
+  const urls = useRef<{ raw?: string; pol?: string }>({});
+
+  const start = () => {
+    if (job.current) return job.current;
+    setState("busy");
+    job.current = polishVoice(blob)
+      .then((b) => {
+        setState("ready");
+        return b;
+      })
+      .catch(() => {
+        setState("failed");
+        return null;
+      });
+    return job.current;
+  };
+
+  useEffect(() => {
+    if (active && on && !job.current) void start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, on]);
+
+  useEffect(
+    () => () => {
+      audio.current?.pause();
+      if (urls.current.raw) URL.revokeObjectURL(urls.current.raw);
+      if (urls.current.pol) URL.revokeObjectURL(urls.current.pol);
+    },
+    [],
+  );
+
+  const stop = () => {
+    audio.current?.pause();
+    setPlaying(false);
+  };
+
+  const setOn = (v: boolean) => {
+    stop();
+    setOnState(v);
+    try {
+      localStorage.setItem("mimic.polish", v ? "on" : "off");
+    } catch {}
+  };
+
+  const togglePlay = async () => {
+    if (playing) return stop();
+    let src: string;
+    if (on) {
+      const b = await start();
+      if (!b) return;
+      urls.current.pol ??= URL.createObjectURL(b);
+      src = urls.current.pol;
+    } else {
+      urls.current.raw ??= URL.createObjectURL(blob);
+      src = urls.current.raw;
+    }
+    audio.current ??= new Audio();
+    const a = audio.current;
+    a.src = src;
+    a.onended = () => setPlaying(false);
+    setPlaying(true);
+    a.play().catch(() => setPlaying(false));
+  };
+
+  const fileForUpload = async () => (on ? await start() : null);
+
+  return { on, setOn, state, playing, togglePlay: () => void togglePlay(), fileForUpload };
+}
+
+function PolishRow({ polish }: { polish: Polish }) {
+  const t = useT();
+  const sub = !polish.on
+    ? t("원래 녹음 그대로 올라가요", "Your original take will be uploaded")
+    : polish.state === "busy"
+      ? t("목소리 다듬는 중…", "Polishing your voice…")
+      : polish.state === "failed"
+        ? t("이 기기에선 보정이 안 돼요 · 원래 녹음으로 올라가요", "Can't polish on this device · original will be used")
+        : t("잡음은 빼고 목소리는 또렷하게", "Less noise, clearer voice");
+  return (
+    <div className={styles.polish}>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={polish.on}
+        className={polish.on ? styles.polishOn : styles.polishOff}
+        onClick={() => polish.setOn(!polish.on)}
+      >
+        <span className={styles.polishKnob} aria-hidden="true" />
+        <span className={styles.polishText}>
+          <b>{t("✨ 목소리 보정", "✨ Voice polish")}</b>
+          <small>{sub}</small>
+        </span>
+      </button>
+      <button
+        type="button"
+        className={styles.polishPlay}
+        onClick={polish.togglePlay}
+        disabled={polish.on && polish.state === "busy"}
+      >
+        {polish.playing ? t("■ 멈춤", "■ Stop") : t("▶ 들어보기", "▶ Listen")}
+      </button>
+    </div>
   );
 }
 

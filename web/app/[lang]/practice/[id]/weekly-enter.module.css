@@ -432,3 +432,98 @@
   outline: none;
   border-color: var(--volt);
 }
+
+/* 목소리 보정 — 켜기/끄기 + 들어보기, 그 이상은 없다 */
+.polish {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+
+.polishOn,
+.polishOff {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--rule);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--white);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.polishOn {
+  border-color: rgba(232, 255, 58, 0.55);
+  background: rgba(232, 255, 58, 0.08);
+}
+
+.polishKnob {
+  flex: none;
+  position: relative;
+  width: 38px;
+  height: 22px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  transition: background 0.2s;
+}
+
+.polishKnob::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--white);
+  transition: transform 0.2s;
+}
+
+.polishOn .polishKnob {
+  background: var(--volt);
+}
+
+.polishOn .polishKnob::after {
+  transform: translateX(16px);
+  background: var(--stage);
+}
+
+.polishText {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.polishText b {
+  font-size: 14px;
+}
+
+.polishText small {
+  font-size: 11.5px;
+  color: var(--ash);
+  word-break: keep-all;
+}
+
+.polishPlay {
+  flex: none;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid var(--rule);
+  background: none;
+  color: var(--white);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.polishPlay:disabled {
+  opacity: 0.5;
+}

@@ -75,57 +75,34 @@
   word-break: keep-all;
 }
 
-.lineup {
-  margin: 14px 0 12px;
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-}
-
-.seat {
-  display: grid;
-  justify-items: center;
-  gap: 2px;
-}
-
-.seat small {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--ash);
-  white-space: nowrap;
-}
-
-.seatFirst {
-  order: -1;
-  filter: drop-shadow(0 0 12px rgba(232, 255, 58, 0.35));
-}
-
-.seatEmpty b {
-  width: 56px;
-  height: 56px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  border: 2px dashed rgba(232, 255, 58, 0.5);
-  font-family: var(--display);
-  font-weight: 400;
-  font-size: 28px;
-  color: var(--volt);
-}
-
-.count {
-  margin-left: auto;
-  align-self: center;
-  font-size: 13px;
-  color: var(--ash);
-}
-
-.count b {
-  font-family: var(--display);
-  font-weight: 400;
-  font-size: 30px;
+.line {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--volt);
+  border-radius: 4px 12px 12px 4px;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 15px;
+  line-height: 1.5;
   color: var(--white);
-  margin-right: 2px;
+  word-break: keep-all;
+}
+
+.perks {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.perks li {
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .go {
@@ -148,10 +125,56 @@
   font-style: normal;
 }
 
-.note {
-  margin: 8px 0 0;
-  text-align: center;
+.listen {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 1px solid var(--rule);
+  background: rgba(0, 0, 0, 0.18);
+  color: var(--white);
+  text-decoration: none;
+}
+
+.faces {
+  display: flex;
+  flex: none;
+}
+
+.faces > * + * {
+  margin-left: -10px;
+}
+
+.faceEmpty {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 2px dashed rgba(232, 255, 58, 0.5);
+  font-family: var(--display);
+  color: var(--volt);
+}
+
+.listenText {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.listenText b {
+  font-size: 14px;
+}
+
+.listenText small {
   font-size: 12px;
   color: var(--ash);
-  word-break: keep-all;
+}
+
+.listen i {
+  margin-left: auto;
+  font-style: normal;
+  color: var(--volt);
 }
