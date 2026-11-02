@@ -22,7 +22,7 @@ import { useLang, useT } from "@/components/lang";
 import type { T } from "@/lib/i18n";
 
 /**
- * 연습실 → 이번 주 챌린지 출전 · 아무 대본이나 목소리 갤러리에 올리기.
+ * 연습실 → 목소리 갤러리에 올리기(어떤 대본이든 이번 주 ❤ 순위).
  *
  * 이번 주 대본이면 챌린지 출전(순위·마감), 다른 대본이면 자유 출전(갤러리에만, 순위 없음).
  * 연습실에서 건진 좋은 테이크가 갈 곳이 없으면 안 된다 — 사람이 적은 지금은 한 개라도 더 올라와야 한다. 연습 테이크는 원래 이 폰에만 있으니(take-store),
@@ -527,13 +527,13 @@ export function WeeklyBanner({ scriptId }: { scriptId: string }) {
         {live
           ? t(
               <>
-                이번 주 챌린지 대본 · <b>{left(week.endsAt, at, t)}</b> 남았어요
+                이번 주 추천 대본 · ❤ 순위 마감까지 <b>{left(week.endsAt, at, t)}</b>
               </>,
               <>
-                This week&apos;s challenge script · <b>{left(week.endsAt, at, t)}</b> left
+                This week&apos;s pick · ❤ ranking closes in <b>{left(week.endsAt, at, t)}</b>
               </>,
             )
-          : t("다음 챌린지 대본 · 월요일 0시 오픈", "Next challenge script · opens Monday 00:00 KST")}
+          : t("다음 주 추천 대본 · 월요일 0시 오픈", "Next week's pick · opens Monday 00:00 KST")}
       </span>
       <i aria-hidden="true">{t("순위 →", "Ranking →")}</i>
     </Link>

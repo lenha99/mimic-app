@@ -454,8 +454,8 @@ export default function Maker() {
         <Recs card={card} />
         <Link href="/weekly" className={styles.next}>
           <span>
-            <b>{t("이 목소리로 이번 주 챌린지 출전", "Enter this week's voice challenge")}</b>
-            <small>{t("매주 대본 하나, ❤ 많이 받으면 시상대", "One script a week — most ❤ takes the podium")}</small>
+            <b>{t("이 목소리로 목소리 갤러리에 올리기", "Post this voice to the gallery")}</b>
+            <small>{t("아무 대본이나 · ❤ 많이 받으면 이번 주 시상대", "Any script — most ❤ takes this week's podium")}</small>
           </span>
           <i aria-hidden="true">→</i>
         </Link>

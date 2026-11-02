@@ -142,7 +142,7 @@ export default function Battle() {
   return (
     <main className={`shell ${styles.page}`}>
       <nav className={styles.nav}>
-        <Link href="/weekly">{t("← 이번 주 챌린지", "← This week")}</Link>
+        <Link href="/weekly">{t("← 목소리 갤러리", "← Voice gallery")}</Link>
         {count > 0 && <span className={styles.count}>{t(`${count}판 심사`, `${count} judged`)}</span>}
       </nav>
 
@@ -177,7 +177,7 @@ export default function Battle() {
               : t("지금 심사할 수 있는 대결은 다 봤어요. 새 출전작이 들어오면 또 열려요!", "You've judged every battle for now. New ones open as entries come in!")}
           </p>
           <Link href="/weekly" className={styles.next}>
-            {t("이번 주 챌린지로", "Back to this week")}
+            {t("목소리 갤러리로", "Back to the gallery")}
           </Link>
         </div>
       )}

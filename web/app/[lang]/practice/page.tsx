@@ -10,8 +10,8 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: t("연습실", "Practice Room"),
     description: t(
-      `성우·아나운서 준비생을 위한 대본 ${SCRIPTS.length}편. 읽고 녹음하면 속도·쉼·억양·말끝을 바로 짚어드려요. 녹음은 내 폰에만 남아요.`,
-      `${SCRIPTS.length} Korean scripts for voice actors and anchors. Record and get instant notes on pace, pauses, intonation and endings. Takes stay on your phone.`,
+      `성우·아나운서 준비생을 위한 대본 ${SCRIPTS.length}편. 읽고 녹음하면 코코가 대본대로 읽었는지 짚어 주고 목소리 타입도 알려 줘요. 녹음은 내 폰에만 남아요.`,
+      `${SCRIPTS.length} Korean scripts for voice actors and anchors. Record and Coco checks you read it word for word, plus your voice type. Takes stay on your phone.`,
     ),
   };
 }

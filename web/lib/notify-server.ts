@@ -182,7 +182,7 @@ export async function announceNewEntry(e: { id: string; userId: string | null; c
     for (const s of targets) if (await once(`push:new:${endpointKey(s.endpoint)}:${day}`, service)) fresh.push(s);
     await pushTo(
       fresh,
-      { title: "🎙 새 목소리가 올라왔어요", body: `${e.name}님이 이번 주 챌린지에 출전했어요`, url: `/weekly/e/${e.id}`, tag: "new-entry" },
+      { title: "🎙 새 목소리가 올라왔어요", body: `${e.name}님이 목소리를 올렸어요`, url: `/weekly/e/${e.id}`, tag: "new-entry" },
       service,
     );
   } catch {}
