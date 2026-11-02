@@ -62,6 +62,8 @@ export type Week = {
   title: string;
   /** 영어 화면용 대본 제목 (lib/script-i18n). */
   titleEn: string;
+  /** 자유 출전 — 이번 주 대본이 아닌 대본으로 갤러리에 올린 것. 순위·시상대·마감이 없다. */
+  free?: boolean;
 };
 
 function weekIdOf(mondayDay: number): string {
@@ -128,6 +130,37 @@ export function weekById(id: string): Week | null {
   return weekFromMonday(monday);
 }
 
+/**
+ * 자유 출전 자리 — 연습실의 아무 대본으로나 갤러리에 올린다. 대본마다 weekly_challenges 행 하나
+ * (id "f_대본id")에 매달리고, 한 사람이 대본마다 한 작품(기존 unique(challenge_id, owner)).
+ * 마감이 없으니 ❤ 는 계속 받는다. 시상대·명예의 전당은 주간 대본만 다룬다.
+ */
+export const FREE_PREFIX = "f_";
+const FREE_END = Date.UTC(2100, 0, 1);
+const TRACK_EMOJI: Record<string, string> = { voice: "🎭", anchor: "🎙️", speech: "🗣️" };
+
+export function freeWeek(scriptId: string): Week | null {
+  const s = findScript(scriptId);
+  if (!s) return null;
+  return {
+    id: `${FREE_PREFIX}${s.id}`,
+    season: 0,
+    startsAt: 0,
+    endsAt: FREE_END,
+    scriptId: s.id,
+    field: s.category,
+    emoji: TRACK_EMOJI[s.track] ?? "🎙️",
+    title: s.title,
+    titleEn: scriptTitle(s.id, s.title, "en"),
+    free: true,
+  };
+}
+
+/** 주간이든 자유든 출전작이 매달린 자리. 명예의 전당처럼 주간만 다루는 곳은 weekById 를 쓴다. */
+export function challengeById(id: string): Week | null {
+  return weekById(id) ?? (id.startsWith(FREE_PREFIX) ? freeWeek(id.slice(FREE_PREFIX.length)) : null);
+}
+
 export function isLive(w: Pick<Week, "startsAt" | "endsAt">, at: number = Date.now()): boolean {
   return at >= w.startsAt && at < w.endsAt;
 }
@@ -137,7 +170,8 @@ export function weekScript(w: Week): Script | undefined {
 }
 
 /** 시즌 라벨 — "S3 · 광고" / "S3 · Commercial" */
-export function seasonLabel(w: Pick<Week, "season" | "field">, lang: Lang = "ko"): string {
+export function seasonLabel(w: Pick<Week, "season" | "field" | "free">, lang: Lang = "ko"): string {
+  if (w.free) return `${lang === "en" ? "Open" : "자유"} · ${fieldName(w.field, lang)}`;
   return `S${w.season} · ${fieldName(w.field, lang)}`;
 }
 

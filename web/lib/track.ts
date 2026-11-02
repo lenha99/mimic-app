@@ -42,6 +42,7 @@ export type TrackKind =
   | "voice_card_start"
   | "voice_card_done"
   | "voice_card_share"
+  | "voice_rec_open"
   // 첫 방문 안내 — 몇 장째에서 건너뛰는지(via)를 본다
   | "intro_view"
   | "intro_skip"

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { followerCount, follows, currentUserId, profileByNickname } from "@/lib/social-server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { weekById } from "@/lib/weekly";
+import { challengeById } from "@/lib/weekly";
 import { getT } from "@/lib/i18n-server";
 import Portfolio from "./portfolio";
 
@@ -41,7 +41,7 @@ export default async function PortfolioPage({ params }: Props) {
   ]);
 
   const takes = (rows ?? []).flatMap((r) => {
-    const w = weekById(r.challenge_id);
+    const w = challengeById(r.challenge_id);
     return w
       ? [{ id: r.id, title: w.title, titleEn: w.titleEn, emoji: w.emoji, likes: r.like_count, plays: r.play_count, duration: r.duration_s, v: r.updated_at }]
       : [];

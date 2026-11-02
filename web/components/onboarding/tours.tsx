@@ -278,10 +278,10 @@ const sets = (t: T) => {
     },
     {
       target: "practice-start",
-      title: t("대본 고르기", "Pick a script"),
+      title: t("오늘의 연습", "Today's practice"),
       body: t(
-        <p>대본을 누르면 연습 화면으로 가요. 처음이라면 여기서 시작해 보세요.</p>,
-        <p>Tap a script to start practicing. New here? Start with this one.</p>,
+        <p>뭘 읽을지 고민될 땐 오늘의 한 편부터. 매일 바뀌고, 안 읽은 대본 중에서 골라 줘요. 아래 목표 칩(면접·발음·감정…)으로 바로 좁혀 볼 수도 있어요.</p>,
+        <p>Not sure what to read? Start with today&apos;s pick — it changes daily and favors scripts you haven&apos;t read. Or jump in by goal with the chips below.</p>,
       ),
     },
     {

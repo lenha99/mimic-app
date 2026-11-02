@@ -5,7 +5,7 @@ import { normalizeAvatar } from "@/lib/avatar";
 import { allow, clientIp, tooMany } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { currentWeek, guestName, isLive, MAX_ENTRY_SECONDS } from "@/lib/weekly";
+import { currentWeek, FREE_PREFIX, freeWeek, guestName, isLive, MAX_ENTRY_SECONDS } from "@/lib/weekly";
 import { cleanNickname } from "@/lib/nickname";
 import { ensureWeek, getBoard } from "@/lib/weekly-server";
 import { requestT } from "@/lib/i18n";
@@ -56,7 +56,15 @@ export async function POST(req: Request) {
     avatar = normalizeAvatar(JSON.parse(String(form?.get("avatar") ?? "null")));
   } catch {}
 
-  const week = currentWeek();
+  // 자유 출전(f_대본id) — 이번 주 대본이 아닌 대본으로 갤러리에 올린다. 이번 주 대본은 챌린지로만.
+  const thisWeek = currentWeek();
+  const week = weekId.startsWith(FREE_PREFIX) ? freeWeek(weekId.slice(FREE_PREFIX.length)) : thisWeek;
+  if (!week) {
+    return Response.json({ error: t("없는 대본이에요.", "Unknown script.") }, { status: 400 });
+  }
+  if (week.free && week.scriptId === thisWeek.scriptId && isLive(thisWeek)) {
+    return Response.json({ error: t("이번 주 대본은 챌린지로 출전해 주세요. 새로고침해 보세요.", "This week's script goes to the challenge. Please refresh.") }, { status: 409 });
+  }
   if (weekId !== week.id || !isLive(week)) {
     return Response.json({ error: t("이번 주 챌린지가 마감됐어요. 새 대본으로 다시 도전해 주세요.", "This week's challenge has closed. Try again with the new script.") }, { status: 409 });
   }

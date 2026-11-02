@@ -8,7 +8,7 @@ import { readLocalAvatar } from "@/lib/avatar";
 import { clientId } from "@/lib/client-id";
 import type { Take } from "@/lib/take-store";
 import { track } from "@/lib/track";
-import { currentWeek, isLive, readMine, remaining, seasonLabel, writeMine, type Week } from "@/lib/weekly";
+import { currentWeek, freeWeek, isLive, readMine, remaining, seasonLabel, writeMine, type Week } from "@/lib/weekly";
 import { PrivacyTag } from "@/components/privacy-tag";
 import { cleanNickname, NICK_MAX, nicknameProblem, readNickname, writeNickname } from "@/lib/nickname";
 import { JudgesPanel } from "@/components/weekly/judges-panel";
@@ -22,9 +22,10 @@ import { useLang, useT } from "@/components/lang";
 import type { T } from "@/lib/i18n";
 
 /**
- * 연습실 → 이번 주 챌린지 출전.
+ * 연습실 → 이번 주 챌린지 출전 · 아무 대본이나 목소리 갤러리에 올리기.
  *
- * 이번 주 대본을 연습하는 중일 때만 뜬다. 연습 테이크는 원래 이 폰에만 있으니(take-store),
+ * 이번 주 대본이면 챌린지 출전(순위·마감), 다른 대본이면 자유 출전(갤러리에만, 순위 없음).
+ * 연습실에서 건진 좋은 테이크가 갈 곳이 없으면 안 된다 — 사람이 적은 지금은 한 개라도 더 올라와야 한다. 연습 테이크는 원래 이 폰에만 있으니(take-store),
  * 올리기 전에 무엇이 공개되는지를 버튼 바로 위에 적는다. 출전하면 그 자리에서 몇 위로
  * 들어갔는지 보여주고 — 순위가 보여야 ❤ 를 모으고 싶어진다 — 공유 버튼을 바로 붙인다.
  */
@@ -32,8 +33,10 @@ export function WeeklyEnter({ take, scriptId }: { take: Take; scriptId: string }
   const at = useNow();
   if (at === null) return null;
   const week = currentWeek(at);
-  if (week.scriptId !== scriptId) return null;
-  return <Enter week={week} take={take} live={isLive(week, at)} />;
+  if (week.scriptId === scriptId) return <Enter week={week} take={take} live={isLive(week, at)} />;
+  const free = freeWeek(scriptId);
+  if (!free) return null;
+  return <Enter week={free} take={take} live />;
 }
 
 /** 정적 페이지라 "지금 어느 주인가"는 붙은 뒤에 정한다. 1분마다 다시 본다. */
@@ -54,6 +57,7 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
   const t = useT();
   const lang = useLang();
   const label = seasonLabel(week, lang);
+  const free = Boolean(week.free);
   const me = useWeeklyMe(week.id);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -101,10 +105,12 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
   const share = async (id: string) => {
     const r = await shareLink(
       `${location.origin}/weekly/e/${id}`,
-      t(
-        `MIMIC 보이스 챌린지 「${week.title}」 출전함 🎙️ 들어보고 ❤ 하나만 눌러줘 🙏`,
-        `I entered the MIMIC voice challenge "${week.titleEn}" 🎙️ Give it a listen and tap ❤ 🙏`,
-      ),
+      free
+        ? t(`MIMIC 에 「${week.title}」 녹음 올렸어 🎙️ 들어보고 ❤ 하나만 눌러줘 🙏`, `I posted my take on "${week.titleEn}" on MIMIC 🎙️ Give it a listen and tap ❤ 🙏`)
+        : t(
+            `MIMIC 보이스 챌린지 「${week.title}」 출전함 🎙️ 들어보고 ❤ 하나만 눌러줘 🙏`,
+            `I entered the MIMIC voice challenge "${week.titleEn}" 🎙️ Give it a listen and tap ❤ 🙏`,
+          ),
     );
     if (r === "copied") showToast(t("링크 복사 완료! 단톡방에 붙여 넣어 보세요", "Link copied! Paste it in your group chat"));
     if (r !== "failed") track("weekly_share", { via: id });
@@ -169,7 +175,7 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
       });
       setDone({ id: d.id, rank, total, replaced: Boolean(d.replaced), verdicts, badges: strengths });
       buzz(30);
-      track("weekly_enter", { via: week.id });
+      track("weekly_enter", { via: free ? "free" : week.id });
     } catch {
       setError(t("인터넷이 잠깐 끊겼어요. 다시 시도해 주세요", "Connection dropped. Please try again"));
     } finally {
@@ -182,15 +188,19 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
       {!done && <JudgesPanel verdicts={preview} />}
       {entered && local ? (
         <div className={styles.entered} data-tour="room-enter">
-          <span className={styles.enteredBadge}>{t("🏆 출전 중", "🏆 Entered")}</span>
-          <p>{t(`이 테이크로 ${label} 챌린지에 출전 중이에요`, `This take is your ${label} entry`)}</p>
+          <span className={styles.enteredBadge}>{free ? t("🎙️ 갤러리에 올라감", "🎙️ In the gallery") : t("🏆 출전 중", "🏆 Entered")}</span>
+          <p>
+            {free
+              ? t("이 테이크가 목소리 갤러리에 올라가 있어요", "This take is up in the voice gallery")
+              : t(`이 테이크로 ${label} 챌린지에 출전 중이에요`, `This take is your ${label} entry`)}
+          </p>
           <PrivacyTag kind="public" />
           <div className={styles.enteredActions}>
             <button type="button" className={styles.ask} onClick={() => void share(local.entryId)}>
               {t("❤ 모으러 공유하기", "Share to get ❤")}
             </button>
-            <Link href="/weekly" className={styles.rankLink}>
-              {t("다른 출전작 듣기", "Hear other entries")}
+            <Link href={free ? `/weekly/e/${local.entryId}` : "/weekly"} className={styles.rankLink}>
+              {free ? t("내 목소리 보기", "View my voice") : t("다른 출전작 듣기", "Hear other entries")}
             </Link>
           </div>
         </div>
@@ -202,13 +212,21 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
           data-tour="room-enter"
         >
           <span className={styles.openIcon} aria-hidden="true">
-            🏆
+            {free ? "🎙️" : "🏆"}
           </span>
           <span>
-            <b>{replacing ? t("이 테이크로 출전작 교체하기", "Replace my entry with this take") : t("이 테이크로 이번 주 챌린지 출전!", "Enter this take in this week's challenge!")}</b>
+            <b>
+              {free
+                ? replacing
+                  ? t("이 테이크로 갤러리 녹음 바꾸기", "Swap my gallery take for this one")
+                  : t("이 테이크를 목소리 갤러리에 올리기", "Post this take to the voice gallery")
+                : replacing
+                  ? t("이 테이크로 출전작 교체하기", "Replace my entry with this take")
+                  : t("이 테이크로 이번 주 챌린지 출전!", "Enter this take in this week's challenge!")}
+            </b>
             <small>
               {replacing
-                ? t("지금 출전작보다 더 잘 나온 것 같다면", "If this one's better than your current entry")
+                ? t("지금 올린 것보다 더 잘 나온 것 같다면", "If this one's better than what's up now")
                 : t("⭐ 좋은 목소리는 홈 추천에 소개돼요 · 언제든 교체 가능", "⭐ Great voices get featured on Home · swap anytime")}
             </small>
           </span>
@@ -216,13 +234,27 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
         </button>
       ) : (
         <div className={styles.panel}>
-          <p className={styles.title}>{replacing ? t("출전작 교체", "Replace entry") : t(`${label} 챌린지 출전`, `Enter ${label}`)}</p>
+          <p className={styles.title}>
+            {replacing
+              ? t("올린 녹음 바꾸기", "Replace my take")
+              : free
+                ? t("목소리 갤러리에 올리기", "Post to the voice gallery")
+                : t(`${label} 챌린지 출전`, `Enter ${label}`)}
+          </p>
           <ul className={styles.facts}>
-            <li>{t("이 녹음이 챌린지 화면에서 모두에게 공개돼요", "This take will be public on the challenge page")}</li>
+            <li>
+              {free
+                ? t("이 녹음이 목소리 갤러리에서 모두에게 공개돼요 (순위 경쟁은 없어요)", "This take will be public in the voice gallery (no ranking)")
+                : t("이 녹음이 챌린지 화면에서 모두에게 공개돼요", "This take will be public on the challenge page")}
+            </li>
             {replacing ? (
               <li className={styles.warn}>{t("교체하면 지금까지 받은 ❤ 가 0 으로 돌아가요", "Replacing resets your ❤ to 0")}</li>
             ) : (
-              <li>{t("한 사람당 한 작품이에요. 더 잘 나온 테이크로 교체할 수 있어요 (교체하면 ❤ 초기화)", "One entry per person. You can swap in a better take later (❤ reset)")}</li>
+              <li>
+                {free
+                  ? t("대본마다 한 작품이에요. 더 잘 나온 테이크로 바꿀 수 있어요 (바꾸면 ❤ 초기화)", "One take per script. You can swap in a better one later (❤ reset)")
+                  : t("한 사람당 한 작품이에요. 더 잘 나온 테이크로 교체할 수 있어요 (교체하면 ❤ 초기화)", "One entry per person. You can swap in a better take later (❤ reset)")}
+              </li>
             )}
             <li>{t("마감 전에도 언제든 내릴 수 있어요", "You can withdraw anytime")}</li>
             {me.loggedIn ? (
@@ -237,7 +269,7 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
           <PolishRow polish={polish} />
           {!me.loggedIn && (
             <label className={styles.nick}>
-              <span>{t("순위에 보일 닉네임", "Name on the leaderboard")}</span>
+              <span>{free ? t("갤러리에 보일 닉네임", "Name in the gallery") : t("순위에 보일 닉네임", "Name on the leaderboard")}</span>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -276,7 +308,7 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
                 {t("취소", "Cancel")}
               </button>
               <button type="button" className={styles.go} onClick={() => void submit()} disabled={busy}>
-                {busy ? t("올리는 중…", "Uploading…") : replacing ? t("교체하기", "Replace") : t("출전하기 🏆", "Enter 🏆")}
+                {busy ? t("올리는 중…", "Uploading…") : replacing ? t("교체하기", "Replace") : free ? t("올리기 🎙️", "Post 🎙️") : t("출전하기 🏆", "Enter 🏆")}
               </button>
             </div>
           )}
@@ -296,13 +328,19 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
             ))}
           </div>
           <div className={styles.card}>
-            <p className={styles.cardKicker}>{done.replaced ? t("교체 완료!", "Replaced!") : t("출전 완료! 🎉", "You're in! 🎉")}</p>
-            <p className={styles.cardRank}>
-              {t(<b>{done.rank}</b>, <b>#{done.rank}</b>)}
-              <span>{t(`위 / ${done.total}명`, ` of ${done.total}`)}</span>
+            <p className={styles.cardKicker}>
+              {done.replaced ? t("교체 완료!", "Replaced!") : free ? t("갤러리에 올라갔어요! 🎉", "You're in the gallery! 🎉") : t("출전 완료! 🎉", "You're in! 🎉")}
             </p>
+            {!free && (
+              <p className={styles.cardRank}>
+                {t(<b>{done.rank}</b>, <b>#{done.rank}</b>)}
+                <span>{t(`위 / ${done.total}명`, ` of ${done.total}`)}</span>
+              </p>
+            )}
             <p className={styles.cardLine}>
-              {done.total === 1
+              {free
+                ? t("누가 끝까지 들으면 알려 드릴게요. 친구에게 공유하면 첫 청취가 훨씬 빨라요!", "We'll tell you when someone listens all the way. Sharing gets you that first listen much faster!")
+                : done.total === 1
                 ? t("첫 번째 목소리예요! ❤ 하나만 받아도 1위로 시작해요.", "You're the first voice! A single ❤ puts you at #1.")
                 : done.rank <= 3
                   ? t("벌써 시상대 위예요! 마감까지 자리를 지켜요 👑", "Already on the podium! Hold it till the deadline 👑")
@@ -337,7 +375,7 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
               </button>
             )}
             <Link href="/weekly" className={styles.cardRankLink}>
-              {t("다른 출전작 듣고 ❤ 누르러 가기 →", "Listen to others and give ❤ →")}
+              {free ? t("다른 목소리 듣고 ❤ 누르러 가기 →", "Listen to other voices and give ❤ →") : t("다른 출전작 듣고 ❤ 누르러 가기 →", "Listen to others and give ❤ →")}
             </Link>
             <button type="button" className={styles.cardClose} onClick={() => setDone(null)}>
               {t("연습 계속하기", "Keep practicing")}

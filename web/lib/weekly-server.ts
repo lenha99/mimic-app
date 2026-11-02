@@ -6,6 +6,7 @@ import {
   MIN_AWARDS,
   previousWeek,
   weekById,
+  challengeById,
   type Award,
   type EntryCard,
   type Week,
@@ -120,7 +121,7 @@ export async function getEntry(id: string): Promise<EntryView | null> {
     .eq("id", id)
     .maybeSingle();
   if (!e || e.hidden) return null;
-  const week = weekById(e.challenge_id);
+  const week = challengeById(e.challenge_id);
   if (!week) return null;
   const board = await getBoard(week);
   const card = board.entries.find((x) => x.id === id);
@@ -252,7 +253,7 @@ export async function myEntries(userId: string) {
     .limit(12);
   const out = [];
   for (const e of data ?? []) {
-    const w = weekById(e.challenge_id);
+    const w = challengeById(e.challenge_id);
     if (!w) continue;
     let rank: number | null = null;
     let total = 0;
@@ -291,7 +292,7 @@ export type GalleryEntry = {
   likes: number;
   plays: number;
   at: string;
-  week: { id: string; season: number; emoji: string; title: string; titleEn: string; live: boolean };
+  week: { id: string; season: number; emoji: string; title: string; titleEn: string; live: boolean; free: boolean };
   featured: boolean;
   badges: string[];
   /** 운영자 화면에서만 쓴다 — 공개 화면엔 내려보내지 않는다. */
@@ -333,7 +334,7 @@ export async function galleryEntries(limit = 60, opts: { admin?: boolean } = {})
   const prof = new Map((profiles ?? []).map((p) => [p.id, p]));
   const now = currentWeek().id;
   return rows.flatMap((r) => {
-    const w = weekById(r.challenge_id);
+    const w = challengeById(r.challenge_id);
     if (!w) return [];
     const p = r.user_id ? prof.get(r.user_id) : undefined;
     return [
@@ -347,7 +348,7 @@ export async function galleryEntries(limit = 60, opts: { admin?: boolean } = {})
         likes: r.like_count,
         plays: r.play_count,
         at: r.updated_at,
-        week: { id: w.id, season: w.season, emoji: w.emoji, title: w.title, titleEn: w.titleEn, live: w.id === now },
+        week: { id: w.id, season: w.season, emoji: w.emoji, title: w.title, titleEn: w.titleEn, live: w.id === now, free: Boolean(w.free) },
         featured: Boolean(r.featured_at),
         badges: (r.badges ?? []).slice(0, 3),
         ...(opts.admin ? { promoOk: Boolean(r.promo_ok) } : {}),

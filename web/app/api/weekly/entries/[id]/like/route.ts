@@ -1,7 +1,7 @@
 import { allow, clientIp, tooMany } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { isLive, weekById } from "@/lib/weekly";
+import { challengeById, isLive } from "@/lib/weekly";
 import { ipHash } from "@/lib/weekly-server";
 import { requestT } from "@/lib/i18n";
 
@@ -40,7 +40,7 @@ async function resolve(req: Request, id: string) {
     .eq("id", id)
     .maybeSingle();
   if (!e || e.hidden) return { error: Response.json({ error: t("없는 출전작이에요.", "Entry not found.") }, { status: 404 }) };
-  const week = weekById(e.challenge_id);
+  const week = challengeById(e.challenge_id);
   if (!week || !isLive(week)) {
     return { error: Response.json({ error: t("마감된 챌린지예요. ❤ 는 이제 바뀌지 않아요.", "This challenge has closed. ❤ can't change anymore.") }, { status: 409 }) };
   }

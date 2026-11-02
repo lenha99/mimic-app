@@ -12,6 +12,7 @@ import { summaries, type ItemSummary } from "@/lib/take-store";
 import { ScreenTour } from "@/components/onboarding/tours";
 import { TourHelp } from "@/components/onboarding/tour";
 import styles from "./practice.module.css";
+import { GoalChips, TodayCard, type Goal } from "./today";
 
 /**
  * 연습실 목차.
@@ -72,6 +73,18 @@ export default function PracticeHome({
       alive = false;
     };
   }, []);
+
+  const doneIds = useMemo(() => new Set(done.keys()), [done]);
+
+  /** 목표 칩 — 그 트랙·분류로 좁혀서 목록으로 내려간다. */
+  const pickGoal = (g: Goal) => {
+    choose(g.track);
+    setCat(g.cat);
+    setLevel(0);
+    setQ("");
+    setFresh(false);
+    requestAnimationFrame(() => document.getElementById("practice-list")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
 
   const choose = (next: Tab) => {
     setTab(next);
@@ -224,8 +237,10 @@ export default function PracticeHome({
 
       <PracticeStrip />
 
-      {last ? (
-        <Link href={`/practice/${last.itemId}`} className={styles.resume} data-tour="practice-start">
+      <TodayCard scripts={scripts} done={doneIds} />
+
+      {last && (
+        <Link href={`/practice/${last.itemId}`} className={styles.resume}>
           <span className={styles.resumeLabel}>{t("이어서", "Continue")}</span>
           <span className={styles.resumeTitle}>{titles.get(last.itemId)!.title}</span>
           <span className={styles.resumeMeta}>
@@ -235,23 +250,9 @@ export default function PracticeHome({
             →
           </span>
         </Link>
-      ) : (
-        <div className={styles.starters} data-tour="practice-start">
-          <p className={styles.startersLabel}>{t("처음이라면 여기서 시작해요", "New here? Start with one of these")}</p>
-          <div className={styles.starterRow}>
-            <Link href="/practice/sc_v_confess" className={styles.starter}>
-              <span>{t("성우", "Voice acting")}</span>
-              <b>{scriptTitle("sc_v_confess", "고백 직전", lang)}</b>
-              <small>{t(`망설임을 쉼으로 · 약 ${sec(scripts, "sc_v_confess")}초`, `Hesitation through pauses · ~${sec(scripts, "sc_v_confess")}s`)}</small>
-            </Link>
-            <Link href="/practice/sc_a_news_open" className={styles.starter}>
-              <span>{t("아나운서", "Anchor")}</span>
-              <b>{scriptTitle("sc_a_news_open", "뉴스 오프닝", lang)}</b>
-              <small>{t(`끝까지 단정하게 · 약 ${sec(scripts, "sc_a_news_open")}초`, `Crisp to the last word · ~${sec(scripts, "sc_a_news_open")}s`)}</small>
-            </Link>
-          </div>
-        </div>
       )}
+
+      <GoalChips scripts={scripts} onPick={pickGoal} />
 
       <Link href="/practice/board" className={styles.board} data-tour="practice-board">
         <span className={styles.boardIcon} aria-hidden="true">
@@ -283,7 +284,7 @@ export default function PracticeHome({
         />
       </label>
 
-      <div className={styles.tabs} role="tablist" aria-label={t("대본 종류", "Script type")} data-tour="practice-filter">
+      <div id="practice-list" className={styles.tabs} role="tablist" aria-label={t("대본 종류", "Script type")} data-tour="practice-filter">
         {(
           [
             ["all", t("전체", "All"), scripts.length + lines.length + mine.length],
@@ -456,10 +457,6 @@ export default function PracticeHome({
   );
 }
 
-function sec(scripts: Script[], id: string): number {
-  const s = scripts.find((x) => x.id === id);
-  return s ? expectedSeconds(s) : 0;
-}
 
 function Dots({ n }: { n: number }) {
   const t = useT();

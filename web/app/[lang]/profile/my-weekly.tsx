@@ -57,13 +57,15 @@ export async function MyWeekly({ awards, entries, now }: { awards: Award[]; entr
                   <span className={e.hidden ? styles.warn : styles.recScore}>
                     {e.hidden
                       ? t("신고로 숨겨짐", "Hidden after a report")
-                      : t(`${e.rank ?? "-"}위 / ${e.total} · ❤ ${e.likes}`, `#${e.rank ?? "-"} of ${e.total} · ❤ ${e.likes}`)}
+                      : e.week.free
+                        ? `❤ ${e.likes}`
+                        : t(`${e.rank ?? "-"}위 / ${e.total} · ❤ ${e.likes}`, `#${e.rank ?? "-"} of ${e.total} · ❤ ${e.likes}`)}
                   </span>
                 </div>
                 {!e.hidden && (
                   <div className={styles.recActions}>
                     <Link href={`/weekly/e/${e.id}`} className={styles.editBtn}>
-                      {live ? t("진행 중 · 보기", "Live · view") : t("최종 결과 보기", "See final results")}
+                      {e.week.free ? t("보기", "View") : live ? t("진행 중 · 보기", "Live · view") : t("최종 결과 보기", "See final results")}
                     </Link>
                   </div>
                 )}

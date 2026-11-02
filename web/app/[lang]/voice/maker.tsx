@@ -24,6 +24,9 @@ import {
   type RangeCard,
 } from "@/lib/voice-range";
 import { RangeCardView, type Step } from "./card";
+import { positionLabel, rangeRecs } from "@/lib/range-recs";
+import { expectedSeconds } from "@/lib/practice";
+import { fieldName, scriptTitle } from "@/lib/script-i18n";
 import styles from "./voice.module.css";
 
 const GENDER_KEY = "mimic.voice.gender";
@@ -448,6 +451,7 @@ export default function Maker() {
           </button>
         </div>
 
+        <Recs card={card} />
         <Link href="/weekly" className={styles.next}>
           <span>
             <b>{t("이 목소리로 이번 주 챌린지 출전", "Enter this week's voice challenge")}</b>
@@ -576,5 +580,38 @@ function GenderPick({ gender, onPick }: { gender: Gender; onPick: (g: Gender) =>
         </button>
       ))}
     </div>
+  );
+}
+
+/** 결과 → 연습실. 내 목소리에 맞는 대본 세 편과 그 이유. */
+function Recs({ card }: { card: RangeCard }) {
+  const t = useT();
+  const lang = useLang();
+  const recs = rangeRecs(card);
+  if (!recs.length) return null;
+  const pos = positionLabel(card, lang);
+  return (
+    <section className={styles.recs} aria-label={t("내 목소리에 맞는 대본", "Scripts for your voice")}>
+      <p className={styles.recsKicker}>{t("🎯 연습실 추천", "🎯 Practice picks")}</p>
+      <h2 className={styles.recsTitle}>
+        {pos ? t(`${pos}에 어울리는 대본`, `Scripts for ${pos}`) : t("내 목소리에 맞는 대본", "Scripts for your voice")}
+      </h2>
+      <ul className={styles.recList}>
+        {recs.map(({ script, why }, i) => (
+          <li key={script.id} style={{ "--i": i } as React.CSSProperties}>
+            <Link href={`/practice/${script.id}?from=voice`} className={styles.rec} onClick={() => track("voice_rec_open", { via: script.id })}>
+              <span className={styles.recText}>
+                <small>
+                  {fieldName(script.category, lang)} · {t(`약 ${Math.round(expectedSeconds(script))}초`, `~${Math.round(expectedSeconds(script))}s`)}
+                </small>
+                <b>{scriptTitle(script.id, script.title, lang)}</b>
+                <span>{lang === "en" ? why.en : why.ko}</span>
+              </span>
+              <i aria-hidden="true">→</i>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

@@ -118,10 +118,12 @@ export default function Stage({
     const r = await shareLink(
       location.href.split("?")[0],
       mine
-        ? t(
-            `MIMIC 보이스 챌린지 「${week.title}」 출전함 🎙️ 들어보고 ❤ 하나만 눌러줘 🙏`,
-            `I entered the MIMIC voice challenge "${week.titleEn}" 🎙️ Give it a listen and tap ❤ 🙏`,
-          )
+        ? week.free
+          ? t(`MIMIC 에 「${week.title}」 녹음 올렸어 🎙️ 들어보고 ❤ 하나만 눌러줘 🙏`, `I posted my take on "${week.titleEn}" on MIMIC 🎙️ Give it a listen and tap ❤ 🙏`)
+          : t(
+              `MIMIC 보이스 챌린지 「${week.title}」 출전함 🎙️ 들어보고 ❤ 하나만 눌러줘 🙏`,
+              `I entered the MIMIC voice challenge "${week.titleEn}" 🎙️ Give it a listen and tap ❤ 🙏`,
+            )
         : t(`${name}의 「${week.title}」 이거 들어봐 ㄷㄷ`, `You have to hear ${name}'s take on "${week.titleEn}" 👀`),
     );
     if (r === "copied") showToast(t("링크 복사 완료! 단톡방에 붙여 넣어 보세요", "Link copied! Paste it in your group chat"));
@@ -173,7 +175,7 @@ export default function Stage({
       />
 
       <nav className={styles.nav}>
-        <Link href="/weekly">{t("← 이번 주 챌린지", "← This week")}</Link>
+        <Link href="/weekly">{week.free ? t("← 목소리", "← Voices") : t("← 이번 주 챌린지", "← This week")}</Link>
         {me.loggedIn && !mine && (
           <button type="button" className={styles.report} onClick={() => void report()}>
             {t("신고", "Report")}
@@ -187,14 +189,17 @@ export default function Stage({
       </p>
 
       <section className={styles.stage}>
-        <div className={styles.badges}>
-          <span className={`${styles.rank} ${entry.rank <= 3 ? styles[`rank${entry.rank}`] : ""}`}>
-            {entry.rank <= 3 ? ["🥇", "🥈", "🥉"][entry.rank - 1] : "#"}
-            <b>{entry.rank}</b>
-            <small>/ {entry.total}</small>
-          </span>
-          {!live && <span className={styles.final}>{t("최종 순위", "Final rank")}</span>}
-        </div>
+        {/* 자유 출전은 순위가 없다 — 같은 대본 올린 사람이 몇 안 되는데 "2위/2명"은 벌점처럼 보인다. */}
+        {!week.free && (
+          <div className={styles.badges}>
+            <span className={`${styles.rank} ${entry.rank <= 3 ? styles[`rank${entry.rank}`] : ""}`}>
+              {entry.rank <= 3 ? ["🥇", "🥈", "🥉"][entry.rank - 1] : "#"}
+              <b>{entry.rank}</b>
+              <small>/ {entry.total}</small>
+            </span>
+            {!live && <span className={styles.final}>{t("최종 순위", "Final rank")}</span>}
+          </div>
+        )}
 
         <button type="button" className={styles.performer} onClick={play} aria-label={t(`${name}의 녹음 ${playing ? "멈추기" : "듣기"}`, `${playing ? "Pause" : "Play"} ${name}'s take`)}>
           <span className={`${styles.halo} ${playing ? styles.haloOn : ""}`} aria-hidden="true" />
@@ -239,7 +244,7 @@ export default function Stage({
 
       {mine ? (
         <section className={styles.minePanel}>
-          <p className={styles.mineTitle}>{t("내 출전작이에요 🎙️", "This is your entry 🎙️")}</p>
+          <p className={styles.mineTitle}>{week.free ? t("내 목소리예요 🎙️", "This is your voice 🎙️") : t("내 출전작이에요 🎙️", "This is your entry 🎙️")}</p>
           <p className={styles.mineSub}>
             {t(
               "❤ 는 다른 사람들이 듣고 눌러줘요. 친구들한테 공유하면 ❤ 가 훨씬 빨리 모여요!",
@@ -251,7 +256,7 @@ export default function Stage({
           <button type="button" className={styles.share} onClick={() => void share()}>
             {t("❤ 모으러 공유하기", "Share to get ❤")}
           </button>
-          {live && (
+          {live && !week.free && (
             <Link href={`/weekly/vs/${entry.id}`} className={styles.mineMore}>
               {t("⚔️ 친구에게 1:1 대결 신청 →", "⚔️ Challenge a friend 1:1 →")}
             </Link>
@@ -267,14 +272,26 @@ export default function Stage({
               </button>
             ) : (
               <button type="button" onClick={() => setConfirmDrop(true)}>
-                {t("출전 취소", "Withdraw")}
+                {week.free ? t("내리기", "Remove") : t("출전 취소", "Withdraw")}
               </button>
             )}
           </div>
         </section>
       ) : (
         <section className={styles.cta}>
-          <p className={styles.ctaTitle}>
+          {week.free && (
+            <>
+              <p className={styles.ctaTitle}>{t("나도 이 대본으로 녹음해 볼까요? 🎙️", "Want to try this script yourself? 🎙️")}</p>
+              <Link href={`/practice/${week.scriptId}`} className={styles.go}>
+                {t("연습하고 올리기 →", "Practice & post →")}
+              </Link>
+              <p className={styles.ctaNote}>
+                {t("가입 없이 · 연습은 내 폰에만 · 마음에 든 테이크 하나만 올라가요", "No sign-up · practice stays on your phone · only your pick goes up")}
+              </p>
+              <p className={styles.ctaTitle}>{t(`이번 주 챌린지는 「${thisWeek.title}」`, `This week's challenge: "${thisWeek.titleEn}"`)}</p>
+            </>
+          )}
+          <p className={styles.ctaTitle} hidden={week.free}>
             {thisWeek.id === week.id
               ? t("나도 이 대본으로 한판 붙어 볼까요? 🔥", "Think you can do better? 🔥")
               : t(`이번 주 대본은 「${thisWeek.title}」`, `This week's script: "${thisWeek.titleEn}"`)}
