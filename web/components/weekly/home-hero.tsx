@@ -17,7 +17,22 @@ import styles from "./home-hero.module.css";
  * (보정·심사위원 반응), (3) 바로 녹음하는 버튼을 보인다. 숫자는 부풀리지 않는다 —
  * 아무도 없으면 "첫 목소리가 되면 1위로 시작"이라고 솔직하게 말한다.
  */
-export function HomeHero({ week, top, count, line }: { week: Week; top: EntryCard[]; count: number; line: string }) {
+export function HomeHero({
+  week,
+  top,
+  count,
+  line,
+  total = 0,
+  faces = [],
+}: {
+  week: Week;
+  top: EntryCard[];
+  count: number;
+  line: string;
+  /** 지난 주까지 쌓인 목소리 수 — 이번 주가 비어도 들을 게 있다 */
+  total?: number;
+  faces?: unknown[];
+}) {
   const t = useT();
   const lang = useLang();
   return (
@@ -53,6 +68,8 @@ export function HomeHero({ week, top, count, line }: { week: Week; top: EntryCar
         <span className={styles.faces}>
           {top.length > 0 ? (
             top.map((e) => <VoiceAvatar key={e.id} avatar={normalizeAvatar(e.avatar)} size={34} />)
+          ) : faces.length > 0 ? (
+            faces.slice(0, 3).map((a, i) => <VoiceAvatar key={i} avatar={normalizeAvatar(a)} size={34} />)
           ) : (
             <span className={styles.faceEmpty} aria-hidden="true">
               ?
@@ -64,6 +81,11 @@ export function HomeHero({ week, top, count, line }: { week: Week; top: EntryCar
             <>
               <b>{t(`올라온 목소리 ${count}개 듣기`, `Hear ${count} voice${count === 1 ? "" : "s"}`)}</b>
               <small>{t("마음에 들면 ❤ 하나", "Tap ❤ on your favorite")}</small>
+            </>
+          ) : total > 0 ? (
+            <>
+              <b>{t(`지금까지 올라온 목소리 ${total}개 듣기`, `Hear ${total} voice${total === 1 ? "" : "s"} so far`)}</b>
+              <small>{t("이번 주 첫 목소리가 되면 1위로 시작해요", "Be this week's first voice and start at #1")}</small>
             </>
           ) : (
             <>

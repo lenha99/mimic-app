@@ -21,7 +21,7 @@ const TABS = [
   { href: "/", label: ["홈", "Home"], icon: HomeIcon, match: (p: string) => p === "/" },
   {
     href: "/weekly",
-    label: ["챌린지", "Challenge"],
+    label: ["목소리", "Voices"],
     icon: MicIcon,
     match: (p: string) => p.startsWith("/weekly") || p.startsWith("/challenges"),
   },

@@ -106,6 +106,8 @@ export type EntryView = EntryCard & {
   total: number;
   userId: string | null;
   owner: string;
+  featured: boolean;
+  badges: string[];
 };
 
 /** 출전작 하나 + 그 주 안에서의 순위. 숨긴 건 안 보인다. */
@@ -123,7 +125,17 @@ export async function getEntry(id: string): Promise<EntryView | null> {
   const board = await getBoard(week);
   const card = board.entries.find((x) => x.id === id);
   if (!card) return null;
-  return { ...card, week, total: board.entries.length, userId: e.user_id, owner: e.owner };
+  // 픽·배지(마이그레이션 27) — 칸이 없으면 없는 채로.
+  const { data: extra } = await service.from("weekly_entries").select("featured_at, badges").eq("id", id).maybeSingle();
+  return {
+    ...card,
+    week,
+    total: board.entries.length,
+    userId: e.user_id,
+    owner: e.owner,
+    featured: Boolean(extra?.featured_at),
+    badges: (extra?.badges ?? []).slice(0, 3),
+  };
 }
 
 /** 오디오 경로 — /api/weekly/audio 만 쓴다. 숨긴 건 숨겼다고 같이 알려준다(운영자만 듣는다). */
@@ -267,3 +279,82 @@ export async function liveWeek(): Promise<Week> {
   } catch {}
   return w;
 }
+
+/** 갤러리 카드 — 주를 넘어 쌓이는 목소리 하나. */
+export type GalleryEntry = {
+  id: string;
+  name: string;
+  guest: boolean;
+  avatar: unknown;
+  duration: number;
+  bars: number[];
+  likes: number;
+  plays: number;
+  at: string;
+  week: { id: string; season: number; emoji: string; title: string; titleEn: string; live: boolean };
+  featured: boolean;
+  badges: string[];
+  /** 운영자 화면에서만 쓴다 — 공개 화면엔 내려보내지 않는다. */
+  promoOk?: boolean;
+};
+
+/**
+ * 목소리 갤러리 — 지난 주 것까지 전부, 최근 순. 사람이 적은 지금은 콘텐츠가 쌓여야 한다
+ * (매주 0 으로 돌아가면 좋은 목소리가 월요일에 묻힌다). 운영자 픽은 따로 표시.
+ */
+export async function galleryEntries(limit = 60, opts: { admin?: boolean } = {}): Promise<GalleryEntry[]> {
+  const service = createServiceClient();
+  const base = "id, challenge_id, user_id, guest_name, avatar, duration_s, bars, like_count, play_count, updated_at";
+  const query = (cols: string) =>
+    service.from("weekly_entries").select(cols).eq("hidden", false).order("updated_at", { ascending: false }).limit(limit);
+  // 픽·배지 칸(마이그레이션 27)이 아직 없으면 없는 채로.
+  let res = await query(`${base}, featured_at, badges, promo_ok`);
+  if (res.error) res = await query(base);
+  type Row = {
+    id: string;
+    challenge_id: string;
+    user_id: string | null;
+    guest_name: string | null;
+    avatar: unknown;
+    duration_s: number;
+    bars: number[] | null;
+    like_count: number;
+    play_count: number;
+    updated_at: string;
+    featured_at?: string | null;
+    badges?: string[] | null;
+    promo_ok?: boolean;
+  };
+  const rows = (res.data ?? []) as unknown as Row[];
+  const users = [...new Set(rows.map((r) => r.user_id).filter((x): x is string => !!x))];
+  const { data: profiles } = users.length
+    ? await service.from("profiles").select("id, nickname, avatar").in("id", users)
+    : { data: [] as { id: string; nickname: string; avatar: unknown }[] };
+  const prof = new Map((profiles ?? []).map((p) => [p.id, p]));
+  const now = currentWeek().id;
+  return rows.flatMap((r) => {
+    const w = weekById(r.challenge_id);
+    if (!w) return [];
+    const p = r.user_id ? prof.get(r.user_id) : undefined;
+    return [
+      {
+        id: r.id,
+        name: p?.nickname ?? r.guest_name ?? "익명의 목소리",
+        guest: !r.user_id,
+        avatar: normalizeAvatar(p?.avatar ?? r.avatar),
+        duration: r.duration_s,
+        bars: r.bars ?? [],
+        likes: r.like_count,
+        plays: r.play_count,
+        at: r.updated_at,
+        week: { id: w.id, season: w.season, emoji: w.emoji, title: w.title, titleEn: w.titleEn, live: w.id === now },
+        featured: Boolean(r.featured_at),
+        badges: (r.badges ?? []).slice(0, 3),
+        ...(opts.admin ? { promoOk: Boolean(r.promo_ok) } : {}),
+      },
+    ];
+  });
+}
+
+/** 순위·시상대를 켤 만큼 이번 주 출전작이 모였나. 그 전엔 갤러리가 첫 화면이다. */
+export const RANKED_MIN = 8;

@@ -341,6 +341,10 @@ export interface Database {
           battle_rating: number;
           battle_wins: number;
           battle_losses: number;
+          /** 운영자 픽 · 인스타 소개 동의 · 강점 배지 (마이그레이션 27) */
+          featured_at: string | null;
+          promo_ok: boolean;
+          badges: string[];
         };
         Insert: {
           id?: string;
@@ -359,6 +363,9 @@ export interface Database {
           reports?: number;
           created_at?: string;
           updated_at?: string;
+          featured_at?: string | null;
+          promo_ok?: boolean;
+          badges?: string[];
         };
         Update: Partial<Database["public"]["Tables"]["weekly_entries"]["Insert"]>;
         Relationships: [];

@@ -121,7 +121,7 @@ const sets = (t: T) => {
       body: t(
         <ul>
           <li>
-            <b>챌린지</b> — 이번 주 순위 · 듣고 ❤ 누르기
+            <b>목소리</b> — 올라온 목소리 듣기 · 운영자 픽 · 이번 주 대본
           </li>
           <li>
             <b>연습실</b> — 대본 연습 · 피드백 게시판
@@ -132,7 +132,7 @@ const sets = (t: T) => {
         </ul>,
         <ul>
           <li>
-            <b>Challenge</b> — this week&apos;s ranking · listen and ❤
+            <b>Voices</b> — listen to everyone · editor&apos;s picks · this week&apos;s script
           </li>
           <li>
             <b>Practice</b> — script practice · feedback board
@@ -149,6 +149,47 @@ const sets = (t: T) => {
       body: t(
         <p>화면마다 위쪽 💡 사용법 보기를 누르면 그 화면의 버튼을 하나씩 알려드려요.</p>,
         <p>Tap 💡 at the top of any screen and we&apos;ll walk you through its buttons.</p>,
+      ),
+    },
+  ];
+
+  const VOICES: TourStep[] = [
+    {
+      target: "voices-pick",
+      title: t("⭐ 운영자 픽", "⭐ Editor's pick"),
+      body: t(
+        <p>운영자가 직접 듣고 고른 목소리예요. 주가 바뀌어도 내려가지 않아요. 좋은 목소리를 올리면 여기와 홈에 소개돼요.</p>,
+        <p>Voices hand-picked by the team. They stay up even after the week ends. Post a great take and it could be featured here and on Home.</p>,
+      ),
+    },
+    {
+      target: "voices-prompt",
+      title: t("이번 주 대본", "This week's script"),
+      body: t(
+        <p>
+          매주 월요일 새 대본이 열려요. 연습실에서 몇 번이고 연습한 뒤 마음에 드는 테이크 하나만 올리면 돼요.{" "}
+          <b>이번 주 목소리가 8개 모이면 ♥ 순위전</b>이 열려요.
+        </p>,
+        <p>
+          A new script every Monday. Practice as much as you like, then post your favorite take. <b>Once 8 voices are in this week, the ♥ ranking unlocks.</b>
+        </p>,
+      ),
+    },
+    {
+      target: "voices-filter",
+      title: t("정렬", "Sort"),
+      body: t(<p>최신 · ♥ 인기 · 이번 주 대본만 골라 볼 수 있어요.</p>, <p>Latest, most ♥, or just this week&apos;s script.</p>),
+    },
+    {
+      target: "voices-list",
+      title: t("얼굴을 누르면 바로 들려요", "Tap a face to listen"),
+      body: t(
+        <p>
+          아래에 재생 막대가 떠요. 이름을 누르면 그 목소리 화면으로 가서 <b>♥ · 🔔 구독 · 💬 메시지</b>를 할 수 있어요. 배지는 그 녹음에서 잘한 점이에요.
+        </p>,
+        <p>
+          A player pops up at the bottom. Tap the name to open the voice page — <b>♥, 🔔 subscribe, 💬 message</b>. Badges show what the take did well.
+        </p>,
       ),
     },
   ];
@@ -602,6 +643,7 @@ const sets = (t: T) => {
   return {
     home: HOME,
     weekly: WEEKLY,
+    voices: VOICES,
     practice: PRACTICE,
     room: ROOM,
     room_after: ROOM_AFTER,

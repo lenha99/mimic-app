@@ -50,6 +50,8 @@ export default async function EntryPage({ params }: Props) {
         plays: entry.plays,
         trophies: entry.trophies,
         createdAt: entry.createdAt,
+        featured: entry.featured,
+        badges: entry.badges,
       }}
       week={entry.week}
       label={seasonLabel(entry.week, await getLang())}

@@ -17,6 +17,8 @@ import { useLang, useT } from "@/components/lang";
 import { PrivacyTag } from "@/components/privacy-tag";
 import { CreatorBar } from "@/components/social/creator-bar";
 import { PushButton } from "@/components/social/push-button";
+import { badgeLabel, isBadge } from "@/lib/badges";
+import { AdminPick } from "./admin-pick";
 import styles from "./stage.module.css";
 
 type Entry = {
@@ -31,6 +33,8 @@ type Entry = {
   plays: number;
   trophies: number;
   createdAt: string;
+  featured?: boolean;
+  badges?: string[];
 };
 
 /**
@@ -47,7 +51,6 @@ export default function Stage({
   thisWeek,
 }: {
   entry: Entry;
-  /** 로그인 출전이면 그 계정 — 포트폴리오·구독 버튼을 띄운다. 게스트면 null. */
   week: Week;
   label: string;
   scriptText: string;
@@ -203,6 +206,17 @@ export default function Stage({
           {entry.trophies > 0 && <em>🏆{entry.trophies}</em>}
           {mine && <em className={styles.me}>{t("나", "Me")}</em>}
         </p>
+        {(entry.featured || (entry.badges?.length ?? 0) > 0) && (
+          <div className={styles.badgeRow}>
+            {entry.featured && <span className={styles.pick}>⭐ {t("운영자 픽", "Editor's pick")}</span>}
+            {(entry.badges ?? []).filter(isBadge).map((b) => (
+              <span key={b} className={styles.badge}>
+                {badgeLabel(b, lang)}
+              </span>
+            ))}
+          </div>
+        )}
+        <AdminPick entryId={entry.id} />
         <CreatorBar entryId={entry.id} nickname={entry.name} listened={progress >= 1} />
 
         <div className={styles.controls}>
