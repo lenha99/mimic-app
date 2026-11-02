@@ -74,7 +74,8 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
   const open = now === null || now >= week.startsAt;
   const mine = entries.find((e) => e.id === me.mineId) ?? null;
   const podiumReady = entries.length >= MIN_PODIUM;
-  const blindOpen = entries.length >= BATTLE_OPEN;
+  // 배틀은 같은 대본끼리라, 다른 대본으로 올린 목소리는 세지 않는다.
+  const blindOpen = entries.filter((e) => !e.script).length >= BATTLE_OPEN;
 
   const sorted = useMemo(() => {
     if (tab === "rank") return entries;
