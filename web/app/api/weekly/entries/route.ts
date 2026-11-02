@@ -210,13 +210,15 @@ export async function POST(req: Request) {
     after(() => announceNewEntry({ id, userId: user?.id ?? null, client: user ? null : client, name: announceName }));
   }
 
-  const board = await getBoard(week);
+  // 어떤 대본으로 올렸든 이번 주 ❤ 순위 하나다(lib/weekly-server weekRows). 내 다른 목소리가 ❤ 가 더 많아
+  // 이것이 순위에 안 들면 0 — 화면이 순위를 안 보인다.
+  const board = await getBoard(week.free ? currentWeek() : week);
   const me = board.entries.find((e) => e.id === id);
   return Response.json({
     id,
     token: claimToken,
     replaced: Boolean(existing),
-    rank: me?.rank ?? board.entries.length,
+    rank: me?.rank ?? 0,
     total: board.entries.length,
   });
 }

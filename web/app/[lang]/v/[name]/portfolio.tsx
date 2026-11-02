@@ -59,7 +59,7 @@ export default function Portfolio({
   return (
     <main className={`shell ${styles.page}`}>
       <nav className={styles.nav}>
-        <Link href="/weekly">{t("← 보이스 챌린지", "← Voice challenge")}</Link>
+        <Link href="/weekly">{t("← 목소리 갤러리", "← Voice gallery")}</Link>
       </nav>
 
       <section className={styles.hero}>

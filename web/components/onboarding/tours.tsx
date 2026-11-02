@@ -27,16 +27,30 @@ const sets = (t: T) => {
       ),
     },
     {
-      target: "home-weekly",
-      title: t("이번 주 보이스 챌린지", "This week's voice challenge"),
+      target: "home-practice",
+      title: t("연습실 — 여기서 시작해요", "Practice Room — start here"),
       body: t(
         <p>
-          매주 월요일 대본이 하나 열려요. 연습해서 <b>가장 잘 나온 녹음 하나를 출전</b>시키면 다른 사람들이 듣고 ❤ 를 눌러요.
-          올리기 전에 <b>✨ 목소리 보정</b>(잡음 제거)을 켜고 끌 수 있고, <b>코코의 심사표</b>로 내 목소리 타입도 알려 줘요. 가입 없이 돼요.
+          성우·아나운서·스피치 대본을 골라 읽으면 <b>코코가 고칠 곳 하나</b>를 짚어 주고, 그 부분만 다시 읽어 볼 수 있어요.
+          <b> 내 목소리 타입</b>도 알려 줘요. 녹음은 🔒 이 폰에만 남아요. 뭘 읽을지 모르겠으면 아래 <b>이번 주 추천 대본</b>부터.
         </p>,
         <p>
-          A new script drops every Monday. Practice, then <b>enter your best take</b> — others listen and tap ❤. Before you enter you
-          can switch <b>✨ voice polish</b> (noise removal) on or off, and <b>Coco&apos;s scorecard</b> tells you your voice type. No sign-up needed.
+          Pick a script and read it — <b>Coco points out one thing to fix</b> and you can redo just that part. You also get your{" "}
+          <b>voice type</b>. Takes stay 🔒 on this phone. Not sure what to read? Start with <b>this week&apos;s pick</b> below.
+        </p>,
+      ),
+    },
+    {
+      target: "home-weekly",
+      title: t("목소리 갤러리 — 올리고 ❤ 받기", "Voice gallery — post & get ❤"),
+      body: t(
+        <p>
+          잘 나온 테이크는 갤러리에 올릴 수 있어요. <b>어떤 대본이든</b> 이번 주에 올린 목소리는 모두 같은 <b>❤ 순위</b>에 들어가고,
+          매주 1~3위는 명예의 전당에 남아요. 올리기 전에 ✨ 목소리 보정을 켤 수 있고, 가입 없이 돼요.
+        </p>,
+        <p>
+          Post your best take to the gallery. Voices posted this week on <b>any script</b> share one <b>❤ ranking</b>, and the weekly
+          top 3 go to the Hall of Fame. You can switch on ✨ voice polish before posting. No sign-up needed.
         </p>,
       ),
     },
@@ -88,13 +102,10 @@ const sets = (t: T) => {
       ),
     },
     {
-      target: "home-practice",
+      target: "home-voice",
       title: t("더 놀거리", "More to try"),
       body: t(
         <ul>
-          <li>
-            <b>연습실</b> — 대본을 읽으면 속도·쉼·억양을 짚어 줘요. 녹음은 🔒 이 폰에만
-          </li>
           <li>
             <b>음역대 테스트</b> — 10초면 내 최고음·최저음 등급
           </li>
@@ -103,9 +114,6 @@ const sets = (t: T) => {
           </li>
         </ul>,
         <ul>
-          <li>
-            <b>Practice Room</b> — read scripts (in Korean) and get notes on pace, pauses and pitch. Takes stay 🔒 on this phone
-          </li>
           <li>
             <b>Vocal range</b> — your high and low tiers in 10 seconds
           </li>
@@ -121,7 +129,7 @@ const sets = (t: T) => {
       body: t(
         <ul>
           <li>
-            <b>목소리</b> — 올라온 목소리 듣기 · 운영자 픽 · 이번 주 대본
+            <b>목소리</b> — 올라온 목소리 듣기 · ❤ 순위 · 운영자 픽
           </li>
           <li>
             <b>연습실</b> — 대본 연습 · 피드백 게시판
@@ -164,14 +172,15 @@ const sets = (t: T) => {
     },
     {
       target: "voices-prompt",
-      title: t("이번 주 대본", "This week's script"),
+      title: t("이번 주 추천 대본", "This week's pick"),
       body: t(
         <p>
-          매주 월요일 새 대본이 열려요. 연습실에서 몇 번이고 연습한 뒤 마음에 드는 테이크 하나만 올리면 돼요.{" "}
-          <b>이번 주 목소리가 8개 모이면 ♥ 순위전</b>이 열려요.
+          뭘 읽을지 모를 때를 위한 추천이에요. <b>다른 대본으로 올려도 똑같이 ❤ 순위</b>에 들어가요. 연습실에서 몇 번이고 연습한 뒤
+          마음에 드는 테이크를 올리면 돼요. <b>이번 주 8명이 올리면 ❤ 순위판</b>이 열려요.
         </p>,
         <p>
-          A new script every Monday. Practice as much as you like, then post your favorite take. <b>Once 8 voices are in this week, the ♥ ranking unlocks.</b>
+          A suggestion for when you don&apos;t know what to read — <b>any script counts the same for ❤</b>. Practice as much as you like,
+          then post your favorite take. <b>Once 8 people post this week, the ❤ ranking board opens.</b>
         </p>,
       ),
     },
@@ -197,15 +206,15 @@ const sets = (t: T) => {
   const WEEKLY: TourStep[] = [
     {
       target: "weekly-hero",
-      title: t("주간 보이스 챌린지", "Weekly voice challenge"),
+      title: t("이번 주 ❤ 순위", "This week's ❤ ranking"),
       body: t(
         <p>
-          매주 월요일에 <b>대본 하나</b>가 열리고 일요일 밤 12시에 마감돼요. 모두 같은 대본을 읽고, 누가 제일 잘 읽었는지
-          ❤ 로 겨뤄요.
+          이번 주(월요일 ~ 일요일 밤 12시)에 올린 목소리는 <b>대본과 상관없이</b> 모두 같은 ❤ 순위에 들어가요. 위에 보이는 건
+          뭘 읽을지 모를 때를 위한 <b>추천 대본</b>이에요.
         </p>,
         <p>
-          <b>One script</b> opens every Monday and closes Sunday at midnight (KST). Everyone reads the same lines — ❤
-          decides who did it best.
+          Every voice posted this week (Mon – Sun midnight KST) joins the same ❤ ranking, <b>whatever the script</b>. The one up top
+          is just <b>this week&apos;s pick</b> in case you don&apos;t know what to read.
         </p>,
       ),
     },
@@ -228,11 +237,11 @@ const sets = (t: T) => {
       title: t("순위 · 새 목소리", "Top · New voices"),
       body: t(
         <p>
-          새 목소리 탭은 아직 덜 들린 출전작부터 보여줘요. 출전하고 나면 <b>친구에게 1:1 대결</b>을 신청해서 같은
+          새 목소리 탭은 아직 덜 들린 출전작부터 보여줘요. 추천 대본으로 올리면 <b>친구에게 1:1 대결</b>을 신청해서 같은
           대본으로 맞붙을 수도 있어요.
         </p>,
         <p>
-          New voices shows the least-heard entries first. Once you enter, you can <b>challenge a friend 1:1</b> on the
+          New voices shows the least-heard entries first. Post on this week&apos;s pick to <b>challenge a friend 1:1</b> on the
           same script.
         </p>,
       ),

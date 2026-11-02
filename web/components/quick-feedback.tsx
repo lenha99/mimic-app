@@ -6,7 +6,7 @@ import { useT } from "@/components/lang";
 import styles from "./quick-feedback.module.css";
 
 /**
- * 결과 화면 맨 아래 한 줄 — "이거 어땠어요?" 👍 / 👎, 누르면 한 줄 칸이 열린다.
+ * 결과 화면 맨 아래 한 줄 — "이 기능 어떤가요? 피드백은 큰 힘이 됩니다!" 👍 / 👎, 누르면 한 줄 칸이 열린다.
  *
  * 오픈채팅에 "피드백 주세요"라고 해도 아무도 안 쓴다. 글을 남기는 건 부담이고, 남들 앞이다.
  * 버튼 하나는 누른다. 한 번 남긴 화면(같은 항목)에선 다시 묻지 않는다.
@@ -70,7 +70,7 @@ export function QuickFeedback({ page, item }: { page: Page; item?: string }) {
     return (
       <div className={styles.box}>
         <p className={styles.q}>
-          {t("이거 어땠어요?", "How was it?")}
+          {t("이 기능 어떤가요? 피드백은 큰 힘이 됩니다!", "How's this feature? Your feedback means a lot!")}
         </p>
         <div className={styles.row}>
           <button type="button" className={styles.thumb} onClick={() => pick(1)} aria-label={t("좋았어요", "Liked it")}>

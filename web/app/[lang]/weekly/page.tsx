@@ -11,10 +11,10 @@ import Hub from "./hub";
 export async function generateMetadata(): Promise<Metadata> {
   const t = tr(await getLang());
   return {
-    title: t("이번 주 보이스 챌린지", "This week's voice challenge"),
+    title: t("목소리 갤러리 · 이번 주 ❤ 순위", "Voice gallery · this week's ❤ ranking"),
     description: t(
-      "매주 대본 하나! 연습하고 출전해서 ❤ 를 모으면 시상대에 올라요. 가입 없이 바로 출전 가능.",
-      "One script a week. Practice, enter, collect ❤ and take the podium. No sign-up needed.",
+      "연습실에서 녹음한 목소리를 올리고 들어 보세요. 어떤 대본이든 ❤ 를 모으면 이번 주 시상대에 올라요. 가입 없이 바로.",
+      "Post and hear voices from the Practice Room. Any script — collect ❤ to take this week's podium. No sign-up needed.",
     ),
   };
 }

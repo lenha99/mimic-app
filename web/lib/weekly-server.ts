@@ -7,6 +7,7 @@ import {
   previousWeek,
   weekById,
   challengeById,
+  FREE_PREFIX,
   type Award,
   type EntryCard,
   type Week,
@@ -36,21 +37,58 @@ export async function ensureWeek(w: Week, service: Service = createServiceClient
   );
 }
 
+function scriptOf(challengeId: string): EntryCard["script"] {
+  const c = challengeById(challengeId);
+  return c ? { id: c.scriptId, title: c.title, titleEn: c.titleEn, emoji: c.emoji } : null;
+}
+
 /** 순위 — ❤ 많은 순, 같으면 그 녹음을 먼저 올린(바꾼) 쪽이 위. */
 function byRank(a: { like_count: number; updated_at: string }, b: { like_count: number; updated_at: string }) {
   return b.like_count - a.like_count || a.updated_at.localeCompare(b.updated_at);
 }
 
+/**
+ * 이번 주 ❤ 순위에 드는 행. 주간 대본 출전작 + 이 주 안에 올린(바꾼) 자유 출전작 —
+ * 어떤 대본으로 올려도 같은 주 순위에서 겨룬다. 월요일이면 자유 출전작은 순위에서 빠지고
+ * 갤러리에만 남는다(다시 올리면 그 주 순위에 든다 — 교체하면 ❤ 가 0 이 되므로 공평하다).
+ */
+export async function weekRows<R>(service: Service, w: Week, cols: string): Promise<{ data: R[] | null; error: unknown }> {
+  const own = service.from("weekly_entries").select(cols).eq("challenge_id", w.id).eq("hidden", false).limit(500);
+  if (w.free) {
+    const r = await own;
+    return { data: (r.data ?? null) as R[] | null, error: r.error };
+  }
+  const free = service
+    .from("weekly_entries")
+    .select(cols)
+    .like("challenge_id", `${FREE_PREFIX}%`)
+    .gte("updated_at", new Date(w.startsAt).toISOString())
+    .lt("updated_at", new Date(w.endsAt).toISOString())
+    .eq("hidden", false)
+    .limit(500);
+  const [a, b] = await Promise.all([own, free]);
+  if (a.error || b.error) return { data: null, error: a.error ?? b.error };
+  return { data: [...(a.data ?? []), ...(b.data ?? [])] as R[], error: null };
+}
+
+/** 한 사람이 대본마다 올릴 수 있으니, 순위엔 그 사람의 가장 ❤ 많은 목소리 하나만. */
+function bestPerOwner<R extends { owner: string; like_count: number; updated_at: string }>(rows: R[]): R[] {
+  const best = new Map<string, R>();
+  for (const r of [...rows].sort(byRank)) if (!best.has(r.owner)) best.set(r.owner, r);
+  return [...best.values()];
+}
+
 export async function getBoard(w: Week): Promise<WeeklyBoard> {
   const service = createServiceClient();
-  const base = "id, user_id, guest_name, avatar, duration_s, bars, like_count, play_count, created_at, updated_at";
-  const query = (cols: string) =>
-    service.from("weekly_entries").select(cols).eq("challenge_id", w.id).eq("hidden", false).limit(500);
+  const base = "id, challenge_id, owner, user_id, guest_name, avatar, duration_s, bars, like_count, play_count, created_at, updated_at";
+  const query = (cols: string) => weekRows<BoardRow>(service, w, cols);
   // 배틀 칸은 마이그레이션 23 에서 생긴다. 배포가 마이그레이션보다 먼저 나가도 순위판은 떠야 한다.
   let res = await query(`${base}, battle_rating, battle_wins, battle_losses`);
   if (res.error) res = await query(base);
   type BoardRow = {
     id: string;
+    challenge_id: string;
+    owner: string;
     user_id: string | null;
     guest_name: string | null;
     avatar: unknown;
@@ -64,8 +102,8 @@ export async function getBoard(w: Week): Promise<WeeklyBoard> {
     battle_wins?: number;
     battle_losses?: number;
   };
-  const rows = (res.data ?? []) as unknown as BoardRow[];
-  const list = [...rows].sort(byRank);
+  const rows = res.data ?? [];
+  const list = bestPerOwner(rows).sort(byRank);
 
   const users = [...new Set(list.map((r) => r.user_id).filter((x): x is string => !!x))];
   const [{ data: profiles }, { data: awards }] = users.length
@@ -93,6 +131,8 @@ export async function getBoard(w: Week): Promise<WeeklyBoard> {
       plays: r.play_count,
       trophies: r.user_id ? (trophies.get(r.user_id) ?? 0) : 0,
       createdAt: r.updated_at,
+      // 다른 대본으로 올린 목소리 — 카드에 무슨 대본인지 적는다. 블라인드 배틀·1:1 대결은 같은 대본끼리만.
+      script: r.challenge_id === w.id ? null : scriptOf(r.challenge_id),
       battle:
         r.battle_rating === undefined
           ? null
@@ -332,7 +372,10 @@ export async function galleryEntries(limit = 60, opts: { admin?: boolean } = {})
     ? await service.from("profiles").select("id, nickname, avatar").in("id", users)
     : { data: [] as { id: string; nickname: string; avatar: unknown }[] };
   const prof = new Map((profiles ?? []).map((p) => [p.id, p]));
-  const now = currentWeek().id;
+  const cur = currentWeek();
+  const now = cur.id;
+  const thisWeek = (r: Row, free: boolean) =>
+    free ? Date.parse(r.updated_at) >= cur.startsAt && Date.parse(r.updated_at) < cur.endsAt : r.challenge_id === now;
   return rows.flatMap((r) => {
     const w = challengeById(r.challenge_id);
     if (!w) return [];
@@ -348,7 +391,7 @@ export async function galleryEntries(limit = 60, opts: { admin?: boolean } = {})
         likes: r.like_count,
         plays: r.play_count,
         at: r.updated_at,
-        week: { id: w.id, season: w.season, emoji: w.emoji, title: w.title, titleEn: w.titleEn, live: w.id === now, free: Boolean(w.free) },
+        week: { id: w.id, season: w.season, emoji: w.emoji, title: w.title, titleEn: w.titleEn, live: thisWeek(r, Boolean(w.free)), free: Boolean(w.free) },
         featured: Boolean(r.featured_at),
         badges: (r.badges ?? []).slice(0, 3),
         ...(opts.admin ? { promoOk: Boolean(r.promo_ok) } : {}),

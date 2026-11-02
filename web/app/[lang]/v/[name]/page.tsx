@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const name = decodeURIComponent((await params).name);
   const t = await getT();
   const title = t(`${name}의 목소리 — MIMIC`, `${name}'s voice — MIMIC`);
-  const description = t("보이스 챌린지 출전작 모음 · 들어보고 마음에 들면 구독해 주세요", "Voice challenge takes · listen and subscribe");
+  const description = t("올린 목소리 모음 · 들어보고 마음에 들면 구독해 주세요", "Posted voices · listen and subscribe");
   return { title, description, openGraph: { title, description } };
 }
 

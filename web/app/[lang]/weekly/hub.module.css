@@ -1052,3 +1052,20 @@
   font-weight: 900;
   text-decoration: none;
 }
+
+/* 추천 대본이 아닌 다른 대본으로 올린 목소리 — 무슨 대본인지 */
+.rowScript {
+  display: block;
+  margin-top: 1px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ash);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.heroNote a {
+  color: var(--volt);
+  font-weight: 700;
+}

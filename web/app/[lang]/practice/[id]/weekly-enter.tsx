@@ -107,7 +107,7 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
       free
         ? t(`MIMIC 에 「${week.title}」 녹음 올렸어 🎙️${vtype ? ` 내 목소리 타입은 ${vtype.name}!` : ""} 들어보고 ❤ 하나만 눌러줘 🙏`, `I posted my take on "${week.titleEn}" on MIMIC 🎙️${vtype ? ` My voice type: ${vtype.name}!` : ""} Give it a listen and tap ❤ 🙏`)
         : t(
-            `MIMIC 보이스 챌린지 「${week.title}」 출전함 🎙️ 들어보고 ❤ 하나만 눌러줘 🙏`,
+            `MIMIC에 내 목소리 올렸어 「${week.title}」 🎙️ 들어보고 ❤ 하나만 눌러줘 🙏`,
             `I entered the MIMIC voice challenge "${week.titleEn}" 🎙️ Give it a listen and tap ❤ 🙏`,
           ),
     );
@@ -164,7 +164,7 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
       writeMine(week.id, rec);
       setLocal(rec);
       setOpen(false);
-      const rank = d.rank ?? 1;
+      const rank = d.rank ?? 0;
       const total = d.total ?? 1;
       setDone({ id: d.id, rank, total, replaced: Boolean(d.replaced), badges: strengths });
       buzz(30);
@@ -215,7 +215,7 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
                   : t("이 테이크를 목소리 갤러리에 올리기", "Post this take to the voice gallery")
                 : replacing
                   ? t("이 테이크로 출전작 교체하기", "Replace my entry with this take")
-                  : t("이 테이크로 이번 주 챌린지 출전!", "Enter this take in this week's challenge!")}
+                  : t("이 테이크를 목소리 갤러리에 올리기", "Post this take to the voice gallery")}
             </b>
             <small>
               {replacing
@@ -237,8 +237,8 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
           <ul className={styles.facts}>
             <li>
               {free
-                ? t("이 녹음이 목소리 갤러리에서 모두에게 공개돼요 (순위 경쟁은 없어요)", "This take will be public in the voice gallery (no ranking)")
-                : t("이 녹음이 챌린지 화면에서 모두에게 공개돼요", "This take will be public on the challenge page")}
+                ? t("이 녹음이 목소리 갤러리에서 모두에게 공개되고, 이번 주 ❤ 순위에 들어가요", "This take goes public in the voice gallery and joins this week's ❤ ranking")
+                : t("이 녹음이 목소리 갤러리에서 모두에게 공개되고, 이번 주 ❤ 순위에 들어가요", "This take goes public in the voice gallery and joins this week's ❤ ranking")}
             </li>
             {replacing ? (
               <li className={styles.warn}>{t("교체하면 지금까지 받은 ❤ 가 0 으로 돌아가요", "Replacing resets your ❤ to 0")}</li>
@@ -301,7 +301,7 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
                 {t("취소", "Cancel")}
               </button>
               <button type="button" className={styles.go} onClick={() => void submit()} disabled={busy}>
-                {busy ? t("올리는 중…", "Uploading…") : replacing ? t("교체하기", "Replace") : free ? t("올리기 🎙️", "Post 🎙️") : t("출전하기 🏆", "Enter 🏆")}
+                {busy ? t("올리는 중…", "Uploading…") : replacing ? t("교체하기", "Replace") : t("올리기 🎙️", "Post 🎙️")}
               </button>
             </div>
           )}
@@ -322,16 +322,16 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
           </div>
           <div className={styles.card}>
             <p className={styles.cardKicker}>
-              {done.replaced ? t("교체 완료!", "Replaced!") : free ? t("갤러리에 올라갔어요! 🎉", "You're in the gallery! 🎉") : t("출전 완료! 🎉", "You're in! 🎉")}
+              {done.replaced ? t("교체 완료!", "Replaced!") : t("갤러리에 올라갔어요! 🎉", "You're in the gallery! 🎉")}
             </p>
-            {!free && (
+            {done.rank > 0 && (
               <p className={styles.cardRank}>
                 {t(<b>{done.rank}</b>, <b>#{done.rank}</b>)}
                 <span>{t(`위 / ${done.total}명`, ` of ${done.total}`)}</span>
               </p>
             )}
             <p className={styles.cardLine}>
-              {free
+              {done.rank === 0
                 ? t("누가 끝까지 들으면 알려 드릴게요. 친구에게 공유하면 첫 청취가 훨씬 빨라요!", "We'll tell you when someone listens all the way. Sharing gets you that first listen much faster!")
                 : done.total === 1
                 ? t("첫 번째 목소리예요! ❤ 하나만 받아도 1위로 시작해요.", "You're the first voice! A single ❤ puts you at #1.")

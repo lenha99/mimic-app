@@ -71,7 +71,6 @@ const LINE_TAIL_MS = 2_500;
 const COUNT_MS = 380;
 const SIZE_KEY = "mimic.practice.size";
 /** 대본 확인을 매번 자동으로 할지 — 처음 한 번은 직접 누르게 하고, 그때 고른다. */
-const CHECK_KEY = "mimic.practice.check";
 const MARKS_KEY = "mimic.practice.marks";
 
 type Score = {
@@ -102,7 +101,6 @@ export default function Room({ item }: { item: RoomItem }) {
   const [refAnalysis, setRefAnalysis] = useState<Analysis | null>(null);
   const [scoring, setScoring] = useState(false);
   const [checking, setChecking] = useState<string | null>(null);
-  const [autoCheck, setAutoCheck] = useState(false);
   /** 대본 위에 확인 결과(빠뜨림·바꿈·덧붙임)를 겹쳐 보일지 */
   const [overlay, setOverlay] = useState(true);
 
@@ -127,7 +125,8 @@ export default function Room({ item }: { item: RoomItem }) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       if ([0, 1, 2].includes(s)) setSize(s);
       if (m === "0") setMarks(false);
-      if (localStorage.getItem(CHECK_KEY) === "1") setAutoCheck(true);
+      // 예전 "앞으로 자동" 설정은 지운다 — 이제 누를 때만 확인한다.
+      localStorage.removeItem("mimic.practice.check");
     } catch {}
   }, []);
 
@@ -227,17 +226,11 @@ export default function Room({ item }: { item: RoomItem }) {
   }, [item, refAnalysis]);
 
   /**
-   * 대본 확인 — 녹음을 받아써서 대본과 맞춰본다. 대본 녹음이 서버로 가는 유일한 길이라
-   * 사용자가 누를 때(또는 "매번"을 골랐을 때)만 돈다. 지난 테이크에도 누를 수 있다.
+   * 대본 확인 — 녹음을 받아써서 대본과 맞춰본다. 대본 녹음이 서버로 가는 유일한 길이고
+   * 받아쓰기는 채점보다 비싸서 사용자가 버튼을 누를 때만 돈다(자동 없음). 지난 테이크에도 누를 수 있다.
    */
   const check = useCallback(
-    async (t: Take, always?: boolean) => {
-      if (always !== undefined) {
-        setAutoCheck(always);
-        try {
-          localStorage.setItem(CHECK_KEY, always ? "1" : "0");
-        } catch {}
-      }
+    async (t: Take) => {
       setChecking(t.id);
       setError(null);
       try {
@@ -256,7 +249,7 @@ export default function Room({ item }: { item: RoomItem }) {
         await refresh();
         setOverlay(true);
       } catch {
-        setError(L("받아쓰기 서버에 연결이 안 됐어요. 잠시 뒤 다시 눌러주세요", "Couldn't reach the transcription server. Try again in a moment"));
+        setError(L("대본 확인이 잠깐 안 됐어요. 잠시 뒤 다시 눌러주세요", "Couldn't check the script. Try again in a moment"));
       } finally {
         setChecking(null);
       }
@@ -292,8 +285,6 @@ export default function Room({ item }: { item: RoomItem }) {
         }),
       );
 
-      if (autoCheck) void check(take);
-
       if (item.kind === "line") {
         setScoring(true);
         try {
@@ -316,7 +307,7 @@ export default function Room({ item }: { item: RoomItem }) {
         }
       }
     },
-    [autoCheck, check, item.kind, itemId, refresh, syl, L],
+    [item.kind, itemId, refresh, syl, L],
   );
 
   const stop = useCallback(() => {
@@ -713,8 +704,7 @@ export default function Room({ item }: { item: RoomItem }) {
             text={text}
             match={match}
             checking={checking === open.id}
-            autoCheck={autoCheck}
-            onCheck={(always) => void check(open, always)}
+            onCheck={() => void check(open)}
           />
         )}
         {phase !== "analyzing" && open && (
@@ -975,7 +965,6 @@ function TakeReport({
   text,
   match,
   checking,
-  autoCheck,
   onCheck,
 }: {
   take: Take;
@@ -992,8 +981,7 @@ function TakeReport({
   text: string;
   match: MatchResult | null;
   checking: boolean;
-  autoCheck: boolean;
-  onCheck: (always?: boolean) => void;
+  onCheck: () => void;
 }) {
   const L = useT();
   const lang = useLang();
@@ -1056,7 +1044,6 @@ function TakeReport({
         match={match}
         heardEmpty={!!take.transcript && !take.transcript.text.trim()}
         checking={checking}
-        autoCheck={autoCheck}
         onCheck={onCheck}
       />
 
@@ -1189,23 +1176,20 @@ function clock(ms: number): string {
  * 대본 확인 — 결과는 "고칠 곳" 목록으로 준다. 틀린 말과 그 말이 든 구절을 같이 보여서
  * 다음 테이크에 그 구절만 다시 읽으면 되게 한다.
  *
- * 녹음이 서버로 가는 일이라 처음 한 번은 묻는다. 기본 버튼이 "앞으로 자동"이다 —
- * 연습할 때마다 누르게 하면 아무도 안 누른다.
+ * 비용이 드는 유일한 확인이라 버튼을 누를 때만 한다. 서버·받아쓰기 같은 말은 사용자에게 보이지 않는다.
  */
 function ScriptCheck({
   text,
   match,
   heardEmpty,
   checking,
-  autoCheck,
   onCheck,
 }: {
   text: string;
   match: MatchResult | null;
   heardEmpty: boolean;
   checking: boolean;
-  autoCheck: boolean;
-  onCheck: (always?: boolean) => void;
+  onCheck: () => void;
 }) {
   const L = useT();
   const fixes = useMemo(() => (match ? fixesOf(text, match) : []), [match, text]);
@@ -1224,30 +1208,13 @@ function ScriptCheck({
   }
 
   if (!match) {
-    if (autoCheck) {
-      return (
-        <div className={styles.scriptCheck}>
-          <button type="button" className={styles.pill} onClick={() => onCheck()}>
-            {L("이 테이크 대본 확인", "Check this take")}
-          </button>
-        </div>
-      );
-    }
     return (
       <div className={styles.scriptCheck}>
-        <p className={styles.scriptCheckHead}>{L("대본대로 읽었는지도 확인해 볼까요?", "Want to check if you read it word for word?")}</p>
-        <p className={styles.checkNote}>
-          {L(
-            "빠뜨린 말·바꾼 말을 찾아서 고칠 곳을 알려드려요. 테이크를 잠깐 서버로 보내 글자로 바꾸고, 녹음도 글자도 바로 지워요.",
-            "We'll spot skipped or changed words. Your take is briefly sent to the server for transcription, then both audio and text are deleted.",
-          )}
-        </p>
+        <p className={styles.scriptCheckHead}>{L("대본대로 읽었는지 확인해 볼까요?", "Check if you read it word for word?")}</p>
+        <p className={styles.checkNote}>{L("빠뜨린 말·바꾼 말을 찾아 알려드려요.", "We'll point out skipped or changed words.")}</p>
         <div className={styles.checkBtns}>
-          <button type="button" className={styles.pillOn} onClick={() => onCheck(true)}>
-            {L("확인하기 · 앞으로 자동", "Check · always")}
-          </button>
-          <button type="button" className={styles.textBtn} onClick={() => onCheck()}>
-            {L("이번만", "Just this once")}
+          <button type="button" className={styles.pillOn} onClick={onCheck}>
+            {L("대본 확인하기", "Check script")}
           </button>
         </div>
       </div>
@@ -1327,8 +1294,8 @@ function ScriptCheck({
       )}
       <p className={styles.checkFine}>
         {L(
-          "받아쓰기 기반이라 살짝 뭉개진 발음까지는 못 잡아요. 빠뜨리거나 바꾼 말을 찾는 용도예요.",
-          "This is transcription-based, so it won't catch slightly mumbled sounds — it's for skipped or changed words.",
+          "빠뜨리거나 바꾼 말을 찾는 용도예요. 살짝 뭉개진 발음까지는 못 잡아요.",
+          "It finds skipped or changed words — it won't catch slightly mumbled sounds.",
         )}
       </p>
     </div>

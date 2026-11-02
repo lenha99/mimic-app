@@ -80,7 +80,8 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
     if (tab === "rank") return entries;
     if (tab === "blind") {
       // 블라인드 — 이름 없이 들은 사람들이 고른 순서. 판 수가 모자란 작품은 아래에 "심사 중"으로.
-      return [...entries].sort(
+      // 배틀은 같은 대본끼리라 추천 대본 출전작만.
+      return entries.filter((e) => !e.script).sort(
         (a, b) =>
           Number(battled(b)) - Number(battled(a)) ||
           (b.battle?.rating ?? 0) - (a.battle?.rating ?? 0) ||
@@ -146,8 +147,8 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
     const r = await shareLink(
       `${location.origin}/weekly/e/${mine.id}`,
       t(
-        `MIMIC 보이스 챌린지 「${week.title}」 출전함 🎙️ 들어보고 ❤ 하나만 눌러줘 🙏`,
-        `I entered the MIMIC voice challenge "${week.titleEn}" 🎙️ Give it a listen and tap ❤ 🙏`,
+        `MIMIC에 내 목소리 올렸어 🎙️ 들어보고 ❤ 하나만 눌러줘 🙏`,
+        `I posted my voice on MIMIC 🎙️ Give it a listen and tap ❤ 🙏`,
       ),
     );
     if (r === "copied") showToast(t("링크 복사 완료! 단톡방에 붙여 넣어 보세요", "Link copied! Paste it in your group chat"));
@@ -187,7 +188,7 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
         <div className={styles.heroGlow} aria-hidden="true" />
         <p className={styles.heroKicker}>
           <span className={styles.seasonChip}>{label}</span>
-          <span>{week.emoji} {t("이번 주 대본", "This week's script")}</span>
+          <span>{week.emoji} {t("이번 주 추천 대본", "This week's pick")}</span>
         </p>
         <h1 className={styles.heroTitle}>{t(week.title, week.titleEn)}</h1>
         {script && (
@@ -199,7 +200,12 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
           </blockquote>
         )}
 
-        <p className={styles.heroWhen}>{open ? t("마감까지", "Closes in") : t("시즌 오픈까지", "Season opens in")}</p>
+        <p className={styles.heroNote}>
+          {t("다른 대본으로 올려도 같은 ❤ 순위예요 · ", "Any script counts for the same ❤ ranking · ")}
+          <Link href="/practice">{t("대본 고르기 →", "Pick a script →")}</Link>
+        </p>
+
+        <p className={styles.heroWhen}>{open ? t("이번 주 순위 마감까지", "Ranking closes in") : t("시즌 오픈까지", "Season opens in")}</p>
         <Countdown to={open ? week.endsAt : week.startsAt} />
 
         <dl className={styles.heroStats}>
@@ -218,12 +224,12 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
         </dl>
 
         {mine ? (
-          <Link href={`/practice/${week.scriptId}?from=weekly`} className={styles.heroGhost}>
+          <Link href={`/practice/${mine.script?.id ?? week.scriptId}?from=weekly`} className={styles.heroGhost}>
             {t("다시 녹음해서 교체하기", "Re-record & replace")}
           </Link>
         ) : (
           <Link href={`/practice/${week.scriptId}?from=weekly`} className={styles.heroGo} data-tour="weekly-go">
-            {open ? t("연습하고 출전하기", "Practice & enter") : t("미리 연습해 두기", "Practice ahead")}
+            {open ? t("추천 대본으로 올리기", "Post with this script") : t("미리 연습해 두기", "Practice ahead")}
             <i aria-hidden="true">→</i>
           </Link>
         )}
@@ -320,25 +326,27 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
       {last && last.awards.length > 0 && <LastWeek last={last} />}
 
       <details className={styles.rules}>
-        <summary>{t("챌린지 규칙", "Rules")}</summary>
+        <summary>{t("❤ 순위 규칙", "Ranking rules")}</summary>
         {t(
           <ul>
-            <li>매주 월요일 0시에 새 대본이 열리고 일요일 밤 12시에 마감돼요.</li>
-            <li>한 사람(한 기기)당 한 작품이에요. 다시 녹음해 교체할 수 있지만, 교체하면 ❤ 가 0 으로 돌아가요.</li>
+            <li>이번 주(월요일 0시 ~ 일요일 밤 12시)에 올린 목소리는 대본과 상관없이 모두 같은 ❤ 순위에 들어가요.</li>
+            <li>여러 대본으로 올렸다면 그중 ❤ 가 가장 많은 하나만 순위에 올라요. 다시 녹음해 교체하면 그 목소리의 ❤ 는 0 으로 돌아가요.</li>
+            <li>매주 월요일 순위가 새로 시작돼요. 지난 목소리는 갤러리에 그대로 남아요.</li>
             <li>❤ 는 한 사람이 한 출전작에 한 번만 누를 수 있어요. 내 작품엔 못 눌러요.</li>
             <li>마감 때 ❤ 순으로 1~3위가 시상대에 올라 명예의 전당과 프로필에 트로피가 남아요.</li>
             <li>가입 없이 출전해도 돼요. 트로피를 계정에 남기려면 마감 전에 로그인해 주세요.</li>
-            <li>출전하면 친구에게 1:1 대결을 신청할 수 있어요. 대결 결과는 ❤ 순위와 따로예요.</li>
-            {blindOpen && <li>블라인드 순위도 따로예요. 이름 없이 두 녹음을 듣고 고른 결과로만 정해지고, {MIN_BATTLES}판 이상 치러야 올라가요.</li>}
+            <li>추천 대본으로 올리면 친구에게 1:1 대결을 신청할 수 있어요. 대결 결과는 ❤ 순위와 따로예요.</li>
+            {blindOpen && <li>블라인드 순위도 따로예요. 추천 대본 목소리끼리 이름 없이 듣고 고른 결과로만 정해지고, {MIN_BATTLES}판 이상 치러야 올라가요.</li>}
           </ul>,
           <ul>
-            <li>A new script opens Monday 00:00 and closes Sunday midnight (KST).</li>
-            <li>One entry per person (device). You can replace it, but its ❤ reset to 0.</li>
+            <li>Every voice posted this week (Mon 00:00 – Sun midnight KST) joins the same ❤ ranking, whatever the script.</li>
+            <li>If you post several scripts, only your most-❤ one is ranked. Replacing a recording resets its ❤ to 0.</li>
+            <li>The ranking restarts every Monday. Older voices stay in the gallery.</li>
             <li>One ❤ per person per entry. You can&apos;t ❤ your own.</li>
             <li>At close, the top 3 by ❤ take the podium and get trophies in the Hall of Fame and on their profiles.</li>
             <li>No sign-up needed to enter. Log in before the deadline to keep your trophy.</li>
-            <li>Once you enter, you can challenge a friend to a 1:1 duel. Duel results don&apos;t affect the ❤ ranking.</li>
-            {blindOpen && <li>The Blind ranking is separate too: it comes only from listeners picking between two nameless recordings. {MIN_BATTLES}+ battles to get ranked.</li>}
+            <li>Post with this week&apos;s pick to challenge a friend to a 1:1 duel. Duel results don&apos;t affect the ❤ ranking.</li>
+            {blindOpen && <li>The Blind ranking is separate too: only voices on this week&apos;s pick, judged nameless by listeners. {MIN_BATTLES}+ battles to get ranked.</li>}
           </ul>,
         )}
       </details>
@@ -435,9 +443,11 @@ function MyStanding({ mine, entries, onShare }: { mine: EntryCard; entries: Entr
           <Link href={`/weekly/e/${mine.id}`} className={styles.mineView}>
             {t("내 출전작", "My entry")}
           </Link>
-          <Link href={`/weekly/vs/${mine.id}`} className={styles.mineDuel}>
-            {t("⚔️ 친구에게 1:1 대결 신청", "⚔️ Challenge a friend 1:1")}
-          </Link>
+          {!mine.script && (
+            <Link href={`/weekly/vs/${mine.id}`} className={styles.mineDuel}>
+              {t("⚔️ 친구에게 1:1 대결 신청", "⚔️ Challenge a friend 1:1")}
+            </Link>
+          )}
         </div>
       </div>
     </section>
@@ -586,6 +596,11 @@ function Row({
               {e.trophies > 0 && <em className={styles.tagTrophy}>🏆{e.trophies}</em>}
               {fresh && !isMine && <em className={styles.tagNew}>NEW</em>}
             </span>
+            {e.script && (
+              <span className={styles.rowScript}>
+                {e.script.emoji} {t(e.script.title, e.script.titleEn)}
+              </span>
+            )}
             <span className={styles.wave} aria-hidden="true">
               {bars.map((b, i) => (
                 <i

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { currentWeek } from "@/lib/weekly";
+import { weekRows } from "@/lib/weekly-server";
 
 /**
  * 이번 주에 "나"와 관련된 것 — 내가 ❤ 누른 출전작, 로그인 출전이면 내 출전작.
@@ -22,18 +23,21 @@ export async function GET(req: Request) {
   );
 
   const service = createServiceClient();
-  const { data: entries } = await service
-    .from("weekly_entries")
-    .select("id, user_id, owner")
-    .eq("challenge_id", week.id)
-    .eq("hidden", false)
-    .limit(500);
+  // 다른 대본으로 이번 주에 올린 것도 같은 순위다(lib/weekly-server weekRows).
+  const { data: entries } = await weekRows<{ id: string; user_id: string | null; owner: string; like_count: number }>(
+    service,
+    week,
+    "id, user_id, owner, like_count",
+  );
   const ids = (entries ?? []).map((e) => e.id);
   const { data: likes } =
     voters.length && ids.length
       ? await service.from("weekly_likes").select("entry_id").in("voter", voters).in("entry_id", ids)
       : { data: [] };
-  const mine = (entries ?? []).find((e) => (user && e.user_id === user.id) || voters.includes(e.owner));
+  // 여러 대본으로 올렸으면 순위에 드는 것(❤ 가장 많은 것)이 "내 것"이다.
+  const mine = (entries ?? [])
+    .filter((e) => (user && e.user_id === user.id) || voters.includes(e.owner))
+    .sort((a, b) => b.like_count - a.like_count)[0];
 
   return Response.json(
     { week: week.id, loggedIn: Boolean(user), liked: [...new Set((likes ?? []).map((l) => l.entry_id))], mine: mine?.id ?? null },
