@@ -96,7 +96,7 @@ export default function Gallery({
           <Link href={`/practice/${week.scriptId}?from=weekly`} className={styles.promptGo}>
             {t("🎙 녹음하고 올리기", "🎙 Record & post")}
           </Link>
-          <p className={styles.promptNote}>{t("✨ 자동 보정 · 😳 심사위원 반응 · ⭐ 좋은 목소리는 홈 추천에 소개", "✨ Auto polish · 😳 Judge reactions · ⭐ Great voices get featured")}</p>
+          <p className={styles.promptNote}>{t("✨ 자동 보정 · 😳 심사위원 · ⭐ 홈 추천 소개", "✨ Auto polish · 😳 Judges · ⭐ Get featured")}</p>
           <div className={styles.goal} aria-label={t(`순위전까지 ${left}개 남음`, `${left} more to unlock rankings`)}>
             <div className={styles.goalTrack}>
               <span style={{ width: `${Math.min(100, (thisWeek / rankedMin) * 100)}%` }} />

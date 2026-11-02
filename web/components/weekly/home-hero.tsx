@@ -84,8 +84,8 @@ export function HomeHero({
             </>
           ) : total > 0 ? (
             <>
-              <b>{t(`지금까지 올라온 목소리 ${total}개 듣기`, `Hear ${total} voice${total === 1 ? "" : "s"} so far`)}</b>
-              <small>{t("이번 주 첫 목소리가 되면 1위로 시작해요", "Be this week's first voice and start at #1")}</small>
+              <b>{t(`올라온 목소리 ${total}개 듣기`, `Hear ${total} voice${total === 1 ? "" : "s"}`)}</b>
+              <small>{t("이번 주 첫 목소리는 1위로 시작", "This week's first voice starts at #1")}</small>
             </>
           ) : (
             <>
