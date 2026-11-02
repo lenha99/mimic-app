@@ -725,7 +725,7 @@ export default function Room({ item }: { item: RoomItem }) {
               scriptId={itemId}
               title={item.kind === "script" ? item.script.title : item.meme.title}
               text={text}
-              track={item.kind === "script" ? item.script.track : "line"}
+              track={item.kind === "script" ? (item.script.track === "speech" ? "anchor" : item.script.track) : "line"}
               onPosted={() => void refresh()}
             />
             <QuickFeedback page="practice" item={itemId} />

@@ -144,6 +144,7 @@ export function ScriptEditor() {
           options={[
             ["voice", t("성우 연기", "Voice acting")],
             ["anchor", t("아나운서·낭독", "Anchor & reading")],
+            ["speech", t("스피치·면접", "Speech & interview")],
           ]}
         />
       </fieldset>

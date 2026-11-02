@@ -102,7 +102,7 @@ def test_script_shape(scripts, memes):
     assert not set(ids) & {m["id"] for m in memes}, "대본 id 가 밈 id 와 겹친다 (연습실 주소가 같다)"
     for s in scripts:
         assert SCRIPT_ID_RE.match(s["id"]), f"대본 id 형식: {s['id']}"
-        assert s["track"] in {"voice", "anchor"}, s["id"]
+        assert s["track"] in {"voice", "anchor", "speech"}, s["id"]
         assert s["level"] in {1, 2, 3}, s["id"]
         assert s["pitch"] in {"low", "mid", "high"}, s["id"]
         lo, hi = s["pace"]

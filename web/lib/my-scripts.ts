@@ -158,6 +158,6 @@ function valid(s: unknown): s is MyScript {
     typeof x.title === "string" &&
     typeof x.text === "string" &&
     Array.isArray(x.pace) &&
-    (x.track === "voice" || x.track === "anchor")
+    (x.track === "voice" || x.track === "anchor" || x.track === "speech")
   );
 }
