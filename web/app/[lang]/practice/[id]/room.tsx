@@ -740,8 +740,8 @@ export default function Room({ item }: { item: RoomItem }) {
             <p className={styles.emptyTitle}>{L("첫 테이크를 남겨 보세요 🎙️", "Record your first take 🎙️")}</p>
             <p>
               {L(
-                "아래 버튼을 누르고 3·2·1 뒤에 읽기 시작하면 돼요. 다 읽으면 한 번 더 눌러 끝내세요. 속도·쉼·억양·말끝을 바로 짚어드릴게요.",
-                "Tap the button below and start reading after 3·2·1. Tap again when you're done — you'll get notes on pace, pauses, intonation and endings right away.",
+                "아래 버튼을 누르고 3·2·1 뒤에 읽기 시작하면 돼요. 다 읽으면 한 번 더 눌러 끝내세요. 코코가 목소리 타입을 알려 주고, 대본대로 읽었는지도 확인해 줘요.",
+                "Tap the button below and start reading after 3·2·1. Tap again when you're done — Coco gives you a voice type and can check you read every word.",
               )}
             </p>
             <PrivacyTag kind="device" />

@@ -175,7 +175,7 @@ export default function Stage({
       />
 
       <nav className={styles.nav}>
-        <Link href="/weekly">{week.free ? t("← 목소리", "← Voices") : t("← 이번 주 챌린지", "← This week")}</Link>
+        <Link href="/weekly">{t("← 목소리 갤러리", "← Voice gallery")}</Link>
         {me.loggedIn && !mine && (
           <button type="button" className={styles.report} onClick={() => void report()}>
             {t("신고", "Report")}
@@ -288,7 +288,7 @@ export default function Stage({
               <p className={styles.ctaNote}>
                 {t("가입 없이 · 연습은 내 폰에만 · 마음에 든 테이크 하나만 올라가요", "No sign-up · practice stays on your phone · only your pick goes up")}
               </p>
-              <p className={styles.ctaTitle}>{t(`이번 주 챌린지는 「${thisWeek.title}」`, `This week's challenge: "${thisWeek.titleEn}"`)}</p>
+              <p className={styles.ctaTitle}>{t(`이번 주 추천 대본은 「${thisWeek.title}」 · 다른 대본도 OK`, `This week's pick: "${thisWeek.titleEn}" · any script works`)}</p>
             </>
           )}
           <p className={styles.ctaTitle} hidden={week.free}>

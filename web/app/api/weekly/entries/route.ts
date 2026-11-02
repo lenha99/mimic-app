@@ -66,7 +66,7 @@ export async function POST(req: Request) {
     return Response.json({ error: t("이번 주 대본은 챌린지로 출전해 주세요. 새로고침해 보세요.", "This week's script goes to the challenge. Please refresh.") }, { status: 409 });
   }
   if (weekId !== week.id || !isLive(week)) {
-    return Response.json({ error: t("이번 주 챌린지가 마감됐어요. 새 대본으로 다시 도전해 주세요.", "This week's challenge has closed. Try again with the new script.") }, { status: 409 });
+    return Response.json({ error: t("이번 주 ❤ 순위가 마감됐어요. 새로고침하고 다시 올려 주세요.", "This week's ranking has closed. Refresh and post again.") }, { status: 409 });
   }
   if (!(file instanceof Blob) || file.size < 1000) {
     return Response.json({ error: t("녹음이 비어 있어요.", "The recording is empty.") }, { status: 400 });

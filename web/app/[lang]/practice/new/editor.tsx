@@ -121,8 +121,8 @@ export function ScriptEditor() {
       <h1 className={styles.h1}>{editId ? t("내 대본 고치기", "Edit my script") : t("내 대본 넣기", "Add my script")}</h1>
       <p className={styles.lede}>
         {t(
-          "오디션·학원 대본을 붙여넣으면 다른 대본처럼 속도·쉼·억양을 똑같이 짚어드려요. 대본은 이 폰에만 저장되고 서버로 가지 않아요.",
-          "Paste an audition or class script (Korean) and get the same notes on pace, pauses and intonation. It stays on this phone — never sent to our server.",
+          "오디션·학원 대본을 붙여넣으면 다른 대본처럼 코코가 대본대로 읽었는지 짚어 줘요. 대본은 이 폰에만 저장돼요.",
+          "Paste an audition or class script (Korean) and Coco checks your reading just like the others. The script stays on this phone.",
         )}
       </p>
 

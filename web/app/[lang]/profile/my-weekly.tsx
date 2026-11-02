@@ -42,7 +42,7 @@ export async function MyWeekly({ awards, entries, now }: { awards: Award[]; entr
       {entries.length === 0 ? (
         <p className={styles.hint}>
           {t("아직 출전한 적이 없어요. 매주 대본 하나로 ❤ 를 겨뤄요.", "No entries yet. Each week, one script — compete for ❤.")}{" "}
-          <Link href="/weekly">{t("이번 주 챌린지 →", "This week's challenge →")}</Link>
+          <Link href="/weekly">{t("목소리 갤러리 →", "Voice gallery →")}</Link>
         </p>
       ) : (
         <ul className={styles.recList}>

@@ -18,11 +18,11 @@ const sets = (t: T) => {
       body: t(
         <p>
           동그라미 하나가 목소리 하나예요. <b>색 테두리는 아직 안 들어 본 목소리</b>, 누르면 바로 들을 수 있어요. 맨 앞{" "}
-          <b>+ 내 목소리</b>를 누르면 녹음하고 올리는 곳으로 가요.
+          <b>+ 내 목소리</b>를 누르면 연습실로 가요 — 아무 대본이나 골라 녹음하고 올리면 돼요.
         </p>,
         <p>
           Each circle is one voice. <b>A colored ring means you haven&apos;t heard it yet</b> — tap to listen. Tap <b>+ Your voice</b>{" "}
-          to record and enter.
+          to open the Practice Room — pick any script, record, and post.
         </p>,
       ),
     },
@@ -31,11 +31,11 @@ const sets = (t: T) => {
       title: t("연습실 — 여기서 시작해요", "Practice Room — start here"),
       body: t(
         <p>
-          성우·아나운서·스피치 대본을 골라 읽으면 <b>코코가 고칠 곳 하나</b>를 짚어 주고, 그 부분만 다시 읽어 볼 수 있어요.
+          성우·아나운서·스피치 대본을 골라 읽으면 <b>코코가 대본대로 읽었는지</b> 대본 위에 형광펜으로 짚어 주고, 틀린 구절만 다시 읽어 볼 수 있어요.
           <b> 내 목소리 타입</b>도 알려 줘요. 녹음은 🔒 이 폰에만 남아요. 뭘 읽을지 모르겠으면 아래 <b>이번 주 추천 대본</b>부터.
         </p>,
         <p>
-          Pick a script and read it — <b>Coco points out one thing to fix</b> and you can redo just that part. You also get your{" "}
+          Pick a script and read it — <b>Coco highlights what you skipped or misread</b> right on the script, and you can redo just that part. You also get your{" "}
           <b>voice type</b>. Takes stay 🔒 on this phone. Not sure what to read? Start with <b>this week&apos;s pick</b> below.
         </p>,
       ),
@@ -248,15 +248,15 @@ const sets = (t: T) => {
     },
     {
       target: "weekly-go",
-      title: t("나도 출전하려면", "Want to enter?"),
+      title: t("나도 올리려면", "Want to post?"),
       body: t(
         <p>
-          이 버튼을 누르면 이번 주 대본 연습 화면으로 가요. 녹음해 보고, 마음에 드는 테이크 아래{" "}
-          <b>🏆 이번 주 챌린지 출전</b>을 누르면 끝! 가입 없이도 돼요.
+          이 버튼은 이번 주 추천 대본으로 가요. 다른 대본이 좋으면 연습실에서 아무거나 골라도 돼요. 녹음해 보고, 마음에 드는
+          테이크 아래 <b>목소리 갤러리에 올리기</b>를 누르면 끝! 가입 없이도 돼요.
         </p>,
         <p>
-          This takes you to this week&apos;s script. Record a few takes, then hit <b>🏆 Enter this week</b> under the one
-          you like. No sign-up needed.
+          This opens this week&apos;s pick — or choose any script in the Practice Room. Record a few takes, then hit{" "}
+          <b>Post to the voice gallery</b> under the one you like. No sign-up needed.
         </p>,
       ),
     },
@@ -276,12 +276,12 @@ const sets = (t: T) => {
       title: t("연습실", "Practice Room"),
       body: t(
         <p>
-          성우·아나운서 대본을 혼자 연습하는 곳이에요. 녹음하면 속도·쉼·억양·말끝을 짚어드리고, 연습 녹음은{" "}
-          <b>🔒 이 폰에만</b> 남아요.
+          성우·아나운서 대본을 혼자 연습하는 곳이에요. 녹음하면 <b>코코의 심사표</b>가 대본대로 읽었는지 짚어 주고 목소리 타입도
+          알려 줘요. 연습 녹음은 <b>🔒 이 폰에만</b> 남고, 잘 나온 테이크는 목소리 갤러리에 올릴 수 있어요.
         </p>,
         <p>
-          Solo practice with Korean voice-acting and anchor scripts. We flag pace, pauses, intonation and endings, and
-          takes stay <b>🔒 on this phone</b>.
+          Solo practice with Korean voice-acting and anchor scripts. <b>Coco&apos;s scorecard</b> checks you read it word for
+          word and gives you a voice type. Takes stay <b>🔒 on this phone</b>; post your best one to the voice gallery.
         </p>,
       ),
     },
@@ -361,11 +361,11 @@ const sets = (t: T) => {
       title: t("연습 녹음은 내 폰에만", "Practice takes stay private"),
       body: t(
         <p>
-          녹음은 🔒 이 폰에만 저장돼 아무도 못 들어요. 직접 <b>출전</b>하거나 <b>게시판에 올린</b> 테이크만 🌐 다른
+          녹음은 🔒 이 폰에만 저장돼 아무도 못 들어요. <b>목소리 갤러리</b>나 <b>피드백 게시판</b>에 직접 올린 테이크만 🌐 다른
           사람이 들을 수 있어요.
         </p>,
         <p>
-          Takes are 🔒 saved on this phone only. Only takes you <b>enter</b> or <b>post to the board</b> can be 🌐 heard
+          Takes are 🔒 saved on this phone only. Only takes you <b>post to the gallery</b> or <b>the feedback board</b> can be 🌐 heard
           by others.
         </p>,
       ),
@@ -377,8 +377,14 @@ const sets = (t: T) => {
       target: "room-result",
       title: t("진단 결과", "Your notes"),
       body: t(
-        <p>방금 테이크의 속도·쉼·억양·말끝을 짚어드려요. 고칠 곳을 확인하고 다시 녹음해 비교해 보세요.</p>,
-        <p>Pace, pauses, intonation and endings for that take. Check what to fix, record again, compare.</p>,
+        <p>
+          <b>🦜 코코한테 확인받기</b>를 누르면 빠뜨리거나 다르게 읽은 말을 대본 위에 형광펜으로 표시해요. 틀린 구절만 다시 읽어
+          고쳐 보세요. 아래엔 목소리 타입과 속도·쉼·억양 폭·말끝 수치가 있어요.
+        </p>,
+        <p>
+          Tap <b>🦜 Ask Coco to check</b> and skipped or misread words get highlighted on the script. Redo just those parts.
+          Below: your voice type plus pace, pauses, pitch range and endings.
+        </p>,
       ),
     },
     {
@@ -396,10 +402,10 @@ const sets = (t: T) => {
     },
     {
       target: "room-enter",
-      title: t("이번 주 챌린지 출전", "Enter this week"),
+      title: t("목소리 갤러리에 올리기", "Post to the voice gallery"),
       body: t(
-        <p>이번 주 대본이라면 이 버튼으로 출전해요. 출전한 테이크는 🌐 순위에 올라가고 다른 사람들이 ❤ 를 눌러요.</p>,
-        <p>If this is this week&apos;s script, enter here. Your take goes 🌐 on the ranking for others to ❤.</p>,
+        <p>마음에 드는 테이크를 🌐 목소리 갤러리에 올려요. 어떤 대본이든 이번 주 ❤ 순위에 들어가고, 다른 사람들이 듣고 ❤ 를 눌러요.</p>,
+        <p>Post your favorite take 🌐 to the voice gallery. Any script joins this week&apos;s ❤ ranking for others to hear and ❤.</p>,
       ),
     },
     {
@@ -545,8 +551,8 @@ const sets = (t: T) => {
       target: "me-nickname",
       title: t("닉네임", "Nickname"),
       body: t(
-        <p>챌린지에 출전하면 이 이름으로 보여요. 안 정하면 &lsquo;익명의 목소리&rsquo;로 나와요.</p>,
-        <p>This is the name on your entries. Skip it and you&apos;ll show up as &lsquo;Anonymous voice&rsquo;.</p>,
+        <p>목소리를 올리면 이 이름으로 보여요. 안 정하면 &lsquo;익명의 목소리&rsquo;로 나와요.</p>,
+        <p>This is the name on voices you post. Skip it and you&apos;ll show up as &lsquo;Anonymous voice&rsquo;.</p>,
       ),
     },
     {

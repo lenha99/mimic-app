@@ -229,8 +229,8 @@ export default function PracticeHome({
         <h1 className={styles.h1}>{t("읽고, 듣고, 다시 읽기", "Read. Listen. Again.")}</h1>
         <p className={styles.lede}>
           {t(
-            `성우·아나운서·스피치 준비생을 위한 대본 ${scripts.length}편. 녹음하면 속도·쉼·억양·말끝을 바로 짚어드리고, 대본대로 읽었는지도 확인해드려요. 녹음은 이 폰에만 남아요.`,
-            `${scripts.length} Korean scripts for aspiring voice actors, anchors and speakers. Record and get instant notes on pace, pauses, intonation and endings — plus a check that you read every word. Takes stay on your phone.`,
+            `성우·아나운서·스피치 대본 ${scripts.length}편. 녹음하면 코코가 대본대로 읽었는지 짚어 주고 목소리 타입도 알려 줘요. 녹음은 이 폰에만 남고, 잘 나온 테이크는 목소리 갤러리에 올릴 수 있어요.`,
+            `${scripts.length} Korean scripts for voice actors, anchors and speakers. Record and Coco checks you read every word, plus your voice type. Takes stay on your phone — post your best one to the voice gallery.`,
           )}
         </p>
       </header>

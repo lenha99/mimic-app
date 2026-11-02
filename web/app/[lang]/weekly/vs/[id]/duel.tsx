@@ -69,13 +69,13 @@ export default function Duel({
     return (
       <main className={`shell ${b.page}`}>
         <nav className={b.nav}>
-          <Link href="/weekly">{t("← 이번 주 챌린지", "← This week")}</Link>
+          <Link href="/weekly">{t("← 목소리 갤러리", "← Voice gallery")}</Link>
         </nav>
         <div className={b.empty}>
           <p className={b.emptyBig}>⚔️</p>
           <p>{t("이 대결은 끝났거나 없어진 출전작이에요.", "This duel has ended or the entry is gone.")}</p>
           <Link href="/weekly" className={b.next}>
-            {t("이번 주 챌린지로", "Back to this week")}
+            {t("목소리 갤러리로", "Back to the gallery")}
           </Link>
         </div>
       </main>
@@ -170,7 +170,7 @@ export default function Duel({
   return (
     <main className={`shell ${b.page}`}>
       <nav className={b.nav}>
-        <Link href="/weekly">{t("← 이번 주 챌린지", "← This week")}</Link>
+        <Link href="/weekly">{t("← 목소리 갤러리", "← Voice gallery")}</Link>
       </nav>
 
       <header className={b.head}>

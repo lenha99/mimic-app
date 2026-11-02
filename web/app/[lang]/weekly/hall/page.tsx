@@ -34,7 +34,7 @@ export default async function HallPage() {
   return (
     <main className={`shell ${styles.page}`}>
       <nav className={styles.nav}>
-        <Link href="/weekly">{t("← 이번 주 챌린지", "← This week")}</Link>
+        <Link href="/weekly">{t("← 목소리 갤러리", "← Voice gallery")}</Link>
       </nav>
       <h1 className={styles.title}>{t("명예의 전당", "Hall of Fame")}</h1>
       <p className={styles.sub}>{t("매주 ❤ 를 가장 많이 받은 세 목소리", "The three most-loved voices each week")}</p>
@@ -49,7 +49,7 @@ export default async function HallPage() {
             )}
           </p>
           <Link href="/weekly" className={styles.go}>
-            {t("이번 주 챌린지 보기 →", "See this week's challenge →")}
+            {t("목소리 갤러리 보기 →", "See the voice gallery →")}
           </Link>
         </div>
       ) : (
