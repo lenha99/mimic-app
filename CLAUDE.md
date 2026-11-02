@@ -16,7 +16,9 @@ Flutter 클라이언트와 공유 영상 생성기가 있었으나 둘 다 걷�
 ## 파일 구조
 ```
 web/                 # Next.js 웹앱 (유일한 클라이언트)
-  app/page.tsx       # 홈 — 이번 주 보이스 챌린지 + 입구 둘(명대사 챌린지 · 연습실)
+  app/page.tsx       # 홈 — 위쪽 바(🌐·♡ 활동·✈ 메시지) → 목소리 스토리 → 이번 주 챌린지 → 내 목소리 페이지 → 더 놀거리
+  components/top-bar.tsx  # 위쪽 바. 안 읽은 수는 lib/unread-client(30초에 한 번, 하단 탭과 공유)
+  components/home/   # 홈 조각 — voice-stories(이번 주 목소리 동그라미) · my-voice-card(포트폴리오 알리기)
   app/weekly/        # 주간 보이스 챌린지 — 매주 대본 하나, 출전작에 ❤, 시상대·명예의 전당
   lib/weekly.ts      # 주차 계산·대본 순서(ROTATION)·기기 기록. DB 없이 "이번 주 대본"을 안다
   lib/weekly-server.ts  # 순위·정산(1~3위 박제)·수상 조회. 표에 RLS 정책이 없어 조건은 여기서 건다
@@ -31,9 +33,9 @@ web/                 # Next.js 웹앱 (유일한 클라이언트)
   app/v/[name]/      # 목소리 포트폴리오(/v/닉네임) — 출전작·❤·수상·구독자, 구독·메시지 버튼
                      # 구독은 로그인 없이도(follows 표, 이름표 u:계정/g:기기). 로그인하면 claimGuest 로 옮겨지고 누가 구독했는지·메시지가 열린다
   app/messages/      # 메시지함 · 대화 · 첫 메시지. "메시지 요청": 구독자만, 받아주기 전엔 1개 (lib/social-server.ts)
-  app/notifications/ # 앱 안 알림(🔔). 하단 "나" 탭 점은 안 읽은 수
+  app/notifications/ # 앱 안 알림. 메시지·구독 중(app/following)과 같은 탭(components/social/inbox-tabs). 손님은 로그인 이유를 보여 준다
   lib/notify-server.ts   # 알림 + 웹 푸시(VAPID, 무료). 키(notif_sent)당 한 번, KST 23~08시 푸시 안 함
-  lib/push-client.ts     # 푸시 켜기 — 안드로이드 크롬 바로, 아이폰은 설치한 앱에서만
+  lib/push-client.ts     # 푸시 켜기 — 안드로이드 크롬 바로, 아이폰은 설치한 앱에서만. 종류별(새 목소리·내 반응·메시지) 켜기는 components/social/notify-sheet
   lib/voice-polish.ts    # 출전 전 목소리 보정(브라우저): 잡음 제거 → 쉼 정리 → EQ·컴프 → 24kHz wav. 켜기/끄기만
   lib/judges.ts          # 출전 직후 심사위원 한 줄 평 — 조합형(LLM 없음, 비용 0)
   lib/memes.ts       # 카탈로그 조회 + 폴백 (생성됨)

@@ -435,9 +435,9 @@ export interface Database {
         Relationships: [];
       };
       push_subs: {
-        Row: { endpoint: string; user_id: string | null; client: string | null; p256dh: string; auth: string; new_entries: boolean; created_at: string };
-        Insert: { endpoint: string; user_id?: string | null; client?: string | null; p256dh: string; auth: string; new_entries?: boolean; created_at?: string };
-        Update: { user_id?: string | null; client?: string | null; p256dh?: string; auth?: string; new_entries?: boolean };
+        Row: { endpoint: string; user_id: string | null; client: string | null; p256dh: string; auth: string; new_entries: boolean; mine: boolean; dm: boolean; created_at: string };
+        Insert: { endpoint: string; user_id?: string | null; client?: string | null; p256dh: string; auth: string; new_entries?: boolean; mine?: boolean; dm?: boolean; created_at?: string };
+        Update: { user_id?: string | null; client?: string | null; p256dh?: string; auth?: string; new_entries?: boolean; mine?: boolean; dm?: boolean };
         Relationships: [];
       };
       notif_sent: {

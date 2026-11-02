@@ -23,7 +23,19 @@ async function forward(req: Request, action: "add" | "remove") {
       body: JSON.stringify({ client, action }),
       signal: AbortSignal.timeout(20_000),
     });
-    if (!res.ok) return Response.json({ error: `등록하지 못했어요 (${res.status})` }, { status: 502 });
+    if (!res.ok) {
+      // 403 은 웹 ↔ Modal 비밀값(PROXY_TOKEN)이 어긋난 것 — 어디를 고칠지까지 말해 준다.
+      const reason = res.status === 403 ? ((await res.json().catch(() => ({}))) as { reason?: string }).reason : undefined;
+      const hint =
+        reason === "modal-missing"
+          ? "Modal Secret 'mimic-proxy' 에 PROXY_TOKEN 이 없어요"
+          : reason === "web-missing" || !process.env.PROXY_TOKEN
+            ? "Vercel 환경변수 PROXY_TOKEN 이 없어요"
+            : reason === "mismatch"
+              ? "Vercel 과 Modal 의 PROXY_TOKEN 값이 달라요"
+              : `등록하지 못했어요 (${res.status})`;
+      return Response.json({ error: hint }, { status: 502 });
+    }
     return Response.json(await res.json());
   } catch {
     return Response.json({ error: "서버가 응답하지 않아요. 잠시 후 다시 열어 주세요." }, { status: 504 });

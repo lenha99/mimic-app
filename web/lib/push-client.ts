@@ -56,8 +56,45 @@ function keyBytes(b64: string): Uint8Array<ArrayBuffer> {
   return out;
 }
 
+/** 알림 종류별 켜기/끄기 — 기기에 남기고 서버(push_subs)에도 보낸다. */
+export type PushPrefs = { newEntries: boolean; mine: boolean; dm: boolean };
+const PREFS_KEY = "mimic.push.prefs";
+export function readPrefs(): PushPrefs {
+  const all: PushPrefs = { newEntries: true, mine: true, dm: true };
+  try {
+    const raw = JSON.parse(localStorage.getItem(PREFS_KEY) ?? "null") as Partial<PushPrefs> | null;
+    if (raw) return { ...all, ...raw };
+    if (localStorage.getItem("mimic.push.new") === "off") return { ...all, newEntries: false };
+  } catch {}
+  return all;
+}
+function writePrefs(p: PushPrefs) {
+  try {
+    localStorage.setItem(PREFS_KEY, JSON.stringify(p));
+  } catch {}
+}
+
+/** 이미 켠 기기에서 종류만 바꿀 때 — 권한을 다시 묻지 않는다. */
+export async function savePrefs(p: PushPrefs): Promise<boolean> {
+  writePrefs(p);
+  try {
+    const reg = await within(navigator.serviceWorker.getRegistration("/"), 3000);
+    const sub = reg ? await within(reg.pushManager.getSubscription(), 3000) : null;
+    if (!sub) return false;
+    const res = await fetch("/api/push", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ subscription: sub.toJSON(), client: clientId(), ...p }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 /** 권한을 묻고 구독해서 서버에 저장한다. 버튼을 누른 순간에만 부를 것(브라우저 규칙). */
-export async function enablePush(opts: { newEntries?: boolean } = {}): Promise<PushState> {
+export async function enablePush(prefs: PushPrefs = readPrefs()): Promise<PushState> {
+  writePrefs(prefs);
   if (!supported()) return isIos() && !standalone() ? "needs-install" : "unsupported";
   const perm = await Notification.requestPermission();
   if (perm !== "granted") return perm === "denied" ? "denied" : "off";
@@ -81,7 +118,7 @@ export async function enablePush(opts: { newEntries?: boolean } = {}): Promise<P
     const res = await fetch("/api/push", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ subscription: sub.toJSON(), client: clientId(), newEntries: opts.newEntries !== false }),
+      body: JSON.stringify({ subscription: sub.toJSON(), client: clientId(), ...prefs }),
       signal: ctrl.signal,
     });
     return res.ok ? "on" : "off";
@@ -122,7 +159,7 @@ export async function syncPush(): Promise<void> {
     const res = await fetch("/api/push", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ subscription: sub.toJSON(), client: clientId(), newEntries: localStorage.getItem("mimic.push.new") !== "off" }),
+      body: JSON.stringify({ subscription: sub.toJSON(), client: clientId(), ...readPrefs() }),
     });
     if (res.ok) localStorage.setItem("mimic.push.sync", day);
   } catch {}

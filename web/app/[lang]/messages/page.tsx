@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { GuestInbox, InboxTabs } from "@/components/social/inbox-tabs";
 import styles from "@/components/social/social.module.css";
 import { VoiceAvatar } from "@/components/voice-avatar";
 import { currentUserId, myThreads } from "@/lib/social-server";
@@ -10,7 +10,14 @@ export const dynamic = "force-dynamic";
 /** 메시지함 — 받은 요청은 위에 따로. 요청은 수락(또는 답장)하기 전까지 1개만 온다. */
 export default async function MessagesPage() {
   const me = await currentUserId();
-  if (!me) redirect(`/login?next=${encodeURIComponent("/messages")}`);
+  if (!me) {
+    return (
+      <main className="shell">
+        <InboxTabs active="messages" />
+        <GuestInbox kind="messages" next="/messages" />
+      </main>
+    );
+  }
   const t = await getT();
   const threads = await myThreads(me);
   const requests = threads.filter((x) => x.status === "request" && x.requester !== me);
@@ -36,11 +43,8 @@ export default async function MessagesPage() {
   );
 
   return (
-    <main className={`shell ${styles.page}`}>
-      <nav className={styles.nav}>
-        <Link href="/me">{t("← 나", "← Me")}</Link>
-      </nav>
-      <h1 className={styles.title}>{t("메시지", "Messages")}</h1>
+    <main className="shell">
+      <InboxTabs active="messages" />
       <p className={styles.sub}>{t("내 목소리를 구독한 사람만 말을 걸 수 있어요", "Only your subscribers can message you")}</p>
 
       {requests.length > 0 && (

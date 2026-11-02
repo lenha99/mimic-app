@@ -1,0 +1,263 @@
+/* 홈 — 목소리 스토리 · 내 목소리 페이지 · 둘러보기 */
+
+.stories {
+  margin: 2px calc(var(--gutter) * -1) 16px;
+  padding: 4px var(--gutter) 6px;
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+
+.stories::-webkit-scrollbar {
+  display: none;
+}
+
+.story {
+  flex: none;
+  width: 68px;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  color: var(--white);
+  text-decoration: none;
+  scroll-snap-align: start;
+}
+
+.story small {
+  max-width: 68px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11.5px;
+  color: var(--ash);
+}
+
+.ring,
+.mine,
+.ghostRing {
+  position: relative;
+  width: 68px;
+  height: 68px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.ring {
+  background: conic-gradient(from 210deg, var(--volt), var(--lime), var(--cyan), var(--pink), var(--volt));
+  animation: spin-in 0.5s ease-out both;
+}
+
+.ring > *,
+.mine > :first-child {
+  border-radius: 50%;
+  border: 3px solid var(--stage);
+  background: var(--panel);
+}
+
+.ringSeen {
+  background: var(--rule);
+}
+
+.mine {
+  background: var(--panel);
+}
+
+.mine i {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 3px solid var(--stage);
+  background: var(--volt);
+  color: var(--stage);
+  font-size: 17px;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.ghostRing {
+  border: 2px dashed var(--rule);
+  color: var(--ash-dim);
+  font-size: 20px;
+  font-weight: 800;
+}
+
+/* 내 목소리 페이지 */
+.voiceCard {
+  margin: 14px 0 0;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 45, 120, 0.35);
+  background:
+    linear-gradient(120deg, rgba(255, 45, 120, 0.16), rgba(0, 229, 255, 0.08) 60%, transparent),
+    var(--panel);
+  color: var(--white);
+  text-decoration: none;
+}
+
+.voiceCardFace {
+  flex: none;
+  padding: 2px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--pink), var(--cyan));
+}
+
+.voiceCardFace > * {
+  display: block;
+  border-radius: 50%;
+  border: 2px solid var(--panel);
+  background: var(--panel);
+}
+
+.voiceCardText {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.voiceCardText small {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: var(--pink);
+}
+
+.voiceCardText b {
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.voiceCardText span {
+  font-size: 12.5px;
+  color: var(--ash);
+  word-break: keep-all;
+}
+
+.voiceCard i,
+.tile i {
+  font-style: normal;
+  color: var(--ash);
+}
+
+/* 둘러보기 — 벤토 그리드 */
+.sectionHead {
+  margin: 26px 0 10px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.sectionHead h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.sectionHead a {
+  font-size: 13px;
+  color: var(--ash);
+  text-decoration: none;
+}
+
+.bento {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.tile {
+  position: relative;
+  min-height: 118px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  border-radius: 22px;
+  border: 1px solid var(--rule);
+  background: var(--panel);
+  color: var(--white);
+  text-decoration: none;
+  overflow: hidden;
+}
+
+.tileWide {
+  grid-column: 1 / -1;
+  min-height: 0;
+  flex-direction: row;
+  align-items: center;
+  background:
+    radial-gradient(80% 140% at 100% 0%, rgba(0, 229, 255, 0.14), transparent 60%),
+    var(--panel);
+}
+
+.tileEmoji {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--panel-hi);
+  font-size: 23px;
+}
+
+.tileText {
+  display: grid;
+  gap: 3px;
+}
+
+.tileWide .tileText {
+  flex: 1;
+  min-width: 0;
+}
+
+.tileText b {
+  font-size: 15px;
+  word-break: keep-all;
+}
+
+.tileText small {
+  font-size: 12px;
+  color: var(--ash);
+  word-break: keep-all;
+  line-height: 1.4;
+}
+
+.tileVoice {
+  background:
+    radial-gradient(90% 90% at 100% 100%, rgba(124, 255, 107, 0.14), transparent 60%),
+    var(--panel);
+}
+
+.tileLine {
+  background:
+    radial-gradient(90% 90% at 100% 100%, rgba(255, 45, 120, 0.14), transparent 60%),
+    var(--panel);
+}
+
+@keyframes spin-in {
+  from {
+    transform: rotate(-40deg) scale(0.9);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ring {
+    animation: none;
+  }
+}

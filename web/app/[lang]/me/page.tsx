@@ -49,6 +49,11 @@ export default async function MePage() {
 
       <ul className={styles.list}>
         <Row
+          href="/following"
+          title={t("⭐ 구독 중", "⭐ Following")}
+          sub={t("로그인 없이 구독한 목소리도 여기 모여요", "Voices you follow, even as a guest")}
+        />
+        <Row
           href="/avatar"
           title={t("내 캐릭터 꾸미기", "Customize my character")}
           sub={t("녹음하면 이 친구가 내 목소리로 외쳐요", "It shouts in your voice when you record")}

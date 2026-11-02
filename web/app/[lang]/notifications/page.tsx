@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { PushButton } from "@/components/social/push-button";
+import { GuestInbox, InboxTabs } from "@/components/social/inbox-tabs";
 import styles from "@/components/social/social.module.css";
 import { VoiceAvatar } from "@/components/voice-avatar";
 import { currentUserId, nicknames } from "@/lib/social-server";
@@ -23,8 +23,18 @@ const ICON: Record<string, string> = {
 /** 알림 — 구독 · 메시지 · 청취 · 구독한 목소리의 새 출전작. 열면 전부 읽음. */
 export default async function NotificationsPage() {
   const me = await currentUserId();
-  if (!me) redirect(`/login?next=${encodeURIComponent("/notifications")}`);
   const t = await getT();
+  if (!me) {
+    return (
+      <main className="shell">
+        <InboxTabs active="activity" />
+        <GuestInbox kind="activity" next="/notifications" />
+        <div style={{ display: "grid", justifyItems: "center", marginTop: 16 }}>
+          <PushButton kind="mine" compact />
+        </div>
+      </main>
+    );
+  }
   const service = createServiceClient();
   const { data } = await service
     .from("notifications")
@@ -36,12 +46,8 @@ export default async function NotificationsPage() {
   const who = await nicknames(items.map((n) => n.actor).filter((x): x is string => !!x), service);
 
   return (
-    <main className={`shell ${styles.page}`}>
-      <nav className={styles.nav}>
-        <Link href="/me">{t("← 나", "← Me")}</Link>
-        <Link href="/messages">{t("💬 메시지", "💬 Messages")}</Link>
-      </nav>
-      <h1 className={styles.title}>{t("알림", "Notifications")}</h1>
+    <main className="shell">
+      <InboxTabs active="activity" />
       <div style={{ margin: "0 0 16px" }}>
         <PushButton kind="mine" compact />
       </div>

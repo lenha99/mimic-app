@@ -42,6 +42,9 @@ export function InternalDevice() {
         await Promise.resolve();
         setState({ kind: "off" });
       } else {
+        try {
+          localStorage.setItem("mimic.internal", "on");
+        } catch {}
         await send("POST");
       }
     }
@@ -63,7 +66,7 @@ export function InternalDevice() {
         ? `이 기기는 통계·"N명 도전"에서 빠져요 · 등록된 기기 ${state.devices}대`
         : state.kind === "off"
           ? "이 기기도 사용자로 세는 중"
-          : state.msg;
+          : `${state.msg} · 앞으로의 화면 기록은 이 기기에서 안 보내요`;
 
   return (
     <button type="button" className={styles.adminRow} onClick={toggle} disabled={state.kind === "busy"}>

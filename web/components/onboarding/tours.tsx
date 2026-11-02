@@ -13,57 +13,106 @@ import { Tour, type TourStep } from "./tour";
 const sets = (t: T) => {
   const HOME: TourStep[] = [
     {
-      target: "home-weekly",
-      title: t("이번 주 보이스 챌린지", "This week's voice challenge"),
+      target: "home-stories",
+      title: t("이번 주 올라온 목소리", "This week's voices"),
       body: t(
         <p>
-          매주 월요일, 대본이 하나 열려요. 연습해서 <b>가장 잘 나온 녹음 하나를 출전</b>시키면 다른 사람들이 듣고 ❤ 를
-          눌러요. ❤ 가 많을수록 순위가 올라가요.
+          동그라미 하나가 목소리 하나예요. <b>색 테두리는 아직 안 들어 본 목소리</b>, 누르면 바로 들을 수 있어요. 맨 앞{" "}
+          <b>+ 내 목소리</b>를 누르면 녹음하고 올리는 곳으로 가요.
         </p>,
         <p>
-          A new script drops every Monday. Practice, then <b>enter your best take</b> — others listen and tap ❤. Most ❤
-          wins.
+          Each circle is one voice. <b>A colored ring means you haven&apos;t heard it yet</b> — tap to listen. Tap <b>+ Your voice</b>{" "}
+          to record and enter.
         </p>,
       ),
     },
     {
-      target: "home-memes",
-      title: t("명대사 챌린지", "Line Challenge"),
+      target: "home-weekly",
+      title: t("이번 주 보이스 챌린지", "This week's voice challenge"),
       body: t(
         <p>
-          무야호 · 어이가 없네 같은 원본을 듣고 따라 외치면 <b>얼마나 똑같은지 점수</b>로 알려드려요. 점수 링크를 친구에게
-          보내서 대결해 보세요.
+          매주 월요일 대본이 하나 열려요. 연습해서 <b>가장 잘 나온 녹음 하나를 출전</b>시키면 다른 사람들이 듣고 ❤ 를 눌러요.
+          올리기 전에 <b>✨ 목소리 보정</b>(잡음 제거)을 켜고 끌 수 있고, <b>심사위원</b>이 한마디씩 해 줘요. 가입 없이 돼요.
         </p>,
         <p>
-          Hear an iconic Korean movie or meme line, say it back, and get scored on <b>how close you sound</b>. Send the
-          score link to a friend and go head to head.
+          A new script drops every Monday. Practice, then <b>enter your best take</b> — others listen and tap ❤. Before you enter you
+          can switch <b>✨ voice polish</b> (noise removal) on or off, and the <b>judges</b> react. No sign-up needed.
+        </p>,
+      ),
+    },
+    {
+      target: "top-activity",
+      title: t("♡ 활동", "♡ Activity"),
+      body: t(
+        <p>
+          누가 내 목소리를 듣고 · 구독했는지, 구독한 목소리가 새로 올렸는지 여기 모여요. <b>구독 중</b> 탭에서 내가 구독한
+          목소리를 한눈에 봐요.
+        </p>,
+        <p>
+          Who listened to or subscribed to your voice, and new takes from voices you follow. The <b>Following</b> tab lists everyone you
+          subscribe to.
+        </p>,
+      ),
+    },
+    {
+      target: "top-dm",
+      title: t("✈ 메시지", "✈ Messages"),
+      body: t(
+        <p>
+          내 목소리를 <b>구독한 사람만</b> 말을 걸 수 있고, 받아주기 전엔 요청 1개만 와요. 마음에 드는 목소리가 있으면
+          구독하고 메시지를 보내 보세요(로그인 필요).
+        </p>,
+        <p>
+          Only <b>your subscribers</b> can message you, and just one request until you accept. Like a voice? Subscribe and say hi (log-in
+          needed).
+        </p>,
+      ),
+    },
+    {
+      target: "top-lang",
+      title: t("🌐 언어", "🌐 Language"),
+      body: t(<p>누르면 영어 ↔ 한국어로 바뀌어요. 친구가 받은 링크는 그 사람 폰 언어로 열려요.</p>, <p>Switch between English and Korean. Links you share open in the receiver&apos;s language.</p>),
+    },
+    {
+      target: "home-portfolio",
+      title: t("내 목소리 페이지", "Your voice page"),
+      body: t(
+        <p>
+          출전작 · ❤ · 트로피 · 구독자를 모은 <b>나만의 링크</b>예요. 인스타 프로필에 걸어 두면 거기서 바로 듣고 구독해요.
+          로그인하면 생겨요.
+        </p>,
+        <p>
+          <b>Your own link</b> with your entries, ❤, trophies and subscribers. Put it in your Instagram bio so people can listen and
+          subscribe. Log in to get one.
         </p>,
       ),
     },
     {
       target: "home-practice",
-      title: t("연습실", "Practice Room"),
+      title: t("더 놀거리", "More to try"),
       body: t(
-        <p>
-          성우·아나운서 대본을 읽으면 속도·쉼·억양·말끝을 짚어드려요. 연습 녹음은 <b>🔒 이 폰에만</b> 남아요. 다른 사람
-          의견이 궁금하면 피드백 게시판에 올려 보세요.
-        </p>,
-        <p>
-          Read voice-acting and news scripts (in Korean) and get notes on pace, pauses, intonation and endings. Practice
-          takes stay <b>🔒 on this phone</b>. Want opinions? Post to the feedback board.
-        </p>,
-      ),
-    },
-    {
-      target: "home-voice",
-      title: t("목소리 음역대 테스트", "Vocal range test"),
-      body: t(
-        <p>
-          ‘아~’ 끝까지 올리거나 ‘음~’ 끝까지 내리면 — 하나만 해도 돼요 — <b>🚿 샤워실 가수부터 🐬 돌고래까지</b> 내 고음·저음 등급이 나와요. 녹음 파일은 <b>🔒 만들지 않고</b>, 공유 버튼 하나로 결과 이미지와 친구가 해 볼 링크가 같이 가요.
-        </p>,
-        <p>
-          Slide up as high as you can or hum down as low as you can — just one is fine — and get your <b>high and low tiers, from 🚿 Shower Singer to 🐬 Dolphin</b>. <b>🔒 Nothing is recorded</b>; one share button sends your result image plus a link friends can try.
-        </p>,
+        <ul>
+          <li>
+            <b>연습실</b> — 대본을 읽으면 속도·쉼·억양을 짚어 줘요. 녹음은 🔒 이 폰에만
+          </li>
+          <li>
+            <b>음역대 테스트</b> — 10초면 내 최고음·최저음 등급
+          </li>
+          <li>
+            <b>명대사 따라하기</b> — 원본과 얼마나 똑같은지 점수로 친구와 대결
+          </li>
+        </ul>,
+        <ul>
+          <li>
+            <b>Practice Room</b> — read scripts (in Korean) and get notes on pace, pauses and pitch. Takes stay 🔒 on this phone
+          </li>
+          <li>
+            <b>Vocal range</b> — your high and low tiers in 10 seconds
+          </li>
+          <li>
+            <b>Movie lines</b> — copy a famous line, get scored, challenge friends
+          </li>
+        </ul>,
       ),
     },
     {
@@ -78,7 +127,7 @@ const sets = (t: T) => {
             <b>연습실</b> — 대본 연습 · 피드백 게시판
           </li>
           <li>
-            <b>나</b> — 캐릭터 꾸미기 · 내 녹음·출전작·만든 챌린지
+            <b>나</b> — 캐릭터 · 내 출전작 · 알림 설정
           </li>
         </ul>,
         <ul>
@@ -89,7 +138,7 @@ const sets = (t: T) => {
             <b>Practice</b> — script practice · feedback board
           </li>
           <li>
-            <b>Me</b> — your character · takes, entries, challenges
+            <b>Me</b> — your character · entries · alert settings
           </li>
         </ul>,
       ),
@@ -464,8 +513,8 @@ const sets = (t: T) => {
       target: "me-login",
       title: t("로그인하면", "Why log in?"),
       body: t(
-        <p>녹음·출전작·트로피·만든 챌린지가 계정에 남아 다른 폰에서도 보여요. 물론 로그인 없이도 다 해볼 수 있어요.</p>,
-        <p>Keep your takes, entries, trophies and challenges across devices. You can try everything without it, too.</p>,
+        <p>녹음·출전작·트로피가 계정에 남고, <b>누가 구독했는지</b> 보이고 <b>메시지</b>를 주고받고, <b>내 목소리 페이지</b> 링크가 생겨요. 물론 로그인 없이도 다 해볼 수 있어요.</p>,
+        <p>Keep your takes, entries and trophies, see <b>who subscribed</b>, send <b>messages</b>, and get your own <b>voice page</b> link. You can try everything without it, too.</p>,
       ),
     },
   ];
