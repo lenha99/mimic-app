@@ -463,6 +463,110 @@
   color: var(--ash);
 }
 
+/* 결과 → 연습실 추천 */
+.recs {
+  margin: 18px 0 10px;
+  padding: 16px;
+  border-radius: 22px;
+  border: 1px solid rgba(232, 255, 58, 0.25);
+  background:
+    radial-gradient(90% 80% at 100% 0%, rgba(232, 255, 58, 0.1), transparent 60%),
+    var(--panel);
+}
+
+.recsKicker {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--volt);
+}
+
+.recsTitle {
+  margin: 4px 0 12px;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.3;
+  word-break: keep-all;
+}
+
+.recList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.recList li {
+  animation: rec-in 0.35s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+.rec {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--rule);
+  color: var(--white);
+  text-decoration: none;
+  transition: transform 0.12s, border-color 0.15s;
+}
+
+.rec:active {
+  transform: scale(0.99);
+}
+
+.rec:hover {
+  border-color: var(--ash-dim);
+}
+
+.recText {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.recText small {
+  font-size: 11.5px;
+  color: var(--ash);
+}
+
+.recText b {
+  font-size: 15.5px;
+  font-weight: 800;
+}
+
+.recText span {
+  font-size: 12.5px;
+  color: var(--ash);
+  line-height: 1.45;
+  word-break: keep-all;
+}
+
+.rec i {
+  flex: none;
+  font-style: normal;
+  color: var(--volt);
+  font-size: 18px;
+}
+
+@keyframes rec-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .recList li {
+    animation: none;
+  }
+}
+
 .note {
   margin: 14px 0 0;
   color: var(--ash-dim);

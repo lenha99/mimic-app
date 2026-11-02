@@ -1,0 +1,151 @@
+/* 연습실 맨 위 — 오늘의 연습 · 목표 칩 */
+
+.today {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: grid;
+  gap: 4px;
+  margin: 0 0 12px;
+  padding: 18px 18px 16px;
+  border-radius: 22px;
+  border: 1px solid rgba(232, 255, 58, 0.28);
+  background: var(--panel);
+  color: var(--white);
+  text-decoration: none;
+  transition: transform 0.12s;
+}
+
+.today:active {
+  transform: scale(0.99);
+}
+
+.todayGlow {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(80% 120% at 100% 0%, rgba(232, 255, 58, 0.16), transparent 60%),
+    radial-gradient(70% 100% at 0% 100%, rgba(0, 229, 255, 0.1), transparent 60%);
+}
+
+.todaySkeleton {
+  height: 150px;
+  margin: 0 0 12px;
+  border-radius: 22px;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+}
+
+.todayKicker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--volt);
+}
+
+.todayKicker i {
+  font-style: normal;
+}
+
+.todayKicker em {
+  margin-left: auto;
+  font: 600 11.5px/1 var(--mono);
+  font-style: normal;
+  color: var(--ash);
+}
+
+.todayTitle {
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1.25;
+  word-break: keep-all;
+}
+
+.todayMeta {
+  font-size: 12.5px;
+  color: var(--ash);
+}
+
+.todayDir {
+  margin-top: 6px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--white);
+  opacity: 0.85;
+  word-break: keep-all;
+}
+
+.todayGo {
+  justify-self: start;
+  margin-top: 10px;
+  padding: 9px 16px;
+  border-radius: 99px;
+  background: var(--volt);
+  color: var(--stage);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.goals {
+  margin: 0 0 14px;
+}
+
+.goalsLabel {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ash);
+}
+
+.goalRail {
+  margin: 0 calc(var(--gutter, 16px) * -1);
+  padding: 0 var(--gutter, 16px) 2px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.goalRail::-webkit-scrollbar {
+  display: none;
+}
+
+.goal {
+  flex: none;
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  column-gap: 6px;
+  padding: 9px 13px;
+  border-radius: 14px;
+  border: 1px solid var(--rule);
+  background: var(--panel);
+  color: var(--white);
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.goal span {
+  grid-row: span 2;
+  font-size: 20px;
+}
+
+.goal b {
+  font-size: 13.5px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.goal small {
+  font-size: 11px;
+  color: var(--ash);
+}
+
+.goal:active {
+  transform: scale(0.97);
+}

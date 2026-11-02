@@ -441,7 +441,7 @@ PRACTICE = ("practice_view", "practice_take")
 # 여기 목록에 없어 조용히 버려지고 있었다.
 WEEKLY = ("weekly_view", "weekly_play", "weekly_like", "weekly_enter", "weekly_share",
           "battle_cta", "battle_view", "battle_vote",
-          "voice_card_start", "voice_card_done", "voice_card_share",
+          "voice_card_start", "voice_card_done", "voice_card_share", "voice_rec_open",
           "intro_view", "intro_skip", "intro_done")
 
 
