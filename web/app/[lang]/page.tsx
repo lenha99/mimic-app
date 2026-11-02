@@ -2,7 +2,10 @@ import Link from "next/link";
 import { ClaimPending } from "@/app/[lang]/profile/claim-pending";
 import { HomeBeacon } from "@/components/home-beacon";
 import { InstallBanner } from "@/components/install-banner";
-import { ViewerBadge } from "@/components/viewer";
+import { TopBar } from "@/components/top-bar";
+import { VoiceStories } from "@/components/home/voice-stories";
+import { MyVoiceCard } from "@/components/home/my-voice-card";
+import home from "@/components/home/home.module.css";
 import { HomeHero } from "@/components/weekly/home-hero";
 import { getMemes } from "@/lib/memes";
 import { findScript, SCRIPTS } from "@/lib/practice";
@@ -46,14 +49,16 @@ export default async function Home() {
 
   return (
     <main className="shell">
-      <header className={styles.head}>
-        <span className={styles.logo}>MIMIC</span>
-        <span className={styles.headRight}>
-          {/* 안내 말풍선이 버튼 오른쪽 끝에 맞춰 펼쳐지므로 맨 오른쪽에 둔다. */}
-          <ViewerBadge />
-          <TourHelp id="home" welcome />
-        </span>
-      </header>
+      {/* 위쪽 바 — 🌐 언어 · ♡ 활동 · ✈ 메시지. 안내 말풍선이 오른쪽 끝에 맞춰 펼쳐지므로 맨 끝에 둔다. */}
+      <TopBar>
+        <TourHelp id="home" welcome short />
+      </TopBar>
+
+      {/* 이번 주 올라온 목소리 — 인스타 스토리처럼. 맨 앞은 "+ 내 목소리". */}
+      <VoiceStories
+        entries={weekly.entries.slice(0, 20).map((e) => ({ id: e.id, name: e.name, avatar: e.avatar }))}
+        scriptId={weekly.week.scriptId}
+      />
 
       <InstallBanner />
 
@@ -65,31 +70,41 @@ export default async function Home() {
         <HomeHero week={weekly.week} top={weekly.entries.slice(0, 3)} count={weekly.entries.length} line={line} />
       </div>
 
-      {/* 그 밖의 입구는 작게. 지금 홈의 일은 "올리게 만들기" 하나다. */}
-      <nav className={styles.more} aria-label={t("둘러보기", "Explore")}>
-        <Link href="/practice" className={styles.moreRow} data-tour="home-practice">
-          <span aria-hidden="true">📝</span>
-          <span>
+      {/* 내 목소리 페이지 — 있는지도 모르면 없는 기능이다. */}
+      <MyVoiceCard />
+
+      {/* 그 밖의 입구 — 지금 홈의 일은 "올리게 만들기"라 아래에 작게. */}
+      <div className={home.sectionHead}>
+        <h2>{t("더 놀거리", "More to try")}</h2>
+      </div>
+      <nav className={home.bento} aria-label={t("둘러보기", "Explore")}>
+        <Link href="/practice" className={`${home.tile} ${home.tileWide}`} data-tour="home-practice">
+          <span className={home.tileEmoji} aria-hidden="true">
+            📝
+          </span>
+          <span className={home.tileText}>
             <b>{t("연습실", "Practice Room")}</b>
             <small>{t(`대본 ${SCRIPTS.length}편 · 올리기 전에 몇 번이고 연습`, `${SCRIPTS.length} scripts · rehearse before you enter`)}</small>
           </span>
           <i aria-hidden="true">→</i>
         </Link>
-        <Link href="/voice" className={styles.moreRow} data-tour="home-voice">
-          <span aria-hidden="true">🎤</span>
-          <span>
-            <b>{t("목소리 음역대 테스트", "Vocal range test")}</b>
-            <small>{t("내 최고음은 🐬 돌고래급? · 10초", "Is your high note 🐬 Dolphin? · 10s")}</small>
+        <Link href="/voice" className={`${home.tile} ${home.tileVoice}`} data-tour="home-voice">
+          <span className={home.tileEmoji} aria-hidden="true">
+            🎤
           </span>
-          <i aria-hidden="true">→</i>
+          <span className={home.tileText}>
+            <b>{t("음역대 테스트", "Vocal range")}</b>
+            <small>{t("내 최고음은 🐬 돌고래급? · 10초", "Are you 🐬 Dolphin? · 10s")}</small>
+          </span>
         </Link>
-        <Link href="/challenges" className={styles.moreRow} data-tour="home-memes">
-          <span aria-hidden="true">🎬</span>
-          <span>
-            <b>{t("명대사 따라하기", "Movie line challenge")}</b>
-            <small>{t(`대사 ${lines.length}개 · 점수로 친구랑 겨루기`, `${lines.length} lines · beat your friends' score`)}</small>
+        <Link href="/challenges" className={`${home.tile} ${home.tileLine}`} data-tour="home-memes">
+          <span className={home.tileEmoji} aria-hidden="true">
+            🎬
           </span>
-          <i aria-hidden="true">→</i>
+          <span className={home.tileText}>
+            <b>{t("명대사 따라하기", "Movie lines")}</b>
+            <small>{t(`대사 ${lines.length}개 · 점수 대결`, `${lines.length} lines · score battle`)}</small>
+          </span>
         </Link>
       </nav>
 

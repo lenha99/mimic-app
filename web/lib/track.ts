@@ -52,6 +52,8 @@ const URL_ =
 
 export function track(kind: TrackKind, extra: { meme_id?: string; via?: string } = {}): void {
   try {
+    // 운영자 기기(프로필의 "내 기기 통계 제외")는 처음부터 보내지 않는다 — 서버 등록이 실패해도 빠지게.
+    if (localStorage.getItem("mimic.internal") === "on") return;
     const body = JSON.stringify({ kind, client: clientId(), ...extra });
     if (typeof navigator !== "undefined" && navigator.sendBeacon) {
       navigator.sendBeacon(URL_, new Blob([body], { type: "text/plain" }));

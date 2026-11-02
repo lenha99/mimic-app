@@ -16,6 +16,7 @@ import { track } from "@/lib/track";
 import { audioSrc, displayName, BATTLE_OPEN, LISTEN_RATIO, MIN_BATTLES, MIN_PODIUM, type Award, type EntryCard, type Week } from "@/lib/weekly";
 import { ScreenTour } from "@/components/onboarding/tours";
 import { TourHelp } from "@/components/onboarding/tour";
+import { TopBar } from "@/components/top-bar";
 import { useLang, useT } from "@/components/lang";
 import { fieldName } from "@/lib/script-i18n";
 import styles from "./hub.module.css";
@@ -166,18 +167,20 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
         }}
       />
 
-      <header className={styles.top}>
-        <span className={styles.brand}>
-          <span className={styles.liveDot} aria-hidden="true" />
-          WEEKLY VOICE
-        </span>
-        <span className={styles.topRight}>
-          <Link href="/weekly/hall" className={styles.hallLink} data-tour="weekly-hall">
-            {t("🏆 명예의 전당", "🏆 Hall of Fame")}
-          </Link>
-          <TourHelp id="weekly" short />
-        </span>
-      </header>
+      <TopBar
+        showLang={false}
+        title={
+          <span className={styles.brand}>
+            <span className={styles.liveDot} aria-hidden="true" />
+            WEEKLY VOICE
+          </span>
+        }
+      >
+        <Link href="/weekly/hall" className={styles.hallLink} data-tour="weekly-hall" aria-label={t("명예의 전당", "Hall of Fame")}>
+          🏆
+        </Link>
+        <TourHelp id="weekly" short />
+      </TopBar>
 
       {/* 무대 — 이번 주 대본과 마감 */}
       <section className={styles.hero} data-tour="weekly-hero">

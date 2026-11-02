@@ -69,19 +69,34 @@ export async function pushTo(subs: Sub[], payload: PushPayload, service: Service
   );
 }
 
-/** 한 사람(계정 또는 게스트 기기)의 푸시 구독들. */
-export async function subsOf(who: { userId?: string | null; client?: string | null }, service: Service = createServiceClient()): Promise<Sub[]> {
-  const out: Sub[] = [];
-  if (who.userId) {
-    const { data } = await service.from("push_subs").select("endpoint, p256dh, auth").eq("user_id", who.userId);
-    out.push(...(data ?? []));
-  }
-  if (who.client) {
-    const { data } = await service.from("push_subs").select("endpoint, p256dh, auth").eq("client", who.client);
-    out.push(...(data ?? []));
-  }
+/** 알림 종류 → 기기가 켜 둔 항목(push_subs 열). 새 출전작은 announceNewEntry 가 따로 고른다. */
+type Pref = "mine" | "dm";
+function prefOf(kind: NotificationKind): Pref | null {
+  if (kind === "dm" || kind === "dm_request") return "dm";
+  if (kind === "follow" || kind === "listen_first" || kind === "listen_daily") return "mine";
+  return null;
+}
+
+/** 한 사람(계정 또는 게스트 기기)의 푸시 구독들. pref 를 주면 그 항목을 끈 기기는 뺀다. */
+export async function subsOf(
+  who: { userId?: string | null; client?: string | null },
+  service: Service = createServiceClient(),
+  pref: Pref | null = null,
+): Promise<Sub[]> {
+  const out: (Sub & { mine?: boolean; dm?: boolean })[] = [];
+  const pick = async (col: "user_id" | "client", v: string) => {
+    const r = await service.from("push_subs").select("endpoint, p256dh, auth, mine, dm").eq(col, v);
+    // 종류별 열(마이그레이션 26)이 아직 없으면 전부 켜진 것으로 본다.
+    if (r.error) return (await service.from("push_subs").select("endpoint, p256dh, auth").eq(col, v)).data ?? [];
+    return r.data ?? [];
+  };
+  if (who.userId) out.push(...(await pick("user_id", who.userId)));
+  if (who.client) out.push(...(await pick("client", who.client)));
   const seen = new Set<string>();
-  return out.filter((s) => !seen.has(s.endpoint) && seen.add(s.endpoint));
+  return out
+    .filter((s) => !(pref && s[pref] === false))
+    .filter((s) => !seen.has(s.endpoint) && seen.add(s.endpoint))
+    .map(({ endpoint, p256dh, auth }) => ({ endpoint, p256dh, auth }));
 }
 
 /**
@@ -113,7 +128,7 @@ export async function notify(opts: {
     }
     if (!opts.push || quietHours()) return;
     if (opts.pushKey && !(await once(opts.pushKey, service))) return;
-    await pushTo(await subsOf({ userId: opts.userId, client: opts.client }, service), opts.push, service);
+    await pushTo(await subsOf({ userId: opts.userId, client: opts.client }, service, prefOf(opts.kind)), opts.push, service);
   } catch {
     // 알림 실패는 조용히.
   }

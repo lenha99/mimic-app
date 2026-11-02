@@ -535,7 +535,9 @@ async def internal_device(request: Request):
     import json, re
     want = os.environ.get("PROXY_TOKEN", "")
     if not want or request.headers.get("x-mimic-proxy", "") != want:
-        return Response(status_code=403)
+        # 어느 쪽이 빠졌는지만 알려 준다(값은 절대 안 돌려줌) — 운영자가 고칠 곳을 알게.
+        why = "modal-missing" if not want else ("web-missing" if not request.headers.get("x-mimic-proxy") else "mismatch")
+        return Response(status_code=403, content=json.dumps({"reason": why}), media_type="application/json")
     try:
         body = json.loads((await request.body())[:1024] or b"{}")
     except Exception:

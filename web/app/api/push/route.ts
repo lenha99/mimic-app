@@ -14,6 +14,8 @@ export async function POST(req: Request) {
     subscription?: { endpoint?: unknown; keys?: { p256dh?: unknown; auth?: unknown } };
     client?: unknown;
     newEntries?: unknown;
+    mine?: unknown;
+    dm?: unknown;
   };
   const endpoint = b.subscription?.endpoint;
   const p256dh = b.subscription?.keys?.p256dh;
@@ -23,9 +25,11 @@ export async function POST(req: Request) {
   const client = typeof b.client === "string" && CLIENT.test(b.client) ? b.client : null;
   const userId = await currentUserId();
   if (!userId && !client) return Response.json({ error: "no identity" }, { status: 400 });
-  const { error } = await createServiceClient()
-    .from("push_subs")
-    .upsert({ endpoint, p256dh, auth, user_id: userId, client, new_entries: b.newEntries !== false });
+  const service = createServiceClient();
+  const base = { endpoint, p256dh, auth, user_id: userId, client, new_entries: b.newEntries !== false };
+  let { error } = await service.from("push_subs").upsert({ ...base, mine: b.mine !== false, dm: b.dm !== false });
+  // 종류별 열(마이그레이션 26)이 아직 없으면 예전 모양으로 저장한다.
+  if (error && /mine|dm|column/i.test(error.message)) ({ error } = await service.from("push_subs").upsert(base));
   if (error) return Response.json({ error: "failed" }, { status: 500 });
   return Response.json({ ok: true });
 }

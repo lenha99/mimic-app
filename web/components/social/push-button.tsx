@@ -3,17 +3,19 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useT } from "@/components/lang";
-import { disablePush, enablePush, pushState, type PushState } from "@/lib/push-client";
+import { pushState, type PushState } from "@/lib/push-client";
+import { NotifySheet } from "./notify-sheet";
 import styles from "./social.module.css";
 
 /**
- * 🔔 알림 켜기 — 누르는 순간에만 권한을 묻는다. 아이폰 사파리면 설치 안내로 보낸다.
- * kind="new" 는 "새 출전작 알림", kind="mine" 은 "내 목소리를 누가 들으면" 문구.
+ * 🔔 알림 버튼 — 누르면 알림 설정 시트(종류별 켜기/끄기)가 올라온다. 권한은 시트에서
+ * "알림 받기"를 누르는 순간에만 묻는다. 아이폰 사파리면 설치 안내로 보낸다.
+ * kind 는 꺼져 있을 때의 문구만 바꾼다: "new" 새 출전작, "mine" 내 목소리 반응.
  */
 export function PushButton({ kind = "new", compact = false }: { kind?: "new" | "mine"; compact?: boolean }) {
   const t = useT();
-  const [state, setState] = useState<PushState | "busy" | null>(null);
-  const [failed, setFailed] = useState(false);
+  const [state, setState] = useState<PushState | null>(null);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -40,34 +42,17 @@ export function PushButton({ kind = "new", compact = false }: { kind?: "new" | "
 
   const on = state === "on";
   const label = on
-    ? t("✓ 알림 켜짐", "✓ Alerts on")
+    ? t("🔔 알림 켜짐 · 설정", "🔔 Alerts on · settings")
     : kind === "mine"
       ? t("🔔 누가 들으면 알려주기", "🔔 Tell me when someone listens")
       : t("🔔 새 목소리 올라오면 알림", "🔔 Alert me to new voices");
 
-  const toggle = async () => {
-    setState("busy");
-    try {
-      if (on) {
-        setState(await disablePush());
-      } else {
-        try {
-          localStorage.setItem("mimic.push.new", "on");
-        } catch {}
-        setState(await enablePush({ newEntries: true }));
-      }
-    } catch {
-      setState("off");
-      setFailed(true);
-    }
-  };
-
   return (
     <>
-      <button type="button" className={on ? styles.btnOn : compact ? styles.btnGhost : styles.btn} onClick={() => void toggle()} disabled={state === "busy"}>
-        {state === "busy" ? t("잠깐만요…", "One sec…") : label}
+      <button type="button" className={on ? styles.btnOn : compact ? styles.btnGhost : styles.btn} onClick={() => setOpen(true)}>
+        {label}
       </button>
-      {failed && <p className={styles.note}>{t("알림 연결이 늦어요. 잠시 뒤 다시 눌러 주세요.", "Alerts are slow to connect. Try again in a moment.")}</p>}
+      <NotifySheet open={open} on={on} onClose={() => setOpen(false)} onState={setState} />
     </>
   );
 }

@@ -68,6 +68,15 @@ export function MySocial({
           </Link>
         </li>
         <li>
+          <Link href="/following" className={s.row}>
+            <span className={s.emoji}>⭐</span>
+            <span className={s.rowText}>
+              <b>{t("구독 중", "Following")}</b>
+              <small>{t("내가 구독한 목소리 · 새로 올린 사람이 위로", "Voices you follow · newest first")}</small>
+            </span>
+          </Link>
+        </li>
+        <li>
           <Link href={`/v/${encodeURIComponent(nickname)}`} className={s.row}>
             <span className={s.emoji}>🎙</span>
             <span className={s.rowText}>

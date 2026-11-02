@@ -342,3 +342,57 @@ export async function actOnThread(me: string, id: string, action: "accept" | "de
   await service.from("dm_threads").update({ status: action === "accept" ? "open" : "declined" }).eq("id", id);
   return { ok: true };
 }
+
+export type Following = {
+  key: string;
+  name: string;
+  avatar: ReturnType<typeof normalizeAvatar>;
+  page: string | null;
+  latest: { id: string; challengeId: string; updatedAt: string } | null;
+  since: string;
+};
+
+/** 내가 구독한 목소리들 — 최근 출전작이 있는 순. 손님도(기기 이름표로) 볼 수 있다. */
+export async function followingOf(me: string, service: Service = createServiceClient()): Promise<Following[]> {
+  let rows: { creator: string; created_at: string }[] = [];
+  const { data, error } = await service.from("follows").select("creator, created_at").eq("follower", me).order("created_at", { ascending: false }).limit(200);
+  if (missingTable(error)) {
+    const f = uid(me);
+    if (f) rows = ((await service.from("voice_follows").select("creator, created_at").eq("follower", f).limit(200)).data ?? []).map((r) => ({ ...r, creator: userKey(r.creator) }));
+  } else rows = data ?? [];
+  if (!rows.length) return [];
+
+  const userIds = rows.map((r) => uid(r.creator)).filter((x): x is string => !!x);
+  const guestKeys = rows.map((r) => r.creator).filter((k) => k.startsWith("g:"));
+  const [profiles, { data: byUser }, { data: byGuest }] = await Promise.all([
+    nicknames(userIds, service),
+    userIds.length
+      ? service.from("weekly_entries").select("id, user_id, owner, challenge_id, updated_at, guest_name, avatar").in("user_id", userIds).eq("hidden", false).order("updated_at", { ascending: false }).limit(400)
+      : Promise.resolve({ data: [] as never[] }),
+    guestKeys.length
+      ? service.from("weekly_entries").select("id, user_id, owner, challenge_id, updated_at, guest_name, avatar").in("owner", guestKeys).is("user_id", null).eq("hidden", false).order("updated_at", { ascending: false }).limit(400)
+      : Promise.resolve({ data: [] as never[] }),
+  ]);
+  type E = { id: string; user_id: string | null; owner: string; challenge_id: string; updated_at: string; guest_name: string | null; avatar: unknown };
+  const latest = new Map<string, E>();
+  for (const e of [...((byUser ?? []) as E[]), ...((byGuest ?? []) as E[])]) {
+    const k = e.user_id ? userKey(e.user_id) : e.owner;
+    if (!latest.has(k)) latest.set(k, e);
+  }
+  const out: Following[] = rows.flatMap((r) => {
+    const e = latest.get(r.creator);
+    const p = uid(r.creator) ? profiles.get(uid(r.creator)!) : undefined;
+    if (!p && !e) return [];
+    return [
+      {
+        key: r.creator,
+        name: p?.nickname ?? e?.guest_name ?? "",
+        avatar: p?.avatar ?? normalizeAvatar(e?.avatar),
+        page: p ? `/v/${encodeURIComponent(p.nickname)}` : null,
+        latest: e ? { id: e.id, challengeId: e.challenge_id, updatedAt: e.updated_at } : null,
+        since: r.created_at,
+      },
+    ];
+  });
+  return out.sort((a, b) => (b.latest?.updatedAt ?? "").localeCompare(a.latest?.updatedAt ?? ""));
+}

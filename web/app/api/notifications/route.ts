@@ -16,7 +16,18 @@ export async function GET(req: Request) {
     .select("id", { count: "exact", head: true })
     .eq("user_id", me)
     .is("read_at", null);
-  if (new URL(req.url).searchParams.get("count")) return Response.json({ unread: count ?? 0, claimed: Boolean(claim) });
+  if (new URL(req.url).searchParams.get("count")) {
+    // 위쪽 💬 배지 — 메시지 알림은 🔔 수에서 빼고 따로 센다.
+    const [{ count: activity }, { data: threads }] = await Promise.all([
+      service.from("notifications").select("id", { count: "exact", head: true }).eq("user_id", me).is("read_at", null).not("kind", "in", "(dm,dm_request)"),
+      service.from("dm_threads").select("id").or(`a.eq.${me},b.eq.${me}`).limit(200),
+    ]);
+    const ids = (threads ?? []).map((x) => x.id);
+    const { count: dm } = ids.length
+      ? await service.from("dm_messages").select("id", { count: "exact", head: true }).in("thread_id", ids).neq("sender", me).is("read_at", null)
+      : { count: 0 };
+    return Response.json({ unread: count ?? 0, activity: activity ?? 0, dm: dm ?? 0, claimed: Boolean(claim) });
+  }
   const { data } = await service
     .from("notifications")
     .select("id, kind, actor, entry_id, thread_id, count, created_at, read_at")
