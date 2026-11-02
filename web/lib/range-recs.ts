@@ -38,7 +38,7 @@ const BY_POS: Record<Pos, { id: string; ko: string; en: string }[]> = {
 function positionOf(c: RangeCard): Pos | null {
   if (c.speak !== null) {
     const r = lowRank(c.speak, c.gender);
-    if (r !== null) return r <= 35 ? "low" : r >= 65 ? "high" : "mid";
+    if (r !== null) return r <= 30 ? "low" : r >= 70 ? "high" : "mid";
     return c.speak < hzToMidi(140) ? "low" : c.speak > hzToMidi(210) ? "high" : "mid";
   }
   if (c.low !== null && c.high !== null) {
