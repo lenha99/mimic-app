@@ -26,7 +26,9 @@ export async function POST(req: Request) {
   const scriptId = String(form?.get("script_id") ?? "").slice(0, 64);
   const title = String(form?.get("title") ?? "").trim();
   const text = String(form?.get("text") ?? "").trim();
-  const track = String(form?.get("track") ?? "");
+  // 게시판 표(track check)는 voice·anchor·line 만 받는다. 스피치는 말하기 피드백이 같은 아나운서 칸에 둔다.
+  const rawTrack = String(form?.get("track") ?? "");
+  const track = rawTrack === "speech" ? "anchor" : rawTrack;
   const ask = String(form?.get("ask") ?? "").trim();
 
   if (!(file instanceof Blob) || file.size < 1000) {

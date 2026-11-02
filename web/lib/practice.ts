@@ -10,7 +10,7 @@ import type { Meme } from "./memes";
  * 명대사는 기준 음성이 있으니 서버 채점까지 받는다.
  */
 
-export type Track = "voice" | "anchor";
+export type Track = "voice" | "anchor" | "speech";
 export type PitchBand = "low" | "mid" | "high";
 
 export type Script = {
@@ -31,12 +31,14 @@ export type Script = {
 export const TRACK_LABEL: Record<Track | "line", string> = {
   voice: "성우",
   anchor: "아나운서·낭독",
+  speech: "스피치",
   line: "명대사",
 };
 
 const TRACK_LABEL_EN: Record<Track | "line", string> = {
   voice: "Voice acting",
   anchor: "Anchor & reading",
+  speech: "Speech",
   line: "Movie lines",
 };
 

@@ -37,7 +37,8 @@ const fmt = (v: number, d = 1) => v.toFixed(d);
 
 export function judge(a: Analysis, t: Target, L: T = tr("ko")): Check[] {
   const out: Check[] = [];
-  const anchor = t.track === "anchor";
+  // 스피치도 아나운서처럼 문장 끝을 단정하게 닫는 쪽이 맞다.
+  const anchor = t.track === "anchor" || t.track === "speech";
 
   if (t.pace && a.pace !== null) {
     const [lo, hi] = t.pace;

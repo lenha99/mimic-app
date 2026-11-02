@@ -67,7 +67,7 @@ export default function PracticeHome({
       saved = localStorage.getItem(TAB_KEY);
     } catch {}
     const want = fromUrl ?? saved;
-    if (want && ["all", "voice", "anchor", "line", "mine"].includes(want)) setTab(want as Tab);
+    if (want && ["all", "voice", "anchor", "speech", "line", "mine"].includes(want)) setTab(want as Tab);
     return () => {
       alive = false;
     };
@@ -103,7 +103,7 @@ export default function PracticeHome({
   /** 트랙 안 번호 — 연습 화면 상단 "07 / 24"와 같은 번호. */
   const numberOf = useMemo(() => {
     const m = new Map<string, number>();
-    for (const t of ["voice", "anchor"] as Track[]) {
+    for (const t of ["voice", "anchor", "speech"] as Track[]) {
       scripts.filter((s) => s.track === t).forEach((s, i) => m.set(s.id, i + 1));
     }
     lines.forEach((l, i) => m.set(l.id, i + 1));
@@ -123,7 +123,7 @@ export default function PracticeHome({
 
   const inTab = (t: Track) => tab === "all" || tab === t;
   const pool = scripts.filter((s) => inTab(s.track) && (!cat || s.category === cat));
-  const cats = tab === "voice" || tab === "anchor" ? [...new Set(scripts.filter((s) => s.track === tab).map((s) => s.category))] : [];
+  const cats = tab === "voice" || tab === "anchor" || tab === "speech" ? [...new Set(scripts.filter((s) => s.track === tab).map((s) => s.category))] : [];
   const showLines = (tab === "all" || tab === "line") && !cat && !level;
   const showMine = (tab === "all" || tab === "mine") && !cat && !level;
 
@@ -216,8 +216,8 @@ export default function PracticeHome({
         <h1 className={styles.h1}>{t("읽고, 듣고, 다시 읽기", "Read. Listen. Again.")}</h1>
         <p className={styles.lede}>
           {t(
-            `성우·아나운서 준비생을 위한 대본 ${scripts.length}편. 녹음하면 속도·쉼·억양·말끝을 바로 짚어드리고, 대본대로 읽었는지도 확인해드려요. 녹음은 이 폰에만 남아요.`,
-            `${scripts.length} Korean scripts for aspiring voice actors and anchors. Record and get instant notes on pace, pauses, intonation and endings — plus a check that you read every word. Takes stay on your phone.`,
+            `성우·아나운서·스피치 준비생을 위한 대본 ${scripts.length}편. 녹음하면 속도·쉼·억양·말끝을 바로 짚어드리고, 대본대로 읽었는지도 확인해드려요. 녹음은 이 폰에만 남아요.`,
+            `${scripts.length} Korean scripts for aspiring voice actors, anchors and speakers. Record and get instant notes on pace, pauses, intonation and endings — plus a check that you read every word. Takes stay on your phone.`,
           )}
         </p>
       </header>
@@ -289,6 +289,7 @@ export default function PracticeHome({
             ["all", t("전체", "All"), scripts.length + lines.length + mine.length],
             ["voice", trackLabel("voice", lang), scripts.filter((s) => s.track === "voice").length],
             ["anchor", trackLabel("anchor", lang), scripts.filter((s) => s.track === "anchor").length],
+            ["speech", trackLabel("speech", lang), scripts.filter((s) => s.track === "speech").length],
             ["line", trackLabel("line", lang), lines.length],
             ["mine", t("내 대본", "Mine"), mine.length],
           ] as const
@@ -412,7 +413,7 @@ export default function PracticeHome({
             </section>
           )}
 
-          {(["voice", "anchor"] as Track[])
+          {(["voice", "anchor", "speech"] as Track[])
             .filter(inTab)
             .map((tk) => {
               const ofTrack = scripts.filter((s) => s.track === tk);
