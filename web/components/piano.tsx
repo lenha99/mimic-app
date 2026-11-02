@@ -12,10 +12,10 @@ const H = 56;
 const BW = 6.4;
 const BH = 34;
 
-const VOLT = "#E8FF3A";
-const VOLT_DARK = "#93A21C";
-const PINK = "#FF2D78";
-const CYAN = "#00E5FF";
+const VOLT = "#FFC93C";
+const VOLT_DARK = "#A8781A";
+const PINK = "#FF7A45";
+const CYAN = "#7CC8F2";
 
 export function keyboardSpan(values: (number | null | undefined)[]): [number, number] {
   let from = 36;
@@ -91,7 +91,7 @@ export function Piano({
           width={BW}
           height={BH}
           rx={1.2}
-          fill={m === liveKey ? CYAN : lit(m) ? VOLT_DARK : "#0A0A0B"}
+          fill={m === liveKey ? CYAN : lit(m) ? VOLT_DARK : "#16141A"}
         />
       ))}
       {speakKey != null && (
@@ -100,7 +100,7 @@ export function Piano({
           cy={BLACK_PCS.has(speakKey % 12) ? BH - 6 : H - 7}
           r={3.6}
           fill={PINK}
-          stroke="#0A0A0B"
+          stroke="#16141A"
           strokeWidth={1}
         />
       )}

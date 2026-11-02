@@ -67,7 +67,7 @@ const box: React.CSSProperties = {
   gap: 6,
   justifyItems: "center",
   borderRadius: 14,
-  border: "1px dashed rgba(232,255,58,0.45)",
+  border: "1px dashed rgba(255, 201, 60,0.45)",
   fontSize: 12,
   color: "var(--ash)",
 };

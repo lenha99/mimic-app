@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <!-- 기본 공유 카드(카톡·인스타 DM 미리보기). 글자는 라틴 워드마크만 — 한글 설명은 메타 설명이 맡는다.
+       node assets/render-icons.mjs 로 public/og-default.png 를 만든다. -->
+  <defs>
+    <radialGradient id="glow" cx="32%" cy="45%" r="55%">
+      <stop offset="0" stop-color="#ffc93c" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#ffc93c" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="#16141a"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+  <g transform="translate(130 70) scale(2.45)">
+    <path d="M86 168 L100 198 L114 168Z" fill="#D9D2E9"/>
+    <ellipse cx="84" cy="182" rx="11" ry="6" fill="#F0B4A4"/>
+    <ellipse cx="116" cy="182" rx="11" ry="6" fill="#F0B4A4"/>
+    <g fill="#FFD84D">
+      <path d="M94 50 C90 28 92 6 100 -8 C106 8 108 30 106 50Z"/>
+      <path d="M86 54 C78 34 76 14 82 0 C88 16 94 34 98 50Z"/>
+      <path d="M104 52 C108 34 114 16 122 4 C124 20 118 40 112 54Z"/>
+    </g>
+    <circle cx="100" cy="112" r="70" fill="#FFF6DD"/>
+    <ellipse cx="100" cy="152" rx="40" ry="24" fill="#FFFCF2"/>
+    <ellipse cx="34" cy="130" rx="13" ry="26" fill="#D9D2E9" transform="rotate(18 34 130)"/>
+    <ellipse cx="166" cy="130" rx="13" ry="26" fill="#D9D2E9" transform="rotate(-18 166 130)"/>
+    <path d="M30.7 102 A70 70 0 0 1 169.3 102 Q140 124 100 124 Q60 124 30.7 102Z" fill="#FFE47E"/>
+    <circle cx="60" cy="112" r="14" fill="#FF9A4D"/>
+    <circle cx="140" cy="112" r="14" fill="#FF9A4D"/>
+    <path d="M33 104 C30 30 170 30 167 104" stroke="#2A2A35" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <rect x="19" y="88" width="24" height="36" rx="10" fill="#2A2A35"/>
+    <rect x="157" y="88" width="24" height="36" rx="10" fill="#2A2A35"/>
+    <rect x="25" y="96" width="7" height="20" rx="3.5" fill="#FF9A4D"/>
+    <rect x="168" y="96" width="7" height="20" rx="3.5" fill="#FF9A4D"/>
+    <path d="M31 122 Q38 146 70 140" stroke="#2A2A35" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <rect x="68" y="133" width="14" height="13" rx="6" fill="#2A2A35"/>
+    <circle cx="76" cy="92" r="13" fill="#2A2A35"/>
+    <circle cx="124" cy="92" r="13" fill="#2A2A35"/>
+    <circle cx="81" cy="87" r="4.5" fill="#FFFFFF"/>
+    <circle cx="129" cy="87" r="4.5" fill="#FFFFFF"/>
+    <path d="M92 100 Q100 94 108 100 Q105 107 100 108 Q95 107 92 100Z" fill="#D8B1A2"/>
+    <ellipse cx="100" cy="116" rx="6" ry="7" fill="#8C2F45"/>
+    <path d="M92 117 Q100 128 108 117 Q100 121 92 117Z" fill="#C49686"/>
+  </g>
+  <g font-family="Arial Black, Arial, Helvetica, sans-serif" font-weight="900">
+    <text x="690" y="300" font-size="132" fill="#ffc93c" letter-spacing="4">MIMIC</text>
+    <text x="696" y="368" font-size="34" fill="#f6f2ea" letter-spacing="10">VOICE STUDIO</text>
+  </g>
+  <g transform="translate(696 420)" fill="#ff7a45">
+    <rect x="0" y="22" width="12" height="28" rx="6"/>
+    <rect x="22" y="8" width="12" height="56" rx="6"/>
+    <rect x="44" y="0" width="12" height="72" rx="6"/>
+    <rect x="66" y="14" width="12" height="44" rx="6"/>
+    <rect x="88" y="26" width="12" height="20" rx="6"/>
+  </g>
+</svg>

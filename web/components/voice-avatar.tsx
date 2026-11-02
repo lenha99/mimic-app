@@ -55,7 +55,7 @@ export function VoiceAvatar({
         <Brows eyes={avatar.eyes} />
         <Eyes kind={avatar.eyes} level={v} />
         <Face kind={avatar.face} hair={hair} />
-        <Mouth level={v} eyes={avatar.eyes} />
+        {avatar.body === "parrot" ? <Beak level={v} /> : <Mouth level={v} eyes={avatar.eyes} />}
         <Mustache on={avatar.face === "mustache"} color={hair} />
         <Glasses kind={avatar.glasses} />
         <Hat kind={avatar.hat} hair={avatar.hair} body={avatar.body} color={avatar.color} />
@@ -99,6 +99,20 @@ function Body({ shape, fill }: { shape: Avatar["body"]; fill: string }) {
           <ellipse cx="44" cy="24" rx="3.5" ry="13" fill="#ff8fb8" opacity="0.7" transform="rotate(-10 44 24)" />
           <ellipse cx="76" cy="24" rx="3.5" ry="13" fill="#ff8fb8" opacity="0.7" transform="rotate(10 76 24)" />
           {head}
+        </>
+      );
+    case "parrot":
+      // 코코(왕관앵무) — 볏은 노랑 고정, 볼의 주황 동그라미는 원래 무늬라 몸에 붙인다.
+      return (
+        <>
+          <g fill="#ffd84d" {...stroke} strokeWidth={2.4}>
+            <path d="M57 40 C52 26 54 14 62 9 C59 19 60 28 64 39 Z" />
+            <path d="M51 42 C43 33 41 24 45 17 C47 27 51 34 57 40 Z" />
+            <path d="M63 40 C67 30 73 24 81 23 C75 29 71 35 69 42 Z" />
+          </g>
+          {head}
+          <circle cx="36" cy="80" r="7" fill="#ff9a4d" />
+          <circle cx="84" cy="80" r="7" fill="#ff9a4d" />
         </>
       );
     case "ghost":
@@ -438,6 +452,19 @@ function Mouth({ level, eyes }: { level: number; eyes: Avatar["eyes"] }) {
   );
 }
 
+/** 앵무새 부리 — 소리가 커질수록 아래 부리가 내려가며 벌어진다. */
+function Beak({ level }: { level: number }) {
+  const open = Math.max(0, Math.min(1, (level - 0.03) / 0.1));
+  const gap = open * (2 + Math.sqrt(level) * 9);
+  return (
+    <>
+      {gap > 0.5 && <ellipse cx="60" cy={82 + gap * 0.5} rx={4 + gap * 0.25} ry={gap * 0.55} fill={INK} />}
+      <path d={`M54 ${83 + gap} Q60 ${89 + gap} 66 ${83 + gap} Q60 ${85.5 + gap} 54 ${83 + gap} Z`} fill="#c49686" {...stroke} strokeWidth={2} />
+      <path d="M52 73 Q60 68 68 73 Q66 82 60 85 Q54 82 52 73 Z" fill="#e3bba9" {...stroke} strokeWidth={2.4} />
+    </>
+  );
+}
+
 /* ── 안경 ───────────────────────────────────────────────────────────── */
 
 function Glasses({ kind }: { kind: Avatar["glasses"] }) {
@@ -503,7 +530,7 @@ function Hat({
   // 몸과 같은 계열이면 모자가 안 보인다.
   const accent = color === "pink" || color === "red" ? "#3cebff" : "#ff2d78";
   // 머리숱이 많으면 모자가 그만큼 위에 얹힌다.
-  const top = hair === "perm" ? 28 : hair === "spiky" ? 24 : body === "ghost" ? 34 : 38;
+  const top = hair === "perm" ? 28 : hair === "spiky" ? 24 : body === "ghost" ? 34 : body === "parrot" ? 36 : 38;
 
   switch (kind) {
     case "cap":

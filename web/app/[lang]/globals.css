@@ -1,30 +1,34 @@
 /*
- * 디자인 토큰 — Flutter 쪽 lib/theme.dart 의 "방송 송출" 컨셉을 그대로 옮겼다.
- * 검정 무대 + 형광 옐로우 스포트라이트 + 음파.
- * 의도적으로 단일(다크) 테마다. 제품 아이덴티티가 무대 조명이라 라이트 모드가 없다.
+ * 디자인 토큰 — "녹음 부스 + 코코".
+ * 따뜻한 차콜 부스(배경) 위에 마스코트 코코의 노랑(볏)·주황(볼)을 포인트로 쓴다.
+ * 성우·아나운서 지망생도 쓰는 연습 앱이라 귀여움은 코코가 맡고, 화면은 차분하게 둔다.
+ * 단일(다크) 테마다. 변수 이름(--volt·--pink 등)은 옛 이름 그대로 — 값만 바뀌었다.
  */
 :root {
   color-scheme: dark;
 
-  --stage: #0a0a0b;
-  --panel: #161618;
-  --panel-hi: #1e1e22;
-  --rule: #26262a;
+  --stage: #16141a;
+  --panel: #201d25;
+  --panel-hi: #2a2631;
+  --rule: #36313e;
 
-  --volt: #e8ff3a;
-  --cyan: #00e5ff;
-  --pink: #ff2d78;
-  --lime: #7cff6b;
+  --volt: #ffc93c;
+  --cyan: #7cc8f2;
+  --pink: #ff7a45;
+  --lime: #8fd96b;
 
-  --white: #f5f5f7;
-  --ash: #8a8a92;
-  --ash-dim: #5d5d65;
+  /* 노랑 위 글자 */
+  --on-accent: #16141a;
+
+  --white: #f6f2ea;
+  --ash: #a9a2b3;
+  --ash-dim: #857e90;
 
   --sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
     "Segoe UI", "Malgun Gothic", sans-serif;
   --mono: var(--font-mono), ui-monospace, SFMono-Regular, Consolas, monospace;
-  /* 점수·제목. 없으면 본문 서체로 떨어진다 (레이아웃은 안 깨진다). */
-  --display: var(--font-display), var(--sans);
+  /* 점수·제목 — Pretendard ExtraBold(800). 쓰는 곳마다 font-weight: 800 을 같이 준다. */
+  --display: var(--sans);
 
   --gutter: 20px;
 }
@@ -46,8 +50,7 @@ body {
   font-size: 16px;
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
-  /* 디스플레이 서체(Black Han Sans)는 굵기가 하나뿐이다. 그 위에 font-weight 를 더 주면
-     브라우저가 가짜로 두껍게 그려서 "몰"처럼 획이 촘촘한 글자가 까만 덩어리가 된다. */
+  /* 가짜 굵게(합성)를 막는다 — 굵기는 Pretendard 가변 서체의 진짜 굵기로만. */
   font-synthesis: none;
   overflow-x: hidden;
 }
@@ -91,7 +94,7 @@ button {
   font-size: 26px;
   font-weight: 900;
   letter-spacing: 2px;
-  background: linear-gradient(90deg, var(--volt), var(--cyan));
+  background: linear-gradient(90deg, var(--volt), var(--pink));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;

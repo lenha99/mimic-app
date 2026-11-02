@@ -5,7 +5,7 @@
 .title {
   margin: 0;
   font-family: var(--display);
-  font-weight: 400;
+  font-weight: 800;
   font-size: 34px;
   line-height: 1.15;
   color: var(--white);
@@ -136,6 +136,7 @@
 
 .cardTitle {
   font-family: var(--display);
+  font-weight: 800;
   font-size: 19px;
   line-height: 1.2;
   color: var(--white);

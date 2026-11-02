@@ -43,6 +43,25 @@ export type Analysis = {
   bars: number[];
   /** 화면용 — 쉼 구간 [시작, 끝] (span 기준 0~1) */
   gaps: [number, number][];
+  /**
+   * 마디(0.45초 넘게 쉰 곳으로 나눈 덩어리)별 측정 — 심사표의 "억양 그림"·"고칠 한 곳".
+   * 숫자 몇십 개뿐이라 기기에 그대로 둔다. 예전 테이크엔 없다.
+   */
+  phrases?: Phrase[];
+};
+
+export type Phrase = {
+  /** 녹음 안에서의 시작·끝(초) — "이 부분 듣기"에 쓴다 */
+  t0: number;
+  t1: number;
+  /** 소리 낸 시간(초) — 대본 글자를 마디에 나눠 줄 때 쓴다 */
+  voiced: number;
+  /** 억양 폭(반음). 유성음이 적으면 null */
+  range: number | null;
+  /** 끝 처짐(dB). 짧은 마디는 null */
+  drop: number | null;
+  /** 높낮이 선 — 테이크 가운데 음 기준 반음, 24점. 소리 없는 칸은 null */
+  line: (number | null)[];
 };
 
 export async function analyzeBlob(blob: Blob, syllableCount: number | null): Promise<Analysis> {
@@ -158,6 +177,7 @@ export async function analyze(
   const d = new Float32Array(tauMax + 1);
   const cm = new Float32Array(tauMax + 1);
   const f0: number[] = [];
+  const f0At = new Float32Array(frames); // 0 = 피치 없음
   for (let f = first; f <= last; f += 1) {
     if (!speech[f]) continue;
     const o = f * hop;
@@ -195,14 +215,17 @@ export async function analyze(
       }
     }
     if (found < 0 && bestC < 0.35) found = bestTau;
-    if (found > 0) f0.push(sr / found);
+    if (found > 0) {
+      f0.push(sr / found);
+      f0At[f] = sr / found;
+    }
     if (f % 150 === 0) await tick();
   }
 
   let pitchRange: number | null = null;
   let pitchHz: number | null = null;
   if (f0.length >= 12) {
-    const fs = f0.sort((a, b) => a - b);
+    const fs = [...f0].sort((a, b) => a - b);
     const p10 = fs[Math.floor(fs.length * 0.1)];
     const p90 = fs[Math.floor(fs.length * 0.9)];
     pitchRange = 12 * Math.log2(p90 / p10);
@@ -235,7 +258,57 @@ export async function analyze(
     bars.push(Math.max(0, Math.min(1, (m - (thr - 10)) / range)));
   }
 
+  // 8) 마디별 — 높낮이 선·폭·끝 처짐.
+  const frameS = hop / sr;
+  const phrases: Phrase[] = [];
+  if (pitchHz) {
+    for (const [a, b] of sentences) {
+      const len = b - a + 1;
+      if (len * HOP_S < 0.25) continue;
+      let voiced = 0;
+      const st: number[] = [];
+      for (let f = a; f <= b; f += 1) {
+        if (speech[f]) voiced += 1;
+        if (f0At[f] > 0) st.push(12 * Math.log2(f0At[f] / pitchHz));
+      }
+      let range: number | null = null;
+      if (st.length >= 8) {
+        const ss = [...st].sort((x, y) => x - y);
+        range = ss[Math.floor(ss.length * 0.9)] - ss[Math.floor(ss.length * 0.1)];
+      }
+      let drop: number | null = null;
+      if (len * HOP_S >= 0.8) {
+        const cut = a + Math.floor(len * 0.75);
+        const body = meanDb(db, speech, a, cut - 1);
+        const tail = meanDb(db, speech, cut, b);
+        if (body !== null && tail !== null) drop = tail - body;
+      }
+      const POINTS = 24;
+      const line: (number | null)[] = [];
+      for (let i = 0; i < POINTS; i += 1) {
+        const p = a + Math.floor((len * i) / POINTS);
+        const q = Math.max(p + 1, a + Math.floor((len * (i + 1)) / POINTS));
+        const vals: number[] = [];
+        for (let f = p; f < q && f <= b; f += 1) if (f0At[f] > 0) vals.push(12 * Math.log2(f0At[f] / pitchHz));
+        if (!vals.length) line.push(null);
+        else {
+          vals.sort((x, y) => x - y);
+          line.push(Math.round(vals[Math.floor(vals.length / 2)] * 10) / 10);
+        }
+      }
+      phrases.push({
+        t0: Math.round(a * frameS * 100) / 100,
+        t1: Math.round((b + 1) * frameS * 100) / 100,
+        voiced: Math.round(voiced * HOP_S * 100) / 100,
+        range: range === null ? null : Math.round(range * 10) / 10,
+        drop: drop === null ? null : Math.round(drop * 10) / 10,
+        line,
+      });
+    }
+  }
+
   return {
+    phrases,
     duration,
     span,
     pace: syllableCount && span > 0.5 ? syllableCount / span : null,

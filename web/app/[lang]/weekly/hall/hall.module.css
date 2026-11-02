@@ -15,7 +15,7 @@
 .title {
   margin: 6px 0 0;
   font-family: var(--display);
-  font-weight: 400;
+  font-weight: 800;
   font-size: 44px;
   line-height: 1.1;
   background: linear-gradient(90deg, var(--volt), #fff6a8 50%, var(--volt));
@@ -93,8 +93,8 @@
 }
 
 .first .place {
-  border: 1px solid rgba(232, 255, 58, 0.4);
-  background: linear-gradient(90deg, rgba(232, 255, 58, 0.12), transparent 70%), var(--stage);
+  border: 1px solid rgba(255, 201, 60, 0.4);
+  background: linear-gradient(90deg, rgba(255, 201, 60, 0.12), transparent 70%), var(--stage);
 }
 
 .medal {
@@ -119,7 +119,7 @@
 .empty {
   padding: 30px 18px;
   border-radius: 22px;
-  border: 1px dashed rgba(232, 255, 58, 0.35);
+  border: 1px dashed rgba(255, 201, 60, 0.35);
   text-align: center;
   color: var(--ash);
   font-size: 14px;
@@ -129,6 +129,7 @@
 .emptyBig {
   margin: 0 0 8px;
   font-family: var(--display);
+  font-weight: 800;
   font-size: 26px;
   color: var(--white);
 }

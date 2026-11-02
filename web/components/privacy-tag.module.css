@@ -41,8 +41,8 @@
 }
 
 .closed {
-  background: rgba(124, 255, 107, 0.06);
-  border-color: rgba(124, 255, 107, 0.3);
+  background: rgba(143, 217, 107, 0.06);
+  border-color: rgba(143, 217, 107, 0.3);
 }
 
 .closed b,
@@ -51,8 +51,8 @@
 }
 
 .open {
-  background: rgba(255, 45, 120, 0.07);
-  border-color: rgba(255, 45, 120, 0.35);
+  background: rgba(255, 122, 69, 0.07);
+  border-color: rgba(255, 122, 69, 0.35);
 }
 
 .open b,

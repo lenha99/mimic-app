@@ -11,9 +11,9 @@ import { track } from "@/lib/track";
 import { currentWeek, freeWeek, isLive, readMine, remaining, seasonLabel, writeMine, type Week } from "@/lib/weekly";
 import { PrivacyTag } from "@/components/privacy-tag";
 import { cleanNickname, NICK_MAX, nicknameProblem, readNickname, writeNickname } from "@/lib/nickname";
-import { JudgesPanel } from "@/components/weekly/judges-panel";
+import { VoiceTypeCard } from "@/components/practice/voice-type-card";
 import { PushButton } from "@/components/social/push-button";
-import { judgeTake, type Verdict } from "@/lib/judges";
+import { voiceTypeOf } from "@/lib/scorecard";
 import { polishVoice } from "@/lib/voice-polish";
 import { badgeLabel, strengthsOf, type BadgeId } from "@/lib/badges";
 import { findScript, pauseMarks } from "@/lib/practice";
@@ -51,7 +51,7 @@ function useNow(): number | null {
   return at;
 }
 
-type Done = { id: string; rank: number; total: number; replaced: boolean; verdicts: Verdict[]; badges: BadgeId[] };
+type Done = { id: string; rank: number; total: number; replaced: boolean; badges: BadgeId[] };
 
 function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) {
   const t = useT();
@@ -73,9 +73,8 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
   });
   const [toast, showToast] = useToast();
   const polish = usePolish(take.blob, open);
-  // 테이크마다 심사위원 한마디 — 출전 버튼 바로 위. 출전하고 싶게 만드는 한 번의 반응.
-  // (이 컴포넌트는 테이크마다 key 가 달라 테이크를 바꾸면 새로 뽑는다.)
-  const [preview] = useState(() => judgeTake(take.analysis, { lang }));
+  // 목소리 타입 — 이 녹음에서 잰 값으로만 정한다(속도·억양 폭·음높이). 출전 버튼 바로 위.
+  const vtype = voiceTypeOf(take.analysis, t);
   // 잘한 점 배지 — 공개로 붙는다. 못한 점은 배지로 만들지 않는다.
   const [strengths] = useState<BadgeId[]>(() => {
     const sc = findScript(week.scriptId);
@@ -106,7 +105,7 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
     const r = await shareLink(
       `${location.origin}/weekly/e/${id}`,
       free
-        ? t(`MIMIC 에 「${week.title}」 녹음 올렸어 🎙️ 들어보고 ❤ 하나만 눌러줘 🙏`, `I posted my take on "${week.titleEn}" on MIMIC 🎙️ Give it a listen and tap ❤ 🙏`)
+        ? t(`MIMIC 에 「${week.title}」 녹음 올렸어 🎙️${vtype ? ` 내 목소리 타입은 ${vtype.name}!` : ""} 들어보고 ❤ 하나만 눌러줘 🙏`, `I posted my take on "${week.titleEn}" on MIMIC 🎙️${vtype ? ` My voice type: ${vtype.name}!` : ""} Give it a listen and tap ❤ 🙏`)
         : t(
             `MIMIC 보이스 챌린지 「${week.title}」 출전함 🎙️ 들어보고 ❤ 하나만 눌러줘 🙏`,
             `I entered the MIMIC voice challenge "${week.titleEn}" 🎙️ Give it a listen and tap ❤ 🙏`,
@@ -167,13 +166,7 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
       setOpen(false);
       const rank = d.rank ?? 1;
       const total = d.total ?? 1;
-      const verdicts = judgeTake(take.analysis, {
-        lang,
-        first: total === 1,
-        podium: total > 1 && rank <= 3,
-        replaced: Boolean(d.replaced),
-      });
-      setDone({ id: d.id, rank, total, replaced: Boolean(d.replaced), verdicts, badges: strengths });
+      setDone({ id: d.id, rank, total, replaced: Boolean(d.replaced), badges: strengths });
       buzz(30);
       track("weekly_enter", { via: free ? "free" : week.id });
     } catch {
@@ -185,7 +178,7 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
 
   return (
     <>
-      {!done && <JudgesPanel verdicts={preview} />}
+      {!done && <VoiceTypeCard type={vtype} />}
       {entered && local ? (
         <div className={styles.entered} data-tour="room-enter">
           <span className={styles.enteredBadge}>{free ? t("🎙️ 갤러리에 올라감", "🎙️ In the gallery") : t("🏆 출전 중", "🏆 Entered")}</span>
@@ -356,7 +349,7 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
                 </span>
               </div>
             )}
-            <JudgesPanel verdicts={done.verdicts} />
+            <VoiceTypeCard type={vtype} />
             {/* 올린 사람의 진짜 보상은 "누가 들었다"는 소식이다 — 알림을 이 순간에 켜게 한다. */}
             <PushButton kind="mine" compact />
             {!me.loggedIn && (

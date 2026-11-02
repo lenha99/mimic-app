@@ -38,6 +38,7 @@
 .title {
   margin: 0;
   font-family: var(--display);
+  font-weight: 800;
   font-size: 28px;
   line-height: 1.2;
   word-break: keep-all;
@@ -87,14 +88,14 @@
 }
 
 .cardOn {
-  border-color: rgba(232, 255, 58, 0.6);
-  box-shadow: 0 0 0 3px rgba(232, 255, 58, 0.12);
+  border-color: rgba(255, 201, 60, 0.6);
+  box-shadow: 0 0 0 3px rgba(255, 201, 60, 0.12);
 }
 
 .cardWin {
   border-color: var(--volt);
   background:
-    radial-gradient(80% 60% at 50% 0%, rgba(232, 255, 58, 0.18), transparent 70%),
+    radial-gradient(80% 60% at 50% 0%, rgba(255, 201, 60, 0.18), transparent 70%),
     var(--panel);
 }
 
@@ -118,6 +119,7 @@
   background: var(--panel-hi);
   border: 1px dashed var(--ash-dim);
   font-family: var(--display);
+  font-weight: 800;
   font-size: 30px;
   color: var(--white);
 }

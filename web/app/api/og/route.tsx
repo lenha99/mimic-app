@@ -69,9 +69,9 @@ export async function GET(req: Request) {
           height: "100%",
           display: "flex",
           alignItems: "center",
-          background: "#0A0A0B",
+          background: "#16141A",
           backgroundImage:
-            "radial-gradient(circle at 25% 30%, rgba(232,255,58,0.22), transparent 55%), radial-gradient(circle at 90% 90%, rgba(255,45,120,0.22), transparent 55%)",
+            "radial-gradient(circle at 25% 30%, rgba(255, 201, 60,0.22), transparent 55%), radial-gradient(circle at 90% 90%, rgba(255, 122, 69,0.22), transparent 55%)",
           color: "#F5F5F7",
           fontFamily: font ? "Display" : "sans-serif",
           padding: "40px 64px 40px 40px",
@@ -83,7 +83,7 @@ export async function GET(req: Request) {
             style={{
               display: "flex",
               background: "#F5F5F7",
-              color: "#0A0A0B",
+              color: "#16141A",
               fontSize: 44,
               padding: "10px 26px",
               borderRadius: 28,
@@ -100,18 +100,18 @@ export async function GET(req: Request) {
 
         {/* 오른쪽: 누가 · 무엇을 · 몇 점 */}
         <div style={{ display: "flex", flexDirection: "column", flex: 1, marginLeft: 24 }}>
-          <div style={{ display: "flex", fontSize: 32, color: "#FF2D78" }}>{kicker}</div>
+          <div style={{ display: "flex", fontSize: 32, color: "#FF7A45" }}>{kicker}</div>
           <div style={{ display: "flex", fontSize: 72, lineHeight: 1.1, marginTop: 8 }}>{title}</div>
           {beat !== null ? (
             <div style={{ display: "flex", alignItems: "baseline", marginTop: 18 }}>
-              <div style={{ display: "flex", fontSize: 168, lineHeight: 1, color: "#E8FF3A" }}>{beat}</div>
+              <div style={{ display: "flex", fontSize: 168, lineHeight: 1, color: "#FFC93C" }}>{beat}</div>
               <div style={{ display: "flex", fontSize: 56, color: "#8A8A92", marginLeft: 8 }}>{unit}</div>
             </div>
           ) : null}
           <div style={{ display: "flex", fontSize: 40, color: "#F5F5F7", marginTop: beat !== null ? 4 : 24 }}>
             {sub}
           </div>
-          <div style={{ display: "flex", fontSize: 30, letterSpacing: 6, color: "#E8FF3A", marginTop: 34 }}>
+          <div style={{ display: "flex", fontSize: 30, letterSpacing: 6, color: "#FFC93C", marginTop: 34 }}>
             MIMIC
           </div>
         </div>

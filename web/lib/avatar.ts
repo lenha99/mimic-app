@@ -14,8 +14,8 @@
  * 필요 없게.
  */
 export const AVATAR_OPTIONS = {
-  body: ["blob", "cat", "bear", "bunny", "ghost"],
-  color: ["skin", "tan", "volt", "pink", "peach", "red", "blue", "cyan", "lime", "lilac", "white"],
+  body: ["parrot", "blob", "cat", "bear", "bunny", "ghost"],
+  color: ["coco", "skin", "tan", "volt", "pink", "peach", "red", "blue", "cyan", "lime", "lilac", "white"],
   eyes: ["dot", "happy", "sleepy", "wink", "star", "heart", "angry", "sad"],
   hair: ["none", "bangs", "twin", "spiky", "perm", "bun", "bald", "white"],
   hairColor: ["black", "brown", "blonde", "pink", "gray"],
@@ -30,18 +30,19 @@ export type AvatarPart = keyof Options;
 export type Avatar = { [K in AvatarPart]: Options[K][number] };
 
 export const DEFAULT_AVATAR: Avatar = {
-  body: "blob",
-  color: "volt",
+  body: "parrot",
+  color: "coco",
   eyes: "dot",
   hair: "none",
   hairColor: "black",
-  face: "blush",
+  face: "none",
   glasses: "none",
   hat: "none",
   fx: "none",
 };
 
 export const AVATAR_COLORS: Record<Avatar["color"], string> = {
+  coco: "#ffe47e",
   skin: "#ffdcc0",
   tan: "#e9b48c",
   volt: "#e8ff3a",
@@ -85,9 +86,9 @@ export const PART_LABELS: Record<AvatarPart, string> = {
 };
 
 export const OPTION_LABELS: Record<AvatarPart, Record<string, string>> = {
-  body: { blob: "말랑이", cat: "고양이", bear: "곰", bunny: "토끼", ghost: "유령" },
+  body: { parrot: "앵무새 코코", blob: "말랑이", cat: "고양이", bear: "곰", bunny: "토끼", ghost: "유령" },
   color: {
-    skin: "살구", tan: "구릿빛", volt: "형광", pink: "핑크", peach: "복숭아", red: "빨강",
+    coco: "코코 노랑", skin: "살구", tan: "구릿빛", volt: "형광", pink: "핑크", peach: "복숭아", red: "빨강",
     blue: "파랑", cyan: "하늘", lime: "연두", lilac: "보라", white: "하양",
   },
   eyes: {
@@ -124,9 +125,9 @@ export const PART_LABELS_EN: Record<AvatarPart, string> = {
 };
 
 export const OPTION_LABELS_EN: Record<AvatarPart, Record<string, string>> = {
-  body: { blob: "Blob", cat: "Cat", bear: "Bear", bunny: "Bunny", ghost: "Ghost" },
+  body: { parrot: "Coco parrot", blob: "Blob", cat: "Cat", bear: "Bear", bunny: "Bunny", ghost: "Ghost" },
   color: {
-    skin: "Apricot", tan: "Tan", volt: "Neon", pink: "Pink", peach: "Peach", red: "Red",
+    coco: "Coco yellow", skin: "Apricot", tan: "Tan", volt: "Neon", pink: "Pink", peach: "Peach", red: "Red",
     blue: "Blue", cyan: "Sky", lime: "Lime", lilac: "Lilac", white: "White",
   },
   eyes: {

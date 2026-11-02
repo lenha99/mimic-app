@@ -29,10 +29,10 @@
   flex-direction: column;
   align-items: center;
   background:
-    radial-gradient(110% 70% at 50% 0%, rgba(232, 255, 58, 0.16), transparent 60%),
-    radial-gradient(80% 60% at 100% 100%, rgba(255, 45, 120, 0.16), transparent 60%),
+    radial-gradient(110% 70% at 50% 0%, rgba(255, 201, 60, 0.16), transparent 60%),
+    radial-gradient(80% 60% at 100% 100%, rgba(255, 122, 69, 0.16), transparent 60%),
     var(--panel);
-  border: 1px solid rgba(232, 255, 58, 0.2);
+  border: 1px solid rgba(255, 201, 60, 0.2);
 }
 
 .meta {
@@ -45,6 +45,7 @@
 
 .meme {
   font-family: var(--display);
+  font-weight: 800;
   font-size: 20px;
   color: var(--white);
   text-align: left;
@@ -56,6 +57,7 @@
   align-items: baseline;
   gap: 2px;
   font-family: var(--display);
+  font-weight: 800;
   font-size: 34px;
   line-height: 1;
   color: var(--volt);
@@ -97,6 +99,7 @@
   background: var(--white);
   color: var(--stage);
   font-family: var(--display);
+  font-weight: 800;
   font-size: 18px;
   white-space: nowrap;
   overflow: hidden;
@@ -137,9 +140,10 @@
   background: var(--volt);
   color: var(--stage);
   font-family: var(--display);
+  font-weight: 800;
   font-size: 20px;
   text-decoration: none;
-  box-shadow: 0 8px 30px rgba(232, 255, 58, 0.3);
+  box-shadow: 0 8px 30px rgba(255, 201, 60, 0.3);
 }
 
 .note {

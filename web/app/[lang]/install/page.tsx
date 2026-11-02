@@ -11,10 +11,11 @@ import styles from "./install.module.css";
  */
 export const metadata: Metadata = {
   title: "앱 설치",
-  description: "명대사 따라 외치고 점수 받기 · 성우 연습실. 앱스토어 없이 홈 화면에 바로 설치.",
+  description: "성우·아나운서 대본 연습 · 코코의 심사표 · 목소리 갤러리. 앱스토어 없이 홈 화면에 바로 설치.",
   openGraph: {
-    title: "MIMIC — 목소리 따라하기 앱",
-    description: "명대사 따라 외치고 점수 받기 · 성우 연습실 · Speak Korean like the movies",
+    title: "MIMIC — 목소리 연습실 앱",
+    description: "성우·아나운서 대본 연습 · 코코의 심사표 · 목소리 갤러리",
+    images: [{ url: "/og-default.png", width: 1200, height: 630 }],
   },
 };
 
@@ -32,8 +33,8 @@ export default function InstallPage() {
           <Image src="/icons/icon-192.png" alt="" width={96} height={96} className={styles.icon} priority />
         </div>
         <h1 className={styles.name}>MIMIC</h1>
-        <p className={styles.tag}>듣고, 따라 외치면, 점수가 나와요</p>
-        <p className={styles.tagEn}>Listen. Repeat. Get scored on your Korean.</p>
+        <p className={styles.tag}>연습하고, 짚어 받고, 들려주세요</p>
+        <p className={styles.tagEn}>Practice. Get notes. Share your voice.</p>
       </header>
 
       <InstallGuide />

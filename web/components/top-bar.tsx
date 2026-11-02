@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { Coco } from "@/components/brand/coco";
 import { setLang, useLang, useT } from "@/components/lang";
 import { useUnread } from "@/lib/unread-client";
 import styles from "./top-bar.module.css";
@@ -32,6 +33,7 @@ export function TopBar({
     <header className={styles.bar}>
       {title ?? (
         <Link href="/" className={styles.logo} aria-label="MIMIC">
+          <Coco size={30} headset={false} />
           MIMIC
         </Link>
       )}

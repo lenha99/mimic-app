@@ -131,7 +131,7 @@
 
 /* 아직 안 본 화면 — 버튼이 숨 쉬듯 빛난다 */
 .helpFresh {
-  border-color: rgba(232, 255, 58, 0.6);
+  border-color: rgba(255, 201, 60, 0.6);
   color: var(--volt);
   animation: breathe 2.2s ease-in-out infinite;
 }
@@ -203,7 +203,7 @@
 
 @keyframes ring {
   50% {
-    border-color: rgba(232, 255, 58, 0.45);
+    border-color: rgba(255, 201, 60, 0.45);
   }
 }
 
@@ -216,7 +216,7 @@
 
 @keyframes breathe {
   50% {
-    box-shadow: 0 0 0 5px rgba(232, 255, 58, 0.14);
+    box-shadow: 0 0 0 5px rgba(255, 201, 60, 0.14);
   }
 }
 
