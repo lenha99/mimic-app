@@ -23,7 +23,8 @@ export type Take = {
   score?: { score: number; pitch: number; tone: number; timing: number } | null;
   starred?: boolean;
   /** 대본 확인을 눌렀으면 받아쓴 글자. 비교(lib/script-match)는 그때그때 다시 한다. */
-  transcript?: { text: string } | null;
+  /** 대본 확인 결과. fixed = "그 구절만 다시"로 고친 곳(lib/script-match fixKey) */
+  transcript?: { text: string; fixed?: string[] } | null;
   /** 연습 피드백 게시판에 올렸으면 그 게시물 id (/practice/board/{id}). */
   postId?: string;
 };

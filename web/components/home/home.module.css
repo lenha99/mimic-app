@@ -261,3 +261,8 @@
     animation: none;
   }
 }
+
+/* 운영자 픽 — 연습실 카드와 간격을 둬서 다른 덩어리로 보이게 */
+.pick {
+  margin-top: 30px;
+}

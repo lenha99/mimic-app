@@ -12,7 +12,8 @@ import { localError, type T } from "@/lib/i18n";
 import { memeText } from "@/lib/meme-i18n";
 import { fieldName, scriptTitle } from "@/lib/script-i18n";
 import { judge, passCount, warnings, type Check, type Target } from "@/lib/practice-feedback";
-import { fixesOf, matchScript, type MatchResult } from "@/lib/script-match";
+import { fixesOf, fixKey, matchScript, type MatchResult } from "@/lib/script-match";
+import { transcribe } from "@/lib/transcribe-client";
 import { deleteTake, listTakes, newTakeId, saveTake, updateTake, type Take } from "@/lib/take-store";
 import { track } from "@/lib/track";
 import { Scorecard } from "@/components/practice/scorecard";
@@ -113,6 +114,7 @@ export default function Room({ item }: { item: RoomItem }) {
   const refEl = useRef<HTMLAudioElement>(null);
   const [refSrc, setRefSrc] = useState<string | null>(item.kind === "line" ? item.refUrl : null);
   const resultRef = useRef<HTMLElement>(null);
+  const paperRef = useRef<HTMLElement>(null);
   /** 챌린지에 출전한 테이크 — 기기에 남긴 출전 기록(lib/weekly)으로 안다. */
   const [entered, setEntered] = useState<Set<string>>(new Set());
 
@@ -233,28 +235,28 @@ export default function Room({ item }: { item: RoomItem }) {
     async (t: Take) => {
       setChecking(t.id);
       setError(null);
-      try {
-        const body = new FormData();
-        body.append("file", t.blob, "recording.webm");
-        const res = await fetch(`/api/transcribe?client=${encodeURIComponent(clientId())}`, {
-          method: "POST",
-          body,
-        });
-        const data = (await res.json()) as { text?: string; error?: string };
-        if (!res.ok || typeof data.text !== "string") {
-          setError(localError(L, data.error, "대본 확인이 잠깐 안 됐어요. 잠시 뒤 다시 눌러주세요", "Couldn't check the script. Try again in a moment"));
-          return;
-        }
-        await updateTake(t.id, { transcript: { text: data.text } });
+      const res = await transcribe(t.blob);
+      if ("text" in res) {
+        await updateTake(t.id, { transcript: { text: res.text } });
         await refresh();
         setOverlay(true);
-      } catch {
-        setError(L("대본 확인이 잠깐 안 됐어요. 잠시 뒤 다시 눌러주세요", "Couldn't check the script. Try again in a moment"));
-      } finally {
-        setChecking(null);
+      } else {
+        setError(localError(L, res.error ?? undefined, "대본 확인이 잠깐 안 됐어요. 잠시 뒤 다시 눌러주세요", "Couldn't check the script. Try again in a moment"));
       }
+      setChecking(null);
     },
     [refresh, L],
+  );
+
+  /** "그 구절만 다시"로 고친 곳을 테이크에 남긴다 — 대본 위 표시가 초록으로 바뀐다. */
+  const markFixed = useCallback(
+    async (t: Take, key: string) => {
+      if (!t.transcript) return;
+      const fixed = [...new Set([...(t.transcript.fixed ?? []), key])];
+      await updateTake(t.id, { transcript: { ...t.transcript, fixed } });
+      await refresh();
+    },
+    [refresh],
   );
 
   const finish = useCallback(
@@ -500,6 +502,12 @@ export default function Room({ item }: { item: RoomItem }) {
     [open, text],
   );
   const showMatch = overlay && phase !== "recording" && phase !== "count" ? match : null;
+  /** "그 구절만 다시"로 고친 어절 — 대본 위에서 초록으로 */
+  const fixedWords = useMemo(() => {
+    const keys = open?.transcript?.fixed ?? [];
+    if (!match || !keys.length) return new Set<number>();
+    return new Set(fixesOf(text, match).flatMap((f) => (keys.includes(fixKey(f)) ? f.at : [])));
+  }, [match, open, text]);
   const before = open ? (takes.find((t) => t.at < open.at && t.analysis) ?? null) : null;
 
   const head =
@@ -618,7 +626,7 @@ export default function Room({ item }: { item: RoomItem }) {
         </section>
       )}
 
-      <section className={`${styles.paper} ${styles[`size${size}`]}`} aria-label={L("대본", "Script")}>
+      <section ref={paperRef} className={`${styles.paper} ${styles[`size${size}`]}`} aria-label={L("대본", "Script")}>
         <div className={styles.paperBar}>
           <span className={styles.paperLabel}>{L("대본", "Script")}</span>
           <div className={styles.paperTools}>
@@ -662,11 +670,14 @@ export default function Room({ item }: { item: RoomItem }) {
         </div>
         {showMatch && open && (
           <p className={styles.overlayNote}>
-            {L(`테이크 #${order.get(open.id)} 확인 결과`, `Take #${order.get(open.id)} check`)} · <s>{L("빠뜨림", "skipped")}</s>{" "}
-            <span className={styles.changedKey}>{L("바꿈", "changed")}</span> <ins>{L("+덧붙임", "+added")}</ins>
+            <span className={styles.noteTitle}>🦜 {L(`테이크 #${order.get(open.id)}`, `Take #${order.get(open.id)}`)}</span>
+            <span className={styles.keyMissed}>{L("빠뜨림", "skipped")}</span>
+            <span className={styles.keyChanged}>{L("다르게 읽음", "changed")}</span>
+            <span className={styles.keyAdded}>{L("+없는 말", "+extra")}</span>
+            {fixedWords.size > 0 && <span className={styles.keyFixed}>{L("고침", "fixed")}</span>}
           </p>
         )}
-        <ScriptText text={text} marks={marks && item.kind === "script"} match={showMatch} />
+        <ScriptText text={text} marks={marks && item.kind === "script"} match={showMatch} fixed={fixedWords} />
         {item.kind === "script" && marks && (
           <p className={styles.legend}>
             <span className={styles.pauseMark}>/</span> {L("쉼", "pause")} &nbsp; <u>{L("밑줄", "underline")}</u> {L("강조", "stress")}
@@ -705,6 +716,8 @@ export default function Room({ item }: { item: RoomItem }) {
             match={match}
             checking={checking === open.id}
             onCheck={() => void check(open)}
+            onFixed={(key) => void markFixed(open, key)}
+            onShowScript={() => paperRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
           />
         )}
         {phase !== "analyzing" && open && (
@@ -866,7 +879,17 @@ export default function Room({ item }: { item: RoomItem }) {
   );
 }
 
-function ScriptText({ text, marks, match }: { text: string; marks: boolean; match: MatchResult | null }) {
+function ScriptText({
+  text,
+  marks,
+  match,
+  fixed,
+}: {
+  text: string;
+  marks: boolean;
+  match: MatchResult | null;
+  fixed: Set<number>;
+}) {
   const L = useT();
   const paras = useMemo(() => parseScript(text), [text]);
 
@@ -921,18 +944,23 @@ function ScriptText({ text, marks, match }: { text: string; marks: boolean; matc
                   if (idx < 0) return <span key={k}>{part}</span>;
                   const r = match.words[idx];
                   const body = strong ? <u>{part}</u> : part;
+                  // 틀린 말은 형광펜으로 — 다음 테이크에서 눈이 바로 가게. 들린 말은 작은 말풍선으로 위에.
                   const word =
                     !r || r.status === "ok" ? (
                       body
+                    ) : fixed.has(idx) ? (
+                      <mark className={styles.fixed} title={L("고침", "Fixed")}>
+                        {body}
+                      </mark>
                     ) : r.status === "missed" ? (
-                      <s className={styles.missed} title={L("빠뜨림", "Skipped")}>
+                      <mark className={styles.missed} title={L("빠뜨림", "Skipped")}>
                         {body}
-                      </s>
+                      </mark>
                     ) : (
-                      <span className={styles.changed} title={L(`들린 말: ${r.heard ?? ""}`, `Heard: ${r.heard ?? ""}`)}>
-                        {body}
+                      <mark className={styles.changed} title={L(`들린 말: ${r.heard ?? ""}`, `Heard: ${r.heard ?? ""}`)}>
                         {r.heard && <small>{r.heard}</small>}
-                      </span>
+                        {body}
+                      </mark>
                     );
                   return (
                     <span key={k}>
@@ -966,6 +994,8 @@ function TakeReport({
   match,
   checking,
   onCheck,
+  onFixed,
+  onShowScript,
 }: {
   take: Take;
   n: number;
@@ -982,6 +1012,8 @@ function TakeReport({
   match: MatchResult | null;
   checking: boolean;
   onCheck: () => void;
+  onFixed: (key: string) => void;
+  onShowScript: () => void;
 }) {
   const L = useT();
   const lang = useLang();
@@ -1039,14 +1071,6 @@ function TakeReport({
         </div>
       </header>
 
-      <ScriptCheck
-        text={text}
-        match={match}
-        heardEmpty={!!take.transcript && !take.transcript.text.trim()}
-        checking={checking}
-        onCheck={onCheck}
-      />
-
       {a && <Wave a={a} />}
 
       {warn.map((w) => (
@@ -1055,7 +1079,18 @@ function TakeReport({
         </p>
       ))}
 
-      <Scorecard key={take.id} analysis={a} blob={take.blob} text={text} target={target} />
+      <Scorecard
+        key={take.id}
+        analysis={a}
+        text={text}
+        match={match}
+        heardEmpty={!!take.transcript && !take.transcript.text.trim()}
+        checking={checking}
+        fixed={take.transcript?.fixed ?? []}
+        onCheck={onCheck}
+        onFixed={onFixed}
+        onShowScript={onShowScript}
+      />
 
       {kind === "line" && take.score && (
         <dl className={styles.axes}>
@@ -1172,151 +1207,3 @@ function clock(ms: number): string {
   return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 }
 
-/**
- * 대본 확인 — 결과는 "고칠 곳" 목록으로 준다. 틀린 말과 그 말이 든 구절을 같이 보여서
- * 다음 테이크에 그 구절만 다시 읽으면 되게 한다.
- *
- * 비용이 드는 유일한 확인이라 버튼을 누를 때만 한다. 서버·받아쓰기 같은 말은 사용자에게 보이지 않는다.
- */
-function ScriptCheck({
-  text,
-  match,
-  heardEmpty,
-  checking,
-  onCheck,
-}: {
-  text: string;
-  match: MatchResult | null;
-  heardEmpty: boolean;
-  checking: boolean;
-  onCheck: () => void;
-}) {
-  const L = useT();
-  const fixes = useMemo(() => (match ? fixesOf(text, match) : []), [match, text]);
-
-  if (checking) {
-    return <p className={styles.checkBusy}>{L("대본이랑 맞춰보는 중… 처음 한 번은 10초쯤 걸려요", "Checking against the script… the first time takes ~10s")}</p>;
-  }
-
-  if (heardEmpty) {
-    return (
-      <div className={styles.scriptCheck}>
-        <p className={styles.scriptCheckHead}>{L("말소리를 알아듣지 못했어요", "We couldn't make out the words")}</p>
-        <p className={styles.checkNote}>{L("마이크 가까이에서 또박또박 다시 읽어볼까요?", "Try again closer to the mic, nice and clear?")}</p>
-      </div>
-    );
-  }
-
-  if (!match) {
-    return (
-      <div className={styles.scriptCheck}>
-        <p className={styles.scriptCheckHead}>{L("대본대로 읽었는지 확인해 볼까요?", "Check if you read it word for word?")}</p>
-        <p className={styles.checkNote}>{L("빠뜨린 말·바꾼 말을 찾아 알려드려요.", "We'll point out skipped or changed words.")}</p>
-        <div className={styles.checkBtns}>
-          <button type="button" className={styles.pillOn} onClick={onCheck}>
-            {L("대본 확인하기", "Check script")}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const pct = Math.round(match.accuracy * 100);
-  const SHOW = 5;
-  return (
-    <div className={styles.scriptCheck}>
-      <div className={styles.checkTop}>
-        <span className={styles.checkLabel}>{L("대본", "Script")}</span>
-        <span className={styles.checkValue}>{pct}%</span>
-        <span className={fixes.length ? styles.badgeOff : styles.badgeOk}>
-          {fixes.length ? L(`고칠 곳 ${fixes.length}`, `${fixes.length} to fix`) : L("완벽", "Perfect")}
-        </span>
-      </div>
-      {fixes.length === 0 ? (
-        <p className={styles.tip}>{L("한 마디도 안 빼고 대본대로 읽었어요 👏", "Every single word, exactly as written 👏")}</p>
-      ) : (
-        <ol className={styles.fixes}>
-          {fixes.slice(0, SHOW).map((f, k) => (
-            <li key={k}>
-              <p className={styles.fixWhat}>
-                {f.kind === "missed" ? (
-                  L(
-                    <>
-                      <b>“{f.words}”</b>
-                      {josa(f.words, "을", "를")} 빠뜨렸어요
-                    </>,
-                    <>
-                      Skipped <b>“{f.words}”</b>
-                    </>,
-                  )
-                ) : f.kind === "changed" ? (
-                  L(
-                    <>
-                      <b>“{f.words}”</b>
-                      {josa(f.words, "이", "가")} <span className={styles.fixHeard}>“{f.heard}”</span>
-                      {josa(f.heard, "으로", "로")} 들렸어요
-                    </>,
-                    <>
-                      <b>“{f.words}”</b> sounded like <span className={styles.fixHeard}>“{f.heard}”</span>
-                    </>,
-                  )
-                ) : (
-                  L(
-                    <>
-                      대본에 없는 <span className={styles.fixHeard}>“{f.heard}”</span>
-                      {josa(f.heard, "을", "를")} 넣었어요
-                    </>,
-                    <>
-                      Added <span className={styles.fixHeard}>“{f.heard}”</span> (not in the script)
-                    </>,
-                  )
-                )}
-              </p>
-              {f.phrase.length > 0 && (
-                <p className={styles.fixAgain}>
-                  <span>{L("다시", "Redo")}</span>
-                  <span>
-                    {f.phrase.map((w, k) => (
-                      <span key={k}>
-                        {k > 0 && " "}
-                        {w.mark ? <u>{w.text}</u> : w.text}
-                      </span>
-                    ))}
-                  </span>
-                </p>
-              )}
-            </li>
-          ))}
-        </ol>
-      )}
-      {fixes.length > SHOW && (
-        <p className={styles.checkFine}>{L(`나머지 ${fixes.length - SHOW}곳은 대본 위에 표시해 뒀어요`, `The other ${fixes.length - SHOW} are marked on the script`)}</p>
-      )}
-      <p className={styles.checkFine}>
-        {L(
-          "빠뜨리거나 바꾼 말을 찾는 용도예요. 살짝 뭉개진 발음까지는 못 잡아요.",
-          "It finds skipped or changed words — it won't catch slightly mumbled sounds.",
-        )}
-      </p>
-    </div>
-  );
-}
-
-/** 받침에 맞는 조사. "으로/로"는 ㄹ 받침도 "로"다. 숫자로 끝나면 읽는 소리로 본다. */
-function josa(word: string, withFinal: string, without: string): string {
-  const last = word.trim().slice(-1);
-  const DIGIT_FINAL = {
-    "0": 1,
-    "1": 8,
-    "3": 1,
-    "6": 1,
-    "7": 8,
-    "8": 8,
-  } as Record<string, number>;
-  let tail = 0;
-  if (/[가-힣]/.test(last)) tail = (last.charCodeAt(0) - 0xac00) % 28;
-  else if (last in DIGIT_FINAL) tail = DIGIT_FINAL[last];
-  if (!tail) return without;
-  if (withFinal === "으로" && tail === 8) return without; // ㄹ 받침
-  return withFinal;
-}
