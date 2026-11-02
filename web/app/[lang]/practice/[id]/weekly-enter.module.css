@@ -15,11 +15,11 @@
 }
 
 .open {
-  border: 1px solid rgba(232, 255, 58, 0.55);
+  border: 1px solid rgba(255, 201, 60, 0.55);
   background:
-    radial-gradient(120% 120% at 0% 0%, rgba(232, 255, 58, 0.22), transparent 60%),
+    radial-gradient(120% 120% at 0% 0%, rgba(255, 201, 60, 0.22), transparent 60%),
     var(--panel);
-  box-shadow: 0 0 24px rgba(232, 255, 58, 0.12);
+  box-shadow: 0 0 24px rgba(255, 201, 60, 0.12);
 }
 
 .openAlt {
@@ -74,7 +74,7 @@
   margin-top: 14px;
   padding: 16px;
   border-radius: 18px;
-  border: 1px solid rgba(232, 255, 58, 0.45);
+  border: 1px solid rgba(255, 201, 60, 0.45);
   background: var(--panel);
 }
 
@@ -148,7 +148,7 @@
   margin: 14px 0 0;
   padding: 12px 14px;
   border-radius: 14px;
-  background: rgba(232, 255, 58, 0.06);
+  background: rgba(255, 201, 60, 0.06);
   font-size: 13.5px;
   color: var(--ash);
   word-break: keep-all;
@@ -163,8 +163,8 @@
   margin-top: 14px;
   padding: 14px;
   border-radius: 18px;
-  border: 1px solid rgba(255, 45, 120, 0.45);
-  background: linear-gradient(120deg, rgba(255, 45, 120, 0.12), transparent 70%), var(--panel);
+  border: 1px solid rgba(255, 122, 69, 0.45);
+  background: linear-gradient(120deg, rgba(255, 122, 69, 0.12), transparent 70%), var(--panel);
 }
 
 .enteredBadge {
@@ -221,8 +221,8 @@
   gap: 10px;
   padding: 10px 12px;
   border-radius: 14px;
-  border: 1px solid rgba(232, 255, 58, 0.35);
-  background: rgba(232, 255, 58, 0.07);
+  border: 1px solid rgba(255, 201, 60, 0.35);
+  background: rgba(255, 201, 60, 0.07);
   color: var(--white);
   text-decoration: none;
   font-size: 13px;
@@ -282,9 +282,9 @@
   gap: 10px;
   padding: 26px 22px 18px;
   border-radius: 28px;
-  border: 1px solid rgba(232, 255, 58, 0.4);
+  border: 1px solid rgba(255, 201, 60, 0.4);
   background:
-    radial-gradient(120% 70% at 50% 0%, rgba(232, 255, 58, 0.2), transparent 70%),
+    radial-gradient(120% 70% at 50% 0%, rgba(255, 201, 60, 0.2), transparent 70%),
     var(--panel);
   text-align: center;
   animation: rise 0.45s cubic-bezier(0.3, 1.4, 0.5, 1);
@@ -315,7 +315,7 @@
 
 .cardRank b {
   font-family: var(--display);
-  font-weight: 400;
+  font-weight: 800;
   font-size: 96px;
   line-height: 1;
   background: linear-gradient(180deg, var(--volt), #b8d400);
@@ -459,8 +459,8 @@
 }
 
 .polishOn {
-  border-color: rgba(232, 255, 58, 0.55);
-  background: rgba(232, 255, 58, 0.08);
+  border-color: rgba(255, 201, 60, 0.55);
+  background: rgba(255, 201, 60, 0.08);
 }
 
 .polishKnob {
@@ -549,8 +549,8 @@
 .strengths i {
   padding: 5px 10px;
   border-radius: 99px;
-  background: rgba(232, 255, 58, 0.12);
-  border: 1px solid rgba(232, 255, 58, 0.3);
+  background: rgba(255, 201, 60, 0.12);
+  border: 1px solid rgba(255, 201, 60, 0.3);
   color: var(--volt);
   font-size: 12.5px;
   font-style: normal;

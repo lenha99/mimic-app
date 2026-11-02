@@ -21,7 +21,7 @@
   width: 320px;
   height: 260px;
   transform: translateX(-50%);
-  background: radial-gradient(closest-side, rgba(232, 255, 58, 0.16), transparent);
+  background: radial-gradient(closest-side, rgba(255, 201, 60, 0.16), transparent);
   pointer-events: none;
 }
 
@@ -35,7 +35,7 @@
   border-radius: 24px;
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.06),
-    0 14px 40px rgba(232, 255, 58, 0.22);
+    0 14px 40px rgba(255, 201, 60, 0.22);
 }
 
 @keyframes float {
@@ -49,11 +49,11 @@
   margin: 18px 0 0;
   font-family: var(--display);
   font-size: 40px;
-  font-weight: 400;
+  font-weight: 800;
   letter-spacing: 0.08em;
   line-height: 1;
   color: var(--volt);
-  text-shadow: 0 0 22px rgba(232, 255, 58, 0.35);
+  text-shadow: 0 0 22px rgba(255, 201, 60, 0.35);
 }
 
 .tag {

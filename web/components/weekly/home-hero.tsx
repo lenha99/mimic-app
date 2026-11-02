@@ -14,7 +14,7 @@ import styles from "./home-hero.module.css";
  *
  * 사람이 적은 지금 이 앱에 필요한 건 "올리는 사람"이다. 듣는 사람은 올라온 게 있어야 온다.
  * 그래서 순위표보다 먼저 (1) 무엇을 읽는지(대본 첫 줄), (2) 올리면 뭐가 돌아오는지
- * (보정·심사위원 반응), (3) 바로 녹음하는 버튼을 보인다. 숫자는 부풀리지 않는다 —
+ * (보정·코코의 심사표), (3) 바로 녹음하는 버튼을 보인다. 숫자는 부풀리지 않는다 —
  * 아무도 없으면 "첫 목소리가 되면 1위로 시작"이라고 솔직하게 말한다.
  */
 export function HomeHero({
@@ -55,7 +55,7 @@ export function HomeHero({
 
       <ul className={styles.perks}>
         <li>{t("✨ 목소리 자동 보정", "✨ Auto voice polish")}</li>
-        <li>{t("😳 심사위원 즉시 반응", "😳 Instant judge reactions")}</li>
+        <li>{t("🦜 코코의 심사표", "🦜 Coco's scorecard")}</li>
         <li>{t("🙈 가입 없이 1분", "🙈 1 min, no sign-up")}</li>
       </ul>
 

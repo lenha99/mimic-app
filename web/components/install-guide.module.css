@@ -6,7 +6,7 @@
   padding: 20px 18px;
   border-radius: 22px;
   background: var(--panel);
-  border: 1px solid rgba(232, 255, 58, 0.22);
+  border: 1px solid rgba(255, 201, 60, 0.22);
   text-align: left;
 }
 
@@ -51,6 +51,7 @@
   border: 0;
   border-radius: 28px;
   font-family: var(--display);
+  font-weight: 800;
   font-size: 18px;
   text-decoration: none;
   cursor: pointer;
@@ -59,7 +60,7 @@
 .primary {
   background: var(--volt);
   color: var(--stage);
-  box-shadow: 0 8px 30px rgba(232, 255, 58, 0.28);
+  box-shadow: 0 8px 30px rgba(255, 201, 60, 0.28);
 }
 
 .primary:active,
@@ -111,6 +112,7 @@
   background: var(--volt);
   color: var(--stage);
   font-family: var(--display);
+  font-weight: 800;
   font-size: 14px;
   line-height: 1;
 }

@@ -96,7 +96,7 @@ export default function Gallery({
           <Link href={`/practice/${week.scriptId}?from=weekly`} className={styles.promptGo}>
             {t("🎙 녹음하고 올리기", "🎙 Record & post")}
           </Link>
-          <p className={styles.promptNote}>{t("✨ 자동 보정 · 😳 심사위원 · ⭐ 홈 추천 소개", "✨ Auto polish · 😳 Judges · ⭐ Get featured")}</p>
+          <p className={styles.promptNote}>{t("✨ 자동 보정 · 🦜 코코의 심사표 · ⭐ 홈 추천 소개", "✨ Auto polish · 🦜 Coco's scorecard · ⭐ Get featured")}</p>
           <Link href="/practice" className={styles.promptAlt}>
             {t("다른 대본이 더 좋다면? 연습실 아무 대본이나 올릴 수 있어요 →", "Prefer another script? Post a take from any practice script →")}
           </Link>

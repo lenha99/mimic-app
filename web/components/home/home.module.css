@@ -98,9 +98,9 @@
   align-items: center;
   gap: 12px;
   border-radius: 22px;
-  border: 1px solid rgba(255, 45, 120, 0.35);
+  border: 1px solid rgba(255, 122, 69, 0.35);
   background:
-    linear-gradient(120deg, rgba(255, 45, 120, 0.16), rgba(0, 229, 255, 0.08) 60%, transparent),
+    linear-gradient(120deg, rgba(255, 122, 69, 0.16), rgba(124, 200, 242, 0.08) 60%, transparent),
     var(--panel);
   color: var(--white);
   text-decoration: none;
@@ -201,7 +201,7 @@
   flex-direction: row;
   align-items: center;
   background:
-    radial-gradient(80% 140% at 100% 0%, rgba(0, 229, 255, 0.14), transparent 60%),
+    radial-gradient(80% 140% at 100% 0%, rgba(124, 200, 242, 0.14), transparent 60%),
     var(--panel);
 }
 
@@ -239,13 +239,13 @@
 
 .tileVoice {
   background:
-    radial-gradient(90% 90% at 100% 100%, rgba(124, 255, 107, 0.14), transparent 60%),
+    radial-gradient(90% 90% at 100% 100%, rgba(143, 217, 107, 0.14), transparent 60%),
     var(--panel);
 }
 
 .tileLine {
   background:
-    radial-gradient(90% 90% at 100% 100%, rgba(255, 45, 120, 0.14), transparent 60%),
+    radial-gradient(90% 90% at 100% 100%, rgba(255, 122, 69, 0.14), transparent 60%),
     var(--panel);
 }
 

@@ -1,29 +1,32 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- MIMIC 앱 아이콘. 다섯 줄 음파가 바닥에 붙어 M 모양을 만든다.
-       가운데 줄만 분홍 — 홈의 "방송 중" 불과 같은 색이다.
-       그림은 지름 410px 원(마스커블 안전 영역) 안에만 둔다. -->
+  <!-- MIMIC 앱 아이콘 — 마스코트 코코(왕관앵무) 얼굴. 녹음 부스 차콜 위에 노란 볏.
+       그림은 지름 410px 원(마스커블 안전 영역) 안에만 둔다.
+       components/brand/coco.tsx 의 idle 표정(헤드셋 없이)과 같은 좌표를 1.75배로 옮겼다. -->
   <defs>
-    <radialGradient id="glow" cx="50%" cy="22%" r="75%">
-      <stop offset="0" stop-color="#e8ff3a" stop-opacity="0.22"/>
-      <stop offset="0.6" stop-color="#e8ff3a" stop-opacity="0"/>
+    <radialGradient id="glow" cx="50%" cy="38%" r="60%">
+      <stop offset="0" stop-color="#ffc93c" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#ffc93c" stop-opacity="0"/>
     </radialGradient>
-    <radialGradient id="glow2" cx="100%" cy="100%" r="70%">
-      <stop offset="0" stop-color="#ff2d78" stop-opacity="0.18"/>
-      <stop offset="1" stop-color="#ff2d78" stop-opacity="0"/>
-    </radialGradient>
-    <filter id="bloom" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="10" result="b"/>
-      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
   </defs>
-  <rect width="512" height="512" fill="#0a0a0b"/>
+  <rect width="512" height="512" fill="#16141a"/>
   <rect width="512" height="512" fill="url(#glow)"/>
-  <rect width="512" height="512" fill="url(#glow2)"/>
-  <g filter="url(#bloom)">
-    <rect x="116" y="126" width="40" height="260" rx="20" fill="#e8ff3a"/>
-    <rect x="176" y="196" width="40" height="190" rx="20" fill="#e8ff3a"/>
-    <rect x="236" y="266" width="40" height="120" rx="20" fill="#ff2d78"/>
-    <rect x="296" y="196" width="40" height="190" rx="20" fill="#e8ff3a"/>
-    <rect x="356" y="126" width="40" height="260" rx="20" fill="#e8ff3a"/>
+  <g transform="translate(256 262) scale(1.75) translate(-100 -104)">
+    <g fill="#FFD84D">
+      <path d="M94 50 C84 26 88 8 102 2 C96 18 98 32 106 48Z"/>
+      <path d="M86 54 C72 38 68 22 76 12 C80 28 88 38 98 50Z"/>
+      <path d="M106 50 C112 32 122 22 136 20 C124 30 118 40 114 54Z"/>
+    </g>
+    <circle cx="100" cy="112" r="70" fill="#FFF6DD"/>
+    <ellipse cx="100" cy="152" rx="40" ry="24" fill="#FFFCF2"/>
+    <ellipse cx="34" cy="130" rx="13" ry="26" fill="#D9D2E9" transform="rotate(18 34 130)"/>
+    <ellipse cx="166" cy="130" rx="13" ry="26" fill="#D9D2E9" transform="rotate(-18 166 130)"/>
+    <path d="M30.7 102 A70 70 0 0 1 169.3 102 Q140 124 100 124 Q60 124 30.7 102Z" fill="#FFE47E"/>
+    <circle cx="60" cy="112" r="14" fill="#FF9A4D"/>
+    <circle cx="140" cy="112" r="14" fill="#FF9A4D"/>
+    <circle cx="77" cy="94" r="9.5" fill="#2A2A35"/>
+    <circle cx="123" cy="94" r="9.5" fill="#2A2A35"/>
+    <circle cx="80.5" cy="90.5" r="3.4" fill="#FFFFFF"/>
+    <circle cx="126.5" cy="90.5" r="3.4" fill="#FFFFFF"/>
+    <path d="M91 102 Q100 96 109 102 Q106 115 100 118 Q94 115 91 102Z" fill="#D8B1A2"/>
   </g>
 </svg>

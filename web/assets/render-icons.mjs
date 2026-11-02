@@ -14,3 +14,27 @@ for (const [file, size] of [
   await sharp(svg, { density: 300 }).resize(size, size).png().toFile(out(file));
   console.log(file, size);
 }
+
+// 파비콘(.ico) — 16·32 PNG 를 그대로 담는 ICO. 요즘 브라우저는 PNG 든 ICO 를 읽는다.
+const pngs = [];
+for (const size of [16, 32, 48]) {
+  pngs.push({ size, buf: await sharp(svg, { density: 300 }).resize(size, size).png().toBuffer() });
+}
+const head = Buffer.alloc(6 + 16 * pngs.length);
+head.writeUInt16LE(0, 0);
+head.writeUInt16LE(1, 2);
+head.writeUInt16LE(pngs.length, 4);
+let offset = head.length;
+pngs.forEach(({ size, buf }, i) => {
+  const o = 6 + i * 16;
+  head.writeUInt8(size, o);
+  head.writeUInt8(size, o + 1);
+  head.writeUInt16LE(1, o + 4);
+  head.writeUInt16LE(32, o + 6);
+  head.writeUInt32LE(buf.length, o + 8);
+  head.writeUInt32LE(offset, o + 12);
+  offset += buf.length;
+});
+const { writeFileSync } = await import("node:fs");
+writeFileSync(out("app/favicon.ico"), Buffer.concat([head, ...pngs.map((p) => p.buf)]));
+console.log("app/favicon.ico", pngs.map((p) => p.size).join("/"));

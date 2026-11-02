@@ -9,7 +9,7 @@
   margin: 0;
   font-family: var(--display);
   font-size: 28px;
-  font-weight: 400;
+  font-weight: 800;
 }
 
 .head p {
@@ -38,15 +38,16 @@
   gap: 10px;
   text-align: center;
   background:
-    radial-gradient(90% 70% at 50% 10%, rgba(255, 45, 120, 0.16), transparent 60%),
-    radial-gradient(70% 60% at 0% 100%, rgba(0, 229, 255, 0.12), transparent 60%),
+    radial-gradient(90% 70% at 50% 10%, rgba(255, 122, 69, 0.16), transparent 60%),
+    radial-gradient(70% 60% at 0% 100%, rgba(124, 200, 242, 0.12), transparent 60%),
     var(--panel);
-  border: 1px solid rgba(255, 45, 120, 0.22);
+  border: 1px solid rgba(255, 122, 69, 0.22);
 }
 
 .cue {
   margin: 4px 0 0;
   font-family: var(--display);
+  font-weight: 800;
   font-size: 22px;
 }
 
@@ -65,6 +66,7 @@
   border: none;
   border-radius: 28px;
   font-family: var(--display);
+  font-weight: 800;
   font-size: 19px;
   cursor: pointer;
 }
@@ -72,7 +74,7 @@
 .rec {
   background: var(--pink);
   color: #fff;
-  box-shadow: 0 8px 28px rgba(255, 45, 120, 0.35);
+  box-shadow: 0 8px 28px rgba(255, 122, 69, 0.35);
 }
 
 .recStop {
@@ -172,7 +174,7 @@
 
 .emojiOn {
   border-color: var(--volt);
-  background: rgba(232, 255, 58, 0.08);
+  background: rgba(255, 201, 60, 0.08);
 }
 
 .rules {
@@ -194,6 +196,7 @@
   background: var(--volt);
   color: var(--stage);
   font-family: var(--display);
+  font-weight: 800;
   font-size: 19px;
   text-decoration: none;
   cursor: pointer;
@@ -216,7 +219,7 @@
   margin: 0;
   font-family: var(--display);
   font-size: 26px;
-  font-weight: 400;
+  font-weight: 800;
 }
 
 .done > p {

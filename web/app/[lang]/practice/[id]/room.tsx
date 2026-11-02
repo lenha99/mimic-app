@@ -15,6 +15,7 @@ import { judge, passCount, warnings, type Check, type Target } from "@/lib/pract
 import { fixesOf, matchScript, type MatchResult } from "@/lib/script-match";
 import { deleteTake, listTakes, newTakeId, saveTake, updateTake, type Take } from "@/lib/take-store";
 import { track } from "@/lib/track";
+import { Scorecard } from "@/components/practice/scorecard";
 import { analyze, analyzeBlob, decodeMono, type Analysis } from "@/lib/voice-analysis";
 import { AskFeedback } from "./ask-feedback";
 import { WeeklyBanner, WeeklyEnter } from "./weekly-enter";
@@ -1066,6 +1067,8 @@ function TakeReport({
           {w}
         </p>
       ))}
+
+      <Scorecard key={take.id} analysis={a} blob={take.blob} text={text} target={target} />
 
       {kind === "line" && take.score && (
         <dl className={styles.axes}>

@@ -64,9 +64,9 @@ export async function GET(req: Request) {
           height: "100%",
           display: "flex",
           alignItems: "center",
-          background: "#0A0A0B",
+          background: "#16141A",
           backgroundImage:
-            "radial-gradient(circle at 25% 40%, rgba(232,255,58,0.25), transparent 55%), radial-gradient(circle at 95% 95%, rgba(255,45,120,0.25), transparent 55%)",
+            "radial-gradient(circle at 25% 40%, rgba(255, 201, 60,0.25), transparent 55%), radial-gradient(circle at 95% 95%, rgba(255, 122, 69,0.25), transparent 55%)",
           color: "#F5F5F7",
           fontFamily: font ? "Display" : "sans-serif",
           padding: "40px 64px 40px 40px",
@@ -83,8 +83,8 @@ export async function GET(req: Request) {
               display: "flex",
               alignSelf: "flex-start",
               fontSize: 28,
-              background: "#E8FF3A",
-              color: "#0A0A0B",
+              background: "#FFC93C",
+              color: "#16141A",
               padding: "6px 18px",
               borderRadius: 999,
             }}
@@ -94,16 +94,16 @@ export async function GET(req: Request) {
           <div style={{ display: "flex", fontSize: 68, lineHeight: 1.1, marginTop: 18 }}>{title}</div>
           {entry ? (
             <div style={{ display: "flex", alignItems: "baseline", marginTop: 14 }}>
-              <div style={{ display: "flex", fontSize: 150, lineHeight: 1, color: "#E8FF3A" }}>{rank}</div>
+              <div style={{ display: "flex", fontSize: 150, lineHeight: 1, color: "#FFC93C" }}>{rank}</div>
               <div style={{ display: "flex", fontSize: 44, color: "#8A8A92", marginLeft: 14 }}>{of}</div>
             </div>
           ) : null}
           <div style={{ display: "flex", alignItems: "center", marginTop: 12 }}>
             {entry ? (
-              <div style={{ display: "flex", alignItems: "center", color: "#FF2D78", fontSize: 48 }}>
+              <div style={{ display: "flex", alignItems: "center", color: "#FF7A45", fontSize: 48 }}>
                 <svg width="48" height="48" viewBox="0 0 48 48">
                   <path
-                    fill="#FF2D78"
+                    fill="#FF7A45"
                     d="M24 42s-17-10-17-22A9.5 9.5 0 0 1 24 14a9.5 9.5 0 0 1 17 6c0 12-17 22-17 22Z"
                   />
                 </svg>
@@ -112,7 +112,7 @@ export async function GET(req: Request) {
             ) : null}
             <div style={{ display: "flex", fontSize: 40, marginLeft: entry ? 28 : 0 }}>{sub}</div>
           </div>
-          <div style={{ display: "flex", fontSize: 30, letterSpacing: 6, color: "#E8FF3A", marginTop: 30 }}>MIMIC</div>
+          <div style={{ display: "flex", fontSize: 30, letterSpacing: 6, color: "#FFC93C", marginTop: 30 }}>MIMIC</div>
         </div>
       </div>
     ),

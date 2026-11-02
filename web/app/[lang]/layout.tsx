@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Black_Han_Sans, IBM_Plex_Mono } from "next/font/google";
+import { IBM_Plex_Mono } from "next/font/google";
 import { BottomNav } from "@/components/bottom-nav";
 import { LangProvider } from "@/components/lang";
 import { LANGS, tr } from "@/lib/i18n";
@@ -13,19 +13,6 @@ const mono = IBM_Plex_Mono({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
   variable: "--font-mono",
-  display: "swap",
-});
-
-/**
- * 점수·제목 전용 디스플레이 서체. 본문은 Pretendard 그대로 둔다.
- *
- * 점수가 이 제품의 얼굴인데 본문 서체로 크게만 키우면 그냥 큰 글씨다.
- * 노래방 점수판처럼 두껍고 좁은 한글 서체가 있어야 "점수가 나온다"는 느낌이 산다.
- */
-const display = Black_Han_Sans({
-  subsets: ["latin"],
-  weight: "400",
-  variable: "--font-display",
   display: "swap",
 });
 
@@ -66,7 +53,7 @@ export function generateStaticParams() {
 export const dynamicParams = false;
 
 export const viewport: Viewport = {
-  themeColor: "#0a0a0b",
+  themeColor: "#16141a",
   width: "device-width",
   initialScale: 1,
 };
@@ -74,7 +61,7 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: LayoutProps<"/[lang]">) {
   const lang = await getLang();
   return (
-    <html lang={lang} className={`${mono.variable} ${display.variable}`}>
+    <html lang={lang} className={mono.variable}>
       <head>
         {/* Pretendard — Flutter 앱과 같은 서체를 쓴다 (lib/theme.dart).
             next/font 에 없는 서체라 CDN 링크로 불러온다. */}

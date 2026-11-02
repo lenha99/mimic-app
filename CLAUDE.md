@@ -40,7 +40,8 @@ web/                 # Next.js 웹앱 (유일한 클라이언트)
   lib/notify-server.ts   # 알림 + 웹 푸시(VAPID, 무료). 키(notif_sent)당 한 번, KST 23~08시 푸시 안 함
   lib/push-client.ts     # 푸시 켜기 — 안드로이드 크롬 바로, 아이폰은 설치한 앱에서만. 종류별(새 목소리·내 반응·메시지) 켜기는 components/social/notify-sheet
   lib/voice-polish.ts    # 출전 전 목소리 보정(브라우저): 잡음 제거 → 쉼 정리 → EQ·컴프 → 24kHz wav. 켜기/끄기만
-  lib/judges.ts          # 출전 직후 심사위원 한 줄 평 — 조합형(LLM 없음, 비용 0)
+  lib/scorecard.ts       # 코코의 심사표 — 마디별 억양 선·고칠 한 곳·그 마디만 다시·목소리 타입(브라우저 측정만, 비용 0)
+  components/brand/coco.tsx  # 마스코트 코코(왕관앵무·헤드셋). 순수 SVG, mood 로 표정
   lib/memes.ts       # 카탈로그 조회 + 폴백 (생성됨)
   lib/config.ts      # 엔드포인트 한 곳
   lib/scripts.ts     # 연습실 대본 (생성됨 — registry.json 의 scripts)

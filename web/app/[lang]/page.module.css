@@ -13,10 +13,11 @@
 
 .logo {
   font-family: var(--display);
+  font-weight: 800;
   font-size: 24px;
   letter-spacing: 0.08em;
   color: var(--volt);
-  text-shadow: 0 0 18px rgba(232, 255, 58, 0.35);
+  text-shadow: 0 0 18px rgba(255, 201, 60, 0.35);
 }
 
 .hero {
@@ -29,10 +30,10 @@
   align-items: center;
   text-align: center;
   background:
-    radial-gradient(120% 70% at 50% 0%, rgba(232, 255, 58, 0.16), transparent 60%),
-    radial-gradient(80% 60% at 100% 100%, rgba(255, 45, 120, 0.14), transparent 60%),
+    radial-gradient(120% 70% at 50% 0%, rgba(255, 201, 60, 0.16), transparent 60%),
+    radial-gradient(80% 60% at 100% 100%, rgba(255, 122, 69, 0.14), transparent 60%),
     var(--panel);
-  border: 1px solid rgba(232, 255, 58, 0.18);
+  border: 1px solid rgba(255, 201, 60, 0.18);
 }
 
 .heroTop {
@@ -58,13 +59,13 @@
   height: 8px;
   border-radius: 50%;
   background: var(--pink);
-  box-shadow: 0 0 0 0 rgba(255, 45, 120, 0.6);
+  box-shadow: 0 0 0 0 rgba(255, 122, 69, 0.6);
   animation: live 1.6s ease-out infinite;
 }
 
 @keyframes live {
   to {
-    box-shadow: 0 0 0 9px rgba(255, 45, 120, 0);
+    box-shadow: 0 0 0 9px rgba(255, 122, 69, 0);
   }
 }
 
@@ -104,6 +105,7 @@
   background: var(--white);
   color: var(--stage);
   font-family: var(--display);
+  font-weight: 800;
   font-size: 18px;
   line-height: 1.25;
   white-space: nowrap;
@@ -140,7 +142,7 @@
   margin: 6px 0 0;
   font-family: var(--display);
   font-size: clamp(36px, 11vw, 46px);
-  font-weight: 400;
+  font-weight: 800;
   line-height: 1.05;
   color: var(--white);
   word-break: keep-all;
@@ -166,9 +168,10 @@
   background: var(--volt);
   color: var(--stage);
   font-family: var(--display);
+  font-weight: 800;
   font-size: 20px;
   text-decoration: none;
-  box-shadow: 0 8px 30px rgba(232, 255, 58, 0.28);
+  box-shadow: 0 8px 30px rgba(255, 201, 60, 0.28);
   animation: breathe 2.4s ease-in-out infinite;
 }
 
@@ -187,7 +190,7 @@
 
 @keyframes breathe {
   50% {
-    box-shadow: 0 8px 44px rgba(232, 255, 58, 0.5);
+    box-shadow: 0 8px 44px rgba(255, 201, 60, 0.5);
   }
 }
 
@@ -256,16 +259,16 @@
 
 .doorChallenge {
   background:
-    linear-gradient(160deg, rgba(0, 229, 255, 0.16), transparent 60%),
+    linear-gradient(160deg, rgba(124, 200, 242, 0.16), transparent 60%),
     var(--panel);
-  border-color: rgba(0, 229, 255, 0.28);
+  border-color: rgba(124, 200, 242, 0.28);
 }
 
 .doorPractice {
   background:
-    linear-gradient(160deg, rgba(232, 255, 58, 0.13), transparent 60%),
+    linear-gradient(160deg, rgba(255, 201, 60, 0.13), transparent 60%),
     var(--panel);
-  border-color: rgba(232, 255, 58, 0.28);
+  border-color: rgba(255, 201, 60, 0.28);
 }
 
 .doorKicker {
@@ -283,6 +286,7 @@
 
 .doorTitle {
   font-family: var(--display);
+  font-weight: 800;
   font-size: 24px;
   line-height: 1.15;
   word-break: keep-all;
@@ -318,6 +322,7 @@
 /* 명대사 쪽: 점수판 한 조각 */
 .doorScore {
   font-family: var(--display);
+  font-weight: 800;
   font-size: 30px;
   line-height: 1;
   color: var(--white);
@@ -362,9 +367,9 @@
   margin-top: 10px;
   padding: 14px 16px;
   border-radius: 18px;
-  border: 1px solid rgba(232, 255, 58, 0.3);
+  border: 1px solid rgba(255, 201, 60, 0.3);
   background:
-    radial-gradient(60% 120% at 0% 50%, rgba(232, 255, 58, 0.12), transparent 70%),
+    radial-gradient(60% 120% at 0% 50%, rgba(255, 201, 60, 0.12), transparent 70%),
     var(--panel);
   color: var(--white);
   text-decoration: none;
@@ -401,7 +406,7 @@
 }
 
 .voice:hover {
-  border-color: rgba(232, 255, 58, 0.6);
+  border-color: rgba(255, 201, 60, 0.6);
 }
 
 /* 바닥 --------------------------------------------------------------- */

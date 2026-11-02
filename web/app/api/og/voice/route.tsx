@@ -14,8 +14,8 @@ import { noteName, readCard, summary, tierOf } from "@/lib/voice-range";
  */
 export const contentType = "image/png";
 
-const VOLT = "#E8FF3A";
-const PINK = "#FF2D78";
+const VOLT = "#FFC93C";
+const PINK = "#FF7A45";
 const ASH = "#8A8A92";
 const HOST = "mimic-web-omega.vercel.app/voice";
 
@@ -78,10 +78,10 @@ export async function GET(req: Request) {
   const pianoH = Number(pianoSvg.match(/height="([\d.]+)"/)?.[1] ?? pianoW * 0.19);
 
   const bg = {
-    background: "#0A0A0B",
+    background: "#16141A",
     backgroundImage: story
-      ? "radial-gradient(circle at 50% 18%, rgba(232,255,58,0.18), transparent 45%), radial-gradient(circle at 90% 100%, rgba(0,229,255,0.14), transparent 50%)"
-      : "radial-gradient(circle at 20% 30%, rgba(232,255,58,0.16), transparent 55%), radial-gradient(circle at 95% 95%, rgba(0,229,255,0.14), transparent 55%)",
+      ? "radial-gradient(circle at 50% 18%, rgba(255, 201, 60,0.18), transparent 45%), radial-gradient(circle at 90% 100%, rgba(124, 200, 242,0.14), transparent 50%)"
+      : "radial-gradient(circle at 20% 30%, rgba(255, 201, 60,0.16), transparent 55%), radial-gradient(circle at 95% 95%, rgba(124, 200, 242,0.14), transparent 55%)",
     color: "#F5F5F7",
     fontFamily: font ? "Display" : "sans-serif",
   };
@@ -114,7 +114,7 @@ export async function GET(req: Request) {
                       margin: i === 1 ? "0 16px" : 0,
                       padding: "22px 10px",
                       borderRadius: 28,
-                      background: "#161618",
+                      background: "#201d25",
                     }}
                   >
                     <div style={{ display: "flex", fontSize: 30, color: ASH }}>{label}</div>

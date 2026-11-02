@@ -32,11 +32,11 @@ const sets = (t: T) => {
       body: t(
         <p>
           매주 월요일 대본이 하나 열려요. 연습해서 <b>가장 잘 나온 녹음 하나를 출전</b>시키면 다른 사람들이 듣고 ❤ 를 눌러요.
-          올리기 전에 <b>✨ 목소리 보정</b>(잡음 제거)을 켜고 끌 수 있고, <b>심사위원</b>이 한마디씩 해 줘요. 가입 없이 돼요.
+          올리기 전에 <b>✨ 목소리 보정</b>(잡음 제거)을 켜고 끌 수 있고, <b>코코의 심사표</b>로 내 목소리 타입도 알려 줘요. 가입 없이 돼요.
         </p>,
         <p>
           A new script drops every Monday. Practice, then <b>enter your best take</b> — others listen and tap ❤. Before you enter you
-          can switch <b>✨ voice polish</b> (noise removal) on or off, and the <b>judges</b> react. No sign-up needed.
+          can switch <b>✨ voice polish</b> (noise removal) on or off, and <b>Coco&apos;s scorecard</b> tells you your voice type. No sign-up needed.
         </p>,
       ),
     },
