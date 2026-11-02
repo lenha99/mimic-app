@@ -252,12 +252,19 @@
   font-weight: 600;
 }
 
+/* .fix p(회색 안내문)보다 우선해야 한다 — 판정 줄도 .fix 안의 <p> 다 */
+.fix .better,
 .better {
   color: var(--lime);
 }
 
+.fix .notYet,
 .notYet {
   color: var(--ash);
+}
+
+.fix .retryText {
+  color: var(--white);
 }
 
 .linkBtn {
