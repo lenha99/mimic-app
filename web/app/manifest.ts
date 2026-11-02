@@ -9,9 +9,9 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
-    name: "MIMIC — 목소리 따라하기",
+    name: "MIMIC — 목소리 연습실",
     short_name: "MIMIC",
-    description: "명대사를 듣고 따라 외치면 점수가 나와요. 성우 연습실까지.",
+    description: "성우·아나운서 대본으로 목소리를 연습하고, 잘 나온 목소리를 갤러리에 올려 들려주세요.",
     lang: "ko",
     start_url: "/?source=pwa",
     scope: "/",

@@ -38,3 +38,10 @@ pngs.forEach(({ size, buf }, i) => {
 const { writeFileSync } = await import("node:fs");
 writeFileSync(out("app/favicon.ico"), Buffer.concat([head, ...pngs.map((p) => p.buf)]));
 console.log("app/favicon.ico", pngs.map((p) => p.size).join("/"));
+
+// 기본 공유 카드 — 페이지가 따로 그림을 안 주면 카톡 미리보기에 이게 뜬다.
+await sharp(readFileSync(new URL("./og-default.svg", import.meta.url)), { density: 144 })
+  .resize(1200, 630)
+  .png()
+  .toFile(out("public/og-default.png"));
+console.log("public/og-default.png 1200x630");
