@@ -15,6 +15,8 @@ import { JudgesPanel } from "@/components/weekly/judges-panel";
 import { PushButton } from "@/components/social/push-button";
 import { judgeTake, type Verdict } from "@/lib/judges";
 import { polishVoice } from "@/lib/voice-polish";
+import { badgeLabel, strengthsOf, type BadgeId } from "@/lib/badges";
+import { findScript, pauseMarks } from "@/lib/practice";
 import styles from "./weekly-enter.module.css";
 import { useLang, useT } from "@/components/lang";
 import type { T } from "@/lib/i18n";
@@ -46,7 +48,7 @@ function useNow(): number | null {
   return at;
 }
 
-type Done = { id: string; rank: number; total: number; replaced: boolean; verdicts: Verdict[] };
+type Done = { id: string; rank: number; total: number; replaced: boolean; verdicts: Verdict[]; badges: BadgeId[] };
 
 function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) {
   const t = useT();
@@ -70,6 +72,13 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
   // 테이크마다 심사위원 한마디 — 출전 버튼 바로 위. 출전하고 싶게 만드는 한 번의 반응.
   // (이 컴포넌트는 테이크마다 key 가 달라 테이크를 바꾸면 새로 뽑는다.)
   const [preview] = useState(() => judgeTake(take.analysis, { lang }));
+  // 잘한 점 배지 — 공개로 붙는다. 못한 점은 배지로 만들지 않는다.
+  const [strengths] = useState<BadgeId[]>(() => {
+    const sc = findScript(week.scriptId);
+    return strengthsOf(take.analysis, sc ? { pace: sc.pace, pitch: sc.pitch, marks: pauseMarks(sc.text) } : {});
+  });
+  // 인스타 소개 동의 — 기본 꺼짐. 원하는 사람만 스스로 켠다.
+  const [promo, setPromo] = useState(false);
 
   if (!live) {
     return (
@@ -123,6 +132,8 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
         writeNickname(name);
       }
       if (local?.token) body.append("token", local.token);
+      body.append("badges", JSON.stringify(strengths));
+      if (promo) body.append("promo", "1");
       body.append("duration", String(Math.round(duration * 10) / 10));
       body.append("bars", JSON.stringify(downsample(take.analysis?.bars ?? [], 40)));
       const avatar = readLocalAvatar();
@@ -156,7 +167,7 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
         podium: total > 1 && rank <= 3,
         replaced: Boolean(d.replaced),
       });
-      setDone({ id: d.id, rank, total, replaced: Boolean(d.replaced), verdicts });
+      setDone({ id: d.id, rank, total, replaced: Boolean(d.replaced), verdicts, badges: strengths });
       buzz(30);
       track("weekly_enter", { via: week.id });
     } catch {
@@ -198,7 +209,7 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
             <small>
               {replacing
                 ? t("지금 출전작보다 더 잘 나온 것 같다면", "If this one's better than your current entry")
-                : t(`${label} 챌린지 · 마감 전까지 언제든 교체 가능`, `${label} challenge · swap anytime before the deadline`)}
+                : t("⭐ 좋은 목소리는 홈 추천에 소개돼요 · 언제든 교체 가능", "⭐ Great voices get featured on Home · swap anytime")}
             </small>
           </span>
           <i aria-hidden="true">→</i>
@@ -236,6 +247,24 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
               />
             </label>
           )}
+          {strengths.length > 0 && (
+            <div className={styles.strengths}>
+              <small>{t("이 테이크에서 잘한 점 — 출전작에 배지로 붙어요", "What this take did well — shown as badges")}</small>
+              <span>
+                {strengths.map((b) => (
+                  <i key={b}>{badgeLabel(b, lang)}</i>
+                ))}
+              </span>
+            </div>
+          )}
+          <p className={styles.feature}>{t("⭐ 좋은 목소리는 홈 추천에 소개돼요", "⭐ Great voices get featured on Home")}</p>
+          <label className={styles.promo}>
+            <input type="checkbox" checked={promo} onChange={(e) => setPromo(e.target.checked)} />
+            <span>
+              <b>{t("MIMIC 인스타에 소개돼도 좋아요", "OK to feature me on MIMIC's Instagram")}</b>
+              <small>{t("선택이에요 · 켠 사람만 릴스 후보가 돼요", "Optional · only people who tick this are considered")}</small>
+            </span>
+          </label>
           {needLogin ? (
             <p className={styles.login}>
               {t("이 브라우저는 저장이 막혀 있어서 로그인해야 출전할 수 있어요.", "This browser blocks storage, so you'll need to log in to enter.")}{" "}
@@ -279,6 +308,16 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
                   ? t("벌써 시상대 위예요! 마감까지 자리를 지켜요 👑", "Already on the podium! Hold it till the deadline 👑")
                   : t("친구들한테 공유하면 ❤ 가 훨씬 빨리 모여요!", "Share with friends and the ❤ will pile up way faster!")}
             </p>
+            {done.badges.length > 0 && (
+              <div className={styles.strengths}>
+                <small>{t("획득한 배지", "Badges earned")}</small>
+                <span>
+                  {done.badges.map((b) => (
+                    <i key={b}>{badgeLabel(b, lang)}</i>
+                  ))}
+                </span>
+              </div>
+            )}
             <JudgesPanel verdicts={done.verdicts} />
             {/* 올린 사람의 진짜 보상은 "누가 들었다"는 소식이다 — 알림을 이 순간에 켜게 한다. */}
             <PushButton kind="mine" compact />

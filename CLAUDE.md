@@ -19,7 +19,10 @@ web/                 # Next.js 웹앱 (유일한 클라이언트)
   app/page.tsx       # 홈 — 위쪽 바(🌐·♡ 활동·✈ 메시지) → 목소리 스토리 → 이번 주 챌린지 → 내 목소리 페이지 → 더 놀거리
   components/top-bar.tsx  # 위쪽 바. 안 읽은 수는 lib/unread-client(30초에 한 번, 하단 탭과 공유)
   components/home/   # 홈 조각 — voice-stories(이번 주 목소리 동그라미) · my-voice-card(포트폴리오 알리기)
-  app/weekly/        # 주간 보이스 챌린지 — 매주 대본 하나, 출전작에 ❤, 시상대·명예의 전당
+  app/weekly/        # "목소리" 탭. 이번 주 출전작이 RANKED_MIN(8)개 전엔 갤러리(gallery.tsx — 주를 넘어 쌓인 목소리,
+                     # 운영자 픽, 이번 주 대본 카드), 그 뒤엔 순위판(hub.tsx — ❤·시상대·명예의 전당)
+  components/voices/ # 갤러리 조각 — 재생기(오디오 하나 + 아래 재생 막대) · 카드 · 운영자 픽(Spotlight)
+  lib/badges.ts      # 잘한 점 배지(공개). 못한 점은 배지로 안 만든다. 운영자 픽은 무대 화면 AdminPick
   lib/weekly.ts      # 주차 계산·대본 순서(ROTATION)·기기 기록. DB 없이 "이번 주 대본"을 안다
   lib/weekly-server.ts  # 순위·정산(1~3위 박제)·수상 조회. 표에 RLS 정책이 없어 조건은 여기서 건다
   app/challenges/    # 챌린지 목록 — 명대사 · 친구가 만든 · 몸풀기(동물 소리)

@@ -9,6 +9,7 @@ import { currentWeek, guestName, isLive, MAX_ENTRY_SECONDS } from "@/lib/weekly"
 import { cleanNickname } from "@/lib/nickname";
 import { ensureWeek, getBoard } from "@/lib/weekly-server";
 import { requestT } from "@/lib/i18n";
+import { isBadge } from "@/lib/badges";
 
 /**
  * 이번 주 챌린지 출전 · 교체 · 내리기.
@@ -42,6 +43,13 @@ export async function POST(req: Request) {
   try {
     const raw: unknown = JSON.parse(String(form?.get("bars") ?? "[]"));
     if (Array.isArray(raw)) bars = raw.slice(0, 48).map((v) => Math.max(0, Math.min(1, Number(v) || 0)));
+  } catch {}
+  // 인스타 소개 동의(스스로 켠 사람만) · 잘한 점 배지(정해진 목록 안에서만, 최대 셋).
+  const promoOk = String(form?.get("promo") ?? "") === "1";
+  let badges: string[] = [];
+  try {
+    const raw: unknown = JSON.parse(String(form?.get("badges") ?? "[]"));
+    if (Array.isArray(raw)) badges = [...new Set(raw.filter(isBadge))].slice(0, 3);
   } catch {}
   let avatar = null;
   try {
@@ -153,6 +161,8 @@ export async function POST(req: Request) {
         updated_at: now,
       })
       .eq("id", id);
+    // 배지·동의는 녹음마다 다시 정한다. 칸(마이그레이션 27)이 없으면 건너뛴다.
+    if (!error) await service.from("weekly_entries").update({ badges, promo_ok: promoOk }).eq("id", id);
     if (error) {
       await service.storage.from("recordings").remove([path]);
       return Response.json({ error: t("바꾸지 못했어요. 다시 해주세요.", "Couldn't replace. Please try again.") }, { status: 500 });
@@ -175,6 +185,7 @@ export async function POST(req: Request) {
       created_at: now,
       updated_at: now,
     });
+    if (!error) await service.from("weekly_entries").update({ badges, promo_ok: promoOk }).eq("id", id);
     if (error) {
       await service.storage.from("recordings").remove([path]);
       // 동시에 두 번 눌러 1인 1작품 제약에 걸린 경우

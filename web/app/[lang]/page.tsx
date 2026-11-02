@@ -9,7 +9,8 @@ import home from "@/components/home/home.module.css";
 import { HomeHero } from "@/components/weekly/home-hero";
 import { getMemes } from "@/lib/memes";
 import { findScript, SCRIPTS } from "@/lib/practice";
-import { getBoard, liveWeek } from "@/lib/weekly-server";
+import { galleryEntries, getBoard, liveWeek } from "@/lib/weekly-server";
+import { HomePick } from "@/components/home/home-pick";
 import { ScreenTour } from "@/components/onboarding/tours";
 import { TourHelp } from "@/components/onboarding/tour";
 import { LangSwitch } from "@/components/lang";
@@ -39,9 +40,10 @@ export const revalidate = 300;
  */
 export default async function Home() {
   const week = await liveWeek();
-  const [{ memes }, weekly] = await Promise.all([
+  const [{ memes }, weekly, gallery] = await Promise.all([
     getMemes(),
     getBoard(week).catch(() => ({ week, entries: [], totalLikes: 0 })),
+    galleryEntries(24).catch(() => []),
   ]);
   const lines = memes.filter((m) => m.line);
   const t = await getT();
@@ -54,11 +56,11 @@ export default async function Home() {
         <TourHelp id="home" welcome short />
       </TopBar>
 
-      {/* 이번 주 올라온 목소리 — 인스타 스토리처럼. 맨 앞은 "+ 내 목소리". */}
-      <VoiceStories
-        entries={weekly.entries.slice(0, 20).map((e) => ({ id: e.id, name: e.name, avatar: e.avatar }))}
-        scriptId={weekly.week.scriptId}
-      />
+      {/* 올라온 목소리 — 인스타 스토리처럼. 주를 넘어 쌓인 것까지(월요일에 비지 않게). 맨 앞은 "+ 내 목소리". */}
+      <VoiceStories entries={gallery.slice(0, 20).map((e) => ({ id: e.id, name: e.name, avatar: e.avatar }))} scriptId={weekly.week.scriptId} />
+
+      {/* 운영자 픽 — 좋은 목소리는 첫 화면에서 바로 들린다. */}
+      <HomePick picks={gallery.filter((e) => e.featured).slice(0, 5)} />
 
       <InstallBanner />
 
@@ -67,7 +69,14 @@ export default async function Home() {
 
       {/* 이번 주 보이스 챌린지 — 지금 이 앱의 첫 한 걸음이다. */}
       <div data-tour="home-weekly">
-        <HomeHero week={weekly.week} top={weekly.entries.slice(0, 3)} count={weekly.entries.length} line={line} />
+        <HomeHero
+          week={weekly.week}
+          top={weekly.entries.slice(0, 3)}
+          count={weekly.entries.length}
+          line={line}
+          total={gallery.length}
+          faces={gallery.map((e) => e.avatar)}
+        />
       </div>
 
       {/* 내 목소리 페이지 — 있는지도 모르면 없는 기능이다. */}
