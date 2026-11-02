@@ -1,9 +1,14 @@
+/* 코코의 심사표 — 부스 차콜 위 노랑 포인트. 숫자 하나(정확도)와 할 일 하나(이 구절만 다시)만 크게. */
 .card {
+  position: relative;
+  overflow: hidden;
   margin-top: 16px;
   padding: 16px;
-  border-radius: 18px;
-  background: var(--panel);
-  border: 1px solid var(--rule);
+  border-radius: 20px;
+  background:
+    radial-gradient(110% 70% at 0% 0%, rgba(255, 201, 60, 0.1), transparent 60%),
+    var(--panel);
+  border: 1px solid rgba(255, 201, 60, 0.28);
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -16,22 +21,316 @@
 }
 
 .headText {
+  flex: 1;
   min-width: 0;
 }
 
 .kicker {
   margin: 0;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--volt);
+}
+
+.title {
+  margin: 2px 0 0;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--white);
+  word-break: keep-all;
+}
+
+/* 정확도 고리 */
+.ring {
+  position: relative;
+  flex: none;
+  width: 58px;
+  height: 58px;
+}
+
+.ring svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.ringBg,
+.ringFg {
+  fill: none;
+  stroke-width: 5;
+}
+
+.ringBg {
+  stroke: var(--rule);
+}
+
+.ringFg {
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.6s ease;
+}
+
+.ringGood .ringFg {
+  stroke: var(--lime);
+}
+
+.ringMid .ringFg {
+  stroke: var(--volt);
+}
+
+.ringLow .ringFg {
+  stroke: var(--pink);
+}
+
+.ring b {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.ring b::after {
+  content: "%";
+  margin: 3px 0 0 1px;
+  font-size: 10px;
   color: var(--ash);
 }
 
-.type {
-  margin: 2px 0 0;
+/* 듣는 중 */
+.listening {
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.listening i {
+  width: 4px;
+  height: 30%;
+  border-radius: 2px;
+  background: var(--volt);
+  animation: eq 0.9s ease-in-out infinite;
+}
+
+@keyframes eq {
+  50% {
+    height: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .listening i {
+    animation: none;
+    height: 60%;
+  }
+}
+
+.body {
   display: flex;
   flex-direction: column;
-  line-height: 1.35;
+  gap: 12px;
+}
+
+.note {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ash);
+  word-break: keep-all;
+}
+
+.cta {
+  min-height: 48px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--volt);
+  color: var(--on-accent);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.cta:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.recBtn {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--pink);
+  color: var(--on-accent);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.recBtn i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--on-accent);
+  animation: blink 1s ease-in-out infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+/* 고친 진행도 */
+.progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.progressTrack {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--rule);
+  overflow: hidden;
+}
+
+.progressTrack span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--lime);
+  transition: width 0.4s ease;
+}
+
+.linkBtn {
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--volt);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* 그 구절만 다시 */
+.retry {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--panel-hi);
+}
+
+.retryHead {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.retryHead small {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ash);
+  font-variant-numeric: tabular-nums;
+}
+
+.tag_missed,
+.tag_changed,
+.tag_added {
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 800;
+}
+
+.tag_missed {
+  background: rgba(255, 122, 69, 0.16);
+  color: var(--pink);
+}
+
+.tag_changed {
+  background: rgba(255, 201, 60, 0.16);
+  color: var(--volt);
+}
+
+.tag_added {
+  background: rgba(124, 200, 242, 0.16);
+  color: var(--cyan);
+}
+
+.phrase {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--white);
+  word-break: keep-all;
+}
+
+.phrase mark {
+  padding: 0 3px;
+  border-radius: 4px;
+  background: rgba(255, 201, 60, 0.28);
+  color: var(--white);
+  font-weight: 800;
+  box-shadow: inset 0 -2px 0 var(--volt);
+}
+
+.phrase del {
+  color: var(--cyan);
+  text-decoration-thickness: 2px;
+}
+
+.notYet {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ash);
+  word-break: keep-all;
+}
+
+.done {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(143, 217, 107, 0.1);
+  color: var(--lime);
+  font-size: 14px;
+  font-weight: 700;
+  word-break: keep-all;
+}
+
+/* 목소리 타입 */
+.type {
+  display: grid;
+  gap: 2px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--rule);
+}
+
+.type small {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--ash);
 }
 
 .type b {
@@ -41,213 +340,13 @@
 }
 
 .type span {
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 600;
   color: var(--white);
 }
 
-.type small {
+.type em {
+  font-style: normal;
   font-size: 12px;
   color: var(--ash);
-}
-
-.rows {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.row,
-.rowFix {
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: var(--panel-hi);
-  border: 1px solid transparent;
-}
-
-.rowFix {
-  border-color: var(--pink);
-}
-
-.rowTop {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-
-.rowNo {
-  flex: none;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--ash);
-}
-
-.rowText {
-  flex: 1;
-  min-width: 0;
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.issue {
-  flex: none;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 999px;
-  color: var(--pink);
-  background: rgba(255, 122, 69, 0.14);
-}
-
-.verdicts {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.good,
-.clean {
-  margin: 0;
-  font-size: 14px;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 8px;
-}
-
-.good small,
-.fix small {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--ash);
-}
-
-.fix {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 12px;
-  border-radius: 12px;
-  background: rgba(255, 122, 69, 0.08);
-  border: 1px solid rgba(255, 122, 69, 0.3);
-}
-
-.fix b {
-  font-size: 15px;
-}
-
-.fix p {
-  margin: 0;
-  font-size: 13.5px;
-  color: var(--ash);
-  line-height: 1.55;
-}
-
-.fixBtns {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 4px;
-}
-
-.fixBtns button,
-.retryGo {
-  min-height: 40px;
-  padding: 8px 14px;
-  border-radius: 999px;
-  border: 1px solid var(--rule);
-  background: var(--panel-hi);
-  font-size: 13.5px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.retry {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 4px;
-}
-
-.retryGo {
-  align-self: flex-start;
-  background: var(--volt);
-  color: var(--on-accent);
-  border-color: var(--volt);
-}
-
-.retryGo:disabled {
-  opacity: 0.6;
-}
-
-.retryRec {
-  align-self: flex-start;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 40px;
-  padding: 8px 16px;
-  border-radius: 999px;
-  border: 0;
-  background: var(--pink);
-  color: var(--on-accent);
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.retryRec i {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: currentColor;
-  animation: blink 1s infinite;
-}
-
-@keyframes blink {
-  50% {
-    opacity: 0.3;
-  }
-}
-
-.retryText {
-  margin: 0;
-  font-size: 17px;
-  line-height: 1.6;
-  font-weight: 600;
-}
-
-.better,
-.notYet {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-/* .fix p(회색 안내문)보다 우선해야 한다 — 판정 줄도 .fix 안의 <p> 다 */
-.fix .better,
-.better {
-  color: var(--lime);
-}
-
-.fix .notYet,
-.notYet {
-  color: var(--ash);
-}
-
-.fix .retryText {
-  color: var(--white);
-}
-
-.linkBtn {
-  border: 0;
-  background: none;
-  padding: 0;
-  color: var(--cyan);
-  font-size: 13px;
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 3px;
 }
