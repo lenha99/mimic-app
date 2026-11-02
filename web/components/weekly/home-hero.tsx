@@ -36,6 +36,7 @@ export function HomeHero({ week, top, count, line }: { week: Week; top: EntryCar
       </h1>
 
       {line && <p className={styles.line}>“{line}”</p>}
+      {lang === "en" && <p className={styles.enNote}>🇰🇷 Scripts are in Korean — a fun way to practice your Korean out loud</p>}
 
       <ul className={styles.perks}>
         <li>{t("✨ 목소리 자동 보정", "✨ Auto voice polish")}</li>

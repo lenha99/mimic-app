@@ -51,7 +51,7 @@ export default async function Home() {
     <main className="shell">
       {/* 위쪽 바 — 🌐 언어 · ♡ 활동 · ✈ 메시지. 안내 말풍선이 오른쪽 끝에 맞춰 펼쳐지므로 맨 끝에 둔다. */}
       <TopBar>
-        <TourHelp id="home" welcome />
+        <TourHelp id="home" welcome short />
       </TopBar>
 
       {/* 이번 주 올라온 목소리 — 인스타 스토리처럼. 맨 앞은 "+ 내 목소리". */}
