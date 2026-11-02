@@ -28,8 +28,9 @@ import styles from "./page.module.css";
 export const revalidate = 300;
 
 /**
- * 홈은 "뭐부터 하지"에만 답한다 — 이번 주 보이스 챌린지 하나, 입구 둘.
- * (예전 맨 위는 "오늘의 명대사"였다. 밈 따라하기는 이제 아래 입구로 들어간다.)
+ * 홈은 "뭐부터 하지"에만 답한다 — 연습실이라는 큰 문 하나(추천 대본·목소리 갤러리가 붙어 있다), 작은 입구 둘.
+ * (예전 맨 위는 "오늘의 명대사", 그다음엔 "이번 주 보이스 챌린지"였다. 처음 온 사람이 챌린지·갤러리를
+ * 헷갈려 해서, 어떤 대본으로 올려도 같은 ❤ 순위로 합치고 연습실을 주인공으로 올렸다.)
  *
  * 예전 홈엔 단계 안내, 피드 배너, 연습실 띠, 명대사 레일, 동물 소리 타일, 친구
  * 챌린지, 캐릭터·투표 홍보가 한 화면에 다 있었다. 다 보여주니 아무것도 안 보였다.
@@ -59,6 +60,17 @@ export default async function Home() {
       {/* 올라온 목소리 — 인스타 스토리처럼. 주를 넘어 쌓인 것까지(월요일에 비지 않게). 맨 앞은 "+ 내 목소리". */}
       <VoiceStories entries={gallery.slice(0, 20).map((e) => ({ id: e.id, name: e.name, avatar: e.avatar }))} scriptId={weekly.week.scriptId} />
 
+      {/* 연습실 — 첫 한 걸음. 아래에 이번 주 추천 대본과 목소리 갤러리(❤ 순위)가 붙어 있다. */}
+      <HomeHero
+        week={weekly.week}
+        top={weekly.entries.slice(0, 3)}
+        count={weekly.entries.length}
+        line={line}
+        scripts={SCRIPTS.length}
+        total={gallery.length}
+        faces={gallery.map((e) => e.avatar)}
+      />
+
       {/* 운영자 픽 — 좋은 목소리는 첫 화면에서 바로 들린다. */}
       <HomePick picks={gallery.filter((e) => e.featured).slice(0, 5)} />
 
@@ -67,36 +79,14 @@ export default async function Home() {
       {/* 로그인 전에 저장한 녹음을 계정으로 가져온다. 가져올 게 없으면 아무것도 안 그린다. */}
       <ClaimPending />
 
-      {/* 이번 주 보이스 챌린지 — 지금 이 앱의 첫 한 걸음이다. */}
-      <div data-tour="home-weekly">
-        <HomeHero
-          week={weekly.week}
-          top={weekly.entries.slice(0, 3)}
-          count={weekly.entries.length}
-          line={line}
-          total={gallery.length}
-          faces={gallery.map((e) => e.avatar)}
-        />
-      </div>
-
       {/* 내 목소리 페이지 — 있는지도 모르면 없는 기능이다. */}
       <MyVoiceCard />
 
-      {/* 그 밖의 입구 — 지금 홈의 일은 "올리게 만들기"라 아래에 작게. */}
+      {/* 그 밖의 입구 — 연습실로 이어지지 않는 놀거리라 아래에 작게. */}
       <div className={home.sectionHead}>
         <h2>{t("더 놀거리", "More to try")}</h2>
       </div>
       <nav className={home.bento} aria-label={t("둘러보기", "Explore")}>
-        <Link href="/practice" className={`${home.tile} ${home.tileWide}`} data-tour="home-practice">
-          <span className={home.tileEmoji} aria-hidden="true">
-            📝
-          </span>
-          <span className={home.tileText}>
-            <b>{t("연습실", "Practice Room")}</b>
-            <small>{t(`대본 ${SCRIPTS.length}편 · 올리기 전에 몇 번이고 연습`, `${SCRIPTS.length} scripts · rehearse before you enter`)}</small>
-          </span>
-          <i aria-hidden="true">→</i>
-        </Link>
         <Link href="/voice" className={`${home.tile} ${home.tileVoice}`} data-tour="home-voice">
           <span className={home.tileEmoji} aria-hidden="true">
             🎤

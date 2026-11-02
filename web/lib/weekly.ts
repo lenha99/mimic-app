@@ -207,6 +207,8 @@ export type EntryCard = {
   /** 지난 시즌 수상 횟수 — 이름 옆 트로피 */
   trophies: number;
   createdAt: string;
+  /** 이번 주 추천 대본이 아닌 다른 대본으로 올렸으면 그 대본. 추천 대본이면 null */
+  script?: { id: string; title: string; titleEn: string; emoji: string } | null;
   /** 블라인드 배틀 성적. 배틀 칸이 아직 없는 DB 면 null */
   battle: { rating: number; wins: number; losses: number } | null;
 };

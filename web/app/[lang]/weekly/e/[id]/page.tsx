@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const description = entry.week.free
     ? t(`MIMIC 목소리 갤러리 · ❤ ${entry.likes}. 들어보고 마음에 들면 ❤ 하나 눌러 주세요!`, `MIMIC voice gallery · ❤ ${entry.likes}. Give it a listen and tap ❤!`)
     : t(
-        `${seasonLabel(entry.week)} 보이스 챌린지 ${entry.rank}위 · ❤ ${entry.likes}. 들어보고 마음에 들면 ❤ 하나 눌러 주세요!`,
+        `${seasonLabel(entry.week)} ${entry.rank}위 · ❤ ${entry.likes}. 들어보고 마음에 들면 ❤ 하나 눌러 주세요!`,
         `${seasonLabel(entry.week, "en")} voice challenge · #${entry.rank} · ❤ ${entry.likes}. Give it a listen and tap ❤!`,
       );
   const image = `/api/og/weekly?id=${entry.id}&lang=${t("ko", "en")}`;

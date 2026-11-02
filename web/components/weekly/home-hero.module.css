@@ -5,7 +5,10 @@
   margin-top: 6px;
   padding: 20px 18px 18px;
   border-radius: 26px;
-  border: 1px solid rgba(255, 201, 60, 0.25);
+  border: 1.5px solid rgba(255, 201, 60, 0.55);
+  box-shadow:
+    0 0 0 1px rgba(255, 201, 60, 0.08),
+    0 18px 50px -18px rgba(255, 201, 60, 0.45);
   background:
     radial-gradient(120% 80% at 0% 0%, rgba(255, 201, 60, 0.16), transparent 60%),
     radial-gradient(90% 70% at 100% 100%, rgba(255, 122, 69, 0.18), transparent 60%),
@@ -66,26 +69,88 @@
   font-weight: 600;
 }
 
+.headRow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .title {
   margin: 12px 0 0;
   font-family: var(--display);
   font-weight: 800;
-  font-size: clamp(34px, 10vw, 50px);
-  line-height: 1.05;
+  font-size: clamp(30px, 8.6vw, 44px);
+  line-height: 1.1;
   word-break: keep-all;
 }
 
-.line {
-  margin: 10px 0 0;
-  padding: 10px 12px;
-  border-left: 3px solid var(--volt);
-  border-radius: 4px 12px 12px 4px;
-  background: rgba(255, 255, 255, 0.05);
-  font-size: 15px;
-  line-height: 1.5;
-  color: var(--white);
-  word-break: keep-all;
+.coco {
+  flex: none;
+  margin-bottom: -4px;
+  animation: bob 2.4s ease-in-out infinite;
 }
+
+@keyframes bob {
+  50% {
+    transform: translateY(-5px) rotate(-3deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coco,
+  .glow {
+    animation: none;
+  }
+}
+
+.pick {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--rule);
+  color: var(--white);
+  text-decoration: none;
+}
+
+.pickEmoji {
+  flex: none;
+  font-size: 24px;
+}
+
+.pickText {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.pickText small {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--volt);
+}
+
+.pickText b {
+  font-size: 14px;
+}
+
+.pickText span {
+  font-size: 12px;
+  color: var(--ash);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pick i {
+  margin-left: auto;
+  font-style: normal;
+  color: var(--volt);
+}
+
 
 .perks {
   margin: 12px 0 0;
@@ -126,7 +191,7 @@
 }
 
 .listen {
-  margin-top: 14px;
+  margin-top: 8px;
   display: flex;
   align-items: center;
   gap: 10px;

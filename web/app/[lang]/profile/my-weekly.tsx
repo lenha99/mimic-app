@@ -21,7 +21,7 @@ export async function MyWeekly({ awards, entries, now }: { awards: Award[]; entr
   const t = tr(lang);
   return (
     <div className={styles.card}>
-      <div className="eyebrow">{t("보이스 챌린지", "Voice challenge")}</div>
+      <div className="eyebrow">{t("내가 올린 목소리", "My posted voices")}</div>
       {awards.length > 0 && (
         <ul className={styles.trophies}>
           {awards.map((a) => (

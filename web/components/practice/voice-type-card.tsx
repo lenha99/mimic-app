@@ -15,6 +15,7 @@ export function VoiceTypeCard({ type }: { type: VoiceType | null }) {
       <p>
         <small>{L("이 테이크의 목소리 타입", "Voice type for this take")}</small>
         <b>{type.name}</b>
+        <em>{type.desc}</em>
         <span>{type.why}</span>
       </p>
     </div>

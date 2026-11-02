@@ -54,7 +54,7 @@ export default async function NotificationsPage() {
       {items.length === 0 ? (
         <p className={styles.empty}>
           {t(
-            "아직 알림이 없어요. 보이스 챌린지에 목소리를 올리면 누가 듣고 구독할 때 여기로 알려드려요 🎙️",
+            "아직 알림이 없어요. 목소리 갤러리에 목소리를 올리면 누가 듣고 구독할 때 여기로 알려드려요 🎙️",
             "Nothing yet. Enter the voice challenge and we'll tell you here when people listen or subscribe 🎙️",
           )}
         </p>

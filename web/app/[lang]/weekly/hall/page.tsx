@@ -13,7 +13,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
   return {
     title: t("명예의 전당", "Hall of Fame"),
-    description: t("MIMIC 주간 보이스 챌린지 역대 시상대", "Every podium from the MIMIC weekly voice challenge"),
+    description: t("MIMIC 주간 ❤ 순위 역대 시상대", "Every weekly ❤ podium on MIMIC"),
   };
 }
 

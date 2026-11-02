@@ -44,7 +44,7 @@ export type Analysis = {
   /** 화면용 — 쉼 구간 [시작, 끝] (span 기준 0~1) */
   gaps: [number, number][];
   /**
-   * 마디(0.45초 넘게 쉰 곳으로 나눈 덩어리)별 측정 — 심사표의 "억양 그림"·"고칠 한 곳".
+   * 마디(0.45초 넘게 쉰 곳으로 나눈 덩어리)별 측정 — 심사표의 마디 표시·"고칠 한 곳".
    * 숫자 몇십 개뿐이라 기기에 그대로 둔다. 예전 테이크엔 없다.
    */
   phrases?: Phrase[];
@@ -60,8 +60,6 @@ export type Phrase = {
   range: number | null;
   /** 끝 처짐(dB). 짧은 마디는 null */
   drop: number | null;
-  /** 높낮이 선 — 테이크 가운데 음 기준 반음, 24점. 소리 없는 칸은 null */
-  line: (number | null)[];
 };
 
 export async function analyzeBlob(blob: Blob, syllableCount: number | null): Promise<Analysis> {
@@ -258,7 +256,7 @@ export async function analyze(
     bars.push(Math.max(0, Math.min(1, (m - (thr - 10)) / range)));
   }
 
-  // 8) 마디별 — 높낮이 선·폭·끝 처짐.
+  // 8) 마디별 — 억양 폭·끝 처짐.
   const frameS = hop / sr;
   const phrases: Phrase[] = [];
   if (pitchHz) {
@@ -283,26 +281,12 @@ export async function analyze(
         const tail = meanDb(db, speech, cut, b);
         if (body !== null && tail !== null) drop = tail - body;
       }
-      const POINTS = 24;
-      const line: (number | null)[] = [];
-      for (let i = 0; i < POINTS; i += 1) {
-        const p = a + Math.floor((len * i) / POINTS);
-        const q = Math.max(p + 1, a + Math.floor((len * (i + 1)) / POINTS));
-        const vals: number[] = [];
-        for (let f = p; f < q && f <= b; f += 1) if (f0At[f] > 0) vals.push(12 * Math.log2(f0At[f] / pitchHz));
-        if (!vals.length) line.push(null);
-        else {
-          vals.sort((x, y) => x - y);
-          line.push(Math.round(vals[Math.floor(vals.length / 2)] * 10) / 10);
-        }
-      }
       phrases.push({
         t0: Math.round(a * frameS * 100) / 100,
         t1: Math.round((b + 1) * frameS * 100) / 100,
         voiced: Math.round(voiced * HOP_S * 100) / 100,
         range: range === null ? null : Math.round(range * 10) / 10,
         drop: drop === null ? null : Math.round(drop * 10) / 10,
-        line,
       });
     }
   }

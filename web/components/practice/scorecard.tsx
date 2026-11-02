@@ -12,7 +12,7 @@ import styles from "./scorecard.module.css";
 /**
  * 코코의 심사표 — 녹음 직후 "내 목소리를 보여 주는" 카드.
  *
- *   1) 마디마다 높낮이 선 + 해당 대본 글자 (말끝이 처진 곳·평평한 곳 표시)
+ *   1) 마디마다 해당 대본 글자 (말끝이 처진 곳·평평한 곳 표시)
  *   2) 잘한 점 하나 · 고칠 곳 하나 — 전부 다 말하지 않는다
  *   3) 그 한 곳만 듣고, 코코가 따라 해 보고, 그 마디만 다시 녹음 → 좋아졌는지 바로
  *
@@ -53,6 +53,7 @@ export function Scorecard({
           {type && (
             <p className={styles.type}>
               <b>{type.name}</b>
+              <span>{type.desc}</span>
               <small>{type.why}</small>
             </p>
           )}
@@ -69,7 +70,6 @@ export function Scorecard({
                 <span className={styles.issue}>{r.issue === "drop" ? L("말끝 ↓", "Fade ↓") : L("평평", "Flat")}</span>
               )}
             </div>
-            <Contour row={r} />
           </li>
         ))}
       </ol>
@@ -103,42 +103,6 @@ export function Scorecard({
         )}
       </div>
     </section>
-  );
-}
-
-/* ── 마디 높낮이 선 ─────────────────────────────────────────────────────── */
-
-const W = 240;
-const H = 40;
-const CLAMP = 7;
-
-function Contour({ row }: { row: Row }) {
-  const pts = row.phrase.line;
-  const n = pts.length;
-  const segs: string[] = [];
-  let cur = "";
-  let lastXY: [number, number] | null = null;
-  pts.forEach((v, i) => {
-    if (v === null) {
-      if (cur) segs.push(cur);
-      cur = "";
-      return;
-    }
-    const x = n > 1 ? (i / (n - 1)) * W : W / 2;
-    const y = H / 2 - (Math.max(-CLAMP, Math.min(CLAMP, v)) / CLAMP) * (H / 2 - 4);
-    cur += `${cur ? "L" : "M"}${x.toFixed(1)} ${y.toFixed(1)} `;
-    lastXY = [x, y];
-  });
-  if (cur) segs.push(cur);
-  const end = lastXY as [number, number] | null;
-  return (
-    <svg className={styles.contour} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
-      <line x1="0" x2={W} y1={H / 2} y2={H / 2} className={styles.mid} />
-      {segs.map((d, i) => (
-        <path key={i} d={d} className={row.issue === "flat" ? styles.lineFlat : styles.line} />
-      ))}
-      {row.issue === "drop" && end && <circle cx={end[0]} cy={end[1]} r="3.5" className={styles.dropDot} />}
-    </svg>
   );
 }
 

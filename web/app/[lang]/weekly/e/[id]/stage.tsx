@@ -121,7 +121,7 @@ export default function Stage({
         ? week.free
           ? t(`MIMIC 에 「${week.title}」 녹음 올렸어 🎙️ 들어보고 ❤ 하나만 눌러줘 🙏`, `I posted my take on "${week.titleEn}" on MIMIC 🎙️ Give it a listen and tap ❤ 🙏`)
           : t(
-              `MIMIC 보이스 챌린지 「${week.title}」 출전함 🎙️ 들어보고 ❤ 하나만 눌러줘 🙏`,
+              `MIMIC에 내 목소리 올렸어 「${week.title}」 🎙️ 들어보고 ❤ 하나만 눌러줘 🙏`,
               `I entered the MIMIC voice challenge "${week.titleEn}" 🎙️ Give it a listen and tap ❤ 🙏`,
             )
         : t(`${name}의 「${week.title}」 이거 들어봐 ㄷㄷ`, `You have to hear ${name}'s take on "${week.titleEn}" 👀`),

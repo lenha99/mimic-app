@@ -73,22 +73,28 @@ export default function Gallery({
         <header className={styles.head}>
           <h1>{t("목소리 갤러리", "Voice gallery")}</h1>
           <p>
+            {t(
+              "연습실에서 녹음한 목소리를 올리는 곳이에요. 어떤 대본이든 올리면 이번 주 ❤ 순위에 함께 들어가요.",
+              "Where voices from the Practice Room get posted. Any script joins this week's ❤ ranking.",
+            )}
+          </p>
+          <p>
             {entries.length > 0
-              ? t(`지금까지 올라온 목소리 ${entries.length}개 · 얼굴을 누르면 바로 들려요`, `${entries.length} voices so far · tap a face to listen`)
+              ? t(`지금까지 ${entries.length}개 · 얼굴을 누르면 바로 들려요`, `${entries.length} so far · tap a face to listen`)
               : t("첫 목소리를 기다리고 있어요", "Waiting for the first voice")}
           </p>
         </header>
 
         <Spotlight picks={picks} />
 
-        {/* 이번 주 대본 — 올리게 만드는 카드 하나. 순위전까지 남은 개수도 솔직하게. */}
+        {/* 이번 주 추천 대본 — 뭘 읽을지 모르는 사람을 위한 카드 하나. 순위판까지 남은 개수도 솔직하게. */}
         <section className={styles.prompt} data-tour="voices-prompt">
           <div className={styles.promptTop}>
             <span className={styles.promptEmoji} aria-hidden="true">
               {week.emoji}
             </span>
             <span className={styles.promptText}>
-              <small>{t(`이번 주 대본 · ${week.field}`, "This week's script")}</small>
+              <small>{t(`이번 주 추천 대본 · ${week.field}`, "This week's pick")}</small>
               <b>{t(week.title, week.titleEn)}</b>
             </span>
           </div>
@@ -98,16 +104,16 @@ export default function Gallery({
           </Link>
           <p className={styles.promptNote}>{t("✨ 자동 보정 · 🦜 코코의 심사표 · ⭐ 홈 추천 소개", "✨ Auto polish · 🦜 Coco's scorecard · ⭐ Get featured")}</p>
           <Link href="/practice" className={styles.promptAlt}>
-            {t("다른 대본이 더 좋다면? 연습실 아무 대본이나 올릴 수 있어요 →", "Prefer another script? Post a take from any practice script →")}
+            {t("다른 대본으로 올려도 같은 순위예요 · 대본 고르기 →", "Any script counts the same · pick a script →")}
           </Link>
-          <div className={styles.goal} aria-label={t(`순위전까지 ${left}개 남음`, `${left} more to unlock rankings`)}>
+          <div className={styles.goal} aria-label={t(`순위판까지 ${left}명 남음`, `${left} more to unlock rankings`)}>
             <div className={styles.goalTrack}>
               <span style={{ width: `${Math.min(100, (thisWeek / rankedMin) * 100)}%` }} />
             </div>
             <small>
               {left > 0
-                ? t(`이번 주 목소리 ${thisWeek}/${rankedMin} · ${left}개 더 모이면 ♥ 순위전이 열려요`, `${thisWeek}/${rankedMin} this week · ${left} more unlock the ♥ ranking`)
-                : t("순위전이 열렸어요!", "Ranking unlocked!")}
+                ? t(`이번 주 ${thisWeek}명/${rankedMin}명 · ${left}명 더 올리면 ❤ 순위판이 열려요`, `${thisWeek}/${rankedMin} this week · ${left} more unlock the ❤ ranking`)
+                : t("순위판이 열렸어요!", "Ranking unlocked!")}
             </small>
           </div>
         </section>

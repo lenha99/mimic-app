@@ -16,18 +16,19 @@ Flutter 클라이언트와 공유 영상 생성기가 있었으나 둘 다 걷�
 ## 파일 구조
 ```
 web/                 # Next.js 웹앱 (유일한 클라이언트)
-  app/page.tsx       # 홈 — 위쪽 바(🌐·♡ 활동·✈ 메시지) → 목소리 스토리 → 이번 주 챌린지 → 내 목소리 페이지 → 더 놀거리
+  app/page.tsx       # 홈 — 위쪽 바(🌐·♡ 활동·✈ 메시지) → 목소리 스토리 → 연습실 카드(추천 대본·갤러리) → 운영자 픽 → 내 목소리 페이지 → 더 놀거리
   components/top-bar.tsx  # 위쪽 바. 안 읽은 수는 lib/unread-client(30초에 한 번, 하단 탭과 공유)
   components/home/   # 홈 조각 — voice-stories(이번 주 목소리 동그라미) · my-voice-card(포트폴리오 알리기)
-  app/weekly/        # "목소리" 탭. 이번 주 출전작이 RANKED_MIN(8)개 전엔 갤러리(gallery.tsx — 주를 넘어 쌓인 목소리,
-                     # 운영자 픽, 이번 주 대본 카드), 그 뒤엔 순위판(hub.tsx — ❤·시상대·명예의 전당)
+  app/weekly/        # "목소리" 탭. 이번 주 올린 사람이 RANKED_MIN(8)명 전엔 갤러리(gallery.tsx — 주를 넘어 쌓인 목소리,
+                     # 운영자 픽, 이번 주 추천 대본 카드), 그 뒤엔 순위판(hub.tsx — ❤·시상대·명예의 전당)
+                     # ❤ 순위는 대본 무관: 주간 대본 출전작 + 그 주에 올린 자유 출전작, 한 사람당 ❤ 최다 하나(weekRows)
   components/voices/ # 갤러리 조각 — 재생기(오디오 하나 + 아래 재생 막대) · 카드 · 운영자 픽(Spotlight)
   lib/badges.ts      # 잘한 점 배지(공개). 못한 점은 배지로 안 만든다. 운영자 픽은 무대 화면 AdminPick
   lib/weekly.ts      # 주차 계산·대본 순서(ROTATION)·기기 기록. DB 없이 "이번 주 대본"을 안다
   lib/weekly-server.ts  # 순위·정산(1~3위 박제)·수상 조회. 표에 RLS 정책이 없어 조건은 여기서 건다
   app/challenges/    # 챌린지 목록 — 명대사 · 친구가 만든 · 몸풀기(동물 소리)
   app/me/            # "나" 탭 — 로그인했으면 /profile, 아니면 손님 허브
-  components/bottom-nav.tsx  # 하단 탭(홈·챌린지·연습실·나). "챌린지"=/weekly. 몰입 화면에선 숨긴다
+  components/bottom-nav.tsx  # 하단 탭(홈·목소리·연습실·나). "목소리"=/weekly. 몰입 화면에선 숨긴다
   components/onboarding/tours.tsx  # 화면별 사용법 문구. 비출 버튼엔 data-tour. 저절로 안 뜨고 "💡 사용법 보기"로 연다
   app/record/[id]/   # 듣기 → 카운트다운 → 녹음 → 채점 → 결과
   app/practice/      # 연습실 — 대본(기준 음성 없음)·명대사 반복 연습, 기록은 기기 IndexedDB
@@ -40,7 +41,7 @@ web/                 # Next.js 웹앱 (유일한 클라이언트)
   lib/notify-server.ts   # 알림 + 웹 푸시(VAPID, 무료). 키(notif_sent)당 한 번, KST 23~08시 푸시 안 함
   lib/push-client.ts     # 푸시 켜기 — 안드로이드 크롬 바로, 아이폰은 설치한 앱에서만. 종류별(새 목소리·내 반응·메시지) 켜기는 components/social/notify-sheet
   lib/voice-polish.ts    # 출전 전 목소리 보정(브라우저): 잡음 제거 → 쉼 정리 → EQ·컴프 → 24kHz wav. 켜기/끄기만
-  lib/scorecard.ts       # 코코의 심사표 — 마디별 억양 선·고칠 한 곳·그 마디만 다시·목소리 타입(브라우저 측정만, 비용 0)
+  lib/scorecard.ts       # 코코의 심사표 — 마디별 말끝·평평 표시·고칠 한 곳·그 마디만 다시·목소리 타입 14가지(브라우저 측정만, 비용 0)
   components/brand/coco.tsx  # 마스코트 코코(왕관앵무·헤드셋). 순수 SVG, mood 로 표정
   lib/memes.ts       # 카탈로그 조회 + 폴백 (생성됨)
   lib/config.ts      # 엔드포인트 한 곳

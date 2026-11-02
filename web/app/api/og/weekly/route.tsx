@@ -38,13 +38,13 @@ export async function GET(req: Request) {
   const entry = await getEntry(id).catch(() => null);
 
   const name = displayName(entry?.name ?? "익명의 목소리", lang).slice(0, 16);
-  const title = (entry ? t(entry.week.title, entry.week.titleEn) : t("보이스 챌린지", "Voice challenge")).slice(0, 20);
+  const title = (entry ? t(entry.week.title, entry.week.titleEn) : t("목소리 갤러리", "Voice gallery")).slice(0, 20);
   const free = Boolean(entry?.week.free);
   const kicker = entry
     ? free
       ? t(`MIMIC 목소리 · ${seasonLabel(entry.week)}`, `MIMIC voices · ${seasonLabel(entry.week, "en")}`)
-      : t(`${seasonLabel(entry.week)} 보이스 챌린지`, `${seasonLabel(entry.week, "en")} voice challenge`)
-    : t("MIMIC 보이스 챌린지", "MIMIC voice challenge");
+      : t(`${seasonLabel(entry.week)} 목소리`, `${seasonLabel(entry.week, "en")} voice`)
+    : t("MIMIC 목소리 갤러리", "MIMIC voice gallery");
   // 자유 출전은 순위가 없다 — 큰 숫자 자리에 마이크.
   const rank = entry ? (free ? "🎙" : t(`${entry.rank}위`, `#${entry.rank}`)) : "";
   const of = entry && !free ? t(`/ ${entry.total}명`, `of ${entry.total}`) : "";

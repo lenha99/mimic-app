@@ -59,7 +59,7 @@ export default async function MessagesPage() {
       ) : (
         <p className={styles.empty}>
           {t(
-            "아직 대화가 없어요. 보이스 챌린지에 목소리를 올리면 구독자가 말을 걸어올 수 있어요 🎙️",
+            "아직 대화가 없어요. 목소리 갤러리에 목소리를 올리면 구독자가 말을 걸어올 수 있어요 🎙️",
             "No chats yet. Enter the voice challenge and subscribers can reach out 🎙️",
           )}
         </p>
