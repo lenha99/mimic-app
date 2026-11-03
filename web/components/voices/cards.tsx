@@ -8,6 +8,7 @@ import { badgeLabel, isBadge } from "@/lib/badges";
 import { normalizeAvatar } from "@/lib/avatar";
 import { challengeById, displayName } from "@/lib/weekly";
 import { useLikes } from "./likes";
+import { TierRing } from "@/components/rewards/tier-ring";
 import type { GalleryEntry } from "@/lib/weekly-server";
 import { PauseIcon, PlayIcon, usePlayer, Wave } from "./player";
 import styles from "./voices.module.css";
@@ -43,7 +44,9 @@ export function VoiceCard({ e, index = 0 }: { e: GalleryEntry; index?: number })
     <li className={`${styles.card} ${on ? styles.cardOn : ""}`} style={{ animationDelay: `${Math.min(index, 10) * 40}ms` }}>
       <button type="button" className={styles.cardFace} onClick={play} aria-label={playing ? t(`${name} 멈추기`, `Pause ${name}`) : t(`${name} 듣기`, `Play ${name}`)}>
         <span className={`${styles.halo} ${playing ? styles.haloOn : ""}`} aria-hidden="true" />
-        <VoiceAvatar avatar={normalizeAvatar(e.avatar)} size={54} level={playing ? 0.6 : 0} />
+        <TierRing tier={e.tier}>
+          <VoiceAvatar avatar={normalizeAvatar(e.avatar)} size={54} level={playing ? 0.6 : 0} />
+        </TierRing>
         <span className={styles.cardPlay} aria-hidden="true">
           {playing ? <PauseIcon size={12} /> : <PlayIcon size={12} />}
         </span>
@@ -131,7 +134,9 @@ export function Spotlight({ picks, title }: { picks: GalleryEntry[]; title?: str
               <span className={styles.spotGlow} aria-hidden="true" />
               <button type="button" className={styles.spotFace} onClick={play} aria-label={playing ? t("멈추기", "Pause") : t(`${name} 듣기`, `Play ${name}`)}>
                 <span className={`${styles.halo} ${styles.haloBig} ${playing ? styles.haloOn : ""}`} aria-hidden="true" />
-                <VoiceAvatar avatar={normalizeAvatar(e.avatar)} size={104} level={playing ? 0.7 : 0} />
+                <TierRing tier={e.tier}>
+                  <VoiceAvatar avatar={normalizeAvatar(e.avatar)} size={104} level={playing ? 0.7 : 0} />
+                </TierRing>
               </button>
               <div className={styles.spotText}>
                 <Link href={`/weekly/e/${e.id}`} className={styles.spotName}>

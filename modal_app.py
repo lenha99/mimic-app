@@ -442,7 +442,8 @@ PRACTICE = ("practice_view", "practice_take")
 WEEKLY = ("weekly_view", "weekly_play", "weekly_like", "enter_open", "weekly_enter", "enter_fail", "weekly_share",
           "battle_cta", "battle_view", "battle_vote",
           "voice_card_start", "voice_card_done", "voice_card_share", "voice_rec_open",
-          "intro_view", "intro_skip", "intro_done")
+          "intro_view", "intro_skip", "intro_done",
+          "mission_open", "mission_like", "mission_next", "mission_rec", "mission_done", "mission_skip")
 
 
 @app.function(image=slim_image, volumes={REF_DIR: volume})

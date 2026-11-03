@@ -1,5 +1,6 @@
 import { normalizeAvatar } from "@/lib/avatar";
 import { kstStamp, notify } from "@/lib/notify-server";
+import { afterFollow } from "@/lib/rewards-server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 
@@ -188,6 +189,7 @@ export async function setFollow(
         },
         pushKey: `push:follow:${creator}:${kstStamp(Date.now(), true)}`,
       });
+      await afterFollow(creator, total, service);
     }
   } else {
     const { error } = await service.from("follows").delete().eq("follower", follower).eq("creator", creator);

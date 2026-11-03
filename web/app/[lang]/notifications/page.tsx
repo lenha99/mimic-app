@@ -18,6 +18,10 @@ const ICON: Record<string, string> = {
   listen_first: "🎧",
   listen_daily: "🎧",
   new_entry: "🎙",
+  reward_likes: "💗",
+  reward_follows: "🌱",
+  reward_pick: "⭐",
+  reward_prophet: "🔮",
 };
 
 /** 알림 — 구독 · 메시지 · 청취 · 구독한 목소리의 새 출전작. 열면 전부 읽음. */
@@ -104,6 +108,16 @@ function textOf(kind: string, actor: string, count: number | null, t: T): string
       return t(`오늘 ${count ?? 0}명이 당신 목소리를 들었어요`, `${count ?? 0} people listened to your voice today`);
     case "new_entry":
       return t(`구독한 ${actor}님이 새 목소리를 올렸어요`, `${actor} posted a new take`);
+    case "reward_likes":
+      return count === 1
+        ? t("첫 ❤ 를 받았어요! 누군가 당신 목소리를 좋아해요 💗", "You got your first ❤! Someone loves your voice 💗")
+        : t(`❤ ${count ?? 0}개를 받았어요! ${count === 3 ? "브론즈" : count === 10 ? "실버" : count === 30 ? "골드" : ""} 목소리 🎉`, `You've got ${count ?? 0} ❤! 🎉`);
+    case "reward_follows":
+      return t(`구독자 ${count ?? 0}명을 모았어요! 새 칭호가 생겼어요 🎉`, `${count ?? 0} subscribers! New title unlocked 🎉`);
+    case "reward_pick":
+      return t("⭐ 코코가 당신 목소리를 운영자 픽으로 골랐어요! 홈 맨 위에 걸려요", "⭐ Coco picked your voice! It's pinned to the top of Home");
+    case "reward_prophet":
+      return t("🔮 당신이 먼저 ❤ 한 목소리가 운영자 픽이 됐어요 — 픽 예언가!", "🔮 A voice you ❤'d early got picked — Pick prophet!");
     default:
       return t("새 알림", "New notification");
   }

@@ -11,6 +11,7 @@ import { getMemes } from "@/lib/memes";
 import { findScript, SCRIPTS } from "@/lib/practice";
 import { galleryEntries, getBoard, liveWeek } from "@/lib/weekly-server";
 import { HomePick } from "@/components/home/home-pick";
+import { FirstMission } from "@/components/home/first-mission";
 import { ScreenTour } from "@/components/onboarding/tours";
 import { TourHelp } from "@/components/onboarding/tour";
 import { LangSwitch } from "@/components/lang";
@@ -49,6 +50,11 @@ export default async function Home() {
   const lines = memes.filter((m) => m.line);
   const t = await getT();
   const line = firstLine(findScript(weekly.week.scriptId)?.text ?? "");
+  // 첫 미션 — 운영자 픽부터, 그다음 최근 목소리. 대사는 이번 주 추천 대본 첫 줄(자르지 않은 것).
+  const missionVoices = [...gallery.filter((e) => e.featured), ...gallery.filter((e) => !e.featured)]
+    .slice(0, 3)
+    .map((e) => ({ id: e.id, name: e.name, avatar: e.avatar, tier: e.tier }));
+  const missionLine = plainFirst(findScript(weekly.week.scriptId)?.text ?? "");
 
   return (
     <main className="shell">
@@ -58,7 +64,7 @@ export default async function Home() {
       </TopBar>
 
       {/* 올라온 목소리 — 인스타 스토리처럼. 주를 넘어 쌓인 것까지(월요일에 비지 않게). 맨 앞은 "+ 내 목소리". */}
-      <VoiceStories entries={gallery.slice(0, 20).map((e) => ({ id: e.id, name: e.name, avatar: e.avatar }))} />
+      <VoiceStories entries={gallery.slice(0, 20).map((e) => ({ id: e.id, name: e.name, avatar: e.avatar, tier: e.tier }))} />
 
       {/* 연습실 — 첫 한 걸음. 아래에 이번 주 추천 대본과 목소리 갤러리(❤ 순위)가 붙어 있다. */}
       <HomeHero
@@ -109,6 +115,8 @@ export default async function Home() {
 
       <HomeBeacon />
 
+      {missionLine && <FirstMission voices={missionVoices} scriptId={weekly.week.scriptId} line={missionLine} />}
+
       {/* 버튼마다 "이건 뭐고 누르면 어떻게 되는지" — 위쪽 "사용법 보기"로 연다. */}
       <ScreenTour id="home" />
 
@@ -129,6 +137,15 @@ export default async function Home() {
       </footer>
     </main>
   );
+}
+
+/** 미션용 한 줄 — 첫 문단, 길면 첫 문장까지만(대신 자르지 않는다: 읽을 글자와 음절 수가 맞아야 한다) */
+function plainFirst(text: string): string {
+  const first = text.split(/\r?\n/).find((l) => l.trim()) ?? "";
+  const plain = first.replace(/[/*]/g, " ").replace(/\s+/g, " ").trim();
+  if (plain.length <= 60) return plain;
+  const m = plain.match(/^.+?[.?!]/);
+  return m && m[0].length >= 8 ? m[0] : plain;
 }
 
 /** 대본 첫 줄 — 쉼(/)·강조(*) 표시를 걷어내고 짧게. */
