@@ -39,8 +39,24 @@ export async function GET(req: Request) {
     .filter((e) => (user && e.user_id === user.id) || voters.includes(e.owner))
     .sort((a, b) => b.like_count - a.like_count)[0];
 
+  // 갤러리는 주를 넘어 쌓인 목소리를 보여 준다 — 그 화면이 넘긴 id 들 중 내가 ❤ 한 것.
+  const asked = (new URL(req.url).searchParams.get("ids") ?? "")
+    .split(",")
+    .filter((s) => /^[0-9a-f-]{36}$/i.test(s))
+    .slice(0, 60);
+  const { data: likesAny } =
+    voters.length && asked.length
+      ? await service.from("weekly_likes").select("entry_id").in("voter", voters).in("entry_id", asked)
+      : { data: [] };
+
   return Response.json(
-    { week: week.id, loggedIn: Boolean(user), liked: [...new Set((likes ?? []).map((l) => l.entry_id))], mine: mine?.id ?? null },
+    {
+      week: week.id,
+      loggedIn: Boolean(user),
+      liked: [...new Set((likes ?? []).map((l) => l.entry_id))],
+      likedAny: [...new Set((likesAny ?? []).map((l) => l.entry_id))],
+      mine: mine?.id ?? null,
+    },
     { headers: { "cache-control": "no-store" } },
   );
 }
