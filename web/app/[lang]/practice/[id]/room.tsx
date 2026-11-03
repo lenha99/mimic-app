@@ -812,7 +812,7 @@ export default function Room({ item }: { item: RoomItem }) {
             )}
           </p>
           <p className={styles.keepNote}>
-            {L("대본마다 최근 12개까지 남아요 · ★ 표시한 건 지워지지 않아요", "The latest 12 takes per script are kept · ★ starred takes are never deleted")}
+            {L("녹음은 자동 저장돼요 · 대본마다 최근 12개 · ★ 베스트는 안 지워져요", "Takes save automatically · latest 12 per script · ★ best takes are never deleted")}
           </p>
         </section>
       )}
@@ -1041,7 +1041,7 @@ function TakeReport({
         </div>
         <div className={styles.reportBtns}>
           <button type="button" className={styles.pill} onClick={onPlay}>
-            {playing ? L("■ 멈춤", "■ Stop") : L("▶ 내 테이크", "▶ My take")}
+            {playing ? L("■ 멈춤", "■ Stop") : L("▶ 재생", "▶ Play")}
           </button>
           {onRef && (
             <button type="button" className={styles.pill} onClick={onRef}>
@@ -1054,7 +1054,7 @@ function TakeReport({
             onClick={onStar}
             aria-pressed={!!take.starred}
           >
-            {take.starred ? L("★ 보관 중", "★ Kept") : L("☆ 보관하기", "☆ Keep")}
+            {take.starred ? L("★ 베스트", "★ Best") : L("☆ 베스트로", "☆ Mark best")}
           </button>
         </div>
       </header>
