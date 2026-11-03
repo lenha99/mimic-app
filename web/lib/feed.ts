@@ -1,5 +1,5 @@
 import { signAudio } from "@/lib/audio-url";
-import { DEFAULT_AVATAR, normalizeAvatar, type Avatar } from "@/lib/avatar";
+import { normalizeAvatar, type Avatar } from "@/lib/avatar";
 import { UGC_ID } from "@/lib/challenges";
 import { refAudio } from "@/lib/config";
 import { getMemes, type Meme } from "@/lib/memes";
@@ -131,7 +131,7 @@ export async function loadFeed(
       grade: r.grade ?? "",
       createdAt: r.created_at,
       nickname: r.nickname,
-      avatar: r.avatar ? normalizeAvatar(r.avatar) : DEFAULT_AVATAR,
+      avatar: normalizeAvatar(r.avatar, r.nickname ?? r.id),
       same: r.same_count,
       funny: r.funny_count,
       mySame: r.my_same,

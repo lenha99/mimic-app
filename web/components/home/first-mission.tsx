@@ -5,7 +5,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useLang, useT } from "@/components/lang";
 import { VoiceAvatar } from "@/components/voice-avatar";
 import { VoiceTypeCard } from "@/components/practice/voice-type-card";
-import { TierRing } from "@/components/rewards/tier-ring";
+import { AvatarFrame, NameLine } from "@/components/pass/look";
+import type { Look } from "@/lib/pass";
 import { normalizeAvatar } from "@/lib/avatar";
 import { clientId } from "@/lib/client-id";
 import { markSeen, seen } from "@/lib/onboarding";
@@ -28,7 +29,7 @@ import styles from "./first-mission.module.css";
  * 를 한다. 완전 강제는 바로 이탈이라, 5초 뒤 작은 "그냥 둘러볼게요"만 둔다.
  * 끝나면 "사용법" 버튼을 가리키는 인사가 뜬다(components/onboarding/tour) — 가이드 보는 법은 그때 알려 준다.
  */
-export type MissionVoice = { id: string; name: string; avatar: unknown; tier: number };
+export type MissionVoice = { id: string; name: string; avatar: unknown; look?: Look };
 
 export const MISSION_DONE = "mimic:mission:done";
 const MAX_MS = 12_000;
@@ -213,10 +214,12 @@ export function FirstMission({ voices, scriptId, line }: { voices: MissionVoice[
             <p className={styles.kicker}>{t("첫 미션 · 1/3", "First mission · 1/3")}</p>
             <h2 className={styles.title}>{t("다른 사람 목소리부터 들어 볼까요?", "Start by hearing someone's voice")}</h2>
             <button type="button" className={styles.voice} onClick={play} aria-label={playing ? t("멈추기", "Pause") : t(`${name} 듣기`, `Play ${name}`)}>
-              <TierRing tier={voice.tier}>
+              <AvatarFrame frame={voice.look?.frame}>
                 <VoiceAvatar avatar={normalizeAvatar(voice.avatar)} size={96} level={playing ? 0.7 : 0} />
-              </TierRing>
-              <b>{name}</b>
+              </AvatarFrame>
+              <b>
+                <NameLine name={name} look={voice.look} badges lang={lang} />
+              </b>
               <span className={styles.bar}>
                 <span style={{ width: `${Math.round(progress * 100)}%` }} />
               </span>

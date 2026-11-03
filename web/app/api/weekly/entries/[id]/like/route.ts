@@ -2,8 +2,7 @@ import { allow, clientIp, tooMany } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { challengeById, isLive } from "@/lib/weekly";
-import { giveReward } from "@/lib/rewards";
-import { afterLike, givenBy } from "@/lib/rewards-server";
+import { afterLike, givenBy } from "@/lib/pass-server";
 import { ipHash } from "@/lib/weekly-server";
 import { requestT } from "@/lib/i18n";
 
@@ -81,9 +80,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     return Response.json({ error: t("같은 와이파이에서 이미 여러 번 눌렀어요.", "Too many ❤ from this Wi-Fi already.") }, { status: 429 });
   }
   const { data: after } = await service.from("weekly_entries").select("like_count").eq("id", id).maybeSingle();
-  // 보상: 받은 쪽은 단계(첫 ❤·3·10·30)를 넘으면 알림, 준 쪽은 청취자 보상을 화면에서 바로 축하.
+  // VOICE PASS: 받은 쪽은 단계(첫 ❤·3·10·30)를 넘으면 알림. 준 쪽은 화면에서 +3 XP.
   const [, given] = await Promise.all([result === "ok" ? afterLike(id, service) : null, givenBy(voters, service)]);
-  return Response.json({ liked: true, likes: after?.like_count ?? entry.like_count, given, reward: result === "ok" ? giveReward(given) : null });
+  return Response.json({ liked: true, likes: after?.like_count ?? entry.like_count, given, xp: result === "ok" ? 3 : 0 });
 }
 
 export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }> }) {

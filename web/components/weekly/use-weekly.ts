@@ -53,7 +53,7 @@ export function useWeeklyMe(weekId: string, also?: string) {
 
   /** ❤ 토글. 성공하면 서버가 센 최신 ❤ 수를 돌려준다. 실패하면 사람이 읽을 이유를 던진다. */
   const toggleLike = useCallback(
-    async (id: string): Promise<{ liked: boolean; likes: number; reward?: string | null }> => {
+    async (id: string): Promise<{ liked: boolean; likes: number }> => {
       const on = !liked.has(id);
       setLiked((s) => {
         const n = new Set(s);
@@ -67,9 +67,9 @@ export function useWeeklyMe(weekId: string, also?: string) {
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ client: clientId() }),
         });
-        const d = (await res.json().catch(() => ({}))) as { liked?: boolean; likes?: number; error?: string; reward?: string | null };
+        const d = (await res.json().catch(() => ({}))) as { liked?: boolean; likes?: number; error?: string };
         if (!res.ok || typeof d.likes !== "number") throw new Error(d.error ?? t("❤ 가 안 눌렸어요. 다시 시도해 주세요", "Couldn't send ❤. Try again"));
-        return { liked: on, likes: d.likes, reward: d.reward ?? null };
+        return { liked: on, likes: d.likes };
       } catch (e) {
         setLiked((s) => {
           const n = new Set(s);

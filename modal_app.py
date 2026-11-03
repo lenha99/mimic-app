@@ -443,7 +443,8 @@ WEEKLY = ("weekly_view", "weekly_play", "weekly_like", "enter_open", "weekly_ent
           "battle_cta", "battle_view", "battle_vote",
           "voice_card_start", "voice_card_done", "voice_card_share", "voice_rec_open",
           "intro_view", "intro_skip", "intro_done",
-          "mission_open", "mission_like", "mission_next", "mission_rec", "mission_done", "mission_skip")
+          "mission_open", "mission_like", "mission_next", "mission_rec", "mission_done", "mission_skip",
+          "pass_view", "pass_levelup")
 
 
 @app.function(image=slim_image, volumes={REF_DIR: volume})

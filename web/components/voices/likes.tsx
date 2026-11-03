@@ -5,9 +5,7 @@ import { useT } from "@/components/lang";
 import { buzz } from "@/components/weekly/use-weekly";
 import { clientId } from "@/lib/client-id";
 import { track } from "@/lib/track";
-import { rewardDef, type RewardId } from "@/lib/rewards";
-import { useLang } from "@/components/lang";
-import rs from "@/components/rewards/rewards.module.css";
+import ps from "@/components/pass/pass.module.css";
 
 /**
  * 갤러리 ❤ — 목록에서 바로 누른다.
@@ -33,8 +31,7 @@ export function useLikes(): Likes | null {
 
 export function LikesProvider({ ids, children }: { ids: string[]; children: ReactNode }) {
   const t = useT();
-  const lang = useLang();
-  const [toast, setToast] = useState<string | null>(null);
+  const [pop, setPop] = useState(0);
   const [liked, setLiked] = useState<Set<string>>(new Set());
   const [counts, setCounts] = useState<Map<string, number>>(new Map());
   const [fresh, setFresh] = useState<string | null>(null);
@@ -74,16 +71,13 @@ export function LikesProvider({ ids, children }: { ids: string[]; children: Reac
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ client: clientId() }),
         });
-        const d = (await res.json().catch(() => ({}))) as { likes?: number; error?: string; reward?: RewardId | null };
+        const d = (await res.json().catch(() => ({}))) as { likes?: number; error?: string; xp?: number };
         if (!res.ok || typeof d.likes !== "number") throw new Error(d.error ?? t("❤ 가 안 눌렸어요. 다시 시도해 주세요", "Couldn't send ❤. Try again"));
         setCounts((m) => new Map(m).set(id, d.likes!));
         if (on) {
           setFresh(id);
-          if (d.reward) {
-            const r = rewardDef(d.reward);
-            setToast(`${r.icon} ${t("보상 획득", "Reward")} — ${lang === "en" ? r.en : r.ko}!`);
-            window.setTimeout(() => setToast(null), 3200);
-          }
+          // 게임처럼 — 누르자마자 +3 XP 가 떠오른다(VOICE PASS).
+          if (d.xp) setPop((n) => n + 1);
           track("weekly_like", { via: "gallery" });
         } else if (fresh === id) setFresh(null);
       } catch (e) {
@@ -91,7 +85,7 @@ export function LikesProvider({ ids, children }: { ids: string[]; children: Reac
         setNote({ id, text: e instanceof Error ? e.message : String(e) });
       }
     },
-    [liked, fresh, t, lang],
+    [liked, fresh, t],
   );
 
   const value = useMemo<Likes>(
@@ -108,9 +102,9 @@ export function LikesProvider({ ids, children }: { ids: string[]; children: Reac
   return (
     <Ctx.Provider value={value}>
       {children}
-      {toast && (
-        <p className={rs.toast} role="status">
-          {toast}
+      {pop > 0 && (
+        <p key={pop} className={ps.xpPop} role="status">
+          +3 XP
         </p>
       )}
     </Ctx.Provider>

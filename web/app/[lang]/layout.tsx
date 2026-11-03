@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono } from "next/font/google";
 import { BottomNav } from "@/components/bottom-nav";
+import { LevelUpWatcher } from "@/components/pass/level-up";
 import { LangProvider } from "@/components/lang";
 import { LANGS, tr } from "@/lib/i18n";
 import { getLang } from "@/lib/i18n-server";
@@ -80,6 +81,7 @@ export default async function RootLayout({ children }: LayoutProps<"/[lang]">) {
         <LangProvider lang={lang}>
           {children}
           <BottomNav />
+          <LevelUpWatcher />
         </LangProvider>
       </body>
     </html>

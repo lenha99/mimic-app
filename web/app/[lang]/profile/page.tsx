@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { RewardShelf } from "@/components/rewards/reward-shelf";
+import { PassCard } from "@/components/pass/pass-card";
 import { signAudio } from "@/lib/audio-url";
 import { normalizeAvatar } from "@/lib/avatar";
 import { createClient } from "@/lib/supabase/server";
@@ -105,7 +105,7 @@ export default async function ProfilePage() {
       {profile ? (
         <div className={styles.stack}>
           {admin && <AdminLinks pending={admin.pending} feedback={admin.feedback} reported={admin.reported} />}
-          <RewardShelf />
+          <PassCard />
           <MySocial
             nickname={profile.nickname}
             followers={social.followers}

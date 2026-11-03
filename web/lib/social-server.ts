@@ -1,6 +1,6 @@
 import { normalizeAvatar } from "@/lib/avatar";
 import { kstStamp, notify } from "@/lib/notify-server";
-import { afterFollow } from "@/lib/rewards-server";
+import { afterFollow } from "@/lib/pass-server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 
@@ -389,7 +389,7 @@ export async function followingOf(me: string, service: Service = createServiceCl
       {
         key: r.creator,
         name: p?.nickname ?? e?.guest_name ?? "",
-        avatar: p?.avatar ?? normalizeAvatar(e?.avatar),
+        avatar: p?.avatar ?? normalizeAvatar(e?.avatar, r.creator),
         page: p ? `/v/${encodeURIComponent(p.nickname)}` : null,
         latest: e ? { id: e.id, challengeId: e.challenge_id, updatedAt: e.updated_at } : null,
         since: r.created_at,

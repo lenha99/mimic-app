@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { normalizeAvatar } from "@/lib/avatar";
-import { likeTier } from "@/lib/rewards";
+import { lookOf, type Look } from "@/lib/pass";
+import { statsBatch, whoOwns } from "@/lib/pass-server";
 import { createServiceClient } from "@/lib/supabase/service";
 import {
   currentWeek,
@@ -125,7 +126,7 @@ export async function getBoard(w: Week): Promise<WeeklyBoard> {
       name: p?.nickname ?? r.guest_name ?? "익명의 목소리",
       guest: !r.user_id,
       // 로그인 출전은 지금 내 캐릭터로 — 꾸미면 출전작 얼굴도 바뀌는 게 자연스럽다.
-      avatar: normalizeAvatar(p?.avatar ?? r.avatar),
+      avatar: normalizeAvatar(p?.avatar ?? r.avatar, r.owner ?? r.id),
       duration: r.duration_s,
       bars: r.bars ?? [],
       likes: r.like_count,
@@ -221,7 +222,7 @@ export async function settle(w: Week, service: Service = createServiceClient()):
         entry_id: e.id,
         user_id: uid.get(e.id) ?? null,
         name: e.name.slice(0, 24),
-        avatar: normalizeAvatar(e.avatar),
+        avatar: normalizeAvatar(e.avatar, e.name),
         likes: e.likes,
       })),
       { onConflict: "challenge_id,place", ignoreDuplicates: true },
@@ -252,7 +253,7 @@ async function awardRows(filter: { userId?: string; limit: number }): Promise<Aw
         title: w.title,
         place: a.place,
         name: a.name,
-        avatar: normalizeAvatar(a.avatar),
+        avatar: normalizeAvatar(a.avatar, a.name),
         likes: a.likes,
         entryId: a.entry_id,
         userId: a.user_id,
@@ -336,8 +337,8 @@ export type GalleryEntry = {
   week: { id: string; season: number; emoji: string; title: string; titleEn: string; live: boolean; free: boolean };
   featured: boolean;
   badges: string[];
-  /** 주인이 받은 ❤ 합계로 정한 테두리 — 0 없음 · 1 브론즈 · 2 실버 · 3 골드 (lib/rewards) */
-  tier: number;
+  /** 주인의 VOICE PASS 겉모습 — 레벨 · 프레임 · 닉네임 효과 · 배지 (lib/pass) */
+  look: Look;
   /** 운영자 화면에서만 쓴다 — 공개 화면엔 내려보내지 않는다. */
   promoOk?: boolean;
 };
@@ -376,11 +377,10 @@ export async function galleryEntries(limit = 60, opts: { admin?: boolean } = {})
     ? await service.from("profiles").select("id, nickname, avatar").in("id", users)
     : { data: [] as { id: string; nickname: string; avatar: unknown }[] };
   const prof = new Map((profiles ?? []).map((p) => [p.id, p]));
-  // 테두리 — 주인마다 받은 ❤ 합계(지금 목록 밖의 것까지). 표가 작아 한 번에 센다.
-  const who = (o: { owner: string; user_id: string | null }) => (o.user_id ? `u:${o.user_id}` : o.owner);
-  const { data: all } = await service.from("weekly_entries").select("owner, user_id, like_count").eq("hidden", false).limit(5000);
-  const total = new Map<string, number>();
-  for (const e of all ?? []) total.set(who(e), (total.get(who(e)) ?? 0) + (e.like_count ?? 0));
+  // VOICE PASS — 주인마다 숫자를 한 번에 센다(지금 목록 밖의 목소리·구독자·준 ❤ 까지).
+  const people = new Map<string, string[]>();
+  for (const r of rows) people.set(whoOwns(r), [...new Set([whoOwns(r), r.owner])]);
+  const stats = await statsBatch([...people.values()], service);
   const cur = currentWeek();
   const now = cur.id;
   const thisWeek = (r: Row, free: boolean) =>
@@ -394,7 +394,7 @@ export async function galleryEntries(limit = 60, opts: { admin?: boolean } = {})
         id: r.id,
         name: p?.nickname ?? r.guest_name ?? "익명의 목소리",
         guest: !r.user_id,
-        avatar: normalizeAvatar(p?.avatar ?? r.avatar),
+        avatar: normalizeAvatar(p?.avatar ?? r.avatar, r.owner ?? r.id),
         duration: r.duration_s,
         bars: r.bars ?? [],
         likes: r.like_count,
@@ -403,7 +403,7 @@ export async function galleryEntries(limit = 60, opts: { admin?: boolean } = {})
         week: { id: w.id, season: w.season, emoji: w.emoji, title: w.title, titleEn: w.titleEn, live: thisWeek(r, Boolean(w.free)), free: Boolean(w.free) },
         featured: Boolean(r.featured_at),
         badges: (r.badges ?? []).slice(0, 3),
-        tier: likeTier(total.get(who(r)) ?? 0),
+        look: lookOf(stats.get(whoOwns(r)) ?? { posts: 1, likesReceived: r.like_count, followers: 0, likesGiven: 0, picked: Boolean(r.featured_at), prophet: false }),
         ...(opts.admin ? { promoOk: Boolean(r.promo_ok) } : {}),
       },
     ];

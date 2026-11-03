@@ -116,6 +116,31 @@ li + li > .row,
   font-size: 20px;
 }
 
+.passChip {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #9b5cff, #ff6ad5);
+  color: #fff;
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 9.5px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  box-shadow: 0 0 12px rgba(255, 106, 213, 0.35);
+}
+
+.passChip[data-kind="reward_pick"] {
+  background: linear-gradient(135deg, #ffe27a, #ffb703);
+  color: #1a1408;
+}
+
+.passChip[data-kind="reward_prophet"] {
+  background: linear-gradient(135deg, #5ce1ff, #9b5cff);
+}
+
 .section {
   margin: 22px 0 8px;
   font-size: 13px;

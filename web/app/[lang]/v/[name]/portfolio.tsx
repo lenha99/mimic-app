@@ -1,6 +1,6 @@
 "use client";
 
-import { RewardShelf } from "@/components/rewards/reward-shelf";
+import { OwnerPass } from "@/components/pass/owner-pass";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { useLang, useT } from "@/components/lang";
@@ -112,7 +112,7 @@ export default function Portfolio({
         )}
       </section>
 
-      {takes[0] && <RewardShelf entry={takes[0].id} />}
+      {takes[0] && <OwnerPass entry={takes[0].id} />}
 
       <p className={styles.section}>{t("출전한 목소리", "Entries")}</p>
       {takes.length === 0 ? (

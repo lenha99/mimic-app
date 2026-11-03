@@ -1,6 +1,6 @@
 import { isAdmin } from "@/lib/admin";
 import { createServiceClient } from "@/lib/supabase/service";
-import { afterPick } from "@/lib/rewards-server";
+import { afterPick } from "@/lib/pass-server";
 
 /**
  * 운영자 픽 — 출전작 하나를 홈·갤러리 맨 위에 고정(POST {entry, on}).

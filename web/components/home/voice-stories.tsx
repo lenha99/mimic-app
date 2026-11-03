@@ -1,6 +1,7 @@
 "use client";
 
-import { TierMedal } from "@/components/rewards/tier-ring";
+import { AvatarFrame, LevelPill, NameFx } from "@/components/pass/look";
+import type { Look } from "@/lib/pass";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useLang, useT } from "@/components/lang";
@@ -36,7 +37,7 @@ export function markHeard(id: string) {
   } catch {}
 }
 
-export function VoiceStories({ entries }: { entries: { id: string; name: string; avatar: unknown; tier?: number }[] }) {
+export function VoiceStories({ entries }: { entries: { id: string; name: string; avatar: unknown; look?: Look }[] }) {
   const t = useT();
   const lang = useLang();
   const viewer = useViewer();
@@ -66,11 +67,18 @@ export function VoiceStories({ entries }: { entries: { id: string; name: string;
       {sorted.map((e) => (
         <Link key={e.id} href={`/weekly/e/${e.id}`} className={styles.story} onClick={() => markHeard(e.id)}>
           <span className={`${styles.ring} ${heard.has(e.id) ? styles.ringSeen : ""}`}>
-            <TierMedal tier={e.tier ?? 0}>
-              <VoiceAvatar avatar={normalizeAvatar(e.avatar)} size={58} />
-            </TierMedal>
+            <AvatarFrame frame={e.look?.frame}>
+              <VoiceAvatar avatar={normalizeAvatar(e.avatar)} size={e.look && e.look.frame !== "none" ? 52 : 58} />
+            </AvatarFrame>
+            {e.look && e.look.level > 1 && (
+              <span style={{ position: "absolute", left: "50%", bottom: -6, transform: "translateX(-50%)", zIndex: 3, border: 0, background: "none", borderRadius: 0 }}>
+                <LevelPill level={e.look.level} rank={e.look.rank} compact />
+              </span>
+            )}
           </span>
-          <small>{displayName(e.name, lang).replace(/^(익명의 목소리|Anonymous voice) /, "")}</small>
+          <small>
+            <NameFx fx={e.look?.name}>{displayName(e.name, lang).replace(/^(익명의 목소리|Anonymous voice) /, "")}</NameFx>
+          </small>
         </Link>
       ))}
       {Array.from({ length: empty }, (_, i) => (

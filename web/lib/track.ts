@@ -40,6 +40,8 @@ export type TrackKind =
   | "mission_rec"
   | "mission_done"
   | "mission_skip"
+  | "pass_view"
+  | "pass_levelup"
   | "enter_fail"
   | "weekly_share"
   // 블라인드 배틀 — 허브에서 들어와(cta) → 짝을 받고(view) → 고른다(vote)

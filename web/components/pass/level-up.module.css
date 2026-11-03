@@ -1,0 +1,207 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(6, 5, 10, 0.78);
+  backdrop-filter: blur(4px);
+  animation: fade 0.25s ease;
+}
+
+.card {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  width: min(360px, 100%);
+  padding: 26px 18px 18px;
+  border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background:
+    radial-gradient(90% 60% at 50% 0%, rgba(155, 92, 255, 0.45), transparent 70%),
+    linear-gradient(180deg, #1d1a2a, #111016);
+  color: var(--white);
+  text-align: center;
+  overflow: hidden;
+  animation: rise 0.45s cubic-bezier(0.2, 1.2, 0.3, 1);
+}
+
+.rays {
+  position: absolute;
+  top: -40%;
+  left: 50%;
+  width: 160%;
+  aspect-ratio: 1;
+  transform: translateX(-50%);
+  background: repeating-conic-gradient(from 0deg, rgba(255, 255, 255, 0.08) 0deg 8deg, transparent 8deg 20deg);
+  mask-image: radial-gradient(closest-side, #000, transparent);
+  animation: spin 18s linear infinite;
+  pointer-events: none;
+}
+
+.kicker {
+  position: relative;
+  margin: 0;
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.4em;
+  background: linear-gradient(90deg, #ffe27a, #ff6ad5, #9b5cff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.big {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0;
+  font-family: var(--mono, ui-monospace, monospace);
+  font-weight: 900;
+}
+
+.big span {
+  font-size: 18px;
+  color: var(--ash);
+}
+
+.big i {
+  font-style: normal;
+  color: var(--ash);
+}
+
+.big b {
+  font-size: 44px;
+  line-height: 1;
+  animation: punch 0.6s 0.25s cubic-bezier(0.2, 1.6, 0.3, 1) both;
+}
+
+.face {
+  position: relative;
+  margin: 8px 0 0;
+}
+
+.name {
+  position: relative;
+  margin: 0;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.got {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.got li {
+  display: grid;
+  gap: 2px;
+  padding: 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 214, 80, 0.35);
+  background: rgba(255, 214, 80, 0.08);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.got small {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: #ffe08a;
+}
+
+.note {
+  position: relative;
+  margin: 0;
+  font-size: 13px;
+  color: var(--ash);
+}
+
+.go {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 50px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: var(--volt);
+  color: #1a1408;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.go {
+  border: 0;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.alt {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 46px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--white);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.close {
+  position: relative;
+  border: 0;
+  background: none;
+  color: var(--ash);
+  font-size: 13px;
+  padding: 6px;
+  cursor: pointer;
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.92);
+  }
+}
+
+@keyframes punch {
+  from {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: translateX(-50%) rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop,
+  .card,
+  .rays,
+  .big b {
+    animation: none;
+  }
+}
