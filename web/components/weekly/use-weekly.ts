@@ -11,7 +11,8 @@ import { useT } from "@/components/lang";
  * 페이지는 정적이라 서버가 누군지 모른다. 붙은 뒤에 /api/weekly/me 로 묻고, 게스트
  * 출전작은 이 기기의 기록(readMine)으로 안다.
  */
-export function useWeeklyMe(weekId: string) {
+/** also: 이번 주가 아닌 출전작 id — 그 ❤ 여부도 같이 묻는다(끝난 주 출전작 화면). */
+export function useWeeklyMe(weekId: string, also?: string) {
   const t = useT();
   const [liked, setLiked] = useState<Set<string>>(new Set());
   const [mineId, setMineId] = useState<string | null>(null);
@@ -26,14 +27,16 @@ export function useWeeklyMe(weekId: string) {
     setHeard(readHeard());
     const local = readMine()[weekId];
     if (local) setMineId(local.entryId);
-    void fetch(`/api/weekly/me?client=${encodeURIComponent(clientId())}`, { cache: "no-store" })
+    void fetch(`/api/weekly/me?client=${encodeURIComponent(clientId())}${also ? `&ids=${also}` : ""}`, { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
-      .then((d: { week: string; loggedIn: boolean; liked: string[]; mine: string | null } | null) => {
+      .then((d: { week: string; loggedIn: boolean; liked: string[]; likedAny?: string[]; mine: string | null } | null) => {
         if (!alive || !d) return;
         setLoggedIn(d.loggedIn);
         if (d.week === weekId) {
-          setLiked(new Set(d.liked));
+          setLiked(new Set([...d.liked, ...(d.likedAny ?? [])]));
           if (d.mine) setMineId(d.mine);
+        } else if (d.likedAny?.length) {
+          setLiked(new Set(d.likedAny));
         }
       })
       .catch(() => {})
@@ -41,7 +44,7 @@ export function useWeeklyMe(weekId: string) {
     return () => {
       alive = false;
     };
-  }, [weekId]);
+  }, [weekId, also]);
 
   const hear = useCallback((id: string) => {
     markHeard(id);

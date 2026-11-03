@@ -41,8 +41,14 @@ async function resolve(req: Request, id: string) {
     .maybeSingle();
   if (!e || e.hidden) return { error: Response.json({ error: t("없는 출전작이에요.", "Entry not found.") }, { status: 404 }) };
   const week = challengeById(e.challenge_id);
-  if (!week || !isLive(week)) {
-    return { error: Response.json({ error: t("마감된 챌린지예요. ❤ 는 이제 바뀌지 않아요.", "This challenge has closed. ❤ can't change anymore.") }, { status: 409 }) };
+  // 끝난 주의 출전작도 갤러리에 계속 걸려 있다. 1~3위는 정산 때 weekly_awards 에 박제되니,
+  // 정산이 끝난 뒤엔 ❤ 를 다시 받아도 결과가 안 바뀐다. 정산 전(마감 직후)만 막는다.
+  const settled =
+    week && !isLive(week) && !week.free
+      ? Boolean((await service.from("weekly_challenges").select("settled_at").eq("id", week.id).maybeSingle()).data?.settled_at)
+      : false;
+  if (!week || (!isLive(week) && !settled)) {
+    return { error: Response.json({ error: t("결과 정리 중이에요. 잠시 뒤에 ❤ 를 눌러 주세요.", "Tallying results — try ❤ again shortly.") }, { status: 409 }) };
   }
   return { service, user, voters, entry: e, week };
 }

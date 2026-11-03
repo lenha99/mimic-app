@@ -29,7 +29,8 @@ export function VoiceCard({ e, index = 0 }: { e: GalleryEntry; index?: number })
   const name = displayName(e.name, lang);
   const play = () => p.toggle({ id: e.id, name: e.name, avatar: e.avatar });
   const likes = useLikes();
-  const canLike = Boolean(likes && e.week.live);
+  // 끝난 주 출전작도 정산 뒤엔 ❤ 를 받는다(서버가 판단). 갤러리면 늘 버튼.
+  const canLike = Boolean(likes);
   const liked = likes?.liked(e.id) ?? false;
   const count = likes?.count(e.id, e.likes) ?? e.likes;
   // 끝까지 들었는데 아직 ❤ 안 했으면 하트가 살짝 부른다.
