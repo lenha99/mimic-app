@@ -111,6 +111,16 @@ export default async function Home() {
             <small>{t(`대사 ${lines.length}개 · 점수 대결`, `${lines.length} lines · score battle`)}</small>
           </span>
         </Link>
+        <Link href="/anime" className={`${home.tile} ${home.tileAnime}`} data-tour="home-anime">
+          <span className={home.tileEmoji} aria-hidden="true">
+            🌀
+          </span>
+          <span className={home.tileText}>
+            <b>{t("애니 명대사 기합 대결", "Anime lines hype battle")}</b>
+            <small>{t("심장을 바쳐라! 나선환! · 친구랑 폰 하나로", "Shout iconic lines · battle friends on one phone")}</small>
+          </span>
+          <i className={home.tileNew}>NEW</i>
+        </Link>
       </nav>
 
       <HomeBeacon />

@@ -249,6 +249,30 @@
     var(--panel);
 }
 
+.tileAnime {
+  grid-column: 1 / -1;
+  min-height: 96px;
+  background:
+    repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.05) 0 2px, transparent 2px 14px),
+    radial-gradient(90% 120% at 100% 0%, rgba(255, 106, 213, 0.28), transparent 60%),
+    radial-gradient(70% 100% at 0% 100%, rgba(255, 183, 3, 0.2), transparent 60%),
+    var(--panel);
+}
+
+.tile .tileNew {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #ff4f7b;
+  color: #fff;
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+}
+
 @keyframes spin-in {
   from {
     transform: rotate(-40deg) scale(0.9);
