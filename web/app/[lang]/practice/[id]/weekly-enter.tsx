@@ -153,10 +153,12 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
         error?: string;
       };
       if (res.status === 401) {
+        track("enter_fail", { via: "401" });
         setNeedLogin(true);
         return;
       }
       if (!res.ok || !d.id) {
+        track("enter_fail", { via: String(res.status) });
         setError(d.error ?? t("출전이 안 됐어요. 다시 시도해 주세요", "Couldn't enter. Please try again"));
         return;
       }
@@ -170,6 +172,7 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
       buzz(30);
       track("weekly_enter", { via: free ? "free" : week.id });
     } catch {
+      track("enter_fail", { via: "net" });
       setError(t("인터넷이 잠깐 끊겼어요. 다시 시도해 주세요", "Connection dropped. Please try again"));
     } finally {
       setBusy(false);
@@ -178,7 +181,6 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
 
   return (
     <>
-      {!done && <VoiceTypeCard type={vtype} />}
       {entered && local ? (
         <div className={styles.entered} data-tour="room-enter">
           <span className={styles.enteredBadge}>{free ? t("🎙️ 갤러리에 올라감", "🎙️ In the gallery") : t("🏆 출전 중", "🏆 Entered")}</span>
@@ -201,7 +203,10 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
         <button
           type="button"
           className={replacing ? styles.openAlt : styles.open}
-          onClick={() => setOpen(true)}
+          onClick={() => {
+            setOpen(true);
+            track("enter_open", { via: free ? "free" : week.id });
+          }}
           data-tour="room-enter"
         >
           <span className={styles.openIcon} aria-hidden="true">

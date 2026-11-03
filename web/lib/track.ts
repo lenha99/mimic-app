@@ -33,6 +33,8 @@ export type TrackKind =
   | "weekly_play"
   | "weekly_like"
   | "weekly_enter"
+  | "enter_open"
+  | "enter_fail"
   | "weekly_share"
   // 블라인드 배틀 — 허브에서 들어와(cta) → 짝을 받고(view) → 고른다(vote)
   | "battle_cta"

@@ -711,11 +711,11 @@ export default function Room({ item }: { item: RoomItem }) {
             checking={checking === open.id}
             onCheck={() => void check(open)}
             onShowScript={() => paperRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            post={item.kind === "script" ? <WeeklyEnter key={`w-${open.id}`} take={open} scriptId={itemId} /> : null}
           />
         )}
         {phase !== "analyzing" && open && (
           <>
-            {item.kind === "script" && <WeeklyEnter key={`w-${open.id}`} take={open} scriptId={itemId} />}
             <AskFeedback
               key={open.id}
               take={open}
@@ -982,6 +982,7 @@ function TakeReport({
   checking,
   onCheck,
   onShowScript,
+  post,
 }: {
   take: Take;
   n: number;
@@ -999,6 +1000,8 @@ function TakeReport({
   checking: boolean;
   onCheck: () => void;
   onShowScript: () => void;
+  /** 갤러리에 올리기 — 심사표 바로 아래. 세부 지표 밑에 두었더니 화면 세 장 아래라 아무도 못 봤다(11/3 홍보: 녹음 17명 → 올림 0명). */
+  post?: React.ReactNode;
 }) {
   const L = useT();
   const lang = useLang();
@@ -1074,6 +1077,8 @@ function TakeReport({
         onCheck={onCheck}
         onShowScript={onShowScript}
       />
+
+      {post}
 
       {kind === "line" && take.score && (
         <dl className={styles.axes}>
