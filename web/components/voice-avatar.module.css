@@ -1,7 +1,34 @@
-/* 조용할 때도 살아 있어 보이게 — 숨 쉬는 정도만. */
+/*
+ * 조용할 때도 살아 있어 보이게 — 숨 쉬기와 가끔 깜빡이는 눈.
+ * CSS transform 은 SVG transform 속성을 덮어쓰니, 속성이 없는 <g> 에만 붙인다.
+ */
 .idle {
   animation: breathe 2.6s ease-in-out infinite;
-  transform-origin: 50% 92%;
+  transform-box: view-box;
+  transform-origin: 50% 94%;
+}
+
+/* 유령은 숨 대신 둥실 */
+.float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.blinkA,
+.blinkB,
+.blinkC {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: blink 4.6s ease-in-out infinite;
+}
+
+.blinkB {
+  animation-duration: 5.3s;
+  animation-delay: -1.7s;
+}
+
+.blinkC {
+  animation-duration: 6.1s;
+  animation-delay: -3.2s;
 }
 
 @keyframes breathe {
@@ -10,12 +37,37 @@
     transform: scale(1, 1);
   }
   50% {
-    transform: scale(1.015, 0.985);
+    transform: scale(1.02, 0.98);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes blink {
+  0%,
+  93%,
+  100% {
+    transform: scaleY(1);
+  }
+  95.5% {
+    transform: scaleY(0.12);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .idle {
+  .idle,
+  .float,
+  .blinkA,
+  .blinkB,
+  .blinkC {
     animation: none;
   }
 }
