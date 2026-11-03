@@ -65,7 +65,8 @@ type Rig = { top: number; dy: number; torso: boolean; float: boolean };
 function rigOf(a: Avatar): Rig {
   const body = a.body;
   const dy = body === "blob" ? 7 : body === "ghost" ? 2 : 0;
-  const lift = a.hair === "spiky" ? 8 : a.hair === "perm" ? 6 : a.hair === "bun" ? 2 : 0;
+  const lift =
+    a.hair === "hero" ? 10 : a.hair === "spiky" ? 8 : a.hair === "perm" ? 6 : a.hair === "bun" || a.hair === "pony" ? 2 : 0;
   return {
     top: 24 - lift,
     dy,
@@ -191,7 +192,10 @@ function Character({ a, v, rig }: { a: Avatar; v: number; rig: Rig }) {
 }
 
 function blinkable(eyes: Avatar["eyes"], v: number): boolean {
-  return v < 0.04 && (eyes === "dot" || eyes === "shiny" || eyes === "star" || eyes === "angry" || eyes === "sad");
+  return (
+    v < 0.04 &&
+    (eyes === "dot" || eyes === "shiny" || eyes === "star" || eyes === "angry" || eyes === "sad" || eyes === "anime" || eyes === "sharp")
+  );
 }
 
 /* ── 몸 ─────────────────────────────────────────────────────────────── */
@@ -378,6 +382,31 @@ function HairShine({ d = "M35 34 Q43 26 53 24" }: { d?: string }) {
 
 function HairBack({ kind, color }: { kind: Avatar["hair"]; color: string }) {
   switch (kind) {
+    case "long":
+      // 허리까지 내려오는 생머리 — 머리 뒤로 몸통 옆까지.
+      return (
+        <>
+          <path
+            d="M17 60 C14 30 36 17 60 17 C84 17 106 30 103 60 L107 103 Q101 111 92 106 L88 82 L32 82 L28 106 Q19 111 13 103 Z"
+            fill={color}
+            {...ol}
+          />
+          <path d="M20 74 L17 100 M100 74 L103 100" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" opacity="0.3" />
+        </>
+      );
+    case "pony":
+      // 정수리에서 묶어 옆으로 찰랑 넘어가는 하이 포니테일.
+      return (
+        <>
+          <path
+            d="M70 21 C94 6 116 24 109 52 C106 66 98 76 89 80 C97 63 98 44 86 33 C82 29 76 26 70 26 Z"
+            fill={color}
+            {...ol}
+          />
+          <path d="M92 22 C102 26 106 36 105 46" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" fill="none" opacity="0.35" />
+          <ellipse cx="72" cy="23" rx="5" ry="4" fill="#ff6f9c" {...ol} strokeWidth={2.2} transform="rotate(-30 72 23)" />
+        </>
+      );
     case "perm":
       return (
         <>
@@ -419,6 +448,48 @@ function HairBack({ kind, color }: { kind: Avatar["hair"]; color: string }) {
 
 function HairFront({ kind, color }: { kind: Avatar["hair"]; color: string }) {
   switch (kind) {
+    case "ahoge":
+      // 바보털 한 가닥 — 정수리에서 뿅 솟아 말린다.
+      return (
+        <path d="M58 25 C55 13 63 5 72 8 C76 10 75 15 71 15 C67 12 61 15 63 25 Z" fill={color} {...ol} strokeWidth={2.6} />
+      );
+    case "long":
+      // 일자 앞머리 + 얼굴 옆으로 떨어지는 옆머리(히메컷).
+      return (
+        <>
+          <path
+            d="M21 62 C19 32 37 20 60 20 C83 20 101 32 99 62 L99 76 L91 76 L90 49 C80 45 70 45 60 45 C50 45 40 45 30 49 L29 76 L21 76 Z"
+            fill={color}
+            {...ol}
+          />
+          <HairShine />
+        </>
+      );
+    case "pony":
+      return (
+        <>
+          <path
+            d="M22 58 C20 32 38 20 60 20 C82 20 100 32 98 58 C94 48 86 42 76 41 C72 46 64 49 52 48 C44 47 34 50 22 58 Z"
+            fill={color}
+            {...ol}
+          />
+          <HairShine />
+        </>
+      );
+    case "hero": {
+      // 주인공 머리 — 삐죽보다 크고 극적으로 솟는다. 이마로 몇 가닥이 떨어진다.
+      return (
+        <>
+          <path
+            d="M18 62 L8 44 L24 42 L14 20 L36 30 L38 6 L54 24 L64 0 L72 24 L90 8 L90 32 L110 26 L100 46 L110 58 L100 62 C92 46 76 41 60 41 C44 41 28 46 18 62 Z"
+            fill={color}
+            {...ol}
+          />
+          <path d="M44 41 L48 55 L56 42 Z M62 41 L70 53 L74 42 Z" fill={color} {...ol} strokeWidth={2.6} />
+          <path d="M40 24 L46 14 M70 18 L74 10" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" opacity="0.45" />
+        </>
+      );
+    }
     case "sprout":
       return (
         <>
@@ -539,6 +610,15 @@ function Cheeks({ a }: { a: Avatar }) {
 
 function Brows({ eyes }: { eyes: Avatar["eyes"] }) {
   const b = line(3.4);
+  if (eyes === "sharp") {
+    // 각성 — 눈꼬리 따라 치켜 올라간 짧은 눈썹.
+    return (
+      <>
+        <path d={`M${L - 8} 47 L${L + 5} 50`} {...b} />
+        <path d={`M${R + 8} 47 L${R - 5} 50`} {...b} />
+      </>
+    );
+  }
   if (eyes === "angry") {
     // 미간으로 내리꽂는 눈썹 — 버럭의 전부다.
     return (
@@ -582,6 +662,51 @@ function Glossy({ x, rx, ry, iris = true }: { x: number; rx: number; ry: number;
 function Eyes({ kind, level }: { kind: Avatar["eyes"]; level: number }) {
   const loud = level > 0.55;
   const grow = 1 + level * 0.25;
+
+  if (kind === "anime") {
+    // 순정만화 눈 — 세로로 긴 홍채, 위 속눈썹, 큰 반짝임 두 개와 아래 빛.
+    const g = grow;
+    return (
+      <>
+        {[L, R].map((x, i) => {
+          const out = i === 0 ? -1 : 1;
+          return (
+            <g key={x}>
+              <ellipse cx={x} cy={EY + 0.5} rx={6.6 * g} ry={8.6 * g} fill="#3b2f8f" />
+              <ellipse cx={x} cy={EY + 4 * g} rx={4.8 * g} ry={4 * g} fill="#8fc2ff" opacity="0.9" />
+              <ellipse cx={x} cy={EY - 0.5} rx={3 * g} ry={4 * g} fill={EYE} />
+              <ellipse cx={x + 2.4 * g} cy={EY - 3.6 * g} rx={2.6 * g} ry={3.1 * g} fill="#fff" />
+              <circle cx={x - 2.6 * g} cy={EY + 3.6 * g} r={1.3 * g} fill="#fff" />
+              <path d={star4(x - 2.4 * g, EY - 4.6 * g, 1.6 * g)} fill="#fff" opacity="0.9" />
+              <path
+                d={`M${x - 7.6 * out} ${EY - 3} Q${x} ${EY - 12.5 * g} ${x + 7.6 * out} ${EY - 4.5} l${2.8 * out} -2.2`}
+                {...line(3.4)}
+              />
+            </g>
+          );
+        })}
+      </>
+    );
+  }
+  if (kind === "sharp") {
+    // 각성한 눈 — 날카롭게 치켜 올라간 아몬드 모양, 금빛 홍채.
+    return (
+      <>
+        {[L, R].map((x, i) => (
+          <g key={x} transform={i ? `translate(${x * 2} 0) scale(-1 1)` : undefined}>
+            <path
+              d={`M${x + 7.5} ${EY + 1.5} Q${x + 2} ${EY - 6} ${x - 7} ${EY - 4.5} Q${x - 6} ${EY + 4} ${x} ${EY + 4} Q${x + 4.5} ${EY + 4} ${x + 7.5} ${EY + 1.5} Z`}
+              fill={EYE}
+            />
+            <ellipse cx={x - 0.5} cy={EY + 0.3} rx={3 * grow} ry={3.4} fill="#ffc53a" />
+            <ellipse cx={x - 0.5} cy={EY + 0.3} rx={1.1} ry={3} fill={EYE} />
+            <circle cx={x + 1.4} cy={EY - 1.6} r="1.2" fill="#fff" />
+            <path d={`M${x + 7.5} ${EY + 1.5} Q${x + 2} ${EY - 6} ${x - 7} ${EY - 4.5} l-2.4 -1.6`} {...line(2.6)} />
+          </g>
+        ))}
+      </>
+    );
+  }
 
   // 졸린 눈은 크게 외치면 번쩍 뜬다 — 소리에 반응하는 게 제일 잘 보이는 자리다.
   if (kind === "sleepy" && !loud) {
@@ -681,6 +806,31 @@ function Eyes({ kind, level }: { kind: Avatar["eyes"]; level: number }) {
 
 function Face({ kind, hair }: { kind: Avatar["face"]; hair: string }) {
   switch (kind) {
+    case "scar":
+      // 볼의 작은 X 흉터 — 싸워 본 녀석.
+      return (
+        <path d="M80 62 l8 8 M88 62 l-8 8" stroke="#c4566a" strokeWidth="2.4" strokeLinecap="round" />
+      );
+    case "whisker":
+      // 볼 수염 세 줄 — 여우·고양이 같은 장난꾸러기 표시.
+      return (
+        <path
+          d="M25 64 l11 1.5 M24 69 l12 0 M25 74 l11 -1.5 M95 64 l-11 1.5 M96 69 l-12 0 M95 74 l-11 -1.5"
+          stroke={INK}
+          strokeWidth="2"
+          strokeLinecap="round"
+          opacity="0.7"
+        />
+      );
+    case "nosebandage":
+      // 콧등을 가로지르는 반창고.
+      return (
+        <g transform="rotate(-6 60 61)">
+          <rect x="49" y="58" width="22" height="6.5" rx="3.2" fill="#f6d3a6" stroke={INK} strokeWidth="1.7" />
+          <rect x="56.5" y="58" width="7" height="6.5" fill="#e9b98a" />
+          <path d="M51.5 61.2 h2 M66.5 61.2 h2" stroke="#c99a6a" strokeWidth="1" strokeLinecap="round" />
+        </g>
+      );
     case "freckles":
       return (
         <>
@@ -831,6 +981,40 @@ function Glasses({ kind }: { kind: Avatar["glasses"] }) {
   const lens = { stroke: INK, fill: "#fff", fillOpacity: 0.2 };
   const arms = <path d={`M${L - 11} ${EY - 2} L21 ${EY - 4} M${R + 11} ${EY - 2} L99 ${EY - 4}`} stroke={INK} strokeWidth="2.4" strokeLinecap="round" />;
   switch (kind) {
+    case "eyepatch":
+      // 한쪽 눈 안대 — 끈은 이마를 비스듬히 가로지른다.
+      return (
+        <>
+          <path d={`M${R - 6} ${EY - 6} L24 ${EY - 18} M${R + 7} ${EY - 3} L99 ${EY}`} stroke={INK} strokeWidth="2.6" strokeLinecap="round" />
+          <path
+            d={`M${R - 8.5} ${EY - 5} Q${R} ${EY - 9} ${R + 8.5} ${EY - 5} Q${R + 8} ${EY + 7} ${R} ${EY + 8} Q${R - 8} ${EY + 7} ${R - 8.5} ${EY - 5} Z`}
+            fill="#2b2433"
+            stroke={INK}
+            strokeWidth="2"
+            strokeLinejoin="round"
+          />
+          <path d={`M${R - 4} ${EY - 3} q3 -2 6 -1.5`} stroke="#fff" strokeWidth="1.6" strokeLinecap="round" fill="none" opacity="0.4" />
+        </>
+      );
+    case "visor":
+      // 사이버 바이저 — 눈 위를 지나는 반투명 띠, 스캔 빛과 옆 단자.
+      return (
+        <>
+          <path
+            d={`M24 ${EY - 9} Q60 ${EY - 14} 96 ${EY - 9} L94 ${EY + 6} Q60 ${EY + 11} 26 ${EY + 6} Z`}
+            fill="#45e6ff"
+            fillOpacity="0.5"
+            stroke={INK}
+            strokeWidth="2.6"
+            strokeLinejoin="round"
+          />
+          <path d={`M30 ${EY - 5} Q60 ${EY - 9} 90 ${EY - 5}`} stroke="#e8fdff" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.85" />
+          <path d={`M34 ${EY + 2} h10 M76 ${EY + 2} h10`} stroke="#e8fdff" strokeWidth="1.4" strokeLinecap="round" opacity="0.6" />
+          <rect x="17" y={EY - 7} width="8" height="12" rx="3" fill="#5b5670" stroke={INK} strokeWidth="2" />
+          <rect x="95" y={EY - 7} width="8" height="12" rx="3" fill="#5b5670" stroke={INK} strokeWidth="2" />
+          <circle cx="99" cy={EY - 1} r="1.6" fill="#ff5d8f" />
+        </>
+      );
     case "round":
       return (
         <>
@@ -895,6 +1079,73 @@ function Hat({ kind, top, color, body }: { kind: Avatar["hat"]; top: number; col
   const t = top;
 
   switch (kind) {
+    case "headband": {
+      // 닌자 이마보호대 — 천 띠에 금속판. 문양은 단순한 소용돌이.
+      const y = t + 16;
+      return (
+        <>
+          <path d={`M97 ${y + 4} Q108 ${y + 6} 112 ${y + 18} Q104 ${y + 14} 98 ${y + 10} Z`} fill="#3d4f86" {...ol} strokeWidth={2.4} />
+          <path d={`M97 ${y + 7} Q104 ${y + 14} 104 ${y + 26} Q98 ${y + 19} 95 ${y + 12} Z`} fill="#33437a" {...ol} strokeWidth={2.4} />
+          <path d={`M21 ${y + 3} Q60 ${y - 8} 99 ${y + 3} L99 ${y + 11} Q60 ${y} 21 ${y + 11} Z`} fill="#3d4f86" {...ol} />
+          <rect x="44" y={y - 7} width="32" height="14" rx="3.5" fill="#d7deea" {...ol} strokeWidth={2.6} />
+          <path d={`M44.5 ${y - 4} h31`} stroke="#fff" strokeWidth="1.6" opacity="0.7" />
+          <circle cx="47.5" cy={y + 3.5} r="1.2" fill="#8a93a8" />
+          <circle cx="72.5" cy={y + 3.5} r="1.2" fill="#8a93a8" />
+          <path
+            d={`M60 ${y} m-4 0 a4 4 0 1 1 4 4 a2.6 2.6 0 1 1 -2.6 -2.6`}
+            stroke="#6a7390"
+            strokeWidth="1.8"
+            fill="none"
+            strokeLinecap="round"
+          />
+        </>
+      );
+    }
+    case "straw":
+      // 밀짚모자 — 넓은 챙과 빨간 띠.
+      return (
+        <>
+          <path d={`M9 ${t + 11} Q60 ${t - 4} 111 ${t + 11} Q60 ${t + 24} 9 ${t + 11} Z`} fill="#f3d27a" {...ol} />
+          <path d={`M22 ${t + 12} Q60 ${t + 3} 98 ${t + 12}`} stroke="#d9ae4f" strokeWidth="1.6" fill="none" opacity="0.8" />
+          <path d={`M36 ${t + 7} C35 ${t - 15} 85 ${t - 15} 84 ${t + 7} Z`} fill="#f6da8a" {...ol} />
+          <path d={`M36 ${t + 2} Q60 ${t - 3} 84 ${t + 2} L84 ${t + 7} Q60 ${t + 2} 36 ${t + 7} Z`} fill="#e8423f" />
+          <path d={`M44 ${t - 5} Q50 ${t - 10} 58 ${t - 11}`} stroke="#fff" strokeWidth="2.4" fill="none" strokeLinecap="round" opacity="0.5" />
+        </>
+      );
+    case "catears": {
+      // 고양이귀 머리띠.
+      const ear = (
+        <>
+          <path d={`M27 ${t + 9} L30 ${t - 13} L47 ${t} Z`} fill="#3a3442" {...ol} strokeWidth={2.8} />
+          <path d={`M31 ${t + 3} L32.5 ${t - 7} L41 ${t} Z`} fill="#ff9fc0" />
+        </>
+      );
+      return (
+        <>
+          <path d={`M23 ${t + 18} Q60 ${t - 8} 97 ${t + 18}`} stroke={INK} strokeWidth="5" fill="none" strokeLinecap="round" />
+          <path d={`M23 ${t + 18} Q60 ${t - 8} 97 ${t + 18}`} stroke="#ff9fc0" strokeWidth="2" fill="none" strokeLinecap="round" />
+          {ear}
+          <g transform={MIRROR}>{ear}</g>
+        </>
+      );
+    }
+    case "witch": {
+      // 마녀 모자 — 끝이 꺾인 고깔, 넓은 챙, 별 버클. 너무 높으면 잘리니 위치를 누른다.
+      const w = Math.max(t, 20);
+      return (
+        <>
+          <path d={`M13 ${w + 10} Q60 ${w - 3} 107 ${w + 10} Q60 ${w + 21} 13 ${w + 10} Z`} fill="#6b4fd8" {...ol} />
+          <path
+            d={`M36 ${w + 7} L54 ${w - 20} Q62 ${w - 30} 76 ${w - 24} Q82 ${w - 21} 86 ${w - 16} Q76 ${w - 19} 70 ${w - 15} L84 ${w + 7} Q60 ${w + 12} 36 ${w + 7} Z`}
+            fill="#7d62ea"
+            {...ol}
+          />
+          <path d={`M38 ${w + 1} Q60 ${w + 6} 82 ${w + 1} L84 ${w + 7} Q60 ${w + 12} 36 ${w + 7} Z`} fill="#ffcf3a" />
+          <path d={star4(60, w + 5, 3.6)} fill="#fff7c2" stroke={INK} strokeWidth="1.2" />
+          <path d={`M50 ${w - 6} L56 ${w - 18}`} stroke="#fff" strokeWidth="2.4" strokeLinecap="round" opacity="0.4" />
+        </>
+      );
+    }
     case "headset": {
       // 코코의 녹음 부스 헤드셋 — 밴드는 정수리에 걸치고, 마이크는 입가로.
       const c = (t - 1 - 0.25 * 62) / 0.75;
@@ -1035,6 +1286,8 @@ function Hat({ kind, top, color, body }: { kind: Avatar["hat"]; top: number; col
 /* ── 효과 ───────────────────────────────────────────────────────────── */
 
 function FxBack({ kind, level, top }: { kind: Avatar["fx"]; level: number; top: number }) {
+  if (kind === "aura") return <Aura level={level} />;
+  if (kind === "speed") return <Speed />;
   if (kind !== "fire") return null;
   // 외칠수록 불길이 치솟는다 — 버럭이의 핵심. 기준점을 불길 아래에 두고 조금만 키운다.
   const base = top + 26;
@@ -1065,6 +1318,16 @@ function note(x: number, y: number, s: number, fill: string, key: number): React
 function FxFront({ kind, level }: { kind: Avatar["fx"]; level: number }) {
   const float = -level * 5;
   switch (kind) {
+    case "sakura":
+      return (
+        <g transform={`translate(0 ${float})`}>
+          {blossom(14, 40, 1, 1)}
+          {blossom(106, 26, 0.8, 2)}
+          {petal(103, 56, 30, 3)}
+          {petal(20, 68, -40, 4)}
+          {petal(96, 8, 70, 5)}
+        </g>
+      );
     case "notes":
       return (
         <g transform={`translate(0 ${float})`}>
@@ -1113,4 +1376,73 @@ function FxFront({ kind, level }: { kind: Avatar["fx"]; level: number }) {
     default:
       return null;
   }
+}
+
+/**
+ * 오라 — 기를 모으는 불꽃 윤곽. 반투명 빛이라 스티커 테두리(rimify)에서 뺀다.
+ * 외칠수록 커지고, 조용할 땐 CSS 로 은은하게 일렁인다.
+ */
+function Aura({ level }: { level: number }) {
+  const d =
+    "M14 112 C5 92 9 72 15 58 C12 45 18 33 21 21 C27 29 30 35 32 38 C34 26 40 14 47 5 C49 17 52 23 56 26 C58 16 62 7 67 0 C69 11 71 19 74 25 C78 17 84 11 91 7 C91 19 92 29 95 36 C99 30 101 25 104 19 C109 33 107 45 105 57 C111 71 115 91 106 112 Z";
+  const grow = `translate(60 112) scale(${1 + level * 0.05} ${1 + level * 0.1}) translate(-60 -112)`;
+  return (
+    <g data-norim transform={grow}>
+      <g className={styles.aura}>
+        <path d={d} fill="#ffc93c" fillOpacity="0.42" stroke="#ffe680" strokeWidth="2.8" strokeLinejoin="round" />
+        <path d={d} fill="#fff4b8" opacity="0.5" transform="translate(60 112) scale(0.8 0.84) translate(-60 -112)" />
+      </g>
+    </g>
+  );
+}
+
+/** 집중선 — 만화의 "두둥". 가장자리에서 가운데로 꽂히는 흰 선. */
+const SPEED_LINES = Array.from({ length: 22 }, (_, i) => {
+  const a = (i / 22) * Math.PI * 2 + (i % 2 ? 0.09 : 0);
+  const r0 = i % 3 === 0 ? 50 : 56;
+  return [60 + Math.cos(a) * r0, 58 + Math.sin(a) * r0, 60 + Math.cos(a) * 90, 58 + Math.sin(a) * 90, i % 3 === 0 ? 2.4 : 1.4] as const;
+});
+
+function Speed() {
+  return (
+    <g data-norim className={styles.speed}>
+      {SPEED_LINES.map(([x1, y1, x2, y2, w], i) => (
+        <line key={i} x1={x1.toFixed(1)} y1={y1.toFixed(1)} x2={x2.toFixed(1)} y2={y2.toFixed(1)} stroke="#fff" strokeWidth={w} strokeLinecap="round" opacity="0.55" />
+      ))}
+    </g>
+  );
+}
+
+function petal(x: number, y: number, rot: number, key: number): ReactNode {
+  return (
+    <path
+      key={key}
+      d="M0 -4.5 C3.6 -3.8 4 1.2 0 4.5 C-4 1.2 -3.6 -3.8 -1 -4.4 L0 -2.8 Z"
+      fill="#ffc0d6"
+      stroke={INK}
+      strokeWidth="1.3"
+      strokeLinejoin="round"
+      transform={`translate(${x} ${y}) rotate(${rot})`}
+    />
+  );
+}
+
+/** 벚꽃 한 송이 — 끝이 살짝 갈라진 꽃잎 다섯 장. */
+function blossom(x: number, y: number, s: number, key: number): ReactNode {
+  return (
+    <g key={key} transform={`translate(${x} ${y}) scale(${s})`}>
+      {[0, 72, 144, 216, 288].map((a) => (
+        <path
+          key={a}
+          d="M0 0 C-4 -3 -4 -8 -1.2 -9 L0 -7.4 L1.2 -9 C4 -8 4 -3 0 0 Z"
+          fill="#ffb7d0"
+          stroke={INK}
+          strokeWidth="1.2"
+          strokeLinejoin="round"
+          transform={`rotate(${a})`}
+        />
+      ))}
+      <circle r="1.8" fill="#ff7aa8" />
+    </g>
+  );
 }

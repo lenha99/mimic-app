@@ -62,7 +62,42 @@
   }
 }
 
+/* 오라 — 밑동은 붙인 채 위로 일렁인다 */
+.aura {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: aura 1.1s ease-in-out infinite alternate;
+}
+
+/* 집중선 — 아주 살짝 숨 쉬듯 */
+.speed {
+  animation: speed 0.9s steps(2, jump-none) infinite;
+}
+
+@keyframes aura {
+  from {
+    transform: scale(1, 1);
+    opacity: 0.85;
+  }
+  to {
+    transform: scale(1.03, 1.07);
+    opacity: 1;
+  }
+}
+
+@keyframes speed {
+  0%,
+  100% {
+    opacity: 0.75;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .aura,
+  .speed,
   .idle,
   .float,
   .blinkA,
