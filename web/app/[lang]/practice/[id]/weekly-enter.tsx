@@ -225,7 +225,7 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
             <small>
               {replacing
                 ? t("지금 올린 것보다 더 잘 나온 것 같다면", "If this one's better than what's up now")
-                : t("⭐ 좋은 목소리는 홈 추천에 소개돼요 · 언제든 교체 가능", "⭐ Great voices get featured on Home · swap anytime")}
+                : t("내 목소리 페이지가 생기고, 누가 듣거나 구독하면 알려 드려요 · 홈 추천에 뽑히면 모든 방문자가 먼저 들어요", "You get a voice page, and we'll tell you when someone listens or subscribes · get picked for Home and every visitor hears you first")}
             </small>
           </span>
           <i aria-hidden="true">→</i>
