@@ -12,7 +12,7 @@ import { localError, type T } from "@/lib/i18n";
 import { memeText } from "@/lib/meme-i18n";
 import { fieldName, scriptTitle } from "@/lib/script-i18n";
 import { judge, passCount, warnings, type Check, type Target } from "@/lib/practice-feedback";
-import { fixesOf, fixKey, matchScript, type MatchResult } from "@/lib/script-match";
+import { matchScript, type MatchResult } from "@/lib/script-match";
 import { transcribe } from "@/lib/transcribe-client";
 import { deleteTake, listTakes, newTakeId, saveTake, updateTake, type Take } from "@/lib/take-store";
 import { track } from "@/lib/track";
@@ -246,17 +246,6 @@ export default function Room({ item }: { item: RoomItem }) {
       setChecking(null);
     },
     [refresh, L],
-  );
-
-  /** "그 구절만 다시"로 고친 곳을 테이크에 남긴다 — 대본 위 표시가 초록으로 바뀐다. */
-  const markFixed = useCallback(
-    async (t: Take, key: string) => {
-      if (!t.transcript) return;
-      const fixed = [...new Set([...(t.transcript.fixed ?? []), key])];
-      await updateTake(t.id, { transcript: { ...t.transcript, fixed } });
-      await refresh();
-    },
-    [refresh],
   );
 
   const finish = useCallback(
@@ -501,13 +490,16 @@ export default function Room({ item }: { item: RoomItem }) {
     () => (open?.transcript ? matchScript(text, open.transcript.text) : null),
     [open, text],
   );
-  const showMatch = overlay && phase !== "recording" && phase !== "count" ? match : null;
-  /** "그 구절만 다시"로 고친 어절 — 대본 위에서 초록으로 */
-  const fixedWords = useMemo(() => {
-    const keys = open?.transcript?.fixed ?? [];
-    if (!match || !keys.length) return new Set<number>();
-    return new Set(fixesOf(text, match).flatMap((f) => (keys.includes(fixKey(f)) ? f.at : [])));
-  }, [match, open, text]);
+  /**
+   * 대본 위 형광펜은 "확인받은 마지막 테이크" 기준이다. 새 테이크를 녹음하는 동안에도 남겨 둬서, 표시를 보며
+   * 고쳐 읽게 한다 — 그래야 매 테이크 다시 확인받지 않아도 된다(받아쓰기 비용).
+   */
+  const marked = open?.transcript ? open : (takes.find((t) => t.transcript) ?? null);
+  const markedMatch: MatchResult | null = useMemo(
+    () => (marked?.transcript ? matchScript(text, marked.transcript.text) : null),
+    [marked, text],
+  );
+  const showMatch = overlay ? markedMatch : null;
   const before = open ? (takes.find((t) => t.at < open.at && t.analysis) ?? null) : null;
 
   const head =
@@ -646,7 +638,7 @@ export default function Room({ item }: { item: RoomItem }) {
             >
               가+
             </button>
-            {match && (
+            {markedMatch && (
               <button
                 type="button"
                 onClick={() => setOverlay((v) => !v)}
@@ -668,25 +660,27 @@ export default function Room({ item }: { item: RoomItem }) {
             )}
           </div>
         </div>
-        {showMatch && open && (
+        {showMatch && marked && (
           <p className={styles.overlayNote}>
-            <span className={styles.noteTitle}>🦜 {L(`테이크 #${order.get(open.id)}`, `Take #${order.get(open.id)}`)}</span>
+            <span className={styles.noteTitle}>
+              🦜 {L(`테이크 #${order.get(marked.id)} 확인 결과`, `Take #${order.get(marked.id)} check`)}
+            </span>
             <span className={styles.keyMissed}>{L("빠뜨림", "skipped")}</span>
             <span className={styles.keyChanged}>{L("다르게 읽음", "changed")}</span>
             <span className={styles.keyAdded}>{L("+없는 말", "+extra")}</span>
-            {fixedWords.size > 0 && <span className={styles.keyFixed}>{L("고침", "fixed")}</span>}
+            {marked !== open && <span className={styles.noteHint}>{L("표시를 보면서 다시 읽어 보세요", "Read again with these in mind")}</span>}
           </p>
         )}
-        <ScriptText text={text} marks={marks && item.kind === "script"} match={showMatch} fixed={fixedWords} />
+        <ScriptText text={text} marks={marks && item.kind === "script"} match={showMatch} />
         {item.kind === "script" && marks && (
           <p className={styles.legend}>
             <span className={styles.pauseMark}>/</span> {L("쉼", "pause")} &nbsp; <u>{L("밑줄", "underline")}</u> {L("강조", "stress")}
           </p>
         )}
-        {open?.transcript?.text && (
+        {marked?.transcript?.text && (
           <details className={styles.heard}>
-            <summary>{L(`들린 그대로 보기 · 테이크 #${order.get(open.id)}`, `What we heard · take #${order.get(open.id)}`)}</summary>
-            <p>{open.transcript.text}</p>
+            <summary>{L(`들린 그대로 보기 · 테이크 #${order.get(marked.id)}`, `What we heard · take #${order.get(marked.id)}`)}</summary>
+            <p>{marked.transcript.text}</p>
           </details>
         )}
       </section>
@@ -716,7 +710,6 @@ export default function Room({ item }: { item: RoomItem }) {
             match={match}
             checking={checking === open.id}
             onCheck={() => void check(open)}
-            onFixed={(key) => void markFixed(open, key)}
             onShowScript={() => paperRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
           />
         )}
@@ -883,12 +876,10 @@ function ScriptText({
   text,
   marks,
   match,
-  fixed,
 }: {
   text: string;
   marks: boolean;
   match: MatchResult | null;
-  fixed: Set<number>;
 }) {
   const L = useT();
   const paras = useMemo(() => parseScript(text), [text]);
@@ -948,10 +939,6 @@ function ScriptText({
                   const word =
                     !r || r.status === "ok" ? (
                       body
-                    ) : fixed.has(idx) ? (
-                      <mark className={styles.fixed} title={L("고침", "Fixed")}>
-                        {body}
-                      </mark>
                     ) : r.status === "missed" ? (
                       <mark className={styles.missed} title={L("빠뜨림", "Skipped")}>
                         {body}
@@ -994,7 +981,6 @@ function TakeReport({
   match,
   checking,
   onCheck,
-  onFixed,
   onShowScript,
 }: {
   take: Take;
@@ -1012,7 +998,6 @@ function TakeReport({
   match: MatchResult | null;
   checking: boolean;
   onCheck: () => void;
-  onFixed: (key: string) => void;
   onShowScript: () => void;
 }) {
   const L = useT();
@@ -1086,9 +1071,7 @@ function TakeReport({
         match={match}
         heardEmpty={!!take.transcript && !take.transcript.text.trim()}
         checking={checking}
-        fixed={take.transcript?.fixed ?? []}
         onCheck={onCheck}
-        onFixed={onFixed}
         onShowScript={onShowScript}
       />
 

@@ -355,20 +355,3 @@ export function fixesOf(script: string, m: MatchResult): Fix[] {
   return out.sort((a, b) => a.pos - b.pos).map((x) => x.fix);
 }
 
-/** 고칠 곳 하나를 가리키는 열쇠 — 테이크에 "고쳤음"을 저장할 때 쓴다. */
-export function fixKey(f: Fix): string {
-  return `${f.kind}:${f.at.join(",")}`;
-}
-
-/**
- * "그 구절만 다시" 판정 — 구절만 다시 읽은 받아쓰기로, 고칠 어절이 이번엔 맞았는지.
- * 덧붙임은 이번엔 덧붙인 말이 없으면 고친 것이다.
- */
-export function fixedBy(f: Fix, heard: string): boolean {
-  const phrase = f.phrase.map((w) => w.text).join(" ");
-  if (!phrase.trim() || !heard.trim()) return false;
-  const m = matchScript(phrase, heard);
-  if (f.kind === "added") return m.added.length === 0 && m.accuracy >= 0.6;
-  const marked = f.phrase.flatMap((w, k) => (w.mark ? [k] : []));
-  return marked.length > 0 && marked.every((k) => m.words[k]?.status === "ok");
-}

@@ -31,11 +31,11 @@ const sets = (t: T) => {
       title: t("연습실 — 여기서 시작해요", "Practice Room — start here"),
       body: t(
         <p>
-          성우·아나운서·스피치 대본을 골라 읽으면 <b>코코가 대본대로 읽었는지</b> 대본 위에 형광펜으로 짚어 주고, 틀린 구절만 다시 읽어 볼 수 있어요.
+          성우·아나운서·스피치 대본을 골라 읽으면 <b>코코가 대본대로 읽었는지</b> 대본 위에 형광펜으로 짚어 줘요.
           <b> 내 목소리 타입</b>도 알려 줘요. 녹음은 🔒 이 폰에만 남아요. 뭘 읽을지 모르겠으면 아래 <b>이번 주 추천 대본</b>부터.
         </p>,
         <p>
-          Pick a script and read it — <b>Coco highlights what you skipped or misread</b> right on the script, and you can redo just that part. You also get your{" "}
+          Pick a script and read it — <b>Coco highlights what you skipped or misread</b> right on the script. You also get your{" "}
           <b>voice type</b>. Takes stay 🔒 on this phone. Not sure what to read? Start with <b>this week&apos;s pick</b> below.
         </p>,
       ),
@@ -378,11 +378,11 @@ const sets = (t: T) => {
       title: t("진단 결과", "Your notes"),
       body: t(
         <p>
-          <b>🦜 코코한테 확인받기</b>를 누르면 빠뜨리거나 다르게 읽은 말을 대본 위에 형광펜으로 표시해요. 틀린 구절만 다시 읽어
-          고쳐 보세요. 아래엔 목소리 타입과 속도·쉼·억양 폭·말끝 수치가 있어요.
+          <b>🦜 코코한테 확인받기</b>를 누르면 빠뜨리거나 다르게 읽은 말을 대본 위에 형광펜으로 표시해요. 표시는 다음 테이크를
+          녹음할 때도 남아 있으니 보면서 고쳐 읽어 보세요(확인은 테이크당 한 번). 아래엔 목소리 타입과 속도·쉼·억양 폭·말끝 수치가 있어요.
         </p>,
         <p>
-          Tap <b>🦜 Ask Coco to check</b> and skipped or misread words get highlighted on the script. Redo just those parts.
+          Tap <b>🦜 Ask Coco to check</b> and skipped or misread words get highlighted on the script — and stay there while you record your next take.
           Below: your voice type plus pace, pauses, pitch range and endings.
         </p>,
       ),

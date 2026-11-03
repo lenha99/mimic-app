@@ -1,23 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo } from "react";
 import { Coco } from "@/components/brand/coco";
 import { useT } from "@/components/lang";
 import { voiceTypeOf } from "@/lib/scorecard";
-import { fixedBy, fixesOf, fixKey, type Fix, type MatchResult } from "@/lib/script-match";
-import { transcribe } from "@/lib/transcribe-client";
+import { fixesOf, type MatchResult } from "@/lib/script-match";
 import type { Analysis } from "@/lib/voice-analysis";
 import styles from "./scorecard.module.css";
 
 /**
  * 코코의 심사표 — 녹음 직후 카드.
  *
- *   1) 대본대로 읽었나 — 정확도와 고칠 곳 수. 어디가 틀렸는지는 위 대본에 직접 표시한다
- *      (같은 걸 아래에 목록으로 또 쓰지 않는다)
- *   2) 그 구절만 다시 — 고칠 곳을 하나씩, 그 구절만 다시 읽어 고쳐졌는지 바로
- *   3) 목소리 타입 — 공유용
+ *   1) 대본대로 읽었나 — 정확도와 빠뜨림·다르게 읽음·없는 말 수. 어디인지는 위 대본에 형광펜으로만 표시한다
+ *   2) 목소리 타입 — 공유용
  *
- * 대본 확인은 받아쓰기(서버) 비용이 들어 버튼을 누를 때만 한다. 결과는 테이크에 남아 같은 녹음을 다시 보내지 않는다.
+ * 대본 확인은 받아쓰기(서버) 비용이 들어 버튼을 누를 때, 테이크당 한 번만 한다(결과는 테이크에 남는다).
+ * 구절마다 다시 확인하게 하면 사람들은 결국 전체도 다시 확인받는다 — 그래서 고칠 곳은 대본 위 표시로 남기고,
+ * 새 테이크를 녹음하는 동안에도 그 표시를 보이게 해서(room.tsx) 매번 확인받지 않아도 고쳐 읽을 수 있게 한다.
  */
 export function Scorecard({
   analysis,
@@ -25,9 +24,7 @@ export function Scorecard({
   match,
   heardEmpty,
   checking,
-  fixed,
   onCheck,
-  onFixed,
   onShowScript,
 }: {
   analysis: Analysis | null;
@@ -35,19 +32,14 @@ export function Scorecard({
   match: MatchResult | null;
   heardEmpty: boolean;
   checking: boolean;
-  /** 이미 고친 곳(fixKey) */
-  fixed: string[];
   onCheck: () => void;
-  onFixed: (key: string) => void;
   onShowScript: () => void;
 }) {
   const L = useT();
   const type = useMemo(() => voiceTypeOf(analysis, L), [analysis, L]);
   const fixes = useMemo(() => (match ? fixesOf(text, match) : []), [match, text]);
-  const left = fixes.filter((f) => !fixed.includes(fixKey(f)));
-  const next = left[0] ?? null;
   const pct = match ? Math.round(match.accuracy * 100) : null;
-  const mood = checking ? "think" : !match ? "idle" : left.length === 0 ? "happy" : "think";
+  const mood = checking ? "think" : !match ? "idle" : fixes.length === 0 ? "happy" : "think";
 
   return (
     <section className={styles.card} aria-label={L("코코의 심사표", "Coco's scorecard")}>
@@ -60,11 +52,9 @@ export function Scorecard({
               ? L("코코가 듣는 중…", "Coco is listening…")
               : !match
                 ? L("대본대로 읽었는지 들어 볼게요", "Let me check it against the script")
-                : left.length === 0
-                  ? fixes.length === 0
-                    ? L("한 글자도 안 틀렸어요", "Word-perfect")
-                    : L("다 고쳤어요!", "All fixed!")
-                  : L(`고칠 곳 ${left.length}곳`, `${left.length} to fix`)}
+                : fixes.length === 0
+                  ? L("한 글자도 안 틀렸어요", "Word-perfect")
+                  : L(`고칠 곳 ${fixes.length}곳`, `${fixes.length} to fix`)}
           </p>
         </div>
         {pct !== null && !checking && <Ring pct={pct} />}
@@ -87,27 +77,24 @@ export function Scorecard({
             {L("🦜 코코한테 확인받기", "🦜 Ask Coco to check")}
           </button>
         </div>
+      ) : fixes.length === 0 ? (
+        <p className={styles.done}>{L("대본 그대로 또박또박 읽었어요 👏", "Every word, exactly as written 👏")}</p>
       ) : (
         <div className={styles.body}>
-          {fixes.length > 0 && (
-            <div className={styles.progress}>
-              <div className={styles.progressTrack}>
-                <span style={{ width: `${((fixes.length - left.length) / fixes.length) * 100}%` }} />
-              </div>
-              <button type="button" className={styles.linkBtn} onClick={onShowScript}>
-                {L("대본에 표시해 뒀어요 ↑", "Marked on the script ↑")}
-              </button>
-            </div>
-          )}
-          {next ? (
-            <Retry key={fixKey(next)} fix={next} n={fixes.length - left.length + 1} total={fixes.length} onFixed={() => onFixed(fixKey(next))} />
-          ) : (
-            <p className={styles.done}>
-              {fixes.length === 0
-                ? L("대본 그대로 또박또박 읽었어요 👏", "Every word, exactly as written 👏")
-                : L("🎉 고칠 곳을 전부 고쳤어요. 처음부터 한 번에 쭉 읽어 볼까요?", "🎉 All fixed. Now try the whole thing in one go?")}
-            </p>
-          )}
+          <ul className={styles.counts}>
+            {match.missed > 0 && <li className={styles.cMissed}>{L(`빠뜨림 ${match.missed}`, `Skipped ${match.missed}`)}</li>}
+            {match.changed > 0 && <li className={styles.cChanged}>{L(`다르게 읽음 ${match.changed}`, `Changed ${match.changed}`)}</li>}
+            {match.added.length > 0 && <li className={styles.cAdded}>{L(`없는 말 ${match.added.length}`, `Extra ${match.added.length}`)}</li>}
+          </ul>
+          <p className={styles.note}>
+            {L(
+              "대본 위에 형광펜으로 표시해 뒀어요. 다음 테이크를 녹음하는 동안에도 표시가 남아 있으니, 보면서 고쳐 읽어 보세요.",
+              "They're highlighted on the script — and stay there while you record the next take, so you can fix them as you read.",
+            )}
+          </p>
+          <button type="button" className={styles.ghost} onClick={onShowScript}>
+            {L("↑ 대본에서 보기", "↑ See it on the script")}
+          </button>
         </div>
       )}
 
@@ -134,116 +121,6 @@ function Ring({ pct }: { pct: number }) {
         <circle cx="27" cy="27" r={r} className={styles.ringFg} strokeDasharray={`${(c * pct) / 100} ${c}`} />
       </svg>
       <b>{pct}</b>
-    </div>
-  );
-}
-
-/* ── 그 구절만 다시 ─────────────────────────────────────────────────────── */
-
-function Retry({ fix, n, total, onFixed }: { fix: Fix; n: number; total: number; onFixed: () => void }) {
-  const L = useT();
-  const [phase, setPhase] = useState<"idle" | "rec" | "busy" | "miss">("idle");
-  const [err, setErr] = useState<string | null>(null);
-  const rec = useRef<MediaRecorder | null>(null);
-  const stream = useRef<MediaStream | null>(null);
-  const timer = useRef<number | null>(null);
-
-  useEffect(
-    () => () => {
-      if (timer.current) window.clearTimeout(timer.current);
-      stream.current?.getTracks().forEach((t) => t.stop());
-    },
-    [],
-  );
-
-  const stop = () => {
-    if (timer.current) window.clearTimeout(timer.current);
-    if (rec.current && rec.current.state !== "inactive") rec.current.stop();
-  };
-
-  const start = async () => {
-    setErr(null);
-    if (typeof MediaRecorder === "undefined" || !navigator.mediaDevices?.getUserMedia) {
-      setErr(L("이 브라우저는 녹음을 지원하지 않아요", "This browser can't record"));
-      return;
-    }
-    let live: MediaStream;
-    try {
-      live = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true } });
-    } catch {
-      setErr(L("마이크를 허용해야 녹음할 수 있어요 🎙️", "Allow the mic to record 🎙️"));
-      return;
-    }
-    stream.current = live;
-    const chunks: Blob[] = [];
-    const r = new MediaRecorder(live);
-    rec.current = r;
-    r.ondataavailable = (e) => {
-      if (e.data.size > 0) chunks.push(e.data);
-    };
-    r.onstop = async () => {
-      live.getTracks().forEach((t) => t.stop());
-      setPhase("busy");
-      const res = await transcribe(new Blob(chunks, { type: r.mimeType || "audio/webm" }));
-      if (!("text" in res)) {
-        setErr(res.error ?? L("확인이 잠깐 안 됐어요. 다시 해 볼까요?", "Couldn't check that. Try again?"));
-        setPhase("idle");
-        return;
-      }
-      if (fixedBy(fix, res.text)) onFixed();
-      else setPhase("miss");
-    };
-    r.start();
-    setPhase("rec");
-    // 구절 하나 — 길어야 몇 초다. 끄는 걸 잊어도 서버에 긴 녹음이 가지 않게.
-    timer.current = window.setTimeout(stop, 12_000);
-  };
-
-  const label =
-    fix.kind === "missed"
-      ? L("빠뜨린 말", "Skipped")
-      : fix.kind === "changed"
-        ? L("다르게 읽은 말", "Read differently")
-        : L("대본에 없는 말", "Not in the script");
-
-  return (
-    <div className={styles.retry}>
-      <p className={styles.retryHead}>
-        <span className={styles[`tag_${fix.kind}`]}>{label}</span>
-        <small>
-          {n} / {total}
-        </small>
-      </p>
-      <p className={styles.phrase}>
-        {fix.phrase.map((w, k) => (
-          <span key={k}>
-            {k > 0 && " "}
-            {w.mark ? <mark>{w.text}</mark> : w.text}
-          </span>
-        ))}
-        {fix.kind === "added" && <del> {fix.heard}</del>}
-      </p>
-      {phase === "rec" ? (
-        <button type="button" className={styles.recBtn} onClick={stop}>
-          <i aria-hidden="true" /> {L("다 읽었으면 탭", "Tap when done")}
-        </button>
-      ) : (
-        <button type="button" className={styles.cta} onClick={() => void start()} disabled={phase === "busy"}>
-          {phase === "busy"
-            ? L("코코가 듣는 중…", "Coco is listening…")
-            : phase === "miss"
-              ? L("● 한 번 더", "● Once more")
-              : L("● 이 구절만 다시 읽기", "● Re-read just this part")}
-        </button>
-      )}
-      {phase === "miss" && (
-        <p className={styles.notYet} role="status">
-          {fix.kind === "added"
-            ? L("아직 대본에 없는 말이 들려요. 대본 그대로만 읽어 볼까요?", "Still hearing extra words — read just what's written?")
-            : L("아직 표시한 말이 또렷하게 안 들려요. 그 말에 힘을 줘서 한 번 더!", "The marked word still isn't coming through — lean on it once more!")}
-        </p>
-      )}
-      {err && <p className={styles.notYet}>{err}</p>}
     </div>
   );
 }
