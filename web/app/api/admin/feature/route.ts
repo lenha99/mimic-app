@@ -1,5 +1,6 @@
 import { isAdmin } from "@/lib/admin";
 import { createServiceClient } from "@/lib/supabase/service";
+import { afterPick } from "@/lib/rewards-server";
 
 /**
  * 운영자 픽 — 출전작 하나를 홈·갤러리 맨 위에 고정(POST {entry, on}).
@@ -26,5 +27,6 @@ export async function POST(req: Request) {
     .update({ featured_at: on ? new Date().toISOString() : null })
     .eq("id", entry);
   if (error) return Response.json({ error: "DB 에 픽 칸이 아직 없어요 — npx supabase db push" }, { status: 500 });
+  if (on) await afterPick(entry);
   return Response.json({ featured: Boolean(on) });
 }

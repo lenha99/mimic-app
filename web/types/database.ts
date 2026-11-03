@@ -583,4 +583,14 @@ export interface Database {
   };
 }
 
-export type NotificationKind = "follow" | "dm" | "dm_request" | "listen_first" | "listen_daily" | "new_entry";
+export type NotificationKind =
+  | "follow"
+  | "dm"
+  | "dm_request"
+  | "listen_first"
+  | "listen_daily"
+  | "new_entry"
+  | "reward_likes"
+  | "reward_follows"
+  | "reward_pick"
+  | "reward_prophet";

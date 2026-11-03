@@ -1,5 +1,6 @@
 "use client";
 
+import { RewardShelf } from "@/components/rewards/reward-shelf";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { useLang, useT } from "@/components/lang";
@@ -110,6 +111,8 @@ export default function Portfolio({
           <p className={styles.note}>{t("구독하면 메시지를 보낼 수 있어요", "Subscribe to send a message")}</p>
         )}
       </section>
+
+      {takes[0] && <RewardShelf entry={takes[0].id} />}
 
       <p className={styles.section}>{t("출전한 목소리", "Entries")}</p>
       {takes.length === 0 ? (

@@ -1,5 +1,6 @@
 "use client";
 
+import { TierMedal } from "@/components/rewards/tier-ring";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useLang, useT } from "@/components/lang";
@@ -35,7 +36,7 @@ export function markHeard(id: string) {
   } catch {}
 }
 
-export function VoiceStories({ entries }: { entries: { id: string; name: string; avatar: unknown }[] }) {
+export function VoiceStories({ entries }: { entries: { id: string; name: string; avatar: unknown; tier?: number }[] }) {
   const t = useT();
   const lang = useLang();
   const viewer = useViewer();
@@ -65,7 +66,9 @@ export function VoiceStories({ entries }: { entries: { id: string; name: string;
       {sorted.map((e) => (
         <Link key={e.id} href={`/weekly/e/${e.id}`} className={styles.story} onClick={() => markHeard(e.id)}>
           <span className={`${styles.ring} ${heard.has(e.id) ? styles.ringSeen : ""}`}>
-            <VoiceAvatar avatar={normalizeAvatar(e.avatar)} size={58} />
+            <TierMedal tier={e.tier ?? 0}>
+              <VoiceAvatar avatar={normalizeAvatar(e.avatar)} size={58} />
+            </TierMedal>
           </span>
           <small>{displayName(e.name, lang).replace(/^(익명의 목소리|Anonymous voice) /, "")}</small>
         </Link>

@@ -45,16 +45,28 @@ export function TourHelp({
   const t = useT();
   const [fresh, setFresh] = useState(false);
   const [hello, setHello] = useState(false);
+  // 홈 첫 미션(components/home/first-mission)을 막 끝낸 사람 — 인사 문구가 달라진다.
+  const [afterMission, setAfterMission] = useState(false);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setFresh(!seen(`tour_${id}`));
-    setHello(welcome && !seen("tip_welcome") && !seen(`tour_${id}`));
+    // 첫 미션이 떠 있는 동안엔 인사를 미룬다 — 미션이 끝나면(또는 이미 끝냈으면) "사용법" 버튼을 가리킨다.
+    setHello(welcome && seen("tip_mission") && !seen("tip_welcome") && !seen(`tour_${id}`));
     const done = (e: Event) => {
       if ((e as CustomEvent).detail === id) setFresh(false);
     };
+    const mission = () => {
+      if (!welcome || seen("tip_welcome")) return;
+      setAfterMission(true);
+      setHello(true);
+    };
     window.addEventListener(`${EVENT}:done`, done);
-    return () => window.removeEventListener(`${EVENT}:done`, done);
+    window.addEventListener("mimic:mission:done", mission);
+    return () => {
+      window.removeEventListener(`${EVENT}:done`, done);
+      window.removeEventListener("mimic:mission:done", mission);
+    };
   }, [id, welcome]);
 
   const open = () => {
@@ -75,8 +87,12 @@ export function TourHelp({
       </button>
       {hello && (
         <span className={styles.hello} role="note">
-          <b>{t("반가워요! 👋", "Hey there! 👋")}</b>
-          <span>{t("MIMIC 처음이세요? 이 버튼을 누르면 화면 사용법을 하나씩 알려드려요.", "New to MIMIC? Tap here for a quick tour of this screen.")}</span>
+          <b>{afterMission ? t("첫 미션 끝! 🎉", "Mission done! 🎉") : t("반가워요! 👋", "Hey there! 👋")}</b>
+          <span>
+            {afterMission
+              ? t("어느 화면이든 오른쪽 위 이 ‘사용법’ 버튼을 누르면 버튼마다 뭘 하는지 알려 드려요.", "On any screen, tap this ‘Help’ button at the top right to see what each button does.")
+              : t("MIMIC 처음이세요? 이 버튼을 누르면 화면 사용법을 하나씩 알려드려요.", "New to MIMIC? Tap here for a quick tour of this screen.")}
+          </span>
           <span className={styles.helloActions}>
             <button
               type="button"

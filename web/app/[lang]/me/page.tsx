@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { RewardShelf } from "@/components/rewards/reward-shelf";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { MyFace } from "./my-face";
@@ -42,6 +43,8 @@ export default async function MePage() {
       </header>
 
       <GuestNickname />
+      <RewardShelf />
+
 
       <Link href="/login" className={styles.login} data-tour="me-login">
         {t("로그인 · 가입", "Log in / sign up")}

@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { normalizeAvatar } from "@/lib/avatar";
+import { likeTier } from "@/lib/rewards";
 import { createServiceClient } from "@/lib/supabase/service";
 import {
   currentWeek,
@@ -335,6 +336,8 @@ export type GalleryEntry = {
   week: { id: string; season: number; emoji: string; title: string; titleEn: string; live: boolean; free: boolean };
   featured: boolean;
   badges: string[];
+  /** 주인이 받은 ❤ 합계로 정한 테두리 — 0 없음 · 1 브론즈 · 2 실버 · 3 골드 (lib/rewards) */
+  tier: number;
   /** 운영자 화면에서만 쓴다 — 공개 화면엔 내려보내지 않는다. */
   promoOk?: boolean;
 };
@@ -345,7 +348,7 @@ export type GalleryEntry = {
  */
 export async function galleryEntries(limit = 60, opts: { admin?: boolean } = {}): Promise<GalleryEntry[]> {
   const service = createServiceClient();
-  const base = "id, challenge_id, user_id, guest_name, avatar, duration_s, bars, like_count, play_count, updated_at";
+  const base = "id, challenge_id, owner, user_id, guest_name, avatar, duration_s, bars, like_count, play_count, updated_at";
   const query = (cols: string) =>
     service.from("weekly_entries").select(cols).eq("hidden", false).order("updated_at", { ascending: false }).limit(limit);
   // 픽·배지 칸(마이그레이션 27)이 아직 없으면 없는 채로.
@@ -354,6 +357,7 @@ export async function galleryEntries(limit = 60, opts: { admin?: boolean } = {})
   type Row = {
     id: string;
     challenge_id: string;
+    owner: string;
     user_id: string | null;
     guest_name: string | null;
     avatar: unknown;
@@ -372,6 +376,11 @@ export async function galleryEntries(limit = 60, opts: { admin?: boolean } = {})
     ? await service.from("profiles").select("id, nickname, avatar").in("id", users)
     : { data: [] as { id: string; nickname: string; avatar: unknown }[] };
   const prof = new Map((profiles ?? []).map((p) => [p.id, p]));
+  // 테두리 — 주인마다 받은 ❤ 합계(지금 목록 밖의 것까지). 표가 작아 한 번에 센다.
+  const who = (o: { owner: string; user_id: string | null }) => (o.user_id ? `u:${o.user_id}` : o.owner);
+  const { data: all } = await service.from("weekly_entries").select("owner, user_id, like_count").eq("hidden", false).limit(5000);
+  const total = new Map<string, number>();
+  for (const e of all ?? []) total.set(who(e), (total.get(who(e)) ?? 0) + (e.like_count ?? 0));
   const cur = currentWeek();
   const now = cur.id;
   const thisWeek = (r: Row, free: boolean) =>
@@ -394,6 +403,7 @@ export async function galleryEntries(limit = 60, opts: { admin?: boolean } = {})
         week: { id: w.id, season: w.season, emoji: w.emoji, title: w.title, titleEn: w.titleEn, live: thisWeek(r, Boolean(w.free)), free: Boolean(w.free) },
         featured: Boolean(r.featured_at),
         badges: (r.badges ?? []).slice(0, 3),
+        tier: likeTier(total.get(who(r)) ?? 0),
         ...(opts.admin ? { promoOk: Boolean(r.promo_ok) } : {}),
       },
     ];
