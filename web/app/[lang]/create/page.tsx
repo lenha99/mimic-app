@@ -12,7 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
   return {
     title: t("내 챌린지 만들기", "Make a challenge"),
-    description: t("내 목소리로 챌린지를 만들고 친구한테 따라 해 보라고 보내 보세요.", "Turn your voice into a challenge and dare friends to copy it."),
+    description: t("자신 있는 성대모사를 올리면 내 목소리가 정답이 돼요. 다들 따라 하고 점수를 받아요.", "Post your best impression — your voice becomes the answer key everyone gets scored against."),
   };
 }
 

@@ -145,8 +145,8 @@ export default function Challenges({
         <b>{t("내 목소리로 챌린지 만들기", "Make a challenge with your voice")}</b>
         <span>
           {t(
-            "엄마 전화 받는 소리, 친구 말버릇 성대모사까지. 5초만 녹음하면 친구들이 날 따라 해요 →",
-            "Your mom answering the phone, your friend's catchphrase — record 5 seconds and make everyone copy you →",
+            "자신 있는 성대모사, 5초만 올려 보세요. 이제 내 목소리가 정답 — 다들 따라 하고, 나랑 얼마나 똑같은지 점수를 받아요. 원조를 이겨 볼 사람? →",
+            "Got an impression you're proud of? Post 5 seconds. Your voice becomes the answer key — everyone copies it and gets scored on how close they get to you →",
           )}
         </span>
       </Link>

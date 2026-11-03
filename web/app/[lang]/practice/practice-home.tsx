@@ -215,8 +215,8 @@ export default function PracticeHome({
         +
       </span>
       <span>
-        <b>{t("내 대본 넣기", "Add my script")}</b>
-        <small>{t("오디션·학원 대본을 붙여넣고 똑같이 진단받아요 · 이 폰에만 저장", "Paste an audition script and get the same analysis · saved on this phone only")}</small>
+        <b>{t("내 대본으로 연습하기", "Practice with my own script")}</b>
+        <small>{t("오디션·학원·발표 대본을 붙여넣으면 똑같이 녹음하고 코코가 확인해 줘요 · 이 폰에만 저장", "Paste an audition, class or presentation script — record and get Coco's check the same way · saved on this phone only")}</small>
       </span>
     </Link>
   );
@@ -253,6 +253,9 @@ export default function PracticeHome({
       )}
 
       <GoalChips scripts={scripts} onPick={pickGoal} />
+
+      {/* 예전엔 "내 대본" 탭 안에만 있어서 아무도 못 찾았다. 위쪽에 늘 보이게 둔다. */}
+      {tab !== "mine" && addMine}
 
       <Link href="/practice/board" className={styles.board} data-tour="practice-board">
         <span className={styles.boardIcon} aria-hidden="true">

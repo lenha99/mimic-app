@@ -246,9 +246,9 @@ export function Creator() {
         <VoiceAvatar avatar={avatar} level={recording ? mic : level} size={170} />
         {step === "ready" && (
           <>
-            <p className={styles.cue}>{t("다들 따라 하고 싶어질 소리 하나", "One sound everyone will want to copy")}</p>
+            <p className={styles.cue}>{t("자신 있는 성대모사 하나", "Your best impression")}</p>
             <p className={styles.hint}>
-              {t("말버릇 · 성대모사 · 사투리 · 동물 흉내 · 유행어 — 5초 안으로", "Catchphrase · impression · accent · animal noise · slang — under 5 seconds")}
+              {t("연예인·캐릭터 성대모사 · 친구 말버릇 · 사투리 · 유행어 — 5초 안으로. 이게 정답이 돼서 다들 날 따라 해요", "Celebrity or character impression · catchphrase · accent · slang — under 5 seconds. It becomes the answer everyone copies")}
             </p>
             <button type="button" className={styles.rec} onClick={start} data-tour="create-rec">
               {t("● 녹음 시작", "● Record")}
@@ -321,8 +321,8 @@ export function Creator() {
           </div>
           <p className={styles.rules}>
             {t(
-              "내 목소리로만 만들어요. 방송·노래 음원, 남의 목소리, 욕설·비하는 올리지 마세요. 운영자가 듣고 내릴 수 있어요.",
-              "Use your own voice only. No TV/music audio, other people's voices, slurs or abuse — we may take it down.",
+              "성대모사는 OK, 대신 내 목소리로 직접 해요. 방송·노래 음원을 그대로 틀거나 남이 녹음한 소리, 욕설·비하는 올리지 마세요. 운영자가 듣고 내릴 수 있어요.",
+              "Impressions are fine — just do them in your own voice. No playing TV/music audio, other people's recordings, slurs or abuse — we may take it down.",
             )}
           </p>
           <button type="button" className={styles.primary} onClick={submit} disabled={step === "making"}>
