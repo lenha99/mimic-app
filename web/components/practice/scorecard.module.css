@@ -163,150 +163,6 @@
   cursor: default;
 }
 
-.recBtn {
-  min-height: 48px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border: 0;
-  border-radius: 999px;
-  background: var(--pink);
-  color: var(--on-accent);
-  font: inherit;
-  font-size: 15px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.recBtn i {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--on-accent);
-  animation: blink 1s ease-in-out infinite;
-}
-
-@keyframes blink {
-  50% {
-    opacity: 0.25;
-  }
-}
-
-/* 고친 진행도 */
-.progress {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.progressTrack {
-  flex: 1;
-  height: 6px;
-  border-radius: 3px;
-  background: var(--rule);
-  overflow: hidden;
-}
-
-.progressTrack span {
-  display: block;
-  height: 100%;
-  border-radius: 3px;
-  background: var(--lime);
-  transition: width 0.4s ease;
-}
-
-.linkBtn {
-  flex: none;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--volt);
-  font: inherit;
-  font-size: 12.5px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-/* 그 구절만 다시 */
-.retry {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 14px;
-  border-radius: 16px;
-  background: var(--panel-hi);
-}
-
-.retryHead {
-  margin: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.retryHead small {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--ash);
-  font-variant-numeric: tabular-nums;
-}
-
-.tag_missed,
-.tag_changed,
-.tag_added {
-  padding: 3px 9px;
-  border-radius: 999px;
-  font-size: 11.5px;
-  font-weight: 800;
-}
-
-.tag_missed {
-  background: rgba(255, 122, 69, 0.16);
-  color: var(--pink);
-}
-
-.tag_changed {
-  background: rgba(255, 201, 60, 0.16);
-  color: var(--volt);
-}
-
-.tag_added {
-  background: rgba(124, 200, 242, 0.16);
-  color: var(--cyan);
-}
-
-.phrase {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  line-height: 1.6;
-  color: var(--white);
-  word-break: keep-all;
-}
-
-.phrase mark {
-  padding: 0 3px;
-  border-radius: 4px;
-  background: rgba(255, 201, 60, 0.28);
-  color: var(--white);
-  font-weight: 800;
-  box-shadow: inset 0 -2px 0 var(--volt);
-}
-
-.phrase del {
-  color: var(--cyan);
-  text-decoration-thickness: 2px;
-}
-
-.notYet {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--ash);
-  word-break: keep-all;
-}
-
 .done {
   margin: 0;
   padding: 12px 14px;
@@ -349,4 +205,48 @@
   font-style: normal;
   font-size: 12px;
   color: var(--ash);
+}
+
+.ghost {
+  align-self: flex-start;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 201, 60, 0.45);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--volt);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* 빠뜨림·다르게 읽음·없는 말 수 — 대본 위 형광펜과 같은 색 */
+.counts {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.counts li {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #18181b;
+}
+
+.cMissed {
+  background: #ffc9b3;
+}
+
+.cChanged {
+  background: #ffe58a;
+}
+
+.cAdded {
+  background: #cfe3ff;
 }

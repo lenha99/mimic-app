@@ -70,7 +70,7 @@ export function HomeHero({
       {lang === "en" && <p className={styles.enNote}>🇰🇷 Scripts are in Korean — a fun way to practice your Korean out loud</p>}
 
       <ul className={styles.perks}>
-        <li>{t("🎯 고칠 곳 딱 하나", "🎯 One thing to fix")}</li>
+        <li>{t("🖍 틀린 곳 형광펜", "🖍 Mistakes highlighted")}</li>
         <li>{t("🦜 내 목소리 타입", "🦜 Your voice type")}</li>
         <li>{t("🔒 녹음은 내 폰에만", "🔒 Takes stay on your phone")}</li>
       </ul>

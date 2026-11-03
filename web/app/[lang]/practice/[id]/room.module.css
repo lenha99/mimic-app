@@ -866,8 +866,7 @@
 
 .keyMissed,
 .keyChanged,
-.keyAdded,
-.keyFixed {
+.keyAdded {
   padding: 1px 7px;
   border-radius: 5px;
   font-weight: 700;
@@ -887,14 +886,15 @@
   color: #1d4ed8;
 }
 
-.keyFixed {
-  background: #c9efb4;
+.noteHint {
+  flex-basis: 100%;
+  font-weight: 700;
+  color: var(--pencil);
 }
 
 /* 대본 위 확인 표시 — 형광펜. 글자는 그대로 진하게 둬서 그대로 다시 읽을 수 있게. */
 .missed,
-.changed,
-.fixed {
+.changed {
   position: relative;
   padding: 0.04em 0.18em;
   margin: 0 -0.06em;
@@ -913,11 +913,6 @@
 .changed {
   background: #ffe58a;
   box-shadow: inset 0 -0.14em 0 #e0a300;
-}
-
-.fixed {
-  background: #c9efb4;
-  box-shadow: inset 0 -0.14em 0 #5bb53a;
 }
 
 /* 들린 말 — 형광펜 위에 작은 말풍선 */
