@@ -8,7 +8,7 @@ import { badgeLabel, isBadge } from "@/lib/badges";
 import { normalizeAvatar } from "@/lib/avatar";
 import { challengeById, displayName } from "@/lib/weekly";
 import { useLikes } from "./likes";
-import { TierRing } from "@/components/rewards/tier-ring";
+import { AvatarFrame, NameLine } from "@/components/pass/look";
 import type { GalleryEntry } from "@/lib/weekly-server";
 import { PauseIcon, PlayIcon, usePlayer, Wave } from "./player";
 import styles from "./voices.module.css";
@@ -44,9 +44,9 @@ export function VoiceCard({ e, index = 0 }: { e: GalleryEntry; index?: number })
     <li className={`${styles.card} ${on ? styles.cardOn : ""}`} style={{ animationDelay: `${Math.min(index, 10) * 40}ms` }}>
       <button type="button" className={styles.cardFace} onClick={play} aria-label={playing ? t(`${name} 멈추기`, `Pause ${name}`) : t(`${name} 듣기`, `Play ${name}`)}>
         <span className={`${styles.halo} ${playing ? styles.haloOn : ""}`} aria-hidden="true" />
-        <TierRing tier={e.tier}>
+        <AvatarFrame frame={e.look?.frame}>
           <VoiceAvatar avatar={normalizeAvatar(e.avatar)} size={54} level={playing ? 0.6 : 0} />
-        </TierRing>
+        </AvatarFrame>
         <span className={styles.cardPlay} aria-hidden="true">
           {playing ? <PauseIcon size={12} /> : <PlayIcon size={12} />}
         </span>
@@ -54,7 +54,9 @@ export function VoiceCard({ e, index = 0 }: { e: GalleryEntry; index?: number })
 
       <div className={styles.cardBody}>
         <Link href={`/weekly/e/${e.id}`} className={styles.cardHead}>
-          <b>{name}</b>
+          <b>
+            <NameLine name={name} look={e.look} />
+          </b>
           {e.featured && <span className={styles.pickMini}>⭐ {t("픽", "Pick")}</span>}
         </Link>
         <span className={styles.cardMeta}>
@@ -134,13 +136,13 @@ export function Spotlight({ picks, title }: { picks: GalleryEntry[]; title?: str
               <span className={styles.spotGlow} aria-hidden="true" />
               <button type="button" className={styles.spotFace} onClick={play} aria-label={playing ? t("멈추기", "Pause") : t(`${name} 듣기`, `Play ${name}`)}>
                 <span className={`${styles.halo} ${styles.haloBig} ${playing ? styles.haloOn : ""}`} aria-hidden="true" />
-                <TierRing tier={e.tier}>
+                <AvatarFrame frame={e.look?.frame}>
                   <VoiceAvatar avatar={normalizeAvatar(e.avatar)} size={104} level={playing ? 0.7 : 0} />
-                </TierRing>
+                </AvatarFrame>
               </button>
               <div className={styles.spotText}>
                 <Link href={`/weekly/e/${e.id}`} className={styles.spotName}>
-                  {name}
+                  <NameLine name={name} look={e.look} badges lang={lang} />
                 </Link>
                 <span className={styles.spotMeta}>
                   {e.week.emoji} {t(e.week.title, e.week.titleEn)} · ♥ {e.likes}

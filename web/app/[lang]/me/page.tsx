@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { RewardShelf } from "@/components/rewards/reward-shelf";
+import { PassCard } from "@/components/pass/pass-card";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { MyFace } from "./my-face";
@@ -43,7 +43,7 @@ export default async function MePage() {
       </header>
 
       <GuestNickname />
-      <RewardShelf />
+      <PassCard />
 
 
       <Link href="/login" className={styles.login} data-tour="me-login">

@@ -18,10 +18,14 @@ const ICON: Record<string, string> = {
   listen_first: "🎧",
   listen_daily: "🎧",
   new_entry: "🎙",
-  reward_likes: "💗",
-  reward_follows: "🌱",
-  reward_pick: "⭐",
-  reward_prophet: "🔮",
+};
+
+/** VOICE PASS 알림은 이모지 대신 패스 칩으로 — 앱 안 다른 곳(배지·레벨 알약)과 같은 말투 */
+const PASS_CHIP: Record<string, string> = {
+  reward_likes: "XP",
+  reward_follows: "FANS",
+  reward_pick: "PICK",
+  reward_prophet: "ORACLE",
 };
 
 /** 알림 — 구독 · 메시지 · 청취 · 구독한 목소리의 새 출전작. 열면 전부 읽음. */
@@ -69,7 +73,15 @@ export default async function NotificationsPage() {
             return (
               <li key={n.id}>
                 <Link href={hrefOf(n, actor?.nickname)} className={`${styles.row} ${n.read_at ? "" : styles.rowUnread}`}>
-                  {actor ? <VoiceAvatar avatar={actor.avatar} size={40} /> : <span className={styles.emoji}>{ICON[n.kind] ?? "🔔"}</span>}
+                  {actor ? (
+                    <VoiceAvatar avatar={actor.avatar} size={40} />
+                  ) : PASS_CHIP[n.kind] ? (
+                    <span className={styles.passChip} data-kind={n.kind}>
+                      {PASS_CHIP[n.kind]}
+                    </span>
+                  ) : (
+                    <span className={styles.emoji}>{ICON[n.kind] ?? "🔔"}</span>
+                  )}
                   <span className={styles.rowText}>
                     <b>{textOf(n.kind, actor?.nickname ?? t("누군가", "Someone"), n.count, t)}</b>
                     <small>{ago(n.created_at, t)}</small>
@@ -89,6 +101,7 @@ type Row = { kind: string; entry_id: string | null; thread_id: string | null };
 
 function hrefOf(n: Row, actor?: string): string {
   if (n.thread_id) return `/messages/${n.thread_id}`;
+  if (n.kind === "reward_follows" || n.kind === "reward_prophet") return "/pass";
   if (n.kind === "follow" && actor) return `/v/${encodeURIComponent(actor)}`;
   if (n.entry_id) return `/weekly/e/${n.entry_id}`;
   return "/weekly";
@@ -110,14 +123,14 @@ function textOf(kind: string, actor: string, count: number | null, t: T): string
       return t(`구독한 ${actor}님이 새 목소리를 올렸어요`, `${actor} posted a new take`);
     case "reward_likes":
       return count === 1
-        ? t("첫 ❤ 를 받았어요! 누군가 당신 목소리를 좋아해요 💗", "You got your first ❤! Someone loves your voice 💗")
-        : t(`❤ ${count ?? 0}개를 받았어요! ${count === 3 ? "브론즈" : count === 10 ? "실버" : count === 30 ? "골드" : ""} 목소리 🎉`, `You've got ${count ?? 0} ❤! 🎉`);
+        ? t("첫 ❤ 를 받았어요 — 누군가 당신 목소리를 좋아해요. VOICE PASS 에 XP 가 쌓였어요", "Your first ❤ — someone loves your voice. XP added to your Voice Pass")
+        : t(`❤ ${count ?? 0}개 돌파 — 레벨이 오를수록 프레임·닉네임 효과가 풀려요`, `${count ?? 0} ❤ — level up to unlock frames and name effects`);
     case "reward_follows":
-      return t(`구독자 ${count ?? 0}명을 모았어요! 새 칭호가 생겼어요 🎉`, `${count ?? 0} subscribers! New title unlocked 🎉`);
+      return t(`구독자 ${count ?? 0}명 돌파 — 당신 목소리를 기다리는 사람이 생겼어요`, `${count ?? 0} subscribers — people are waiting for your next take`);
     case "reward_pick":
-      return t("⭐ 코코가 당신 목소리를 운영자 픽으로 골랐어요! 홈 맨 위에 걸려요", "⭐ Coco picked your voice! It's pinned to the top of Home");
+      return t("코코가 당신 목소리를 운영자 픽으로 골랐어요 — 홈 맨 위 · 스포트라이트 프레임 · PICK 배지", "Coco picked your voice — top of Home, Spotlight frame and PICK badge");
     case "reward_prophet":
-      return t("🔮 당신이 먼저 ❤ 한 목소리가 운영자 픽이 됐어요 — 픽 예언가!", "🔮 A voice you ❤'d early got picked — Pick prophet!");
+      return t("당신이 먼저 ❤ 한 목소리가 운영자 픽이 됐어요 — ORACLE 배지 +50 XP", "A voice you ❤'d early got picked — ORACLE badge, +50 XP");
     default:
       return t("새 알림", "New notification");
   }

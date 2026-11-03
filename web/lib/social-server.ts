@@ -1,6 +1,6 @@
 import { normalizeAvatar } from "@/lib/avatar";
 import { kstStamp, notify } from "@/lib/notify-server";
-import { afterFollow } from "@/lib/rewards-server";
+import { afterFollow } from "@/lib/pass-server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 

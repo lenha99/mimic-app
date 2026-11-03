@@ -53,7 +53,7 @@ export default async function Home() {
   // 첫 미션 — 운영자 픽부터, 그다음 최근 목소리. 대사는 이번 주 추천 대본 첫 줄(자르지 않은 것).
   const missionVoices = [...gallery.filter((e) => e.featured), ...gallery.filter((e) => !e.featured)]
     .slice(0, 3)
-    .map((e) => ({ id: e.id, name: e.name, avatar: e.avatar, tier: e.tier }));
+    .map((e) => ({ id: e.id, name: e.name, avatar: e.avatar, look: e.look }));
   const missionLine = plainFirst(findScript(weekly.week.scriptId)?.text ?? "");
 
   return (
@@ -64,7 +64,7 @@ export default async function Home() {
       </TopBar>
 
       {/* 올라온 목소리 — 인스타 스토리처럼. 주를 넘어 쌓인 것까지(월요일에 비지 않게). 맨 앞은 "+ 내 목소리". */}
-      <VoiceStories entries={gallery.slice(0, 20).map((e) => ({ id: e.id, name: e.name, avatar: e.avatar, tier: e.tier }))} />
+      <VoiceStories entries={gallery.slice(0, 20).map((e) => ({ id: e.id, name: e.name, avatar: e.avatar, look: e.look }))} />
 
       {/* 연습실 — 첫 한 걸음. 아래에 이번 주 추천 대본과 목소리 갤러리(❤ 순위)가 붙어 있다. */}
       <HomeHero

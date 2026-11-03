@@ -19,8 +19,7 @@ import { CreatorBar } from "@/components/social/creator-bar";
 import { PushButton } from "@/components/social/push-button";
 import { badgeLabel, isBadge } from "@/lib/badges";
 import { AdminPick } from "./admin-pick";
-import { isReward, rewardDef } from "@/lib/rewards";
-import { RewardShelf } from "@/components/rewards/reward-shelf";
+import { OwnerPass } from "@/components/pass/owner-pass";
 import styles from "./stage.module.css";
 
 type Entry = {
@@ -110,7 +109,7 @@ export default function Stage({
       const r = await me.toggleLike(entry.id);
       setLikes(r.likes);
       if (r.liked) track("weekly_like", { via: entry.id });
-      if (r.reward && isReward(r.reward)) showToast(`${rewardDef(r.reward).icon} ${t("보상 획득", "Reward")} — ${t(rewardDef(r.reward).ko, rewardDef(r.reward).en)}!`);
+      if (r.liked) showToast("+3 XP · VOICE PASS");
     } catch (e) {
       setLikes(before);
       showToast(e instanceof Error ? e.message : t("❤ 가 안 눌렸어요. 다시 시도해 주세요", "Couldn't send ❤. Try again"));
@@ -245,7 +244,7 @@ export default function Stage({
         </div>
       </section>
 
-      <RewardShelf entry={entry.id} />
+      <OwnerPass entry={entry.id} />
 
       {mine ? (
         <section className={styles.minePanel}>
