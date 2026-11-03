@@ -93,13 +93,39 @@ function LevelUpCard({ up, onClose }: { up: { from: number; look: Look }; onClos
         ) : (
           <p className={s.note}>{t(`${rankLabel(up.look.rank)} 랭크 — 다음 꾸미기까지 조금만 더`, `${rankLabel(up.look.rank)} — next unlock is close`)}</p>
         )}
-        <Link href="/pass" className={s.go} onClick={() => onClose()}>
-          {t("패스 보기", "Open Voice Pass")}
-        </Link>
+        {viewer?.nickname ? (
+          <>
+            <button type="button" className={s.go} onClick={() => void flex(viewer.nickname!, up.look.level, t)}>
+              {t("내 목소리 페이지 자랑하기", "Share my voice page")}
+            </button>
+            <Link href="/pass" className={s.alt} onClick={() => onClose()}>
+              {t("패스 보기", "Open Voice Pass")}
+            </Link>
+          </>
+        ) : (
+          <Link href="/pass" className={s.go} onClick={() => onClose()}>
+            {t("패스 보기", "Open Voice Pass")}
+          </Link>
+        )}
         <button type="button" className={s.close} onClick={() => onClose()}>
           {t("닫기", "Close")}
         </button>
       </div>
     </div>
   );
+}
+
+/** 자랑하기 — 꾸민 모습이 그대로 보이는 내 목소리 페이지 링크를 보낸다 */
+async function flex(nickname: string, level: number, t: (ko: string, en: string) => string) {
+  const url = `${location.origin}/v/${encodeURIComponent(nickname)}`;
+  const text = t(`MIMIC VOICE PASS LV.${level} 달성 — 내 목소리 들어 봐`, `Hit LV.${level} on MIMIC Voice Pass — listen to my voice`);
+  track("weekly_share", { via: "levelup" });
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: "MIMIC", text, url });
+      return;
+    }
+    await navigator.clipboard.writeText(`${text} ${url}`);
+    alert(t("링크를 복사했어요", "Link copied"));
+  } catch {}
 }

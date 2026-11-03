@@ -141,6 +141,26 @@
   text-decoration: none;
 }
 
+.go {
+  border: 0;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.alt {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 46px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--white);
+  font-weight: 800;
+  text-decoration: none;
+}
+
 .close {
   position: relative;
   border: 0;
