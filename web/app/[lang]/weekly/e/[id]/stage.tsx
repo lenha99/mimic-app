@@ -59,7 +59,7 @@ export default function Stage({
   const t = useT();
   const lang = useLang();
   const name = displayName(entry.name, lang);
-  const me = useWeeklyMe(week.id);
+  const me = useWeeklyMe(week.id, entry.id);
   const router = useRouter();
   const audio = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
@@ -235,7 +235,7 @@ export default function Stage({
             locked={false}
             progress={playing || progress > 0 ? progress : null}
             mine={mine}
-            frozen={!live}
+            frozen={false}
             size="lg"
             onPress={() => void like()}
           />

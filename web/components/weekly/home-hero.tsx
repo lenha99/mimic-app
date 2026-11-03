@@ -54,14 +54,14 @@ export function HomeHero({
         <h1 className={styles.title}>
           {t(
             <>
-              읽으면
+              내 목소리 타입
               <br />
-              코코가 짚어 줘요
+              알아보기
             </>,
             <>
-              Read it.
+              Find your
               <br />
-              Coco coaches you.
+              voice type
             </>,
           )}
         </h1>
@@ -71,7 +71,7 @@ export function HomeHero({
 
       <ul className={styles.perks}>
         <li>{t("🖍 틀린 곳 형광펜", "🖍 Mistakes highlighted")}</li>
-        <li>{t("🦜 내 목소리 타입", "🦜 Your voice type")}</li>
+        <li>{t("🦜 14가지 타입 중 하나", "🦜 One of 14 types")}</li>
         <li>{t("🔒 녹음은 내 폰에만", "🔒 Takes stay on your phone")}</li>
       </ul>
 

@@ -8,6 +8,7 @@ import { ScreenTour } from "@/components/onboarding/tours";
 import { TopBar } from "@/components/top-bar";
 import { Spotlight, VoiceCard } from "@/components/voices/cards";
 import { PlayerProvider } from "@/components/voices/player";
+import { LikesProvider } from "@/components/voices/likes";
 import type { Week } from "@/lib/weekly";
 import type { GalleryEntry } from "@/lib/weekly-server";
 import styles from "./gallery.module.css";
@@ -52,8 +53,11 @@ export default function Gallery({
     { id: "week", label: t(`이번 주 ${thisWeek}`, `This week ${thisWeek}`) },
   ];
 
+  const ids = useMemo(() => entries.map((e) => e.id), [entries]);
+
   return (
     <PlayerProvider>
+      <LikesProvider ids={ids}>
       <main className={`shell ${styles.page}`}>
         <TopBar
           showLang={false}
@@ -157,6 +161,7 @@ export default function Gallery({
 
         <ScreenTour id="voices" />
       </main>
+      </LikesProvider>
     </PlayerProvider>
   );
 }

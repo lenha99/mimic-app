@@ -6,7 +6,8 @@ import { useLang, useT } from "@/components/lang";
 import { VoiceAvatar } from "@/components/voice-avatar";
 import { badgeLabel, isBadge } from "@/lib/badges";
 import { normalizeAvatar } from "@/lib/avatar";
-import { displayName } from "@/lib/weekly";
+import { challengeById, displayName } from "@/lib/weekly";
+import { useLikes } from "./likes";
 import type { GalleryEntry } from "@/lib/weekly-server";
 import { PauseIcon, PlayIcon, usePlayer, Wave } from "./player";
 import styles from "./voices.module.css";
@@ -27,6 +28,16 @@ export function VoiceCard({ e, index = 0 }: { e: GalleryEntry; index?: number })
   const playing = on && p.playing;
   const name = displayName(e.name, lang);
   const play = () => p.toggle({ id: e.id, name: e.name, avatar: e.avatar });
+  const likes = useLikes();
+  // 끝난 주 출전작도 정산 뒤엔 ❤ 를 받는다(서버가 판단). 갤러리면 늘 버튼.
+  const canLike = Boolean(likes);
+  const liked = likes?.liked(e.id) ?? false;
+  const count = likes?.count(e.id, e.likes) ?? e.likes;
+  // 끝까지 들었는데 아직 ❤ 안 했으면 하트가 살짝 부른다.
+  const ask = canLike && on && !playing && p.progress >= 0.98 && !liked;
+  const scriptId = challengeById(e.week.id)?.scriptId;
+  const fresh = likes?.fresh === e.id && liked;
+  const note = likes?.note?.id === e.id ? likes.note.text : null;
 
   return (
     <li className={`${styles.card} ${on ? styles.cardOn : ""}`} style={{ animationDelay: `${Math.min(index, 10) * 40}ms` }}>
@@ -62,11 +73,37 @@ export function VoiceCard({ e, index = 0 }: { e: GalleryEntry; index?: number })
         )}
       </div>
 
-      <Link href={`/weekly/e/${e.id}`} className={styles.cardSide} aria-label={t(`${name} 화면으로 — ❤ ${e.likes}`, `Open ${name} — ❤ ${e.likes}`)}>
-        <span className={styles.heart}>♥</span>
-        <b>{e.likes}</b>
-        <i aria-hidden="true">›</i>
-      </Link>
+      {canLike ? (
+        <button
+          type="button"
+          className={`${styles.likeBtn} ${liked ? styles.likeOn : ""} ${ask ? styles.likeAsk : ""}`}
+          onClick={() => void likes!.toggle(e.id)}
+          aria-pressed={liked}
+          aria-label={liked ? t(`${name} ❤ 취소 — ${count}`, `Un-❤ ${name} — ${count}`) : t(`${name}에게 ❤ — ${count}`, `❤ ${name} — ${count}`)}
+        >
+          <span className={styles.likeHeart}>{liked ? "♥" : "♡"}</span>
+          <b>{count}</b>
+          {ask && <small>{t("좋았으면", "Liked it?")}</small>}
+        </button>
+      ) : (
+        <Link href={`/weekly/e/${e.id}`} className={styles.cardSide} aria-label={t(`${name} 화면으로 — ❤ ${count}`, `Open ${name} — ❤ ${count}`)}>
+          <span className={styles.heart}>♥</span>
+          <b>{count}</b>
+          <i aria-hidden="true">›</i>
+        </Link>
+      )}
+
+      {fresh && scriptId && (
+        <Link href={`/practice/${scriptId}`} className={styles.afterLike}>
+          <span>{t("❤ 보냈어요! 나도 이 대본 읽어 볼까요?", "❤ sent! Want to read this one too?")}</span>
+          <b>{t("내 목소리로 →", "My turn →")}</b>
+        </Link>
+      )}
+      {note && (
+        <p className={styles.likeNote} role="alert">
+          {note}
+        </p>
+      )}
     </li>
   );
 }
