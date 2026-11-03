@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { useLang, useT } from "@/components/lang";
 import { AvatarFrame, LevelPill, NameFx, PassBadges } from "@/components/pass/look";
 import { usePass } from "@/components/pass/use-pass";
@@ -17,13 +17,16 @@ import s from "./pass.module.css";
  * VOICE PASS — "어떻게 하면 뭐가 풀리는지"를 한 화면에.
  * 게임 시즌 패스 트랙처럼 레벨마다 풀리는 걸 실제 모습 그대로(내 아바타·내 닉네임으로) 미리 보여 준다.
  */
+const noop = () => () => {};
+
 export default function PassView() {
   const t = useT();
   const lang = useLang();
   const v = usePass();
   const viewer = useViewer();
   const avatar = viewer?.avatar ?? DEFAULT_AVATAR;
-  const name = viewer?.nickname || (typeof window !== "undefined" ? readNickname() : "") || t("나", "Me");
+  const local = useSyncExternalStore(noop, readNickname, () => "");
+  const name = viewer?.nickname || local || t("나", "Me");
   const level = v?.progress.level ?? 1;
   const look = v?.look;
   const toNext = v?.next ? LEVEL_XP[v.next.level - 1] - v.xp : 0;
