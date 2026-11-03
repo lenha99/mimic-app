@@ -26,6 +26,7 @@
 
 /* 보상 선반 */
 .shelf {
+  margin: 12px 0;
   display: grid;
   gap: 8px;
   padding: 14px;

@@ -53,13 +53,13 @@ export function RewardShelf({ entry, title }: { entry?: string; title?: string }
         <ul className={styles.goals}>
           {d.next.map((g) => (
             <li key={g.id}>
-              {rewardDef(g.id).icon} {name(g.id)}{" "}
+              {rewardDef(g.id).icon} {name(g.id)}
               {t(
                 <>
                   까지 <b>{g.left}{g.unitKo}</b> 남았어요
                 </>,
                 <>
-                  — <b>{g.left}{g.unitEn}</b> to go
+                  {" "}— <b>{g.left}{g.unitEn}</b> to go
                 </>,
               )}
             </li>

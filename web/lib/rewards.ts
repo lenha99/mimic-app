@@ -85,7 +85,7 @@ export function earned(s: RewardStats): RewardId[] {
 export function nextGoals(s: RewardStats): { id: RewardId; left: number; unitKo: string; unitEn: string }[] {
   const out: { id: RewardId; left: number; unitKo: string; unitEn: string }[] = [];
   const like = [1, 3, 10, 30].find((n) => s.likesReceived < n);
-  if (like) out.push({ id: (["like_first", "like_bronze", "like_silver", "like_gold"] as const)[[1, 3, 10, 30].indexOf(like)], left: like - s.likesReceived, unitKo: "❤", unitEn: "❤" });
+  if (like) out.push({ id: (["like_first", "like_bronze", "like_silver", "like_gold"] as const)[[1, 3, 10, 30].indexOf(like)], left: like - s.likesReceived, unitKo: "개", unitEn: " ❤" });
   const fans = [3, 10, 30].find((n) => s.followers < n);
   if (fans) out.push({ id: (["fans_3", "fans_10", "fans_30"] as const)[[3, 10, 30].indexOf(fans)], left: fans - s.followers, unitKo: "명", unitEn: " subs" });
   const ear = [5, 20, 50].find((n) => s.likesGiven < n);
