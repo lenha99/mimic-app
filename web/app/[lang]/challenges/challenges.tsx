@@ -6,6 +6,9 @@ import { ScreenTour } from "@/components/onboarding/tours";
 import { TourHelp } from "@/components/onboarding/tour";
 import { useLang, useT } from "@/components/lang";
 import { memeText } from "@/lib/meme-i18n";
+import { LineCard } from "@/components/anime/parts";
+import { ANIME_LINES } from "@/lib/anime";
+import an from "@/components/anime/anime.module.css";
 import styles from "./challenges.module.css";
 
 /**
@@ -25,7 +28,7 @@ export type Card = {
   plays: number | null;
 };
 
-type Tab = "lines" | "friends" | "warmups";
+type Tab = "lines" | "anime" | "friends" | "warmups";
 const TAB_KEY = "mimic.challenges.tab";
 const ACCENTS = ["volt", "cyan", "pink", "lime"] as const;
 
@@ -49,7 +52,7 @@ export default function Challenges({
       const saved = localStorage.getItem(TAB_KEY);
       // 지난번에 보던 칩으로 연다.
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      if (saved === "friends" || saved === "warmups") setTab(saved);
+      if (saved === "friends" || saved === "warmups" || saved === "anime") setTab(saved);
     } catch {}
   }, []);
 
@@ -60,7 +63,10 @@ export default function Challenges({
     } catch {}
   };
 
-  const tabs: [Tab, string, number][] = [["lines", t("명대사", "Movie lines"), lines.length]];
+  const tabs: [Tab, string, number][] = [
+    ["lines", t("명대사", "Movie lines"), lines.length],
+    ["anime", t("애니", "Anime"), ANIME_LINES.length],
+  ];
   if (friends.length) tabs.push(["friends", t("친구가 만든", "By friends"), friends.length]);
   tabs.push(["warmups", t("몸풀기", "Warm-ups"), warmups.length]);
   const current = tab === "friends" && !friends.length ? "lines" : tab;
@@ -73,8 +79,8 @@ export default function Challenges({
         <h1 className={styles.title}>{t("챌린지", "Challenges")}</h1>
         <p className={styles.sub}>
           {t(
-            "레전드 대사, 얼마나 똑같이 할 수 있나요? 🎤 점수 찍고 친구한테 자랑해 보세요",
-            "How close can you get to the legends? 🎤 Get your score, then flex on your friends",
+            "영화·예능·애니 레전드 대사를 외치면 바로 점수가 나와요. 잘하면 멋지고 못해도 웃겨요 — 점수 찍고 친구랑 붙어 보세요",
+            "Shout legendary lines from movies, shows and anime and get scored instantly. Then take on your friends",
           )}
         </p>
         <nav className={styles.links}>
@@ -96,7 +102,28 @@ export default function Challenges({
         ))}
       </div>
 
-      {current === "warmups" ? (
+      <Link href="/anime/duel" className={an.duel} style={{ margin: "0 0 16px" }}>
+        <i>2~8P</i>
+        <b>{t("친구랑 명대사 대결", "Line battle with friends")}</b>
+        <span>{t("모인 자리에서 폰 하나로 돌려 가며 외치고, 기합 점수로 1등을 가려요", "Pass one phone around, shout in turns, crown a winner")}</span>
+      </Link>
+
+      {current === "anime" ? (
+        <>
+          <p className={styles.note}>
+            {t("원어 그대로 외쳐요. 성량·억양·길이·끝 처리로 기합 점수를 매겨요 🌀", "Shout it in the original. Scored on power, range, timing and ending 🌀")}
+          </p>
+          <ul className={an.grid} data-tour="challenges-list">
+            {ANIME_LINES.map((l) => (
+              <li key={l.id}>
+                <Link href={`/anime/${l.id}`}>
+                  <LineCard line={l} />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : current === "warmups" ? (
         <>
           <p className={styles.note}>{t("짧고 웃긴 소리로 목부터 풀어요. 채점은 똑같이 해드려요 🐓", "Warm up with short, silly sounds. Same scoring 🐓")}</p>
           <ul className={styles.tiles} data-tour="challenges-list">

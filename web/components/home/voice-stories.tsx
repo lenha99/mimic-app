@@ -1,6 +1,6 @@
 "use client";
 
-import { AvatarFrame, LevelPill, NameFx } from "@/components/pass/look";
+import { LevelPill, NameFx } from "@/components/pass/look";
 import type { Look } from "@/lib/pass";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -67,9 +67,8 @@ export function VoiceStories({ entries }: { entries: { id: string; name: string;
       {sorted.map((e) => (
         <Link key={e.id} href={`/weekly/e/${e.id}`} className={styles.story} onClick={() => markHeard(e.id)}>
           <span className={`${styles.ring} ${heard.has(e.id) ? styles.ringSeen : ""}`}>
-            <AvatarFrame frame={e.look?.frame}>
-              <VoiceAvatar avatar={normalizeAvatar(e.avatar)} size={e.look && e.look.frame !== "none" ? 52 : 58} />
-            </AvatarFrame>
+            {/* 스토리엔 "안 들음" 링 하나만 — 패스 프레임까지 돌면 링이 두 겹이라 뭐가 뭔지 모른다. 레벨은 아래 알약으로. */}
+            <VoiceAvatar avatar={normalizeAvatar(e.avatar)} size={58} />
             {e.look && e.look.level > 1 && (
               <span style={{ position: "absolute", left: "50%", bottom: -6, transform: "translateX(-50%)", zIndex: 3, border: 0, background: "none", borderRadius: 0 }}>
                 <LevelPill level={e.look.level} rank={e.look.rank} compact />
