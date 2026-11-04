@@ -290,3 +290,39 @@
 .pick {
   margin-top: 30px;
 }
+
+/* 🔥 연속 기록 한 줄 */
+.streakChip {
+  margin: 2px 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  background: var(--panel);
+  border: 1px solid rgba(255, 181, 71, 0.35);
+  color: var(--white);
+  text-decoration: none;
+}
+
+.streakFire {
+  font-size: 22px;
+}
+
+.streakText {
+  flex: 1;
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.streakText b {
+  font-size: 15px;
+  font-weight: 900;
+  color: #ffb547;
+}
+
+.streakText small {
+  font-size: 12px;
+  color: var(--ash);
+}

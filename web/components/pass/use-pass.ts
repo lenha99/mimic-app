@@ -11,6 +11,8 @@ export type PassView = {
   progress: { level: number; into: number; need: number; ratio: number };
   next: Unlock | null;
   self: boolean;
+  /** 내 것일 때만 — 도감에 모은 목소리 타입 id */
+  dexIds?: string[];
 };
 
 /** VOICE PASS — entry 를 주면 그 목소리 주인의 것, 없으면 내 것. */

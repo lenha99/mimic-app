@@ -130,6 +130,25 @@ export async function claimGuest(userId: string, client: string, service: Servic
     if (rows.length) await service.from("follows").upsert(rows, { onConflict: "follower,creator", ignoreDuplicates: true });
     await service.from("follows").delete().eq(col, g);
   }
+  // 혼자 하는 진행(연속 기록·혼자 XP·도감)도 계정으로 — 폰을 바꿔도 남게.
+  try {
+    const { data: days } = await service.from("solo_days").select("day, takes").eq("owner", g).limit(2000);
+    if (days?.length) {
+      const { data: mine } = await service.from("solo_days").select("day, takes").eq("owner", u).in("day", days.map((d) => d.day));
+      const have = new Map((mine ?? []).map((d) => [d.day, d.takes]));
+      await service
+        .from("solo_days")
+        .upsert(days.map((d) => ({ owner: u, day: d.day, takes: d.takes + (have.get(d.day) ?? 0) })), { onConflict: "owner,day" });
+      await service.from("solo_days").delete().eq("owner", g);
+    }
+    const { data: dex } = await service.from("voice_dex").select("type_id, first_at").eq("owner", g).limit(200);
+    if (dex?.length) {
+      await service.from("voice_dex").upsert(dex.map((d) => ({ owner: u, type_id: d.type_id, first_at: d.first_at })), { onConflict: "owner,type_id", ignoreDuplicates: true });
+      await service.from("voice_dex").delete().eq("owner", g);
+    }
+  } catch {
+    // 표가 아직 없거나 실패해도 로그인은 막지 않는다.
+  }
 }
 
 export async function blocked(x: string, y: string, service: Service = createServiceClient()): Promise<boolean> {

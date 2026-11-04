@@ -35,6 +35,16 @@ export type Target = {
 
 const fmt = (v: number, d = 1) => v.toFixed(d);
 
+/**
+ * 판정 여유 — 11/4: "괜찮게 녹음했는데 4개 중 2개 틀렸다"고 뜨면 짜증 난다(규민).
+ * 폰 마이크·방 울림·사람마다 다른 말버릇으로 측정이 흔들리니, 기준 구간 바깥으로 조금 나간 건 통과로 본다.
+ * 눈금 막대(scale)에는 원래 구간을 그대로 그린다 — 목표는 그대로, 판정만 너그럽게.
+ */
+const PACE_SLACK = 0.12; // 기준 속도 양쪽 12%
+const PITCH_SLACK_LO = 0.8; // 억양 폭 아래로 20%
+const PITCH_SLACK_HI = 1.25; // 위로 25%
+const END_FAIL_DB = -10; // 말끝이 이만큼 작아져야 "사라진다"
+
 export function judge(a: Analysis, t: Target, L: T = tr("ko")): Check[] {
   const out: Check[] = [];
   // 스피치도 아나운서처럼 문장 끝을 단정하게 닫는 쪽이 맞다.
@@ -42,7 +52,7 @@ export function judge(a: Analysis, t: Target, L: T = tr("ko")): Check[] {
 
   if (t.pace && a.pace !== null) {
     const [lo, hi] = t.pace;
-    const status: Status = a.pace < lo ? "low" : a.pace > hi ? "high" : "ok";
+    const status: Status = a.pace < lo * (1 - PACE_SLACK) ? "low" : a.pace > hi * (1 + PACE_SLACK) ? "high" : "ok";
     out.push({
       key: "pace",
       label: L("속도", "Pace"),
@@ -67,7 +77,8 @@ export function judge(a: Analysis, t: Target, L: T = tr("ko")): Check[] {
   if (t.marks !== undefined && t.marks > 0) {
     const want = t.marks;
     const got = a.pauses;
-    const status: Status = got < want * 0.5 ? "low" : got > want * 1.6 + 1 ? "high" : "ok";
+    // 쉼 감지는 문장부호 없이 소리 크기로만 재서 흔들린다 — 표시의 1/3 도 안 쉬었거나 두 배 넘게 끊겼을 때만.
+    const status: Status = got < Math.ceil(want / 3) ? "low" : got > want * 2 + 1 ? "high" : "ok";
     out.push({
       key: "pause",
       label: L("쉼", "Pauses"),
@@ -96,7 +107,7 @@ export function judge(a: Analysis, t: Target, L: T = tr("ko")): Check[] {
   const band = t.pitchBand ?? (t.pitch ? PITCH_RANGE[t.pitch] : null);
   if (band && a.pitchRange !== null) {
     const [lo, hi] = band;
-    const status: Status = a.pitchRange < lo ? "low" : a.pitchRange > hi ? "high" : "ok";
+    const status: Status = a.pitchRange < lo * PITCH_SLACK_LO ? "low" : a.pitchRange > hi * PITCH_SLACK_HI ? "high" : "ok";
     out.push({
       key: "pitch",
       label: L("억양 폭", "Pitch range"),
@@ -129,7 +140,7 @@ export function judge(a: Analysis, t: Target, L: T = tr("ko")): Check[] {
   }
 
   if (a.endDrop !== null) {
-    const status: Status = a.endDrop < -7 ? "low" : "ok";
+    const status: Status = a.endDrop < END_FAIL_DB ? "low" : "ok";
     out.push({
       key: "end",
       label: L("문장 끝", "Endings"),

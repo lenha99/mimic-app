@@ -17,9 +17,28 @@ export type PassStats = {
   picked: boolean;
   /** 내가 먼저 ❤ 한 목소리가 나중에 운영자 픽이 됐다 */
   prophet: boolean;
+  /** 혼자 하는 진행(11/4) — 연습한 날 수 · 하루 10번까지 센 녹음 수 · 도감에 모은 목소리 타입 수 · 지금 연속 일수 */
+  activeDays: number;
+  takes: number;
+  dex: number;
+  streak: number;
 };
 
-export const EMPTY_STATS: PassStats = { posts: 0, likesReceived: 0, followers: 0, likesGiven: 0, picked: false, prophet: false };
+export const EMPTY_STATS: PassStats = {
+  posts: 0,
+  likesReceived: 0,
+  followers: 0,
+  likesGiven: 0,
+  picked: false,
+  prophet: false,
+  activeDays: 0,
+  takes: 0,
+  dex: 0,
+  streak: 0,
+};
+
+/** 혼자 하는 XP 는 "아주 조금" — 남이 주는 XP(❤ +10 · 구독 +25 · 들려주기 +30)가 늘 더 크게 보이게. */
+export const SOLO_XP = { day: 5, take: 1, takeCapPerDay: 10, dex: 5 } as const;
 
 /** XP 얻는 법 — 화면(/pass)에 그대로 보여 준다 */
 export const XP_RULES = [
@@ -29,10 +48,23 @@ export const XP_RULES = [
   { key: "likesGiven", xp: 3, ko: "다른 목소리에 ❤", en: "Give a ❤", noteKo: "누를 때마다", noteEn: "per ❤" },
   { key: "picked", xp: 150, ko: "운영자 픽 되기", en: "Get picked", noteKo: "한 번", noteEn: "once" },
   { key: "prophet", xp: 50, ko: "픽 될 목소리 먼저 알아보기", en: "❤ a voice before it's picked", noteKo: "한 번", noteEn: "once" },
+  { key: "activeDays", xp: 5, ko: "오늘 첫 연습", en: "First practice of the day", noteKo: "하루 한 번", noteEn: "once a day" },
+  { key: "takes", xp: 1, ko: "연습 녹음", en: "Practice take", noteKo: "하루 10번까지", noteEn: "up to 10 a day" },
+  { key: "dex", xp: 5, ko: "새 목소리 타입 발견", en: "Discover a voice type", noteKo: "도감 한 칸마다", noteEn: "per dex slot" },
 ] as const;
 
 export function xpOf(s: PassStats): number {
-  return s.posts * 30 + s.likesReceived * 10 + s.followers * 25 + s.likesGiven * 3 + (s.picked ? 150 : 0) + (s.prophet ? 50 : 0);
+  return (
+    s.posts * 30 +
+    s.likesReceived * 10 +
+    s.followers * 25 +
+    s.likesGiven * 3 +
+    (s.picked ? 150 : 0) +
+    (s.prophet ? 50 : 0) +
+    (s.activeDays ?? 0) * SOLO_XP.day +
+    (s.takes ?? 0) * SOLO_XP.take +
+    (s.dex ?? 0) * SOLO_XP.dex
+  );
 }
 
 /** 레벨 n 이 되는 데 필요한 누적 XP (index = 레벨 - 1) */

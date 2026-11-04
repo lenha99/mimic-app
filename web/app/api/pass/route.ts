@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { lookOf, nextUnlock, progressOf, xpOf, type PassStats } from "@/lib/pass";
-import { keysOf, statsFor, statsOfEntryOwner } from "@/lib/pass-server";
+import { dexOf, keysOf, statsFor, statsOfEntryOwner } from "@/lib/pass-server";
 
 /**
  * VOICE PASS — ?entry=<출전작> 이면 그 목소리 주인의 것(공개), 없으면 지금 보는 사람 자신의 것.
@@ -33,5 +33,7 @@ export async function GET(req: Request) {
     if (!r) return Response.json({ error: "not-found" }, { status: 404, headers });
     return Response.json(view(r.stats, mine.includes(r.owner)), { headers });
   }
-  return Response.json(view(await statsFor(mine, service), true), { headers });
+  // 내 것이면 도감 칸(모은 목소리 타입)도 — 남의 것엔 안 준다.
+  const [stats, dex] = await Promise.all([statsFor(mine, service), dexOf(mine, service).catch(() => [])]);
+  return Response.json({ ...view(stats, true), dexIds: dex }, { headers });
 }
