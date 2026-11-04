@@ -1135,7 +1135,7 @@ def main():
         p.add_argument("--emoji", default="🎙")
         p.add_argument("--plays", type=int, default=0)
         p.add_argument("--kind", default="shortform",
-                       choices=["movie", "drama", "variety", "shortform", "animal"])
+                       choices=["movie", "drama", "variety", "shortform", "animal", "anime"])
         p.add_argument("--license", default="original-clip",
                        choices=["original-clip", "cc0", "own-recording", "tts"])
         p.add_argument("--holder", help="권리자 표기")

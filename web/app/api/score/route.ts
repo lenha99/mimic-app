@@ -30,6 +30,8 @@ export async function POST(req: Request) {
   }
   // 익명 기기 식별자. 랭킹 집계용이고 없으면 그냥 안 보낸다.
   const client = (q.get("client") ?? "").slice(0, 64);
+  // 애니 명대사는 따로 잰다(억양·박자 중심, 음절 수 검사). 그 외 값은 버린다.
+  const profile = q.get("profile") === "anime" ? "anime" : "";
 
   const file = (await req.formData()).get("file");
   if (!(file instanceof Blob) || file.size === 0) {
@@ -47,7 +49,8 @@ export async function POST(req: Request) {
     // 플랫폼이 함수를 죽이기 전에 우리 문구로 답하게 한다.
     const res = await fetch(
       `${config.scoreUrl}?meme_id=${encodeURIComponent(memeId)}` +
-        (client ? `&client=${encodeURIComponent(client)}` : ""),
+        (client ? `&client=${encodeURIComponent(client)}` : "") +
+        (profile ? `&profile=${profile}` : ""),
       { method: "POST", body, headers: proxyHeaders(), signal: AbortSignal.timeout(55_000) },
     );
     // 서버가 JSON 이 아닌 걸 뱉으면 그대로 흘리지 않고 에러로 바꾼다.
