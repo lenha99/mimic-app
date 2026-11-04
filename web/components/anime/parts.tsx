@@ -74,12 +74,7 @@ export function ShoutButton({
 /** 결과 — 총점 · 등급 · 네 칸 · 배지 · 다시 듣기 */
 export function ScoreView({ score, url, name }: { score: HypeScore; url?: string; name?: string }) {
   const t = useT();
-  const bars: [string, string, number][] = [
-    ["성량", "Power", score.power],
-    ["억양", "Range", score.range],
-    ["길이", "Timing", score.timing],
-    ["끝 처리", "Ending", score.ending],
-  ];
+  const bars = score.bars;
   return (
     <div className={s.score}>
       {name && <p className={s.scoreName}>{name}</p>}
@@ -89,6 +84,19 @@ export function ScoreView({ score, url, name }: { score: HypeScore; url?: string
       </p>
       <p className={s.tier}>{t(score.tier.ko, score.tier.en)}</p>
       <p className={s.note}>{t(score.tier.note, score.tier.noteEn)}</p>
+      {!score.silent && score.burstMiss && (
+        <p className={s.note}>
+          {t(
+            `원본은 ${score.burstMiss.ref}번 끊어 외치는데 ${score.burstMiss.user}번이었어요 — 박자부터 맞춰 봐요`,
+            `The original hits ${score.burstMiss.ref} beats, you hit ${score.burstMiss.user} — match the beats first`,
+          )}
+        </p>
+      )}
+      {!score.silent && score.estimate && (
+        <p className={s.note}>
+          {t("원본 없이 잰 기합 점수예요 (최대 89). 100점은 원본과 견줄 때만 나와요", "Estimated without the original (max 89). 100 only comes from matching the original")}
+        </p>
+      )}
       {score.badges.length > 0 && (
         <ul className={s.badges}>
           {score.badges.map((b) => (
