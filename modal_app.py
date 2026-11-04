@@ -439,7 +439,7 @@ FEED = ("view_feed", "feed_play", "feed_react", "feed_try")
 PRACTICE = ("practice_view", "practice_take")
 # 주간 챌린지 · 블라인드 배틀 · 보이스 카드 · 첫 방문 안내. 웹은 예전부터 보냈는데
 # 여기 목록에 없어 조용히 버려지고 있었다.
-WEEKLY = ("weekly_view", "weekly_play", "weekly_like", "enter_open", "weekly_enter", "enter_fail", "weekly_share",
+WEEKLY = ("weekly_view", "weekly_play", "weekly_like", "enter_open", "weekly_enter", "enter_fail", "post_undo", "weekly_share",
           "battle_cta", "battle_view", "battle_vote",
           "voice_card_start", "voice_card_done", "voice_card_share", "voice_rec_open",
           "intro_view", "intro_skip", "intro_done",

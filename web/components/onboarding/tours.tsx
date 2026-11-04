@@ -402,10 +402,10 @@ const sets = (t: T) => {
     },
     {
       target: "room-enter",
-      title: t("목소리 갤러리에 올리기", "Post to the voice gallery"),
+      title: t("이 목소리 들려주기", "Let people hear it"),
       body: t(
-        <p>마음에 드는 테이크를 🌐 목소리 갤러리에 올려요. 어떤 대본이든 이번 주 ❤ 순위에 들어가고, 다른 사람들이 듣고 ❤ 를 눌러요.</p>,
-        <p>Post your favorite take 🌐 to the voice gallery. Any script joins this week&apos;s ❤ ranking for others to hear and ❤.</p>,
+        <p>누르면 바로 올라가요(5초 안에 되돌리기 가능). 다른 사람들이 듣고 ❤ 를 누르면 XP 가 쌓여요. 언제든 내릴 수 있어요.</p>,
+        <p>One tap and it&apos;s live (undo within 5 seconds). When people listen and ❤, you earn XP. Remove it anytime.</p>,
       ),
     },
     {
