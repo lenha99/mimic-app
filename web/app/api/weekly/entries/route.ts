@@ -94,7 +94,9 @@ export async function POST(req: Request) {
   const owner = user ? `u:${user.id}` : `g:${client}`;
 
   const service = createServiceClient();
-  await ensureWeek(week, service);
+  if (!(await ensureWeek(week, service))) {
+    return Response.json({ error: t("지금은 올릴 수 없어요. 잠시 뒤에 다시 해주세요.", "Posting is unavailable right now. Please try again later.") }, { status: 503 });
+  }
 
   let { data: existing } = await service
     .from("weekly_entries")
@@ -195,6 +197,7 @@ export async function POST(req: Request) {
     });
     if (!error) await service.from("weekly_entries").update({ badges, promo_ok: promoOk }).eq("id", id);
     if (error) {
+      console.error("weekly entry insert", week.id, error.code, error.message);
       await service.storage.from("recordings").remove([path]);
       // 동시에 두 번 눌러 1인 1작품 제약에 걸린 경우
       const dup = error.code === "23505";

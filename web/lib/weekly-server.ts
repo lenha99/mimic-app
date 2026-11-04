@@ -24,8 +24,9 @@ import {
 type Service = ReturnType<typeof createServiceClient>;
 
 /** 이 주의 weekly_challenges 행을 만든다(이미 있으면 그대로). 출전작이 매달릴 자리다. */
-export async function ensureWeek(w: Week, service: Service = createServiceClient()): Promise<void> {
-  await service.from("weekly_challenges").upsert(
+export async function ensureWeek(w: Week, service: Service = createServiceClient()): Promise<boolean> {
+  // 실패를 삼키면 안 된다 — 11/3~4 자유 출전이 DB 검사에 막혔는데 여기서 조용히 넘어가 원인이 안 보였다.
+  const { error } = await service.from("weekly_challenges").upsert(
     {
       id: w.id,
       season: w.season,
@@ -37,6 +38,8 @@ export async function ensureWeek(w: Week, service: Service = createServiceClient
     },
     { onConflict: "id", ignoreDuplicates: true },
   );
+  if (error) console.error("ensureWeek", w.id, error.code, error.message);
+  return !error;
 }
 
 function scriptOf(challengeId: string): EntryCard["script"] {
