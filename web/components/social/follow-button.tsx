@@ -15,12 +15,14 @@ export function FollowButton({
   initial,
   onChange,
   big = false,
+  small = false,
 }: {
   entry?: string;
   creator?: string;
   initial: boolean;
   onChange?: (following: boolean, followers: number | null) => void;
   big?: boolean;
+  small?: boolean;
 }) {
   const t = useT();
   const [on, setOn] = useState(initial);
@@ -62,7 +64,7 @@ export function FollowButton({
       <button
         type="button"
         className={on ? styles.btnOn : styles.btn}
-        style={big ? { minHeight: 50, padding: "0 22px", fontSize: 15.5 } : undefined}
+        style={big ? { minHeight: 50, padding: "0 22px", fontSize: 15.5 } : small ? { minHeight: 34, padding: "0 12px", fontSize: 13 } : undefined}
         onClick={() => void toggle()}
         disabled={busy}
       >

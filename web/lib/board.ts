@@ -65,7 +65,14 @@ export type PostSummary = {
   notes: number;
   createdAt: string;
   mine: boolean;
+  /** 올린 사람 계정 — 구독·메시지 대상 */
+  userId: string;
+  /** 이 사람이 게시판에 처음 올린 연습 */
+  firstPost: boolean;
 };
+
+/** 막 올라온 연습 — 목록에서 빛나게 보여 주는 기준(48시간) */
+export const FRESH_MS = 48 * 3_600_000;
 
 export type NoteView = {
   id: string;
@@ -74,6 +81,9 @@ export type NoteView = {
   nickname: string;
   createdAt: string;
   mine: boolean;
+  userId: string;
+  /** 이 사람이 지금까지 남긴 피드백 수(숨김 제외) — 들어준 만큼 보이게 */
+  given: number;
 };
 
 export type PostView = PostSummary & {
