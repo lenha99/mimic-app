@@ -121,9 +121,9 @@ export default function Duel({ first }: { first: string | null }) {
     const top = standings[0];
     const text = t(
       `MIMIC 애니 명대사 대결 결과 🏆 1위 ${top.name} ${top.total}점 — 내가 니 이겼다\n` +
-        standings.map((r, k) => `${k + 1}. ${r.name} ${r.total}점`).join("\n"),
+        standings.map((r) => `${1 + standings.filter((x) => x.total > r.total).length}. ${r.name} ${r.total}점`).join("\n"),
       `MIMIC anime line battle 🏆 Winner ${top.name} with ${top.total}\n` +
-        standings.map((r, k) => `${k + 1}. ${r.name} ${r.total}`).join("\n"),
+        standings.map((r) => `${1 + standings.filter((x) => x.total > r.total).length}. ${r.name} ${r.total}`).join("\n"),
     );
     const url = `${location.origin}/anime/duel`;
     try {
@@ -218,9 +218,9 @@ export default function Duel({ first }: { first: string | null }) {
           )}
         </div>
         <ol className={s.board}>
-          {standings.map((r, k) => (
+          {standings.map((r) => (
             <li key={r.i}>
-              <span className={s.rank}>{k + 1}</span>
+              <span className={s.rank}>{1 + standings.filter((x) => x.total > r.total).length}</span>
               <span className={s.who}>
                 <b>{r.name}</b>
                 <small>{r.best ? t(`최고 ${r.best.score.total} · ${r.best.score.tier.ko}`, `Best ${r.best.score.total} · ${r.best.score.tier.en}`) : "—"}</small>
@@ -256,9 +256,9 @@ export default function Duel({ first }: { first: string | null }) {
         </p>
         <h1 className={s.h1}>{t("중간 순위", "Standings")}</h1>
         <ol className={s.board}>
-          {standings.map((r, k) => (
+          {standings.map((r) => (
             <li key={r.i}>
-              <span className={s.rank}>{k + 1}</span>
+              <span className={s.rank}>{1 + standings.filter((x) => x.total > r.total).length}</span>
               <span className={s.who}>
                 <b>{r.name}</b>
                 <small>{shots[round][r.i] ? t(`이번 판 ${shots[round][r.i].score.total}`, `This round ${shots[round][r.i].score.total}`) : ""}</small>
