@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { boardTrackLabel, POST_DAYS } from "@/lib/board";
+import { boardTrackLabel, FRESH_MS, POST_DAYS } from "@/lib/board";
 import { getLang } from "@/lib/i18n-server";
 import { tr } from "@/lib/i18n";
 import { listPosts } from "@/lib/board-server";
@@ -36,6 +36,12 @@ export default async function BoardPage({ searchParams }: { searchParams: Promis
     data: { user },
   } = await supabase.auth.getUser();
   const posts = await listPosts(user?.id ?? null, sort);
+  // 서버 렌더 시각 기준 — 요청마다 새로 그리는 화면이라(force-dynamic) 렌더 중 시계를 읽어도 된다.
+  // eslint-disable-next-line react-hooks/purity
+  const now = Date.now();
+  const isFresh = (p: (typeof posts)[number]) => !p.mine && now - Date.parse(p.createdAt) < FRESH_MS;
+  // 맨 위에 띄울 새 글 — 처음 올린 사람이 먼저, 그다음 가장 최근 것
+  const spotlight = posts.filter(isFresh).sort((a, b) => Number(b.firstPost) - Number(a.firstPost) || b.createdAt.localeCompare(a.createdAt))[0];
 
   return (
     <main className="shell">
@@ -56,6 +62,19 @@ export default async function BoardPage({ searchParams }: { searchParams: Promis
           )}
         </p>
       </header>
+
+      {spotlight && (
+        <Link href={`/practice/board/${spotlight.id}`} className={styles.newBanner}>
+          <span className={styles.newBannerHead}>
+            {spotlight.firstPost ? t("🎉 새로운 사람이 올렸어요!", "🎉 Someone new just posted!") : t("✨ 새 연습이 올라왔어요!", "✨ A new take is up!")}
+          </span>
+          <span className={styles.newBannerBody}>
+            {spotlight.firstPost
+              ? t(`${spotlight.nickname} 님의 첫 연습이에요. 첫 피드백이 제일 큰 힘이 돼요 →`, `${spotlight.nickname}'s first take. A first note means the most →`)
+              : t(`${spotlight.nickname} · ${spotlight.title} — 들어주러 가기 →`, `${spotlight.nickname} · ${spotlight.title} — go listen →`)}
+          </span>
+        </Link>
+      )}
 
       <div className={styles.tabs} data-tour="board-tabs">
         <Link href="/practice/board" className={sort === "waiting" ? styles.tabOn : styles.tab}>
@@ -131,9 +150,12 @@ export default async function BoardPage({ searchParams }: { searchParams: Promis
         <ol className={styles.list} data-tour="board-list">
           {posts.map((p) => (
             <li key={p.id}>
-              <Link href={`/practice/board/${p.id}`} className={styles.card}>
+              <Link href={`/practice/board/${p.id}`} className={isFresh(p) ? `${styles.card} ${styles.cardFresh}` : styles.card}>
                 <span className={styles.cardTop}>
-                  <span className={styles.track}>{boardTrackLabel(p.track, lang)}</span>
+                  <span className={styles.track}>
+                    {boardTrackLabel(p.track, lang)}
+                    {isFresh(p) && <b className={styles.newBadge}>{p.firstPost ? t("첫 연습", "FIRST") : "NEW"}</b>}
+                  </span>
                   <span className={styles.who}>
                     {p.nickname}
                     {p.mine && <i> · {t("나", "me")}</i>} · {ago(Date.parse(p.createdAt), lang)}

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { QuickFeedback } from "@/components/quick-feedback";
+import { PersonActions } from "@/components/social/person-actions";
 import { boardTrackLabel, noteTagLabel } from "@/lib/board";
 import { getLang } from "@/lib/i18n-server";
 import { tr } from "@/lib/i18n";
@@ -54,6 +55,23 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
         )}
       </header>
 
+      {!post.mine && (
+        <section className={styles.voiceCard}>
+          <div className={styles.voiceWho}>
+            <span className={styles.voiceLabel}>
+              {post.firstPost ? t("🎉 첫 연습을 올린 목소리", "🎉 Their first post") : t("🎙 이 목소리 주인", "🎙 The voice")}
+            </span>
+            <Link href={`/v/${encodeURIComponent(post.nickname)}`} className={styles.voiceName}>
+              {post.nickname} →
+            </Link>
+            <span className={styles.voiceHint}>
+              {t("구독하면 새 연습을 올릴 때 알려드려요. 응원 메시지도 보낼 수 있어요", "Subscribe to hear their next take — or send a note of support")}
+            </span>
+          </div>
+          <PersonActions userId={post.userId} />
+        </section>
+      )}
+
       {post.audioUrl ? (
         <audio className={styles.audio} src={post.audioUrl} controls preload="metadata" />
       ) : (
@@ -93,7 +111,14 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
           {post.noteList.map((n) => (
             <li key={n.id} className={styles.noteItem}>
               <div className={styles.noteHead}>
-                <b>{n.nickname}</b>
+                <Link href={`/v/${encodeURIComponent(n.nickname)}`} className={styles.noteName}>
+                  {n.nickname}
+                </Link>
+                {n.given > 0 && (
+                  <span className={n.given >= 5 ? styles.earGold : styles.ear} title={t("지금까지 남긴 피드백", "Feedback given so far")}>
+                    {n.given >= 5 ? t(`🏅 귀 밝은 선배 · ${n.given}`, `🏅 Sharp ear · ${n.given}`) : t(`👂 들어줌 ${n.given}`, `👂 Listened ${n.given}`)}
+                  </span>
+                )}
                 <span>{ago(Date.parse(n.createdAt), lang)}</span>
                 {!n.mine && user && <ReportButton postId={post.id} noteId={n.id} label={t("신고", "Report")} />}
               </div>
@@ -107,6 +132,11 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                 </div>
               )}
               <p className={styles.noteBody}>{n.body}</p>
+              {!n.mine && (
+                <div className={styles.noteActions}>
+                  <PersonActions userId={n.userId} thanks={post.mine} />
+                </div>
+              )}
             </li>
           ))}
         </ol>

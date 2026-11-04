@@ -22,10 +22,17 @@ export async function listPosts(viewer: string | null, sort: Sort, limit = 30): 
   if (!posts?.length) return [];
 
   const ids = posts.map((p) => p.id);
-  const [{ data: notes }, { data: profiles }] = await Promise.all([
+  const users = [...new Set(posts.map((p) => p.user_id))];
+  const [{ data: notes }, { data: profiles }, { data: history }] = await Promise.all([
     service.from("practice_notes").select("post_id").in("post_id", ids).eq("hidden", false),
-    service.from("profiles").select("id, nickname").in("id", [...new Set(posts.map((p) => p.user_id))]),
+    service.from("profiles").select("id, nickname").in("id", users),
+    // 첫 연습인지 — 만료·내린 것까지 포함해 그 사람이 처음 올린 글
+    service.from("practice_posts").select("id, user_id").in("user_id", users).order("created_at", { ascending: true }).limit(2000),
   ]);
+  const first = new Map<string, string>();
+  (history ?? []).forEach((h) => {
+    if (!first.has(h.user_id)) first.set(h.user_id, h.id);
+  });
   const count = new Map<string, number>();
   (notes ?? []).forEach((n) => count.set(n.post_id, (count.get(n.post_id) ?? 0) + 1));
   const nick = new Map((profiles ?? []).map((p) => [p.id, p.nickname]));
@@ -39,6 +46,8 @@ export async function listPosts(viewer: string | null, sort: Sort, limit = 30): 
     notes: count.get(p.id) ?? 0,
     createdAt: p.created_at,
     mine: viewer === p.user_id,
+    userId: p.user_id,
+    firstPost: first.get(p.user_id) === p.id,
   }));
   // "기다리는 중" — 피드백이 적은 것부터. 첫 피드백이 제일 받기 어렵다.
   if (sort === "waiting") rows.sort((a, b) => a.notes - b.notes || b.createdAt.localeCompare(a.createdAt));
@@ -67,12 +76,19 @@ export async function getPost(id: string, viewer: string | null): Promise<PostVi
     .eq("post_id", id)
     .eq("hidden", false)
     .order("created_at", { ascending: true });
-  const people = [...new Set([p.user_id, ...(notes ?? []).map((n) => n.user_id)])];
-  const [{ data: profiles }, urls] = await Promise.all([
+  const noteUsers = [...new Set((notes ?? []).map((n) => n.user_id))];
+  const people = [...new Set([p.user_id, ...noteUsers])];
+  const [{ data: profiles }, urls, { data: givenRows }, { data: firstRow }] = await Promise.all([
     service.from("profiles").select("id, nickname").in("id", people),
     signAudio([p.audio_path]),
+    noteUsers.length
+      ? service.from("practice_notes").select("user_id").in("user_id", noteUsers).eq("hidden", false).limit(5000)
+      : Promise.resolve({ data: [] as { user_id: string }[] }),
+    service.from("practice_posts").select("id").eq("user_id", p.user_id).order("created_at", { ascending: true }).limit(1).maybeSingle(),
   ]);
   const nick = new Map((profiles ?? []).map((x) => [x.id, x.nickname]));
+  const given = new Map<string, number>();
+  (givenRows ?? []).forEach((r) => given.set(r.user_id, (given.get(r.user_id) ?? 0) + 1));
 
   return {
     id: p.id,
@@ -83,6 +99,8 @@ export async function getPost(id: string, viewer: string | null): Promise<PostVi
     notes: notes?.length ?? 0,
     createdAt: p.created_at,
     mine: viewer === p.user_id,
+    userId: p.user_id,
+    firstPost: firstRow?.id === p.id,
     scriptText: p.script_text,
     audioUrl: urls.get(p.audio_path) ?? null,
     expiresAt: p.expires_at,
@@ -94,6 +112,8 @@ export async function getPost(id: string, viewer: string | null): Promise<PostVi
       nickname: nick.get(n.user_id) ?? "알 수 없음",
       createdAt: n.created_at,
       mine: viewer === n.user_id,
+      userId: n.user_id,
+      given: given.get(n.user_id) ?? 0,
     })),
   };
 }
