@@ -11,7 +11,7 @@ export default function manifest(): MetadataRoute.Manifest {
     id: "/",
     name: "MIMIC — 목소리 연습실",
     short_name: "MIMIC",
-    description: "성우·아나운서 대본으로 목소리를 연습하고, 잘 나온 목소리를 갤러리에 올려 들려주세요.",
+    description: "성우·아나운서 대본으로 목소리를 연습하고, 잘 나온 목소리는 버튼 한 번으로 들려주세요.",
     lang: "ko",
     start_url: "/?source=pwa",
     scope: "/",

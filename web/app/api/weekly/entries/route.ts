@@ -9,7 +9,6 @@ import { currentWeek, FREE_PREFIX, freeWeek, guestName, isLive, MAX_ENTRY_SECOND
 import { cleanNickname } from "@/lib/nickname";
 import { ensureWeek, getBoard } from "@/lib/weekly-server";
 import { requestT } from "@/lib/i18n";
-import { isBadge } from "@/lib/badges";
 
 /**
  * 이번 주 챌린지 출전 · 교체 · 내리기.
@@ -46,11 +45,8 @@ export async function POST(req: Request) {
   } catch {}
   // 인스타 소개 동의(스스로 켠 사람만) · 잘한 점 배지(정해진 목록 안에서만, 최대 셋).
   const promoOk = String(form?.get("promo") ?? "") === "1";
-  let badges: string[] = [];
-  try {
-    const raw: unknown = JSON.parse(String(form?.get("badges") ?? "[]"));
-    if (Array.isArray(raw)) badges = [...new Set(raw.filter(isBadge))].slice(0, 3);
-  } catch {}
+  // 잘한 점 배지는 더 받지 않는다(11/4) — 예전 클라이언트가 보내도 빈 목록으로 덮는다.
+  const badges: string[] = [];
   let avatar = null;
   try {
     avatar = normalizeAvatar(JSON.parse(String(form?.get("avatar") ?? "null")));
