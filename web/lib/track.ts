@@ -47,6 +47,8 @@ export type TrackKind =
   | "duel_start"
   | "duel_done"
   | "enter_fail"
+  // 들려준 뒤 5초 안에 되돌림 — 많으면 공개가 아직 무섭다는 뜻
+  | "post_undo"
   | "weekly_share"
   // 블라인드 배틀 — 허브에서 들어와(cta) → 짝을 받고(view) → 고른다(vote)
   | "battle_cta"

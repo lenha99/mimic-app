@@ -250,3 +250,16 @@
     animation: none;
   }
 }
+
+/* 5초 되돌리기 — 시트 오른쪽 위, 실수했을 때만 찾는 작은 버튼 */
+.undo {
+  justify-self: end;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--rule);
+  background: var(--panel-hi);
+  color: var(--white);
+  font-size: 12.5px;
+  font-weight: 800;
+  cursor: pointer;
+}

@@ -15,7 +15,10 @@ import { voiceTypeOf, type VoiceType } from "@/lib/scorecard";
 import { newTakeId, saveTake } from "@/lib/take-store";
 import { track } from "@/lib/track";
 import { analyzeBlob } from "@/lib/voice-analysis";
-import { displayName } from "@/lib/weekly";
+import { currentWeek, displayName, freeWeek, isLive, writeMine } from "@/lib/weekly";
+import { postTake, undoPost } from "@/lib/post-take";
+import { PostGoal, UndoButton } from "@/components/practice/post-goal";
+import type { Analysis } from "@/lib/voice-analysis";
 import styles from "./first-mission.module.css";
 
 /**
@@ -25,7 +28,8 @@ import styles from "./first-mission.module.css";
  * "사용법 보기" 말풍선이라 그냥 닫혔다. 이제는 닫기 버튼 없는 시트에서
  *   1) 다른 사람 목소리 하나 듣고 ❤ (싫으면 다음 목소리)
  *   2) 내 차례 — 대사 한 줄 읽고 목소리 타입 받기 (녹음은 이 폰에만, 연습실에 테이크로 남는다)
- *   3) 결과 → 갤러리에 올리러 가기
+ *   3) 결과 → 그 자리에서 버튼 한 번으로 들려주기(5초 안에 되돌리기). 11/4: 예전엔 연습실로 보냈는데
+ *      거기서 다시 녹음해야 하는 줄 알고 나갔다.
  * 를 한다. 완전 강제는 바로 이탈이라, 5초 뒤 작은 "그냥 둘러볼게요"만 둔다.
  * 끝나면 "사용법" 버튼을 가리키는 인사가 뜬다(components/onboarding/tour) — 가이드 보는 법은 그때 알려 준다.
  */
@@ -35,7 +39,7 @@ export const MISSION_DONE = "mimic:mission:done";
 const MAX_MS = 12_000;
 const clock = () => performance.now();
 
-type Step = "listen" | "sent" | "record" | "recording" | "analyzing" | "result";
+type Step = "listen" | "sent" | "record" | "recording" | "analyzing" | "result" | "posting" | "posted";
 
 export function FirstMission({ voices, scriptId, line }: { voices: MissionVoice[]; scriptId: string; line: string }) {
   const t = useT();
@@ -52,6 +56,11 @@ export function FirstMission({ voices, scriptId, line }: { voices: MissionVoice[
   const audio = useRef<HTMLAudioElement | null>(null);
   const rec = useRef<MediaRecorder | null>(null);
   const mic = useRef<MediaStream | null>(null);
+  const last = useRef<{ id: string; blob: Blob; analysis: Analysis | null } | null>(null);
+  const [posted, setPosted] = useState<{ id: string; token: string | null; weekId: string } | null>(null);
+  const [undoing, setUndoing] = useState(false);
+  // 서버는 2초 미만 녹음을 안 받는다 — 짧으면 버튼 대신 연습실로.
+  const [longEnough, setLongEnough] = useState(false);
 
   useEffect(() => {
     // 처음 온 사람만. 예전 인사나 홈 사용법을 이미 본 사람(다녀간 사람)에겐 안 띄운다.
@@ -190,14 +199,58 @@ export function FirstMission({ voices, scriptId, line }: { voices: MissionVoice[
       analysis = null;
     }
     // 연습실에 테이크 #1 로 남긴다 — "올리러 가기"를 누르면 바로 그 테이크가 열려 있다.
-    await saveTake({ id: newTakeId(), itemId: scriptId, at: Date.now(), blob, analysis, score: null }).catch(() => {});
+    const id = newTakeId();
+    last.current = { id, blob, analysis };
+    setLongEnough((analysis?.duration ?? 0) >= 2);
+    await saveTake({ id, itemId: scriptId, at: Date.now(), blob, analysis, score: null }).catch(() => {});
     setVtype(voiceTypeOf(analysis, t));
     setStep("result");
   };
 
+  // 이 대본이 이번 주 대본이면 챌린지로, 아니면 자유 출전으로 — 연습실(WeeklyEnter)과 같은 규칙.
+  const weekFor = () => {
+    const w = currentWeek();
+    return w.scriptId === scriptId && isLive(w) ? w : freeWeek(scriptId);
+  };
+
+  const post = async () => {
+    const take = last.current;
+    const week = weekFor();
+    if (!take || !week) return;
+    setError(null);
+    setStep("posting");
+    track("enter_open", { via: "mission" });
+    const r = await postTake({ blob: take.blob, analysis: take.analysis, week });
+    if (!r.ok) {
+      track("enter_fail", { via: r.needLogin ? "401" : "mission" });
+      setStep("result");
+      setError(r.error ?? t("못 올렸어요. 다시 눌러 주세요", "Couldn't post. Tap again"));
+      return;
+    }
+    writeMine(week.id, { entryId: r.id, token: r.token, takeId: take.id });
+    setPosted({ id: r.id, token: r.token, weekId: week.id });
+    setStep("posted");
+    track("weekly_enter", { via: "mission" });
+  };
+
+  const undo = async () => {
+    if (!posted) return;
+    setUndoing(true);
+    const ok = await undoPost(posted.id, posted.token);
+    setUndoing(false);
+    if (!ok) {
+      setError(t("되돌리지 못했어요. 내 목소리 페이지에서 내릴 수 있어요", "Couldn't undo. You can remove it from your voice page"));
+      return;
+    }
+    writeMine(posted.weekId, null);
+    setPosted(null);
+    setStep("result");
+    track("post_undo", { via: "mission" });
+  };
+
   if (!open) return null;
 
-  const stepNo = step === "listen" || step === "sent" ? 1 : step === "result" ? 3 : 2;
+  const stepNo = step === "listen" || step === "sent" ? 1 : step === "result" || step === "posting" || step === "posted" ? 3 : 2;
   const name = voice ? displayName(voice.name, lang) : "";
 
   return (
@@ -274,17 +327,45 @@ export function FirstMission({ voices, scriptId, line }: { voices: MissionVoice[
           </div>
         )}
 
-        {step === "result" && (
+        {(step === "result" || step === "posting") && (
           <>
             <p className={styles.kicker}>{t("첫 미션 · 3/3", "First mission · 3/3")}</p>
             <h2 className={styles.title}>{vtype ? t("내 목소리 타입이 나왔어요!", "Here's your voice type!") : t("녹음 완료!", "Recorded!")}</h2>
             {vtype ? <VoiceTypeCard type={vtype} /> : <p className={styles.note}>{t("소리가 짧아서 타입은 못 정했어요. 연습실에서 한 번 더 해 봐요", "Too short to tell — try again in the Practice Room")}</p>}
-            <Link href={`/practice/${scriptId}`} className={styles.rec} onClick={() => finish("post")}>
-              🎙 {t("이 녹음 갤러리에 올리러 가기", "Post this take to the gallery")}
-            </Link>
-            <p className={styles.note}>{t("올리면 홈 맨 위 동그라미에 내 목소리가 떠요", "Post it and your voice shows up at the top of Home")}</p>
-            <button type="button" className={styles.later} onClick={() => finish("done")}>
+            {longEnough && weekFor() ? (
+              <>
+                <button type="button" className={styles.rec} onClick={() => void post()} disabled={step === "posting"}>
+                  {step === "posting" ? t("들려주는 중…", "Posting…") : t("🎧 이대로 들려주기 · +30 XP", "🎧 Let people hear it · +30 XP")}
+                </button>
+                <p className={styles.note}>{t("홈 맨 위 동그라미에 내 목소리가 떠요 · 언제든 내릴 수 있어요", "Your voice shows up top on Home · remove it anytime")}</p>
+              </>
+            ) : (
+              <Link href={`/practice/${scriptId}`} className={styles.rec} onClick={() => finish("post")}>
+                🎙 {t("연습실에서 한 번 더 해 보기", "Try again in the Practice Room")}
+              </Link>
+            )}
+            <button type="button" className={styles.later} onClick={() => finish("done")} disabled={step === "posting"}>
               {t("나중에 할게요", "Maybe later")}
+            </button>
+          </>
+        )}
+
+        {step === "posted" && posted && (
+          <>
+            <UndoButton onUndo={() => void undo()} busy={undoing} className={styles.undo} />
+            <div className={styles.sent}>
+              <span className={styles.bigHeart} aria-hidden="true">
+                🎧
+              </span>
+              <h2 className={styles.title}>{t("들려줬어요! +30 XP", "You're live! +30 XP")}</h2>
+              <p className={styles.note}>{t("홈 맨 위 동그라미에 내 목소리가 떴어요. 누가 끝까지 들으면 알려 드릴게요", "Your voice is up top on Home. We'll tell you when someone listens all the way")}</p>
+            </div>
+            <PostGoal className={styles.note} />
+            <Link href={`/weekly/e/${posted.id}`} className={styles.rec} onClick={() => finish("post")}>
+              {t("내 목소리 보기 →", "See my voice →")}
+            </Link>
+            <button type="button" className={styles.later} onClick={() => finish("post")}>
+              {t("홈 둘러보기", "Look around")}
             </button>
           </>
         )}
@@ -295,7 +376,7 @@ export function FirstMission({ voices, scriptId, line }: { voices: MissionVoice[
           </p>
         )}
 
-        {escape && step !== "result" && (
+        {escape && step !== "result" && step !== "posting" && step !== "posted" && (
           <button type="button" className={styles.escape} onClick={() => finish("skip")}>
             {t("그냥 둘러볼게요", "Just browse")}
           </button>
