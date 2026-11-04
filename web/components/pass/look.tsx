@@ -20,7 +20,6 @@ export function AvatarFrame({ frame, children }: { frame: FrameId | undefined; c
   return (
     <span className={`${s.frame} ${FRAME_CLASS[frame]}`}>
       {children}
-      {(frame === "spotlight" || frame === "legend") && <i className={s.spark} aria-hidden="true" />}
     </span>
   );
 }
@@ -45,12 +44,13 @@ const RANK_CLASS: Record<Rank, string> = {
   legend: s.legendRank,
 };
 
-/** "LV.5 · STAR" — compact 면 레벨만 */
+/** "Lv 5 · STAR" — compact 면 레벨만 */
 export function LevelPill({ level, rank, compact = false }: { level: number; rank: Rank; compact?: boolean }) {
   return (
-    <span className={`${s.lv} ${RANK_CLASS[rank]}`} title={`LV.${level} ${rankLabel(rank)}`}>
-      <b>LV.{level}</b>
-      {!compact && <i>{rankLabel(rank)}</i>}
+    <span className={`${s.lv} ${RANK_CLASS[rank]}`} title={`Lv ${level} ${rankLabel(rank)}`}>
+      <i>Lv</i>
+      <b>{level}</b>
+      {!compact && <i>· {rankLabel(rank)}</i>}
     </span>
   );
 }

@@ -1,3 +1,4 @@
+import { refreshVoicePages } from "@/lib/revalidate-voices";
 import { isAdmin } from "@/lib/admin";
 import { createServiceClient } from "@/lib/supabase/service";
 import { afterPick } from "@/lib/pass-server";
@@ -28,5 +29,6 @@ export async function POST(req: Request) {
     .eq("id", entry);
   if (error) return Response.json({ error: "DB 에 픽 칸이 아직 없어요 — npx supabase db push" }, { status: 500 });
   if (on) await afterPick(entry);
+  refreshVoicePages();
   return Response.json({ featured: Boolean(on) });
 }

@@ -1,3 +1,4 @@
+import { refreshVoicePages } from "@/lib/revalidate-voices";
 import { randomUUID } from "node:crypto";
 import { after } from "next/server";
 import { announceNewEntry } from "@/lib/notify-server";
@@ -206,11 +207,13 @@ export async function POST(req: Request) {
     const announceName = user
       ? ((await service.from("profiles").select("nickname").eq("id", user.id).maybeSingle()).data?.nickname ?? "누군가")
       : (name ?? guestName(client));
+    refreshVoicePages();
     after(() => announceNewEntry({ id, userId: user?.id ?? null, client: user ? null : client, name: announceName }));
   }
 
   // 어떤 대본으로 올렸든 이번 주 ❤ 순위 하나다(lib/weekly-server weekRows). 내 다른 목소리가 ❤ 가 더 많아
   // 이것이 순위에 안 들면 0 — 화면이 순위를 안 보인다.
+  if (existing) refreshVoicePages();
   const board = await getBoard(week.free ? currentWeek() : week);
   const me = board.entries.find((e) => e.id === id);
   return Response.json({
@@ -247,5 +250,6 @@ export async function DELETE(req: Request) {
   const { error } = await service.from("weekly_entries").delete().eq("id", id);
   if (error) return Response.json({ error: t("내리지 못했어요. 다시 해주세요.", "Couldn't remove. Please try again.") }, { status: 500 });
   await service.storage.from("recordings").remove([e.audio_path]);
+  refreshVoicePages();
   return Response.json({ ok: true });
 }
