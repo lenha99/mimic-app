@@ -35,7 +35,7 @@ export function PracticeStrip() {
       <ol className={styles.postSteps}>
         <li>{t("아래에서 마음에 드는 대본 고르기 — 고민되면 「오늘의 연습」", "Choose a script below — or just take Today's practice")}</li>
         <li>{t("녹음하면 코코가 대본대로 읽었는지 짚어 줘요", "Record — Coco checks it against the script")}</li>
-        <li>{t("잘 나온 테이크를 「목소리 갤러리에 올리기」", "Post your best take to the voice gallery")}</li>
+        <li>{t("잘 나온 테이크 아래 「이 목소리 들려주기」 한 번", "One tap on \"Let people hear this\" under your take")}</li>
       </ol>
     </section>
   );

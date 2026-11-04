@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import { useLang, useT } from "@/components/lang";
 import { VoiceAvatar } from "@/components/voice-avatar";
-import { badgeLabel, isBadge } from "@/lib/badges";
 import { normalizeAvatar } from "@/lib/avatar";
 import { challengeById, displayName } from "@/lib/weekly";
 import { useLikes } from "./likes";
@@ -67,15 +66,6 @@ export function VoiceCard({ e, index = 0 }: { e: GalleryEntry; index?: number })
           <Wave bars={e.bars} progress={p.progress} active={on} />
           <small>{fmtDur(e.duration)}</small>
         </button>
-        {e.badges.length > 0 && (
-          <span className={styles.badges}>
-            {e.badges.filter(isBadge).map((b) => (
-              <span key={b} className={styles.badge}>
-                {badgeLabel(b, lang)}
-              </span>
-            ))}
-          </span>
-        )}
       </div>
 
       {canLike ? (
@@ -147,15 +137,6 @@ export function Spotlight({ picks, title }: { picks: GalleryEntry[]; title?: str
                 <span className={styles.spotMeta}>
                   {e.week.emoji} {t(e.week.title, e.week.titleEn)} · ♥ {e.likes}
                 </span>
-                {e.badges.length > 0 && (
-                  <span className={styles.badges}>
-                    {e.badges.filter(isBadge).map((b) => (
-                      <span key={b} className={styles.badge}>
-                        {badgeLabel(b, lang)}
-                      </span>
-                    ))}
-                  </span>
-                )}
               </div>
               <button type="button" className={styles.spotPlay} onClick={play}>
                 <span className={styles.spotPlayIcon}>{playing ? <PauseIcon size={16} /> : <PlayIcon size={16} />}</span>

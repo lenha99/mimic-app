@@ -17,7 +17,6 @@ import { useLang, useT } from "@/components/lang";
 import { PrivacyTag } from "@/components/privacy-tag";
 import { CreatorBar } from "@/components/social/creator-bar";
 import { PushButton } from "@/components/social/push-button";
-import { badgeLabel, isBadge } from "@/lib/badges";
 import { AdminPick } from "./admin-pick";
 import { OwnerPass } from "@/components/pass/owner-pass";
 import styles from "./stage.module.css";
@@ -213,14 +212,10 @@ export default function Stage({
           {entry.trophies > 0 && <em>🏆{entry.trophies}</em>}
           {mine && <em className={styles.me}>{t("나", "Me")}</em>}
         </p>
-        {(entry.featured || (entry.badges?.length ?? 0) > 0) && (
+        {/* 잘한 점 배지는 11/4 부터 안 보인다(규민: 테이크에 배지 붙이지 말 것). 운영자 픽만 남는다. */}
+        {entry.featured && (
           <div className={styles.badgeRow}>
-            {entry.featured && <span className={styles.pick}>⭐ {t("운영자 픽", "Editor's pick")}</span>}
-            {(entry.badges ?? []).filter(isBadge).map((b) => (
-              <span key={b} className={styles.badge}>
-                {badgeLabel(b, lang)}
-              </span>
-            ))}
+            <span className={styles.pick}>⭐ {t("운영자 픽", "Editor's pick")}</span>
           </div>
         )}
         <AdminPick entryId={entry.id} />

@@ -27,7 +27,7 @@ export async function generateMetadata(): Promise<Metadata> {
   // 연습(코코의 심사표) → 목소리 갤러리에 올리기다.
   const title = t("MIMIC — 목소리 연습하고, 들려주세요", "MIMIC — Practice your voice, then share it");
   const description = t(
-    "성우·아나운서 대본으로 녹음하면 코코가 억양·말끝·속도를 짚어 줘요. 잘 나온 목소리는 갤러리에 올려 들려주세요. 설치 없이 바로.",
+    "성우·아나운서 대본으로 녹음하면 코코가 억양·말끝·속도를 짚어 줘요. 잘 나온 목소리는 버튼 한 번으로 들려주세요. 설치 없이 바로.",
     "Read voice-actor and news-anchor scripts and get notes on intonation, endings and pace. Post your best take to the voice gallery. No install.",
   );
   const image = { url: "/og-default.png", width: 1200, height: 630, alt: "MIMIC" };

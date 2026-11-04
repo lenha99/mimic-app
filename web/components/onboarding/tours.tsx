@@ -252,11 +252,11 @@ const sets = (t: T) => {
       body: t(
         <p>
           이 버튼은 이번 주 추천 대본으로 가요. 다른 대본이 좋으면 연습실에서 아무거나 골라도 돼요. 녹음해 보고, 마음에 드는
-          테이크 아래 <b>목소리 갤러리에 올리기</b>를 누르면 끝! 가입 없이도 돼요.
+          테이크 아래 <b>이 목소리 들려주기</b>를 누르면 바로 올라가요! 가입 없이도 돼요.
         </p>,
         <p>
           This opens this week&apos;s pick — or choose any script in the Practice Room. Record a few takes, then hit{" "}
-          <b>Post to the voice gallery</b> under the one you like. No sign-up needed.
+          <b>Let people hear this</b> under the one you like — it goes live right away. No sign-up needed.
         </p>,
       ),
     },
