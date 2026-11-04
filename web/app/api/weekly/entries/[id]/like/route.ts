@@ -1,3 +1,4 @@
+import { refreshVoicePages } from "@/lib/revalidate-voices";
 import { allow, clientIp, tooMany } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -82,6 +83,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   const { data: after } = await service.from("weekly_entries").select("like_count").eq("id", id).maybeSingle();
   // VOICE PASS: 받은 쪽은 단계(첫 ❤·3·10·30)를 넘으면 알림. 준 쪽은 화면에서 +3 XP.
   const [, given] = await Promise.all([result === "ok" ? afterLike(id, service) : null, givenBy(voters, service)]);
+  refreshVoicePages();
   return Response.json({ liked: true, likes: after?.like_count ?? entry.like_count, given, xp: result === "ok" ? 3 : 0 });
 }
 
@@ -94,5 +96,6 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
   const { service, voters, entry } = r;
   await service.from("weekly_likes").delete().eq("entry_id", id).in("voter", voters);
   const { data: after } = await service.from("weekly_entries").select("like_count").eq("id", id).maybeSingle();
+  refreshVoicePages();
   return Response.json({ liked: false, likes: after?.like_count ?? entry.like_count });
 }

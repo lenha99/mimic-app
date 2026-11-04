@@ -9,6 +9,7 @@ import { useViewer } from "@/components/viewer";
 import { VoiceAvatar } from "@/components/voice-avatar";
 import { DEFAULT_AVATAR, normalizeAvatar } from "@/lib/avatar";
 import { displayName } from "@/lib/weekly";
+import { readMyLatest, type MyLatest } from "@/lib/post-take";
 import styles from "./home.module.css";
 
 /**
@@ -42,18 +43,26 @@ export function VoiceStories({ entries }: { entries: { id: string; name: string;
   const lang = useLang();
   const viewer = useViewer();
   const [heard, setHeard] = useState<Set<string>>(new Set());
+  const [latest, setLatest] = useState<MyLatest | null>(null);
 
   useEffect(() => {
     let alive = true;
-    void Promise.resolve().then(() => alive && setHeard(readHeard()));
+    void Promise.resolve().then(() => {
+      if (!alive) return;
+      setHeard(readHeard());
+      setLatest(readMyLatest());
+    });
     return () => {
       alive = false;
     };
   }, []);
 
-  // 안 들은 것부터.
+  // 안 들은 것부터. 방금 올린 내 목소리는 서버 목록에 아직 없어도 맨 앞에 바로 보인다.
   const sorted = [...entries].sort((a, b) => Number(heard.has(a.id)) - Number(heard.has(b.id)));
-  const empty = Math.max(0, 4 - entries.length);
+  if (latest && !entries.some((e) => e.id === latest.id)) {
+    sorted.unshift({ id: latest.id, name: latest.name || t("나", "Me"), avatar: latest.avatar ?? viewer?.avatar });
+  }
+  const empty = Math.max(0, 4 - sorted.length);
 
   return (
     <div className={styles.stories} data-tour="home-stories">

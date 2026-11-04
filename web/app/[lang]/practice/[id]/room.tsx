@@ -1000,7 +1000,7 @@ function TakeReport({
   checking: boolean;
   onCheck: () => void;
   onShowScript: () => void;
-  /** 갤러리에 올리기 — 심사표 바로 아래. 세부 지표 밑에 두었더니 화면 세 장 아래라 아무도 못 봤다(11/3 홍보: 녹음 17명 → 올림 0명). */
+  /** 들려주기 — 테이크 머리 바로 아래(심사표 위). 예전엔 심사표 아래, 그 전엔 세부 지표 밑이었다. 세부 지표 밑에 두었더니 화면 세 장 아래라 아무도 못 봤다(11/3 홍보: 녹음 17명 → 올림 0명). */
   post?: React.ReactNode;
 }) {
   const L = useT();
@@ -1059,6 +1059,9 @@ function TakeReport({
         </div>
       </header>
 
+      {/* 녹음 직후 눈이 닿는 자리 — 심사표·파형보다 위. 망설일 틈 없이 바로 누르게(11/4). */}
+      {post}
+
       {a && <Wave a={a} />}
 
       {warn.map((w) => (
@@ -1078,7 +1081,6 @@ function TakeReport({
         onShowScript={onShowScript}
       />
 
-      {post}
 
       {kind === "line" && take.score && (
         <dl className={styles.axes}>

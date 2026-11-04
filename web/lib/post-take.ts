@@ -50,6 +50,7 @@ export async function postTake(opts: {
     };
     if (res.status === 401) return { ok: false, needLogin: true, error: d.error ?? null };
     if (!res.ok || !d.id) return { ok: false, needLogin: false, error: d.error ?? null };
+    writeMyLatest({ id: d.id, name: nick ?? "", avatar: readLocalAvatar(), at: Date.now() });
     return {
       ok: true,
       id: d.id,
@@ -63,12 +64,36 @@ export async function postTake(opts: {
   }
 }
 
+/**
+ * 방금 올린 내 목소리 — 서버 캐시가 새로 그려지기 전에도 홈 스토리 맨 앞에 바로 보이게(낙관적 표시).
+ * 서버 목록에 들어오면 중복이라 빠진다. 하루가 지나면 버린다.
+ */
+const LATEST = "mimic.myLatest";
+export type MyLatest = { id: string; name: string; avatar: unknown; at: number };
+
+export function readMyLatest(): MyLatest | null {
+  try {
+    const v = JSON.parse(localStorage.getItem(LATEST) ?? "null") as MyLatest | null;
+    return v && typeof v.id === "string" && Date.now() - v.at < 86_400_000 ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeMyLatest(v: MyLatest | null): void {
+  try {
+    if (v) localStorage.setItem(LATEST, JSON.stringify(v));
+    else localStorage.removeItem(LATEST);
+  } catch {}
+}
+
 /** 방금 올린 걸 되돌린다 — 서버에서 지운다(게스트는 열쇠로, 로그인은 계정으로). */
 export async function undoPost(id: string, token: string | null): Promise<boolean> {
   const q = new URLSearchParams({ id });
   if (token) q.set("token", token);
   try {
     const res = await fetch(`/api/weekly/entries?${q}`, { method: "DELETE" });
+    if (res.ok && readMyLatest()?.id === id) writeMyLatest(null);
     return res.ok;
   } catch {
     return false;
