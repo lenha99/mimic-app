@@ -386,6 +386,18 @@ export interface Database {
         Update: never;
         Relationships: [];
       };
+      solo_days: {
+        Row: { owner: string; day: string; takes: number };
+        Insert: { owner: string; day: string; takes?: number };
+        Update: { owner?: string; takes?: number };
+        Relationships: [];
+      };
+      voice_dex: {
+        Row: { owner: string; type_id: string; first_at: string };
+        Insert: { owner: string; type_id: string; first_at?: string };
+        Update: { owner?: string };
+        Relationships: [];
+      };
       follows: {
         Row: { follower: string; creator: string; created_at: string };
         Insert: { follower: string; creator: string; created_at?: string };

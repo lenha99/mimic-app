@@ -11,6 +11,7 @@ import { DEFAULT_AVATAR } from "@/lib/avatar";
 import { readNickname } from "@/lib/nickname";
 import { BADGES, LEVEL_XP, MAX_LEVEL, rankLabel, RANKS, unlocksAt, XP_RULES, type BadgeId } from "@/lib/pass";
 import { track } from "@/lib/track";
+import { VOICE_TYPES } from "@/lib/scorecard";
 import s from "./pass.module.css";
 
 /**
@@ -31,6 +32,9 @@ const RULE_ICON: Record<string, string> = {
   likesGiven: "M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 5 6.5 5c2 0 3.5 1.1 4.5 2.6C12 6.1 13.5 5 15.5 5 19 5 21.1 8.4 19.6 11.8 17.5 16.4 12 21 12 21z",
   picked: "M12 2l2.9 6.6 7.1.6-5.4 4.7 1.6 7.1L12 17.3 5.8 21l1.6-7.1L2 9.2l7.1-.6z",
   prophet: "M12 5C6.5 5 2.4 9.2 1 12c1.4 2.8 5.5 7 11 7s9.6-4.2 11-7c-1.4-2.8-5.5-7-11-7zm0 11a4 4 0 110-8 4 4 0 010 8z",
+  activeDays: "M13.5 1.7S14.2 4.3 14.2 6.4c0 2-1.3 3.6-3.3 3.6S7.4 8.4 7.4 6.4l.03-.36C5.4 8.5 4.2 11.6 4.2 15c0 4.4 3.6 8 8 8s8-3.6 8-8C20.2 9.6 17.6 4.8 13.5 1.7z",
+  takes: "M12 3a3 3 0 00-3 3v6a3 3 0 006 0V6a3 3 0 00-3-3zm7 9a7 7 0 01-6 6.92V21h-2v-2.08A7 7 0 015 12h2a5 5 0 0010 0h2z",
+  dex: "M6 2h12a2 2 0 012 2v16a2 2 0 01-2 2H6a2 2 0 01-2-2V4a2 2 0 012-2zm2 4v2h8V6H8zm0 4v2h8v-2H8z",
 };
 
 export default function PassView() {
@@ -74,6 +78,12 @@ export default function PassView() {
         </h1>
         <p className={s.heroRank}>
           {rankLabel(look?.rank ?? "rookie")} · <b>{v?.xp ?? 0} XP</b>
+          {(v?.stats.streak ?? 0) > 0 && (
+            <>
+              {" · "}
+              <b className={s.fire}>🔥 {t(`${v?.stats.streak}일째`, `${v?.stats.streak}-day streak`)}</b>
+            </>
+          )}
           {look?.badges?.length ? (
             <>
               {" "}
@@ -191,6 +201,31 @@ export default function PassView() {
         </ol>
         <p className={s.lede}>
           {t("풀린 꾸미기는 자동으로 껴져요 — 홈·갤러리·내 목소리 페이지에서 모두에게 보여요.", "Unlocks apply automatically and show everywhere — Home, gallery and your voice page.")}
+        </p>
+      </section>
+
+      <section className={s.section}>
+        <div className={s.h2Row}>
+          <h2 className={s.h2}>{t("목소리 타입 도감", "Voice-type dex")}</h2>
+          <small>
+            {v?.dexIds?.length ?? 0} / {VOICE_TYPES.length}
+          </small>
+        </div>
+        <ul className={s.dex}>
+          {VOICE_TYPES.map((vt) => {
+            const got = v?.dexIds?.includes(vt.id);
+            return (
+              <li key={vt.id} className={got ? s.dexGot : s.dexNone}>
+                {got ? t(vt.ko, vt.en) : "???"}
+              </li>
+            );
+          })}
+        </ul>
+        <p className={s.lede}>
+          {t(
+            "녹음할 때마다 그 테이크의 목소리 타입이 도감에 들어가요. 대본을 바꾸거나 읽는 법을 바꾸면 새 타입이 나와요. 한 칸마다 +5 XP.",
+            "Every take drops its voice type into your dex. Try other scripts or another delivery to find new ones. +5 XP per slot.",
+          )}
         </p>
       </section>
 

@@ -20,6 +20,8 @@ import { Scorecard } from "@/components/practice/scorecard";
 import { analyze, analyzeBlob, decodeMono, type Analysis } from "@/lib/voice-analysis";
 import { AskFeedback } from "./ask-feedback";
 import { WeeklyBanner, WeeklyEnter } from "./weekly-enter";
+import { reportTake, SoloToast, type SoloResult } from "@/components/practice/solo-progress";
+import { voiceTypeOf } from "@/lib/scorecard";
 import { Tip } from "@/components/onboarding/tip";
 import { PrivacyTag } from "@/components/privacy-tag";
 import { readMine } from "@/lib/weekly";
@@ -94,6 +96,7 @@ export default function Room({ item }: { item: RoomItem }) {
   const [level, setLevel] = useState(0);
   const [takes, setTakes] = useState<Take[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [solo, setSolo] = useState<{ r: SoloResult; key: string } | null>(null);
   const [playing, setPlaying] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [size, setSize] = useState(1);
@@ -268,6 +271,10 @@ export default function Room({ item }: { item: RoomItem }) {
       await saveTake(take);
       await refresh();
       setOpenId(take.id);
+      // 혼자 하는 XP · 🔥 연속 기록 · 도감 — 숫자만 보낸다(녹음은 폰에만).
+      if (analysis && analysis.span >= 0.6) {
+        void reportTake(voiceTypeOf(analysis)?.id).then((r) => r && setSolo({ r, key: take.id }));
+      }
       setPhase("ready");
       requestAnimationFrame(() =>
         resultRef.current?.scrollIntoView({
@@ -868,6 +875,7 @@ export default function Room({ item }: { item: RoomItem }) {
           </button>
         )}
       </div>
+      {solo && <SoloToast key={solo.key} r={solo.r} next={`/practice/${itemId}`} />}
     </main>
   );
 }
@@ -1009,6 +1017,7 @@ function TakeReport({
   const checks = a ? judge(a, target, L) : [];
   const prevChecks = before?.analysis ? judge(before.analysis, target, L) : [];
   const pass = passCount(checks);
+  const nextFix = checks.find((c) => c.status === "low" || c.status === "high");
   const warn = a ? warnings(a, L) : [];
 
   return (
@@ -1025,15 +1034,20 @@ function TakeReport({
           ) : kind === "line" && scoring ? (
             <p className={styles.headline}>{L("채점 중…", "Scoring…")}</p>
           ) : pass.total > 0 ? (
+            // "4개 중 2개 통과"는 시험 성적표처럼 읽힌다 — 잘한 것부터, 고칠 건 하나만.
             <p className={styles.headline}>
-              {L(
-                <>
-                  기준 {pass.total}개 중 <b>{pass.ok}개</b> 통과
-                </>,
-                <>
-                  <b>{pass.ok}</b> of {pass.total} on target
-                </>,
-              )}
+              {pass.ok === pass.total
+                ? L(<>🎯 <b>전부 좋아요!</b></>, <>🎯 <b>All on target!</b></>)
+                : pass.ok > 0
+                  ? L(
+                      <>
+                        좋은 점 <b>{pass.ok}개</b> · 다음엔 {nextFix?.label} 하나만
+                      </>,
+                      <>
+                        <b>{pass.ok}</b> good · next, just {nextFix?.label}
+                      </>,
+                    )
+                  : L(<>다음엔 <b>{nextFix?.label}</b> 하나만 바꿔 봐요</>, <>Next take, change just <b>{nextFix?.label}</b></>)}
             </p>
           ) : (
             <p className={styles.headline}>{L("진단할 소리가 부족해요", "Not enough audio to analyze")}</p>

@@ -61,6 +61,21 @@ const NO_PACE_EN: Record<string, string> = {
   actor: "Builds a character with pitch",
 };
 
+/** 도감 — 나올 수 있는 목소리 타입 전부(기본 9 + 속도 모를 때 2 + 특별 5). [id, 한국어, 영어] */
+const SPECIAL: [string, string, string][] = [
+  ["trailer", "영화 예고편 성우형", "Movie-trailer voice"],
+  ["anime", "애니 캐릭터 성우형", "Anime character voice"],
+  ["kids", "키즈 채널 진행자형", "Kids-show host"],
+  ["poem", "시 낭송형", "Poetry reader"],
+  ["sports", "스포츠 캐스터형", "Sports caster"],
+];
+export const VOICE_TYPES: { id: string; ko: string; en: string }[] = [
+  ...GRID.flat(),
+  ...NO_PACE.filter((p) => p[0] !== "drama"),
+  ...SPECIAL,
+].map(([id, ko, en]) => ({ id, ko, en }));
+export const VOICE_TYPE_IDS: string[] = VOICE_TYPES.map((v) => v.id);
+
 /**
  * 속도 3칸 × 억양 폭 3칸 = 9가지 기본 타입에, 목소리 높이·쉼·말끝으로 특별 타입이 덮인다.
  * 잰 값에서만 나온다 — 근거를 같이 보여 줘서 "랜덤 운세"가 아니게 한다.

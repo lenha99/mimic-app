@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { normalizeAvatar } from "@/lib/avatar";
-import { lookOf, type Look } from "@/lib/pass";
+import { lookOf, type Look, EMPTY_STATS } from "@/lib/pass";
 import { statsBatch, whoOwns } from "@/lib/pass-server";
 import { createServiceClient } from "@/lib/supabase/service";
 import {
@@ -406,7 +406,7 @@ export async function galleryEntries(limit = 60, opts: { admin?: boolean } = {})
         week: { id: w.id, season: w.season, emoji: w.emoji, title: w.title, titleEn: w.titleEn, live: thisWeek(r, Boolean(w.free)), free: Boolean(w.free) },
         featured: Boolean(r.featured_at),
         badges: (r.badges ?? []).slice(0, 3),
-        look: lookOf(stats.get(whoOwns(r)) ?? { posts: 1, likesReceived: r.like_count, followers: 0, likesGiven: 0, picked: Boolean(r.featured_at), prophet: false }),
+        look: lookOf(stats.get(whoOwns(r)) ?? { ...EMPTY_STATS, posts: 1, likesReceived: r.like_count, picked: Boolean(r.featured_at) }),
         ...(opts.admin ? { promoOk: Boolean(r.promo_ok) } : {}),
       },
     ];

@@ -4,6 +4,7 @@ import { HomeBeacon } from "@/components/home-beacon";
 import { InstallBanner } from "@/components/install-banner";
 import { TopBar } from "@/components/top-bar";
 import { VoiceStories } from "@/components/home/voice-stories";
+import { StreakChip } from "@/components/home/streak-chip";
 import { MyVoiceCard } from "@/components/home/my-voice-card";
 import home from "@/components/home/home.module.css";
 import { HomeHero } from "@/components/weekly/home-hero";
@@ -65,6 +66,7 @@ export default async function Home() {
 
       {/* 올라온 목소리 — 인스타 스토리처럼. 주를 넘어 쌓인 것까지(월요일에 비지 않게). 맨 앞은 "+ 내 목소리". */}
       <VoiceStories entries={gallery.slice(0, 20).map((e) => ({ id: e.id, name: e.name, avatar: e.avatar, look: e.look }))} />
+      <StreakChip />
 
       {/* 연습실 — 첫 한 걸음. 아래에 이번 주 추천 대본과 목소리 갤러리(❤ 순위)가 붙어 있다. */}
       <HomeHero

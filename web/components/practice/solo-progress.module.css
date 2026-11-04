@@ -1,0 +1,83 @@
+/* 녹음 직후 잠깐 떴다 사라지는 진행 알림 — 녹음 버튼 바로 위 */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(96px + env(safe-area-inset-bottom));
+  z-index: 40;
+  width: min(calc(100% - 32px), 420px);
+  transform: translateX(-50%);
+  display: grid;
+  gap: 6px;
+  padding: 12px 40px 12px 14px;
+  border-radius: 18px;
+  background: rgba(32, 29, 37, 0.96);
+  border: 1px solid rgba(255, 201, 60, 0.35);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(8px);
+  animation: pop 0.35s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+@keyframes pop {
+  from {
+    transform: translate(-50%, 16px) scale(0.96);
+    opacity: 0;
+  }
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.xp {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--volt);
+  color: var(--on-accent);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.streak {
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.dex {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.dex small {
+  color: var(--ash);
+  font-weight: 800;
+}
+
+.ask {
+  font-size: 13.5px;
+  font-weight: 900;
+  color: var(--volt);
+  text-decoration: none;
+}
+
+.close {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  background: none;
+  color: var(--ash);
+  font-size: 20px;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}

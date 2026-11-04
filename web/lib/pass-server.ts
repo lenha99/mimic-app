@@ -1,6 +1,20 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { notify, once, ownerTarget } from "@/lib/notify-server";
-import { EMPTY_STATS, FOLLOW_STEPS, LIKE_STEPS, type PassStats } from "@/lib/pass";
+import { EMPTY_STATS, FOLLOW_STEPS, LIKE_STEPS, SOLO_XP, type PassStats } from "@/lib/pass";
+
+/** 한국 날짜 'YYYY-MM-DD' — 연속 기록은 KST 자정에 넘어간다. */
+export function kstDay(at: number = Date.now(), offsetDays = 0): string {
+  return new Date(at + 9 * 3600_000 + offsetDays * 86_400_000).toISOString().slice(0, 10);
+}
+
+/** 연습한 날들 → 오늘(또는 어제)까지 이어진 연속 일수. 어제까지 했고 오늘 아직이면 이어진 걸로 본다. */
+export function streakOf(days: Set<string>, at: number = Date.now()): number {
+  const start = days.has(kstDay(at)) ? 0 : days.has(kstDay(at, -1)) ? -1 : null;
+  if (start === null) return 0;
+  let n = 0;
+  while (days.has(kstDay(at, start - n))) n++;
+  return n;
+}
 
 /**
  * VOICE PASS 숫자 · 단계 알림 — 서버 전용. 표를 새로 만들지 않고 있는 숫자만 센다.
@@ -29,11 +43,14 @@ export async function statsBatch(people: string[][], service: Service = createSe
   const keys = [...keyOf.keys()];
   const users = keys.filter((k) => k.startsWith("u:")).map((k) => k.slice(2));
   try {
-    const [entries, fans, given, picks] = await Promise.all([
+    const [entries, fans, given, picks, solo, dex] = await Promise.all([
       service.from("weekly_entries").select("owner, user_id, like_count, featured_at").eq("hidden", false).limit(5000),
       service.from("follows").select("creator").in("creator", keys).limit(5000),
       service.from("weekly_likes").select("voter").in("voter", keys).limit(20000),
       service.from("weekly_entries").select("id, featured_at").not("featured_at", "is", null).limit(200),
+      // 혼자 하는 진행 — 표(마이그레이션 30)가 아직 없으면 error 로 오고 0 으로 본다.
+      service.from("solo_days").select("owner, day, takes").in("owner", keys).limit(20000),
+      service.from("voice_dex").select("owner, type_id").in("owner", keys).limit(5000),
     ]);
     const get = (k: string) => {
       const id = keyOf.get(k);
@@ -55,6 +72,33 @@ export async function statsBatch(people: string[][], service: Service = createSe
     for (const l of given.data ?? []) {
       const s = get(l.voter);
       if (s) s.likesGiven += 1;
+    }
+    const daysOf = new Map<string, Set<string>>();
+    for (const r of solo.data ?? []) {
+      const s = get(r.owner);
+      if (!s) continue;
+      const id = keyOf.get(r.owner)!;
+      if (!daysOf.has(id)) daysOf.set(id, new Set());
+      const set = daysOf.get(id)!;
+      // 같은 사람의 u:/g: 가 같은 날 둘 다 있으면 하루로 센다.
+      if (!set.has(r.day)) {
+        set.add(r.day);
+        s.activeDays += 1;
+      }
+      s.takes += Math.min(r.takes ?? 0, SOLO_XP.takeCapPerDay);
+    }
+    for (const [id, set] of daysOf) out.get(id)!.streak = streakOf(set);
+    const dexSeen = new Map<string, Set<string>>();
+    for (const r of dex.data ?? []) {
+      const s = get(r.owner);
+      if (!s) continue;
+      const id = keyOf.get(r.owner)!;
+      if (!dexSeen.has(id)) dexSeen.set(id, new Set());
+      const set = dexSeen.get(id)!;
+      if (!set.has(r.type_id)) {
+        set.add(r.type_id);
+        s.dex += 1;
+      }
     }
     const pk = picks.data ?? [];
     if (pk.length) {
@@ -169,4 +213,11 @@ export async function givenBy(keys: string[], service: Service = createServiceCl
   if (!keys.length) return 0;
   const { count } = await service.from("weekly_likes").select("entry_id", { count: "exact", head: true }).in("voter", keys);
   return count ?? 0;
+}
+
+/** 도감에 모은 목소리 타입 id 들 (화면용) */
+export async function dexOf(keys: string[], service: Service = createServiceClient()): Promise<string[]> {
+  if (!keys.length) return [];
+  const { data } = await service.from("voice_dex").select("type_id").in("owner", keys).limit(200);
+  return [...new Set((data ?? []).map((r) => r.type_id as string))];
 }

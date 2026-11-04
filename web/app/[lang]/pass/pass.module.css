@@ -442,3 +442,44 @@
     scroll-behavior: auto;
   }
 }
+
+.fire {
+  color: #ffb547 !important;
+}
+
+/* 목소리 타입 도감 — 빈칸은 ???, 모은 칸은 노랗게 */
+.dex {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.dex li {
+  min-height: 48px;
+  display: grid;
+  place-items: center;
+  padding: 8px 10px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+  word-break: keep-all;
+}
+
+.dexGot {
+  background:
+    radial-gradient(100% 100% at 0% 0%, rgba(255, 201, 60, 0.2), transparent 70%),
+    var(--panel);
+  border: 1px solid rgba(255, 201, 60, 0.45);
+  color: var(--white);
+}
+
+.dexNone {
+  background: var(--panel);
+  border: 1px dashed var(--rule);
+  color: var(--ash-dim);
+  letter-spacing: 0.2em;
+}
