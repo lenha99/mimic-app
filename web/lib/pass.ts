@@ -23,7 +23,7 @@ export const EMPTY_STATS: PassStats = { posts: 0, likesReceived: 0, followers: 0
 
 /** XP 얻는 법 — 화면(/pass)에 그대로 보여 준다 */
 export const XP_RULES = [
-  { key: "posts", xp: 30, ko: "목소리 올리기", en: "Post a voice", noteKo: "목소리마다", noteEn: "per voice" },
+  { key: "posts", xp: 30, ko: "목소리 들려주기", en: "Post a voice", noteKo: "목소리마다", noteEn: "per voice" },
   { key: "likesReceived", xp: 10, ko: "❤ 받기", en: "Get a ❤", noteKo: "❤ 하나마다", noteEn: "per ❤" },
   { key: "followers", xp: 25, ko: "구독자 생기기", en: "Gain a subscriber", noteKo: "한 명마다", noteEn: "per sub" },
   { key: "likesGiven", xp: 3, ko: "다른 목소리에 ❤", en: "Give a ❤", noteKo: "누를 때마다", noteEn: "per ❤" },

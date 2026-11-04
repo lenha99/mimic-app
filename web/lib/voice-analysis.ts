@@ -36,6 +36,8 @@ export type Analysis = {
   pitchHz: number | null;
   /** 문장 끝 음량 - 문장 본체 음량 (dB, 음수일수록 처짐). 문장이 없으면 null */
   endDrop: number | null;
+  /** 소리 덩어리 수 — 끊어 외친 음절에 가깝다(이어 말하면 덜 센다) */
+  bursts: number;
   /** 가장 큰 소리 (dBFS) */
   peakDb: number;
   clipped: boolean;
@@ -223,6 +225,10 @@ export async function analyze(
   }
   const endDrop = drops.length ? drops.reduce((s, v) => s + v, 0) / drops.length : null;
 
+  // 6.5) 소리 덩어리 — 말소리 구간에서 양옆 골짜기보다 4dB 넘게 솟은 봉우리.
+  //      "라센가앙"을 끊어 외치면 3~4, "아아악" 한 덩어리면 1 이다.
+  const bursts = countBursts(db, first, last, thr);
+
   // 7) 화면용 파형.
   const BARS = 64;
   const bars: number[] = [];
@@ -246,11 +252,41 @@ export async function analyze(
     pitchRange,
     pitchHz,
     endDrop,
+    bursts,
     peakDb: 20 * Math.log10(peak + 1e-9),
     clipped: clipCount > rate * 0.01,
     bars,
     gaps,
   };
+}
+
+/** 봉우리 수 — 세 프레임 평균으로 편 뒤, 양옆 골짜기 중 높은 쪽보다 4dB 넘게 솟고 0.1초 넘게 떨어진 것 */
+function countBursts(db: Float32Array, first: number, last: number, thr: number): number {
+  if (last - first < 3) return last >= first ? 1 : 0;
+  const n = last - first + 1;
+  const e = new Float32Array(n + 2).fill(thr);
+  for (let i = 0; i < n; i += 1) {
+    const f = first + i;
+    const a = db[Math.max(first, f - 1)];
+    const b = db[f];
+    const c = db[Math.min(last, f + 1)];
+    e[i + 1] = Math.max(thr, (a + b + c) / 3);
+  }
+  const PROM = 4;
+  const GAP = Math.round(0.1 / HOP_S);
+  let count = 0;
+  let lastPeak = -GAP;
+  for (let i = 1; i <= n; i += 1) {
+    if (e[i] < e[i - 1] || e[i] < e[i + 1] || e[i] <= thr) continue;
+    let l = e[i];
+    for (let j = i - 1; j >= 0 && e[j] <= e[i]; j -= 1) l = Math.min(l, e[j]);
+    let r = e[i];
+    for (let j = i + 1; j < e.length && e[j] <= e[i]; j += 1) r = Math.min(r, e[j]);
+    if (e[i] - Math.max(l, r) < PROM || i - lastPeak < GAP) continue;
+    count += 1;
+    lastPeak = i;
+  }
+  return Math.max(1, count);
 }
 
 /** value 로 된 run 중 maxLen 보다 짧은 것을 반대 값으로 메운다 (양 끝은 건드리지 않는다). */

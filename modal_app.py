@@ -187,13 +187,14 @@ def _decode_upload(raw: bytes, max_s: float | None = None):
               secrets=[modal.Secret.from_name("mimic-proxy")])
 @modal.fastapi_endpoint(method="POST", docs=True)
 async def score(request: Request, meme_id: str, file: UploadFile, client: str = "",
-                rescore: int = 0):
+                rescore: int = 0, profile: str = ""):
     """
     meme_id: 따라할 밈 식별자 (예: 'ronaldo_siu') — query param
     file:    유저 녹음 (multipart 필드 'file', wav/m4a)
     client:  익명 기기 식별자(선택). 랭킹에서 같은 사람의 연속 시도를 묶는 용도.
     rescore: 1 이면 이미 한 번 채점한 녹음을 저장 전에 다시 채점하는 것(웹
              /api/publish-recording). 도전 수에 또 세면 "N명 도전"이 부푼다.
+    profile: "anime" 면 애니 명대사 기준(억양·박자 중심, 음절 수 검사). 그 외는 밈 기준.
     """
     if not _from_proxy(request):
         return _PROXY_ONLY
@@ -205,7 +206,7 @@ async def score(request: Request, meme_id: str, file: UploadFile, client: str = 
     if user_path is None:
         return {"error": "녹음 파일을 디코딩할 수 없음"}
 
-    result = _score(ref_path, user_path)
+    result = _score(ref_path, user_path, "anime" if profile == "anime" else "meme")
     os.unlink(user_path)
 
     if isinstance(result.get("score"), int):
@@ -215,6 +216,7 @@ async def score(request: Request, meme_id: str, file: UploadFile, client: str = 
             "grade": result.get("grade"),
             "pitch": bd.get("pitch"), "tone": bd.get("tone"),
             "timing": bd.get("timing"),
+            **({"energy": bd.get("energy"), "profile": "anime"} if profile == "anime" else {}),
             **({"client": client[:64]} if client else {}),
         })
     return result
@@ -855,16 +857,77 @@ def _timing_envelope(ref, usr):
 SCORE_CURVE = [(0, 0), (20, 30), (35, 55), (50, 72), (65, 85), (80, 94), (100, 100)]
 
 
-def _curve(raw):
+# 애니 명대사 곡선 — 밈 곡선보다 덜 휜다. 애니 채점은 음색 비중을 내려서(남의 목소리
+# 결은 일반인이 못 낸다) 원점수가 이미 덜 깎이니, 같은 곡선에 태우면 100 이 흔해진다.
+# 90 위는 원본을 거의 그대로 재현해야만 나오게 둔다.
+ANIME_CURVE = [(0, 0), (20, 20), (40, 45), (60, 70), (75, 85), (90, 97), (100, 100)]
+
+# 애니 가중치 — 따라하기의 핵심은 억양 모양과 끊어 외친 박자다.
+ANIME_WEIGHTS = {"pitch": 0.35, "timing": 0.35, "tone": 0.15, "energy": 0.15}
+# 소리 덩어리(음절) 수가 원본의 이 비율보다 적거나 많으면 따라한 게 아니다 —
+# "라센가앙"을 "아아악" 한 덩어리로 지르면 여기서 막힌다.
+ANIME_BURST_MIN_RATIO = 0.55
+ANIME_BURST_CAP_RAW = 45   # 막히면 원점수 상한 (곡선 뒤 약 51점)
+
+
+def _curve(raw, curve=None):
+    curve = curve or SCORE_CURVE
     raw = max(0.0, min(100.0, float(raw)))
-    for (x0, y0), (x1, y1) in zip(SCORE_CURVE, SCORE_CURVE[1:]):
+    for (x0, y0), (x1, y1) in zip(curve, curve[1:]):
         if raw <= x1:
             return y0 + (y1 - y0) * (raw - x0) / (x1 - x0)
     return 100.0
 
 
-def _score(reference_path, user_path):
+def _bursts(y, sr):
+    """소리 덩어리 수 — 음절을 끊어 외친 횟수에 가깝다.
+
+    RMS 포락선(dB)을 살짝 펴서, 앞뒤 골짜기보다 4dB 이상 솟은 봉우리를 센다.
+    0.09초 안에 붙은 봉우리는 하나로 친다(한 음절 안의 떨림).
+    """
+    hop = 256
+    rms = librosa.feature.rms(y=y, frame_length=1024, hop_length=hop)[0]
+    if len(rms) < 3:
+        return 1
+    db = 20 * np.log10(rms + 1e-6)
+    k = 3
+    db = np.convolve(db, np.ones(k) / k, mode="same")
+    top = float(np.max(db))
+    floor = top - 30.0
+    min_gap = max(1, int(0.09 * sr / hop))
+    from scipy.signal import find_peaks
+    # 양 끝을 바닥으로 깔아 둬야 첫·끝 음절도 봉우리로 잡힌다
+    padded = np.concatenate([[floor], db, [floor]])
+    peaks, _ = find_peaks(padded, height=floor, prominence=4.0, distance=min_gap)
+    return max(1, len(peaks))
+
+
+def _energy_match(ref, usr, sr):
+    """기세 — 원본만큼 몰아붙였나 (0~100).
+
+    두 녹음 모두 최대값으로 정규화돼 있어 절대 음량은 못 잰다(폰 마이크마다 다르다).
+    대신 (1) 소리를 얼마나 꽉 채워 냈나 = 평균/최대 RMS, (2) 소리의 밝기 =
+    스펙트럼 무게중심. 외치면 둘 다 오르고, 속삭이면 (1)이 내려간다. 원본과의 비율로 본다
+    — 원본보다 더 세다고 더 주지 않는다.
+    """
+    def feats(y):
+        rms = librosa.feature.rms(y=y, frame_length=1024, hop_length=256)[0]
+        on = rms[rms > rms.max() * 0.1]
+        fill = float(np.mean(on) / (rms.max() + 1e-9)) if len(on) else 0.0
+        cen = librosa.feature.spectral_centroid(y=y, sr=sr, hop_length=256)[0]
+        bright = float(np.median(cen[rms > rms.max() * 0.1])) if len(on) else 0.0
+        return fill, bright
+
+    fr, br = feats(ref)
+    fu, bu = feats(usr)
+    fill = 100.0 * float(np.exp(-abs(np.log((fu + 1e-6) / (fr + 1e-6))) / 0.35))
+    bright = 100.0 * float(np.exp(-abs(np.log2((bu + 1.0) / (br + 1.0))) / 0.6))
+    return 0.5 * fill + 0.5 * bright
+
+
+def _score(reference_path, user_path, profile="meme"):
     SR = 22050
+    anime = profile == "anime"
 
     def load(p):
         y = librosa.load(p, sr=SR, mono=True)[0]
@@ -894,6 +957,10 @@ def _score(reference_path, user_path):
                                      metric="euclidean")
         mad = float(np.mean(np.abs(sa[wp[:, 0]] - sb[wp[:, 1]])))
         pitch = 100.0 * float(np.exp(-mad / 4.0))  # 0세미톤=100, 4세미톤≈37
+        if anime:
+            # 짧은 대사는 DTW 가 마음대로 휘어서 거꾸로 해도 억양이 맞는다고 본다
+            # (나니? 역재생 97). 정렬이 대각선에서 멀수록 깎는다.
+            pitch *= 0.4 + 0.6 * _timing_from_path(wp, len(sa), len(sb)) / 100.0
 
     # 음색: MFCC DTW 코사인 유사도
     def mfcc_norm(y):
@@ -912,14 +979,30 @@ def _score(reference_path, user_path):
 
     # 가중 합 (억양 없으면 그 가중치를 음색/타이밍에 재분배)
     # 가중치 근거: test/calibration_test.py 의 변형 사다리로 격자탐색한 값.
+    curve = ANIME_CURVE if anime else SCORE_CURVE
+    energy = None
+    burst = None
     comps = []
-    if pitch is not None:
-        comps.append((pitch, 0.15))
-    comps.append((tone, 0.50))
-    comps.append((timing, 0.35))
+    if anime:
+        W = ANIME_WEIGHTS
+        energy = _energy_match(ref, usr, SR)
+        if pitch is not None:
+            comps.append((pitch, W["pitch"]))
+        comps += [(tone, W["tone"]), (timing, W["timing"]), (energy, W["energy"])]
+    else:
+        if pitch is not None:
+            comps.append((pitch, 0.15))
+        comps.append((tone, 0.50))
+        comps.append((timing, 0.35))
     wsum = sum(w for _, w in comps)
     raw = sum(v * w for v, w in comps) / wsum
-    total = round(_curve(raw))
+    if anime:
+        br, bu = _bursts(ref, SR), _bursts(usr, SR)
+        ratio = min(br, bu) / max(br, bu)
+        burst = {"ref": br, "user": bu, "ok": ratio >= ANIME_BURST_MIN_RATIO or abs(br - bu) <= 1}
+        if not burst["ok"]:
+            raw = min(raw, ANIME_BURST_CAP_RAW)
+    total = round(_curve(raw, curve))
 
     grade = ("SS" if total >= 90 else "S" if total >= 80
              else "A" if total >= 70 else "B" if total >= 55 else "C")
@@ -933,14 +1016,19 @@ def _score(reference_path, user_path):
         m = max(out) if out else 1.0
         return [round(v / (m + 1e-9), 3) for v in out]
 
-    return {
+    out = {
         "score": total, "grade": grade, "raw": round(raw),
         "pitch_scored": pitch is not None,
         # 항목도 같은 곡선 — 총점만 올리면 "총점 82 인데 항목은 다 50대"가 된다
         "breakdown": {
-            "pitch": round(_curve(pitch)) if pitch is not None else 0,
-            "tone": round(_curve(tone)),
-            "timing": round(_curve(timing)),
+            "pitch": round(_curve(pitch, curve)) if pitch is not None else 0,
+            "tone": round(_curve(tone, curve)),
+            "timing": round(_curve(timing, curve)),
         },
         "waveform": {"ref": bars(ref), "user": bars(usr)},
     }
+    if anime:
+        out["profile"] = "anime"
+        out["breakdown"]["energy"] = round(_curve(energy, curve))
+        out["bursts"] = burst
+    return out
