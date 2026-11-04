@@ -50,8 +50,9 @@ export default function PassView() {
   useEffect(() => track("pass_view"), []);
   // 패스 로드는 지금 단계가 보이게 옆으로 넘겨 둔다.
   useEffect(() => {
-    const el = road.current?.querySelector<HTMLElement>("[data-now]");
-    if (el && road.current) road.current.scrollLeft = el.offsetLeft - 24;
+    const r = road.current;
+    const el = r?.querySelector<HTMLElement>("[data-now]");
+    if (r && el) r.scrollLeft = Math.max(0, el.getBoundingClientRect().left - r.getBoundingClientRect().left + r.scrollLeft - 20);
   }, [level]);
 
   return (
