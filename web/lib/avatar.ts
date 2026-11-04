@@ -18,13 +18,13 @@ export const AVATAR_OPTIONS = {
   color: [
     "coco", "skin", "tan", "cocoa", "volt", "pink", "peach", "red", "blue", "cyan", "mint", "lime", "lilac", "white", "ink",
   ],
-  eyes: ["dot", "shiny", "happy", "sleepy", "wink", "star", "heart", "angry", "sad"],
-  hair: ["none", "sprout", "bangs", "bob", "twin", "spiky", "perm", "bun", "bald", "white"],
-  hairColor: ["black", "brown", "blonde", "pink", "blue", "gray"],
-  face: ["none", "blush", "freckles", "mustache", "beard", "wrinkles", "tears", "bandaid"],
-  glasses: ["none", "round", "thick", "sun", "heart", "reading"],
-  hat: ["none", "headset", "cap", "beanie", "bucket", "beret", "party", "visor", "crown", "bow", "flower"],
-  fx: ["none", "notes", "sparkle", "hearts", "fire", "rain", "sweat"],
+  eyes: ["dot", "shiny", "happy", "sleepy", "wink", "star", "heart", "angry", "sad", "anime", "sharp"],
+  hair: ["none", "sprout", "bangs", "bob", "twin", "spiky", "perm", "bun", "bald", "white", "ahoge", "long", "pony", "hero"],
+  hairColor: ["black", "brown", "blonde", "pink", "blue", "gray", "red", "purple", "silver"],
+  face: ["none", "blush", "freckles", "mustache", "beard", "wrinkles", "tears", "bandaid", "scar", "whisker", "nosebandage"],
+  glasses: ["none", "round", "thick", "sun", "heart", "reading", "eyepatch", "visor"],
+  hat: ["none", "headset", "cap", "beanie", "bucket", "beret", "party", "visor", "crown", "bow", "flower", "headband", "straw", "catears", "witch"],
+  fx: ["none", "notes", "sparkle", "hearts", "fire", "rain", "sweat", "aura", "speed", "sakura"],
 } as const;
 
 type Options = typeof AVATAR_OPTIONS;
@@ -70,6 +70,10 @@ export const HAIR_COLORS: Record<Avatar["hairColor"], string> = {
   pink: "#ff8ab6",
   blue: "#7390ff",
   gray: "#e2e0e8",
+  red: "#ff5b52",
+  purple: "#9a6bff",
+  // 애니 은발 — 회색(gray)과 달리 푸른 기가 도는 쨍한 은색.
+  silver: "#c4dcff",
 };
 
 /** 편집 화면의 탭 순서와 이름. */
@@ -101,23 +105,31 @@ export const OPTION_LABELS: Record<AvatarPart, Record<string, string>> = {
   },
   eyes: {
     dot: "동글", shiny: "초롱초롱", happy: "웃음", sleepy: "졸림", wink: "윙크", star: "반짝", heart: "하트",
-    angry: "버럭", sad: "울먹",
+    angry: "버럭", sad: "울먹", anime: "순정만화", sharp: "각성",
   },
   hair: {
     none: "없음", sprout: "새싹", bangs: "앞머리", bob: "단발", twin: "양갈래", spiky: "삐죽", perm: "뽀글 파마",
-    bun: "쪽머리", bald: "M자", white: "백발 옆머리",
+    bun: "쪽머리", bald: "M자", white: "백발 옆머리", ahoge: "바보털", long: "긴 생머리", pony: "포니테일",
+    hero: "주인공 머리",
   },
-  hairColor: { black: "검정", brown: "갈색", blonde: "금발", pink: "핑크", blue: "파랑", gray: "은발" },
+  hairColor: { black: "검정", brown: "갈색", blonde: "금발", pink: "핑크", blue: "파랑", gray: "흰머리", red: "빨강", purple: "보라",
+    silver: "은발",
+  },
   face: {
     none: "없음", blush: "볼터치", freckles: "주근깨", mustache: "콧수염", beard: "흰 수염",
-    wrinkles: "주름", tears: "눈물", bandaid: "반창고",
+    wrinkles: "주름", tears: "눈물", bandaid: "반창고", scar: "X 흉터", whisker: "볼 수염", nosebandage: "콧등 반창고",
   },
-  glasses: { none: "없음", round: "동글이", thick: "뿔테", sun: "선글라스", heart: "하트 안경", reading: "돋보기" },
+  glasses: { none: "없음", round: "동글이", thick: "뿔테", sun: "선글라스", heart: "하트 안경", reading: "돋보기",
+    eyepatch: "안대", visor: "사이버 바이저",
+  },
   hat: {
     none: "없음", headset: "헤드셋", cap: "캡", beanie: "비니", bucket: "버킷햇", beret: "베레모", party: "고깔",
-    visor: "선캡", crown: "왕관", bow: "리본", flower: "꽃핀",
+    visor: "선캡", crown: "왕관", bow: "리본", flower: "꽃핀", headband: "닌자 이마띠", straw: "밀짚모자",
+    catears: "고양이귀", witch: "마녀 모자",
   },
-  fx: { none: "없음", notes: "음표", sparkle: "반짝이", hearts: "하트", fire: "불꽃", rain: "먹구름", sweat: "땀" },
+  fx: { none: "없음", notes: "음표", sparkle: "반짝이", hearts: "하트", fire: "불꽃", rain: "먹구름", sweat: "땀",
+    aura: "오라", speed: "집중선", sakura: "벚꽃",
+  },
 };
 
 export const PART_LABELS_EN: Record<AvatarPart, string> = {
@@ -140,23 +152,32 @@ export const OPTION_LABELS_EN: Record<AvatarPart, Record<string, string>> = {
   },
   eyes: {
     dot: "Dots", shiny: "Sparkly", happy: "Happy", sleepy: "Sleepy", wink: "Wink", star: "Starry", heart: "Hearts",
-    angry: "Angry", sad: "Teary",
+    angry: "Angry", sad: "Teary", anime: "Shoujo", sharp: "Awakened",
   },
   hair: {
     none: "None", sprout: "Sprout", bangs: "Bangs", bob: "Bob", twin: "Pigtails", spiky: "Spiky", perm: "Curly perm",
-    bun: "Bun", bald: "Receding", white: "White sides",
+    bun: "Bun", bald: "Receding", white: "White sides", ahoge: "Ahoge", long: "Long", pony: "Ponytail",
+    hero: "Hero spikes",
   },
-  hairColor: { black: "Black", brown: "Brown", blonde: "Blonde", pink: "Pink", blue: "Blue", gray: "Silver" },
+  hairColor: { black: "Black", brown: "Brown", blonde: "Blonde", pink: "Pink", blue: "Blue", gray: "Gray", red: "Red", purple: "Purple",
+    silver: "Silver",
+  },
   face: {
     none: "None", blush: "Blush", freckles: "Freckles", mustache: "Mustache", beard: "White beard",
-    wrinkles: "Wrinkles", tears: "Tears", bandaid: "Band-aid",
+    wrinkles: "Wrinkles", tears: "Tears", bandaid: "Band-aid", scar: "X scar", whisker: "Whiskers",
+    nosebandage: "Nose bandage",
   },
-  glasses: { none: "None", round: "Round", thick: "Horn-rim", sun: "Shades", heart: "Heart specs", reading: "Readers" },
+  glasses: { none: "None", round: "Round", thick: "Horn-rim", sun: "Shades", heart: "Heart specs", reading: "Readers",
+    eyepatch: "Eyepatch", visor: "Cyber visor",
+  },
   hat: {
     none: "None", headset: "Headset", cap: "Cap", beanie: "Beanie", bucket: "Bucket hat", beret: "Beret", party: "Party hat",
-    visor: "Visor", crown: "Crown", bow: "Bow", flower: "Flower pin",
+    visor: "Visor", crown: "Crown", bow: "Bow", flower: "Flower pin", headband: "Ninja band", straw: "Straw hat",
+    catears: "Cat ears", witch: "Witch hat",
   },
-  fx: { none: "None", notes: "Notes", sparkle: "Sparkles", hearts: "Hearts", fire: "Fire", rain: "Rain cloud", sweat: "Sweat" },
+  fx: { none: "None", notes: "Notes", sparkle: "Sparkles", hearts: "Hearts", fire: "Fire", rain: "Rain cloud", sweat: "Sweat",
+    aura: "Aura", speed: "Speed lines", sakura: "Sakura",
+  },
 };
 
 /**
@@ -214,6 +235,26 @@ export const PRESETS: { name: string; nameEn: string; avatar: Avatar }[] = [
     nameEn: "Coco",
     avatar: DEFAULT_AVATAR,
   },
+  {
+    name: "닌자",
+    nameEn: "Ninja",
+    avatar: { body: "cat", color: "peach", eyes: "shiny", hair: "spiky", hairColor: "blonde", face: "whisker", glasses: "none", hat: "headband", fx: "speed" },
+  },
+  {
+    name: "해적 선장",
+    nameEn: "Pirate captain",
+    avatar: { body: "bear", color: "tan", eyes: "happy", hair: "none", hairColor: "black", face: "scar", glasses: "eyepatch", hat: "straw", fx: "none" },
+  },
+  {
+    name: "마법소녀",
+    nameEn: "Magical girl",
+    avatar: { body: "bunny", color: "white", eyes: "anime", hair: "long", hairColor: "pink", face: "blush", glasses: "none", hat: "bow", fx: "sakura" },
+  },
+  {
+    name: "각성 주인공",
+    nameEn: "Awakened hero",
+    avatar: { body: "blob", color: "skin", eyes: "sharp", hair: "hero", hairColor: "silver", face: "nosebandage", glasses: "none", hat: "none", fx: "aura" },
+  },
 ];
 
 const PARTS = Object.keys(AVATAR_OPTIONS) as AvatarPart[];
@@ -268,13 +309,13 @@ function rng(seed: number): () => number {
 const CUTE_POOL: { [K in AvatarPart]: readonly Avatar[K][] } = {
   body: ["parrot", "parrot", "blob", "cat", "cat", "bear", "bear", "bunny", "bunny", "ghost"],
   color: ["coco", "pink", "peach", "mint", "lilac", "blue", "cyan", "lime", "skin", "white", "cocoa", "tan", "volt", "ink"],
-  eyes: ["dot", "dot", "shiny", "shiny", "happy", "happy", "wink", "star", "heart", "sleepy"],
-  hair: ["none", "none", "none", "sprout", "bangs", "bob", "twin", "perm"],
-  hairColor: ["black", "brown", "blonde", "pink", "blue", "brown"],
-  face: ["blush", "blush", "blush", "none", "freckles", "bandaid"],
+  eyes: ["dot", "dot", "shiny", "shiny", "happy", "happy", "wink", "star", "heart", "sleepy", "anime", "anime"],
+  hair: ["none", "none", "none", "sprout", "bangs", "bob", "twin", "perm", "ahoge", "long", "pony"],
+  hairColor: ["black", "brown", "blonde", "pink", "blue", "brown", "red", "purple", "silver"],
+  face: ["blush", "blush", "blush", "none", "freckles", "bandaid", "whisker", "scar"],
   glasses: ["none", "none", "none", "none", "none", "round", "sun", "heart"],
-  hat: ["none", "none", "none", "headset", "beanie", "cap", "beret", "party", "bow", "flower", "crown", "bucket"],
-  fx: ["none", "none", "none", "none", "none", "notes", "sparkle", "hearts"],
+  hat: ["none", "none", "none", "headset", "beanie", "cap", "beret", "party", "bow", "flower", "crown", "bucket", "catears", "witch", "straw", "headband"],
+  fx: ["none", "none", "none", "none", "none", "notes", "sparkle", "hearts", "sakura", "aura"],
 };
 
 function pickFrom(next: () => number): Avatar {
@@ -286,7 +327,7 @@ function pickFrom(next: () => number): Avatar {
   // 앵무새는 코코 노랑이 제일 코코답다 — 절반은 노랑으로.
   if (out.body === "parrot" && next() < 0.5) out.color = "coco";
   // 토끼·고양이 귀 위로 큰 모자가 얹히면 귀가 가려져 정체를 잃는다.
-  if ((out.body === "bunny" || out.body === "cat") && ["bucket", "beanie", "cap"].includes(out.hat)) out.hat = "none";
+  if ((out.body === "bunny" || out.body === "cat") && ["bucket", "beanie", "cap", "straw", "witch", "catears"].includes(out.hat)) out.hat = "none";
   return out;
 }
 
