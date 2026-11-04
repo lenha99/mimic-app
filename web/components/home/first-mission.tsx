@@ -331,7 +331,11 @@ export function FirstMission({ voices, scriptId, line }: { voices: MissionVoice[
           <>
             <p className={styles.kicker}>{t("첫 미션 · 3/3", "First mission · 3/3")}</p>
             <h2 className={styles.title}>{vtype ? t("내 목소리 타입이 나왔어요!", "Here's your voice type!") : t("녹음 완료!", "Recorded!")}</h2>
-            {vtype ? <VoiceTypeCard type={vtype} /> : <p className={styles.note}>{t("소리가 짧아서 타입은 못 정했어요. 연습실에서 한 번 더 해 봐요", "Too short to tell — try again in the Practice Room")}</p>}
+            {vtype ? (
+              <VoiceTypeCard type={vtype} />
+            ) : (
+              <p className={styles.note}>{longEnough ? t("이번 녹음으론 목소리 타입을 못 정했어요", "Couldn't pick a voice type from this take") : t("소리가 짧아서 타입은 못 정했어요. 연습실에서 한 번 더 해 봐요", "Too short to tell — try again in the Practice Room")}</p>
+            )}
             {longEnough && weekFor() ? (
               <>
                 <button type="button" className={styles.rec} onClick={() => void post()} disabled={step === "posting"}>
