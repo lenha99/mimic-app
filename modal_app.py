@@ -446,7 +446,10 @@ WEEKLY = ("weekly_view", "weekly_play", "weekly_like", "enter_open", "weekly_ent
           "voice_card_start", "voice_card_done", "voice_card_share", "voice_rec_open",
           "intro_view", "intro_skip", "intro_done",
           "mission_open", "mission_like", "mission_next", "mission_rec", "mission_done", "mission_skip",
-          "pass_view", "pass_levelup", "anime_view", "anime_take", "duel_start", "duel_done")
+          "pass_view", "pass_levelup", "anime_view", "anime_take", "duel_start", "duel_done",
+          # 연습 피드백 게시판 (web/lib/track.ts 와 같은 목록)
+          "board_entry", "board_view", "board_open", "board_check", "board_play", "board_note",
+          "board_ask_open", "board_post", "board_post_fail")
 
 
 @app.function(image=slim_image, volumes={REF_DIR: volume})

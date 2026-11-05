@@ -9,7 +9,9 @@ import { tr } from "@/lib/i18n";
 import { getPost } from "@/lib/board-server";
 import { ago, parseScript } from "@/lib/practice";
 import { createClient } from "@/lib/supabase/server";
+import { TrackMount } from "@/components/track-mount";
 import { NoteForm, OwnerActions, ReportButton } from "./post-actions";
+import { PostAudio } from "./post-audio";
 import styles from "../board.module.css";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -35,6 +37,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
 
   return (
     <main className={`shell ${styles.post}`}>
+      <TrackMount kind={post.mine ? "board_check" : "board_open"} via={post.id} />
       <nav className={styles.top}>
         <Link href="/practice/board" className={styles.back}>
           {t("← 연습 피드백", "← Practice feedback")}
@@ -73,7 +76,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
       )}
 
       {post.audioUrl ? (
-        <audio className={styles.audio} src={post.audioUrl} controls preload="metadata" />
+        <PostAudio className={styles.audio} src={post.audioUrl} postId={post.id} />
       ) : (
         <p className={styles.note}>{t("녹음을 불러오지 못했어요. 새로고침해 주세요.", "Couldn't load the audio. Please refresh.")}</p>
       )}

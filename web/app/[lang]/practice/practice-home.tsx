@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { PracticeStrip } from "@/components/weekly/practice-strip";
 import { listMine, type MyScript } from "@/lib/my-scripts";
+import { track } from "@/lib/track";
 import { ago, expectedSeconds, trackLabel, type Script, type Track } from "@/lib/practice";
 import { useLang, useT } from "@/components/lang";
 import { memeText } from "@/lib/meme-i18n";
@@ -249,7 +250,12 @@ export default function PracticeHome({
 
       {/* 게시판 입구 — 카드는 언제나 게시판 목록으로 간다. 새 글 소식은 아래 줄에서 그 글로 바로. */}
       <div className={styles.boardWrap}>
-        <Link href="/practice/board" className={latest ? `${styles.board} ${styles.boardLive}` : styles.board} data-tour="practice-board">
+        <Link
+          href="/practice/board"
+          className={latest ? `${styles.board} ${styles.boardLive}` : styles.board}
+          data-tour="practice-board"
+          onClick={() => track("board_entry", { via: "card" })}
+        >
           <span className={styles.boardIcon} aria-hidden="true">
             🎧
           </span>
@@ -276,7 +282,7 @@ export default function PracticeHome({
           <span aria-hidden="true">→</span>
         </Link>
         {latest && (
-          <Link href={`/practice/board/${latest.id}`} className={styles.boardLatest}>
+          <Link href={`/practice/board/${latest.id}`} className={styles.boardLatest} onClick={() => track("board_entry", { via: "latest" })}>
             <span>
               {latest.firstPost
                 ? t(`🎉 ${latest.nickname} 님의 첫 연습 · ${ago(Date.parse(latest.createdAt), lang)}`, `🎉 ${latest.nickname}'s first take · ${ago(Date.parse(latest.createdAt), lang)}`)

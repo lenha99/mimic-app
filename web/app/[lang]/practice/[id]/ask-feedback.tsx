@@ -5,6 +5,7 @@ import { useState } from "react";
 import { MAX_ASK, POST_DAYS, type BoardTrack } from "@/lib/board";
 import { updateTake, type Take } from "@/lib/take-store";
 import { useT } from "@/components/lang";
+import { track as trackEvent } from "@/lib/track";
 import styles from "./ask-feedback.module.css";
 
 /**
@@ -47,7 +48,15 @@ export function AskFeedback({
 
   if (!open) {
     return (
-      <button type="button" className={styles.open} onClick={() => setOpen(true)} data-tour="room-ask">
+      <button
+        type="button"
+        className={styles.open}
+        onClick={() => {
+          setOpen(true);
+          trackEvent("board_ask_open", { meme_id: scriptId });
+        }}
+        data-tour="room-ask"
+      >
         <span className={styles.openIcon} aria-hidden="true">
           🎧
         </span>
@@ -73,6 +82,7 @@ export function AskFeedback({
       body.append("ask", ask.trim());
       const res = await fetch("/api/practice-posts", { method: "POST", body });
       const data = (await res.json().catch(() => ({}))) as { id?: string; error?: string };
+      if (!res.ok || !data.id) trackEvent("board_post_fail", { meme_id: scriptId, via: String(res.status) });
       if (res.status === 401) {
         setNeedLogin(true);
         return;
@@ -81,6 +91,7 @@ export function AskFeedback({
         setError(data.error ?? t("업로드가 안 됐어요. 다시 시도해 주세요", "Couldn't upload. Please try again"));
         return;
       }
+      trackEvent("board_post", { meme_id: scriptId, via: data.id });
       await updateTake(take.id, { postId: data.id });
       onPosted();
     } catch {

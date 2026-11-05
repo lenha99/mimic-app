@@ -8,6 +8,7 @@ import { ago } from "@/lib/practice";
 import { createClient } from "@/lib/supabase/server";
 import { ScreenTour } from "@/components/onboarding/tours";
 import { TourHelp } from "@/components/onboarding/tour";
+import { TrackMount } from "@/components/track-mount";
 import styles from "./board.module.css";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -46,6 +47,7 @@ export default async function BoardPage({ searchParams }: { searchParams: Promis
   return (
     <main className="shell">
       <TourHelp id="board" corner />
+      <TrackMount kind="board_view" via={sort} />
       <nav className={styles.top}>
         <Link href="/practice" className={styles.back}>
           {t("← 연습실", "← Practice")}

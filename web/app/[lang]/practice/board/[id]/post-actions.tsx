@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { MAX_NOTE, NOTE_TAGS, noteTagLabel, type NoteTag } from "@/lib/board";
 import { useLang, useT } from "@/components/lang";
+import { track } from "@/lib/track";
 import styles from "../board.module.css";
 
 /** 피드백 남기기 — 짚을 곳(여러 개)과 한 줄. */
@@ -36,6 +37,7 @@ export function NoteForm({ postId }: { postId: string }) {
         setError(data.error ?? t("등록이 안 됐어요. 다시 시도해 주세요", "Couldn't post. Please try again"));
         return;
       }
+      track("board_note", { via: postId });
       setBody("");
       setTags([]);
       router.refresh();

@@ -62,7 +62,18 @@ export type TrackKind =
   // 첫 방문 안내 — 몇 장째에서 건너뛰는지(via)를 본다
   | "intro_view"
   | "intro_skip"
-  | "intro_done";
+  | "intro_done"
+  // 연습 피드백 게시판 — 입구(entry) → 목록(view) → 글 열기(open, 내 글은 check) → 듣기(play) → 한 줄(note)
+  // 올리는 쪽: 패널 열기(ask_open) → 올림(post) / 실패(post_fail, via=상태 코드)
+  | "board_entry"
+  | "board_view"
+  | "board_open"
+  | "board_check"
+  | "board_play"
+  | "board_note"
+  | "board_ask_open"
+  | "board_post"
+  | "board_post_fail";
 
 const URL_ =
   process.env.NEXT_PUBLIC_TRACK_URL ?? "https://lenha99--meme-scoring-track.modal.run";
