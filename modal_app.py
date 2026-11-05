@@ -50,6 +50,8 @@ transcribe_image = (
 
 # 기준 음성 스트리밍 전용 경량 이미지 (librosa 없음 → 콜드 스타트 빠름)
 slim_image = modal.Image.debian_slim().pip_install("fastapi[standard]")
+# 녹음 압축(encode) 전용 — ffmpeg 만. librosa 가 든 채점 이미지를 깨우면 콜드 스타트가 길다.
+encode_image = modal.Image.debian_slim().apt_install("ffmpeg").pip_install("fastapi[standard]")
 
 app = modal.App("meme-scoring")
 
@@ -80,6 +82,9 @@ with slim_image.imports():
     from fastapi import UploadFile, Response, Request
 
 with transcribe_image.imports():
+    from fastapi import UploadFile, Response, Request
+
+with encode_image.imports():
     from fastapi import UploadFile, Response, Request
 
 
@@ -286,6 +291,48 @@ async def transcribe(request: Request, file: UploadFile, client: str = ""):
     return {"text": text, "duration": round(info.duration, 2)}
 
 
+# ---- 녹음 압축 (갤러리·게시판 업로드) ----
+# 보정한 녹음은 24kHz wav 라 1초에 47KB 다. 재생할 때마다 그만큼 Supabase 전송량(무료 5GB/월)을
+# 먹는다. AAC 48kbps(.m4a)는 원본의 약 13%이고 아이폰·안드로이드·PC 어디서나 재생된다
+# (Opus 는 더 작지만 오래된 아이폰 사파리가 못 튼다). 2026-11-06 청음 비교 후 48k 로 정했다.
+# 웹앱 서버만 부른다(_from_proxy). 실패하면 웹이 원본을 그대로 올린다 — 압축 때문에 업로드가 막히면 안 된다.
+ENCODE_MAX_S = 180
+
+
+@app.function(image=encode_image, cpu=0.25, memory=256, scaledown_window=10, timeout=30,
+              max_containers=3, secrets=[modal.Secret.from_name("mimic-proxy")])
+@modal.fastapi_endpoint(method="POST")
+async def encode(request: Request, file: UploadFile):
+    """녹음 → AAC 48kbps mono .m4a (faststart). 본문 그대로 돌려준다."""
+    from fastapi import Response
+    if not _from_proxy(request):
+        return Response(status_code=403)
+    raw = await file.read()
+    if not raw or len(raw) > MAX_UPLOAD_BYTES:
+        return Response(status_code=413)
+    src = tempfile.NamedTemporaryFile(delete=False).name
+    dst = tempfile.NamedTemporaryFile(suffix=".m4a", delete=False).name
+    try:
+        with open(src, "wb") as f:
+            f.write(raw)
+        subprocess.run(
+            ["ffmpeg", "-v", "error", "-y", "-i", src, "-t", str(ENCODE_MAX_S),
+             "-ac", "1", "-c:a", "aac", "-b:a", "48k", "-movflags", "+faststart", dst],
+            check=True, capture_output=True, timeout=25,
+        )
+        with open(dst, "rb") as f:
+            out = f.read()
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError):
+        return Response(status_code=422)
+    finally:
+        for x in (src, dst):
+            try:
+                os.unlink(x)
+            except OSError:
+                pass
+    return Response(content=out, media_type="audio/mp4")
+
+
 @app.function(image=slim_image, volumes={REF_DIR: volume}, scaledown_window=90)
 @modal.fastapi_endpoint(method="GET")
 def reference(meme_id: str):
@@ -438,7 +485,7 @@ FUNNEL = ("view_home", "view_record", "play_ref", "record_start", "score", "shar
 # 피드는 퍼널 옆길이다 — 보러 와서, 듣고, 반응하고, "나도 해보기"로 퍼널에 합류한다.
 FEED = ("view_feed", "feed_play", "feed_react", "feed_try")
 # 연습실 — 대본을 열고(view), 녹음한다(take). 녹음 자체는 기기에만 남는다.
-PRACTICE = ("practice_view", "practice_take")
+PRACTICE = ("practice_view", "practice_take", "practice_abort")
 # 주간 챌린지 · 블라인드 배틀 · 보이스 카드 · 첫 방문 안내. 웹은 예전부터 보냈는데
 # 여기 목록에 없어 조용히 버려지고 있었다.
 WEEKLY = ("weekly_view", "weekly_play", "weekly_like", "enter_open", "weekly_enter", "enter_fail", "post_undo", "weekly_share",

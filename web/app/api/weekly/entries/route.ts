@@ -1,3 +1,4 @@
+import { AUDIO_CACHE_CONTROL, toAac } from "@/lib/encode-audio";
 import { refreshVoicePages } from "@/lib/revalidate-voices";
 import { randomUUID } from "node:crypto";
 import { after } from "next/server";
@@ -139,12 +140,14 @@ export async function POST(req: Request) {
   }
 
   const id = existing?.id ?? randomUUID();
-  const type = file.type.split(";")[0];
+  // AAC 48k 로 줄여서 올린다 — 실패하면 원본 그대로 (lib/encode-audio)
+  const audio = (await toAac(file)) ?? file;
+  const type = audio.type.split(";")[0];
   const ext = type.includes("wav") ? "wav" : type.includes("mp4") ? "m4a" : type.includes("ogg") ? "ogg" : "webm";
   const path = `weekly/${week.id}/${id}-${Date.now().toString(36)}.${ext}`;
   const { error: upError } = await service.storage
     .from("recordings")
-    .upload(path, file, { contentType: type, upsert: false });
+    .upload(path, audio, { contentType: type, upsert: false, cacheControl: AUDIO_CACHE_CONTROL });
   if (upError) {
     return Response.json({ error: t("녹음을 올리지 못했어요. 다시 해주세요.", "Couldn't upload the recording. Please try again.") }, { status: 500 });
   }

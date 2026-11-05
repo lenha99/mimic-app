@@ -28,6 +28,8 @@ export type TrackKind =
   // 연습실 — 퍼널(도전장)과 섞지 않는다. 연습은 퍼지는 길이 아니라 다시 오는 길이다.
   | "practice_view"
   | "practice_take"
+  // 녹음 중단 — via=stop(버림) / restart(버리고 다시). 많으면 대본이 길거나 어렵다는 뜻
+  | "practice_abort"
   // 주간 챌린지 — 보고(view) → 듣고(play) → ❤(like) / 출전(enter) → 공유(share)
   | "weekly_view"
   | "weekly_play"

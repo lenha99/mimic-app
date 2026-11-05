@@ -112,6 +112,9 @@ export default function Room({ item }: { item: RoomItem }) {
   const stream = useRef<MediaStream | null>(null);
   const ctx = useRef<AudioContext | null>(null);
   const timers = useRef<number[]>([]);
+  // 중단 — 이번 테이크는 버린다(결과 화면 없이). restart 면 버리고 바로 다시 센다.
+  const discard = useRef(false);
+  const restart = useRef(false);
   const player = useRef<HTMLAudioElement>(null);
   const playerUrl = useRef<string | null>(null);
   const refEl = useRef<HTMLAudioElement>(null);
@@ -313,6 +316,25 @@ export default function Room({ item }: { item: RoomItem }) {
     if (rec && rec.state !== "inactive") rec.stop();
   }, []);
 
+  /** 녹음 중단 — 삑사리 났을 때. 테이크를 저장하지 않고 준비 상태로, again 이면 곧장 다시 센다. */
+  const abort = useCallback(
+    (again: boolean) => {
+      discard.current = true;
+      clearTimers();
+      const rec = recorder.current;
+      if (rec && rec.state !== "inactive") rec.stop();
+      else discard.current = false;
+      releaseMic();
+      recorder.current = null;
+      setElapsed(0);
+      setLevel(0);
+      restart.current = again;
+      setPhase("ready");
+      track("practice_abort", { meme_id: itemId, via: again ? "restart" : "stop" });
+    },
+    [itemId, releaseMic],
+  );
+
   const start = useCallback(async () => {
     if (phase !== "ready") return;
     if (typeof MediaRecorder === "undefined" || !navigator.mediaDevices?.getUserMedia) {
@@ -366,6 +388,12 @@ export default function Room({ item }: { item: RoomItem }) {
           if (e.data.size > 0) chunks.push(e.data);
         };
         rec.onstop = () => {
+          // 중단한 테이크 — 마이크·타이머는 abort 가 이미 정리했다. 여기서 또 정리하면
+          // "처음부터"로 새로 잡은 마이크와 카운트다운을 끈다.
+          if (discard.current) {
+            discard.current = false;
+            return;
+          }
           clearTimers();
           releaseMic();
           const blob = new Blob(chunks, { type: rec.mimeType || "audio/webm" });
@@ -422,9 +450,24 @@ export default function Room({ item }: { item: RoomItem }) {
       if (phase === "ready") void start();
       else if (phase === "recording") stop();
     };
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.code === "Escape" && (phase === "recording" || phase === "count")) abort(false);
+    };
+    window.addEventListener("keydown", onEsc);
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [phase, start, stop]);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("keydown", onEsc);
+    };
+  }, [phase, start, stop, abort]);
+
+  // "처음부터" — 준비 상태로 돌아온 뒤 바로 다시 시작한다.
+  useEffect(() => {
+    if (phase === "ready" && restart.current) {
+      restart.current = false;
+      void start();
+    }
+  }, [phase, start]);
 
   const playTake = (t: Take) => {
     const el = player.current;
@@ -847,13 +890,27 @@ export default function Room({ item }: { item: RoomItem }) {
       </nav>
 
       <div className={styles.dock}>
-        {phase === "recording" ? (
-          <button type="button" className={styles.recStop} onClick={stop}>
-            <span className={styles.meter} style={{ transform: `scaleX(${0.08 + level * 0.92})` }} />
-            <span className={styles.recDot} aria-hidden="true" />
-            <span className={styles.recTime}>{clock(elapsed)}</span>
-            <span>{L("다 읽었으면 탭", "Tap when done")}</span>
-          </button>
+        {phase === "recording" || phase === "count" ? (
+          <div className={styles.recRow}>
+            <button type="button" className={styles.recAbort} onClick={() => abort(false)} aria-label={L("녹음 중단 · 이번 테이크 버리기", "Stop and discard this take")}>
+              ✕<small>{L("중단", "Cancel")}</small>
+            </button>
+            {phase === "recording" ? (
+              <button type="button" className={styles.recStop} onClick={stop}>
+                <span className={styles.meter} style={{ transform: `scaleX(${0.08 + level * 0.92})` }} />
+                <span className={styles.recDot} aria-hidden="true" />
+                <span className={styles.recTime}>{clock(elapsed)}</span>
+                <span>{L("다 읽었으면 탭", "Tap when done")}</span>
+              </button>
+            ) : (
+              <button type="button" className={styles.rec} disabled>
+                <span className={styles.countNum}>{count}</span>
+              </button>
+            )}
+            <button type="button" className={styles.recAbort} onClick={() => abort(true)} aria-label={L("버리고 처음부터 다시", "Discard and restart")}>
+              ↺<small>{L("처음부터", "Restart")}</small>
+            </button>
+          </div>
         ) : (
           <button
             type="button"
@@ -862,9 +919,7 @@ export default function Room({ item }: { item: RoomItem }) {
             disabled={phase !== "ready"}
             data-tour="room-record"
           >
-            {phase === "count" ? (
-              <span className={styles.countNum}>{count}</span>
-            ) : phase === "analyzing" ? (
+            {phase === "analyzing" ? (
               L("듣는 중…", "Listening…")
             ) : (
               <>
