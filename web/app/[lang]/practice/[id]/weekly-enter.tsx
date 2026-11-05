@@ -184,11 +184,11 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
               {feedback ? "✓" : ""}
             </span>
             <span>
-              <b>{t("💬 피드백도 받을래요", "💬 I'd like feedback too")}</b>
+              <b>{t("💬 댓글도 받을래요", "💬 Open comments")}</b>
               <small>
                 {feedback
-                  ? t("듣는 사람이 댓글로 한 줄씩 남겨 줘요", "Listeners can leave a line as a comment")
-                  : t("댓글 없이 ❤ 만 받아요", "No comments, just ❤")}
+                  ? t("응원 · 피드백 · 한마디 — 듣는 사람이 댓글로 남겨요", "Cheers, tips, anything — listeners can comment")
+                  : t("댓글 없이 ❤ 만 받아요 · 나중에 켤 수 있어요", "Just ❤ · you can turn comments on later")}
               </small>
             </span>
           </button>

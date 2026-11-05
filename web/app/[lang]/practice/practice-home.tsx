@@ -261,20 +261,20 @@ export default function PracticeHome({
           </span>
           <span className={styles.boardText}>
             <b>
-              {t("피드백 · 서로 들어주기", "Feedback · listen to each other")}
+              {t("💬 댓글 · 서로 들어주기", "💬 Comments · listen to each other")}
               {freshCount > 0 && <i className={styles.boardNew}>{t(`새 연습 ${freshCount}`, `${freshCount} NEW`)}</i>}
             </b>
             {freshCount > 0 ? (
               <small className={styles.boardNews}>
                 {t(
-                  `${namesText(freshNames, "ko")} 님이 피드백을 기다려요 · 전체 보기`,
+                  `${namesText(freshNames, "ko")} 님이 댓글을 기다려요 · 전체 보기`,
                   `${namesText(freshNames, "en")} want feedback · see all`,
                 )}
               </small>
             ) : (
               <small>
                 {waiting > 0
-                  ? t(`${waiting}개 목소리가 첫 피드백을 기다려요. 한 줄 남겨볼까요?`, `${waiting} voices are waiting for a first note. Leave one?`)
+                  ? t(`${waiting}개 목소리가 첫 댓글을 기다려요. 응원 한마디 남겨 볼까요?`, `${waiting} voices are waiting for a first comment. Leave one?`)
                   : t("다른 준비생의 연습을 듣고, 내 테이크도 올려 보세요", "Listen to others' takes and post your own")}
               </small>
             )}

@@ -122,7 +122,7 @@ function textOf(kind: string, actor: string, count: number | null, t: T): string
     case "listen_daily":
       return t(`오늘 ${count ?? 0}명이 당신 목소리를 들었어요`, `${count ?? 0} people listened to your voice today`);
     case "note":
-      return t(`${actor}님이 당신 목소리에 피드백을 남겼어요`, `${actor} left feedback on your voice`);
+      return t(`${actor}님이 당신 목소리에 댓글을 남겼어요`, `${actor} commented on your voice`);
     case "note_reply":
       return t(`${actor}님이 당신 댓글에 답글을 달았어요`, `${actor} replied to your comment`);
     case "new_entry":

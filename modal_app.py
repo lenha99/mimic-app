@@ -497,7 +497,7 @@ WEEKLY = ("weekly_view", "weekly_play", "weekly_like", "enter_open", "weekly_ent
           # 연습 피드백 게시판 (web/lib/track.ts 와 같은 목록)
           "board_entry", "board_view", "board_open", "board_check", "board_play", "board_note",
           "board_ask_open", "board_post", "board_post_fail",
-          "feedback_note", "feedback_reply", "feedback_toggle")
+          "feedback_note", "feedback_reply", "feedback_toggle", "feedback_open")
 
 
 @app.function(image=slim_image, volumes={REF_DIR: volume})

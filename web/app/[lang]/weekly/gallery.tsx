@@ -59,7 +59,7 @@ export default function Gallery({
     { id: "new", label: t("최신", "Latest") },
     { id: "hot", label: t("♥ 인기", "♥ Popular") },
     { id: "week", label: t(`이번 주 ${thisWeek}`, `This week ${thisWeek}`) },
-    { id: "feedback", label: t("💬 피드백", "💬 Feedback") },
+    { id: "feedback", label: t("💬 댓글", "💬 Comments") },
   ];
 
   const ids = useMemo(() => entries.map((e) => e.id), [entries]);
