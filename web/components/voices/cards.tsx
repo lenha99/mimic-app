@@ -103,51 +103,67 @@ export function VoiceCard({ e, index = 0 }: { e: GalleryEntry; index?: number })
   );
 }
 
-/** 운영자 픽 — 크게, 하나씩. 여러 개면 옆으로 넘긴다. */
-export function Spotlight({ picks, title }: { picks: GalleryEntry[]; title?: string }) {
+/** 운영자 픽 — 한 번에 한 명만, 크게. 지난 픽은 아래 작은 줄로 남는다(내려가도 기록은 남게). */
+export function Spotlight({ pick, past = [], title }: { pick: GalleryEntry | null; past?: GalleryEntry[]; title?: string }) {
   const t = useT();
   const lang = useLang();
   const p = usePlayer();
-  if (!picks.length) return null;
+  const mounted = useMounted();
+  if (!pick) return null;
+  const e = pick;
+  const on = p.current?.id === e.id;
+  const playing = on && p.playing;
+  const name = displayName(e.name, lang);
+  const play = () => p.toggle({ id: e.id, name: e.name, avatar: e.avatar });
   return (
     <section className={styles.spot} aria-label={t("운영자 픽", "Editor's pick")} data-tour="voices-pick">
       <div className={styles.spotHead}>
         <span className={styles.spotChip}>⭐ {title ?? t("운영자 픽", "Editor's pick")}</span>
-        {picks.length > 1 && <small>{t(`${picks.length}개 · 옆으로 넘겨 보세요`, `${picks.length} · swipe`)}</small>}
+        {mounted && e.featuredAt && <small>{pickSince(e.featuredAt, t)}</small>}
       </div>
-      <div className={styles.spotRail}>
-        {picks.map((e) => {
-          const on = p.current?.id === e.id;
-          const playing = on && p.playing;
-          const name = displayName(e.name, lang);
-          const play = () => p.toggle({ id: e.id, name: e.name, avatar: e.avatar });
-          return (
-            <article key={e.id} className={`${styles.spotCard} ${playing ? styles.spotCardOn : ""}`}>
-              <span className={styles.spotGlow} aria-hidden="true" />
-              <button type="button" className={styles.spotFace} onClick={play} aria-label={playing ? t("멈추기", "Pause") : t(`${name} 듣기`, `Play ${name}`)}>
-                <span className={`${styles.halo} ${styles.haloBig} ${playing ? styles.haloOn : ""}`} aria-hidden="true" />
-                <AvatarFrame frame={e.look?.frame}>
-                  <VoiceAvatar avatar={normalizeAvatar(e.avatar)} size={104} level={playing ? 0.7 : 0} />
-                </AvatarFrame>
-              </button>
-              <div className={styles.spotText}>
-                <Link href={`/weekly/e/${e.id}`} className={styles.spotName}>
-                  <NameLine name={name} look={e.look} badges lang={lang} />
-                </Link>
-                <span className={styles.spotMeta}>
-                  {e.week.emoji} {t(e.week.title, e.week.titleEn)} · ♥ {e.likes}
-                </span>
-              </div>
-              <button type="button" className={styles.spotPlay} onClick={play}>
-                <span className={styles.spotPlayIcon}>{playing ? <PauseIcon size={16} /> : <PlayIcon size={16} />}</span>
-                <Wave bars={e.bars} progress={p.progress} active={on} n={28} />
-              </button>
-            </article>
-          );
-        })}
-      </div>
+      <article className={`${styles.spotCard} ${playing ? styles.spotCardOn : ""}`}>
+        <span className={styles.spotGlow} aria-hidden="true" />
+        <button type="button" className={styles.spotFace} onClick={play} aria-label={playing ? t("멈추기", "Pause") : t(`${name} 듣기`, `Play ${name}`)}>
+          <span className={`${styles.halo} ${styles.haloBig} ${playing ? styles.haloOn : ""}`} aria-hidden="true" />
+          <AvatarFrame frame={e.look?.frame}>
+            <VoiceAvatar avatar={normalizeAvatar(e.avatar)} size={104} level={playing ? 0.7 : 0} />
+          </AvatarFrame>
+        </button>
+        <div className={styles.spotText}>
+          <Link href={`/weekly/e/${e.id}`} className={styles.spotName}>
+            <NameLine name={name} look={e.look} badges lang={lang} />
+          </Link>
+          <span className={styles.spotMeta}>
+            {e.week.emoji} {t(e.week.title, e.week.titleEn)} · ♥ {e.likes}
+          </span>
+        </div>
+        <button type="button" className={styles.spotPlay} onClick={play}>
+          <span className={styles.spotPlayIcon}>{playing ? <PauseIcon size={16} /> : <PlayIcon size={16} />}</span>
+          <Wave bars={e.bars} progress={p.progress} active={on} n={28} />
+        </button>
+      </article>
+      {past.length > 0 && (
+        <div className={styles.pastPicks}>
+          <span className={styles.pastLabel}>{t("지난 픽", "Past picks")}</span>
+          <div className={styles.pastRail}>
+            {past.map((x) => (
+              <Link key={x.id} href={`/weekly/e/${x.id}`} className={styles.pastItem}>
+                <VoiceAvatar avatar={normalizeAvatar(x.avatar)} size={36} level={0} />
+                <span>{displayName(x.name, lang)}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </section>
   );
+}
+
+/** "11월 3일부터 픽 · 3일째" */
+function pickSince(at: string, t: (ko: string, en: string) => string): string {
+  const d = new Date(at);
+  const days = Math.max(1, Math.floor((Date.now() - d.getTime()) / 86_400_000) + 1);
+  return t(`${d.getMonth() + 1}월 ${d.getDate()}일부터 · ${days}일째`, `Since ${d.getMonth() + 1}/${d.getDate()} · day ${days}`);
 }
 
 function fmtDur(s: number): string {

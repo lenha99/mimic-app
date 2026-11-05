@@ -39,7 +39,7 @@ export function AdminPick({ entryId }: { entryId: string }) {
       const d = (await res.json()) as { featured?: boolean; error?: string };
       if (res.ok) {
         setS({ ...s, featured: d.featured });
-        setMsg(d.featured ? "홈·갤러리에 고정했어요 (최대 30초 뒤 반영)" : "픽에서 뺐어요");
+        setMsg(d.featured ? "지금 픽으로 걸었어요 — 이전 픽은 지난 픽으로 (최대 30초 뒤 반영)" : "픽에서 뺐어요 (지난 픽 기록에서도 빠져요)");
       } else setMsg(d.error ?? "실패");
     } finally {
       setBusy(false);

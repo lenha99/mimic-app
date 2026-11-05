@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { splitPicks } from "@/lib/picks";
 import { ClaimPending } from "@/app/[lang]/profile/claim-pending";
 import { HomeBeacon } from "@/components/home-beacon";
 import { InstallBanner } from "@/components/install-banner";
@@ -80,7 +81,7 @@ export default async function Home() {
       />
 
       {/* 운영자 픽 — 좋은 목소리는 첫 화면에서 바로 들린다. */}
-      <HomePick picks={gallery.filter((e) => e.featured).slice(0, 5)} />
+      <HomePick pick={splitPicks(gallery).pick} />
 
       <InstallBanner />
 

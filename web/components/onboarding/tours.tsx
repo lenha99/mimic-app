@@ -166,8 +166,8 @@ const sets = (t: T) => {
       target: "voices-pick",
       title: t("⭐ 운영자 픽", "⭐ Editor's pick"),
       body: t(
-        <p>운영자가 직접 듣고 고른 목소리예요. 주가 바뀌어도 내려가지 않아요. 좋은 목소리를 올리면 여기와 홈에 소개돼요.</p>,
-        <p>Voices hand-picked by the team. They stay up even after the week ends. Post a great take and it could be featured here and on Home.</p>,
+        <p>운영자가 직접 듣고 고른 단 하나의 목소리예요. 새 픽이 나올 때까지 여기와 홈 맨 위에 걸려 있고, 내려가도 &lsquo;지난 픽&rsquo;으로 남아요.</p>,
+        <p>The one voice the team hand-picked. It stays here and at the top of Home until the next pick, then moves to Past picks.</p>,
       ),
     },
     {

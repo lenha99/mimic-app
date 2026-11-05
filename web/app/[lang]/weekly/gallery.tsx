@@ -1,5 +1,6 @@
 "use client";
 
+import { splitPicks } from "@/lib/picks";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useLang, useT } from "@/components/lang";
@@ -39,7 +40,7 @@ export default function Gallery({
   const t = useT();
   const lang = useLang();
   const [filter, setFilter] = useState<Filter>("new");
-  const picks = useMemo(() => entries.filter((e) => e.featured), [entries]);
+  const { pick, past } = useMemo(() => splitPicks(entries), [entries]);
   const shown = useMemo(() => {
     if (filter === "hot") return [...entries].sort((a, b) => b.likes - a.likes || b.plays - a.plays);
     if (filter === "week") return entries.filter((e) => e.week.live);
@@ -89,7 +90,7 @@ export default function Gallery({
           </p>
         </header>
 
-        <Spotlight picks={picks} />
+        <Spotlight pick={pick} past={past} />
 
         {/* 이번 주 추천 대본 — 뭘 읽을지 모르는 사람을 위한 카드 하나. 순위판까지 남은 개수도 솔직하게. */}
         <section className={styles.prompt} data-tour="voices-prompt">
