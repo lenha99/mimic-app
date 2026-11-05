@@ -500,6 +500,43 @@
 }
 
 /* 연습 피드백 게시판 입구 */
+.boardWrap {
+  margin-top: 14px;
+  display: grid;
+  gap: 6px;
+}
+
+.boardWrap .board {
+  margin-top: 0;
+}
+
+.boardLatest {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  font-size: 12.5px;
+  color: var(--white);
+  text-decoration: none;
+}
+
+.boardLatest span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.boardLatest b {
+  flex: none;
+  color: var(--volt);
+  font-size: 12.5px;
+}
+
 .board {
   display: flex;
   align-items: center;

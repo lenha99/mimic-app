@@ -36,17 +36,25 @@ const TAB_KEY = "mimic.practice.filter";
 const FOLD = 3;
 const LEVEL_LABEL: [string, string][] = [["", ""], ["쉬움", "Easy"], ["보통", "Medium"], ["어려움", "Hard"]];
 
+/** "히나, 코코 외 2명" — 카드 한 줄에 들어가게 둘까지만 이름을 쓴다. */
+function namesText(names: string[], lang: "ko" | "en") {
+  const shown = names.slice(0, 2).join(", ");
+  const rest = names.length - 2;
+  if (rest <= 0) return shown;
+  return lang === "ko" ? `${shown} 외 ${rest}명` : `${shown} +${rest}`;
+}
+
 export default function PracticeHome({
   scripts,
   lines,
-  pulse = { waiting: 0, fresh: 0, latest: null },
+  pulse = { waiting: 0, fresh: 0, freshNames: [], latest: null },
 }: {
   scripts: Script[];
   lines: Line[];
   /** 게시판 소식 — 첫 피드백 기다리는 수 · 새 글 (5분마다 갱신) */
   pulse?: BoardPulse;
 }) {
-  const { waiting, latest } = pulse;
+  const { waiting, fresh: freshCount, freshNames, latest } = pulse;
   const t = useT();
   const lang = useLang();
   const [tab, setTab] = useState<Tab>("all");
@@ -239,36 +247,45 @@ export default function PracticeHome({
 
       <PracticeStrip />
 
-      {/* 게시판 입구 — 연습실 맨 위에서 빛나게. 새 글이 있으면 누가 올렸는지까지 보여 준다. */}
-      <Link
-        href={latest ? `/practice/board/${latest.id}` : "/practice/board"}
-        className={latest ? `${styles.board} ${styles.boardLive}` : styles.board}
-        data-tour="practice-board"
-      >
-        <span className={styles.boardIcon} aria-hidden="true">
-          🎧
-        </span>
-        <span className={styles.boardText}>
-          <b>
-            {t("연습 피드백 · 서로 들어주기", "Feedback board · listen to each other")}
-            {latest && <i className={styles.boardNew}>{latest.firstPost ? t("첫 연습", "FIRST") : "NEW"}</i>}
-          </b>
-          {latest ? (
-            <small className={styles.boardNews}>
+      {/* 게시판 입구 — 카드는 언제나 게시판 목록으로 간다. 새 글 소식은 아래 줄에서 그 글로 바로. */}
+      <div className={styles.boardWrap}>
+        <Link href="/practice/board" className={latest ? `${styles.board} ${styles.boardLive}` : styles.board} data-tour="practice-board">
+          <span className={styles.boardIcon} aria-hidden="true">
+            🎧
+          </span>
+          <span className={styles.boardText}>
+            <b>
+              {t("연습 피드백 · 서로 들어주기", "Feedback board · listen to each other")}
+              {freshCount > 0 && <i className={styles.boardNew}>{t(`새 연습 ${freshCount}`, `${freshCount} NEW`)}</i>}
+            </b>
+            {freshCount > 0 ? (
+              <small className={styles.boardNews}>
+                {t(
+                  `${namesText(freshNames, "ko")} 님이 올렸어요 · 게시판 전체 보기`,
+                  `${namesText(freshNames, "en")} posted · see the whole board`,
+                )}
+              </small>
+            ) : (
+              <small>
+                {waiting > 0
+                  ? t(`${waiting}명이 첫 피드백을 기다리고 있어요. 한 줄 남겨볼까요?`, `${waiting} people are waiting for their first note. Leave one?`)
+                  : t("다른 준비생의 연습을 듣고, 내 테이크도 올려 보세요", "Listen to others' takes and post your own")}
+              </small>
+            )}
+          </span>
+          <span aria-hidden="true">→</span>
+        </Link>
+        {latest && (
+          <Link href={`/practice/board/${latest.id}`} className={styles.boardLatest}>
+            <span>
               {latest.firstPost
-                ? t(`🎉 새로운 사람이 올렸어요! ${latest.nickname} 님의 첫 연습 · 들어주러 가기`, `🎉 Someone new posted! ${latest.nickname}'s first take · go listen`)
-                : t(`✨ ${latest.nickname} 님이 새 연습을 올렸어요 · ${ago(Date.parse(latest.createdAt), lang)}`, `✨ ${latest.nickname} posted a new take · ${ago(Date.parse(latest.createdAt), lang)}`)}
-            </small>
-          ) : (
-            <small>
-              {waiting > 0
-                ? t(`${waiting}명이 첫 피드백을 기다리고 있어요. 한 줄 남겨볼까요?`, `${waiting} people are waiting for their first note. Leave one?`)
-                : t("내 테이크를 올리고 다른 준비생에게 피드백 받아보세요", "Post a take and get notes from other learners")}
-            </small>
-          )}
-        </span>
-        <span aria-hidden="true">→</span>
-      </Link>
+                ? t(`🎉 ${latest.nickname} 님의 첫 연습 · ${ago(Date.parse(latest.createdAt), lang)}`, `🎉 ${latest.nickname}'s first take · ${ago(Date.parse(latest.createdAt), lang)}`)
+                : t(`✨ ${latest.nickname} · ${latest.title} · ${ago(Date.parse(latest.createdAt), lang)}`, `✨ ${latest.nickname} · ${latest.title} · ${ago(Date.parse(latest.createdAt), lang)}`)}
+            </span>
+            <b>{t("바로 듣기 →", "Listen →")}</b>
+          </Link>
+        )}
+      </div>
 
       <TodayCard scripts={scripts} done={doneIds} />
 
