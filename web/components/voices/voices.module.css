@@ -651,3 +651,45 @@
   background: rgba(124, 200, 242, 0.14);
   color: var(--cyan);
 }
+
+/* 카드 오른쪽 — 💬 댓글 · ❤ 를 나란히. 댓글을 안 받는 목소리는 ❤ 만 */
+.cardActs {
+  align-self: stretch;
+  display: flex;
+  gap: 6px;
+}
+
+.commentBtn {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 2px;
+  min-width: 48px;
+  min-height: 52px;
+  padding: 6px 4px;
+  border: 1px solid var(--rule);
+  border-radius: 16px;
+  background: var(--panel-hi);
+  color: var(--white);
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.commentBtn:active {
+  transform: scale(0.92);
+}
+
+.commentBtn:hover {
+  border-color: rgba(124, 200, 242, 0.55);
+}
+
+.commentIco {
+  font-size: 19px;
+  line-height: 1;
+}
+
+.commentBtn b {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--cyan);
+}

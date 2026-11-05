@@ -83,7 +83,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   const { id } = await ctx.params;
   if (!ID.test(id)) return Response.json({ error: t("잘못된 요청이에요.", "Invalid request.") }, { status: 400 });
   const me = await viewer();
-  if (!me) return Response.json({ error: t("로그인하면 피드백을 남길 수 있어요.", "Log in to leave feedback.") }, { status: 401 });
+  if (!me) return Response.json({ error: t("로그인하면 댓글을 남길 수 있어요.", "Log in to comment.") }, { status: 401 });
   if (!allow(`entry-note:${me}`, 30, 3_600_000)) {
     return tooMany(t("너무 자주 남겼어요. 잠깐 쉬었다가 다시 해 주세요.", "Too many notes. Take a breather and try again."));
   }
@@ -97,7 +97,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   if (!e) return Response.json({ error: t("내려간 목소리예요.", "This voice was removed.") }, { status: 404 });
   const owner = e.user_id === me;
   if (e.feedback_on === false && !owner) {
-    return Response.json({ error: t("지금은 피드백을 받지 않는 목소리예요.", "This voice isn't taking feedback right now.") }, { status: 403 });
+    return Response.json({ error: t("❤ 만 받는 목소리예요.", "This voice only takes ❤.") }, { status: 403 });
   }
 
   const service = createServiceClient();
@@ -130,7 +130,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     await notify({ userId: replyTo, kind: "note_reply", actor: me, entryId: id, push: push(t("내 댓글에 답글이 달렸어요", "Someone replied to you")) });
   }
   if (!owner && e.user_id && e.user_id !== replyTo) {
-    await notify({ userId: e.user_id, kind: "note", actor: me, entryId: id, push: push(t("내 목소리에 피드백이 달렸어요 💬", "New feedback on your voice 💬")) });
+    await notify({ userId: e.user_id, kind: "note", actor: me, entryId: id, push: push(t("내 목소리에 댓글이 달렸어요 💬", "New comment on your voice 💬")) });
   }
   return Response.json({ id: note.id });
 }

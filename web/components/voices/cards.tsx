@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { useLang, useT } from "@/components/lang";
 import { VoiceAvatar } from "@/components/voice-avatar";
 import { normalizeAvatar } from "@/lib/avatar";
@@ -9,7 +9,9 @@ import { challengeById, displayName } from "@/lib/weekly";
 import { useLikes } from "./likes";
 import { AvatarFrame, NameLine } from "@/components/pass/look";
 import type { GalleryEntry } from "@/lib/weekly-server";
+import { CommentSheet } from "./comment-sheet";
 import { PauseIcon, PlayIcon, usePlayer, Wave } from "./player";
+import { track } from "@/lib/track";
 import styles from "./voices.module.css";
 
 /** 정적 페이지라 "몇 분 전"은 브라우저에 붙은 뒤에만 그린다(서버 시각과 어긋나 화면이 깨지지 않게). */
@@ -38,6 +40,10 @@ export function VoiceCard({ e, index = 0 }: { e: GalleryEntry; index?: number })
   const scriptId = challengeById(e.week.id)?.scriptId;
   const fresh = likes?.fresh === e.id && liked;
   const note = likes?.note?.id === e.id ? likes.note.text : null;
+  // 💬 — 댓글을 받는 목소리(또는 이미 달린 게 있으면)만. 누르면 시트가 올라오고 바로 쓴다.
+  const [sheet, setSheet] = useState(false);
+  const [notes, setNotes] = useState(e.notes);
+  const canComment = e.feedbackOn || notes > 0;
 
   return (
     <li className={`${styles.card} ${on ? styles.cardOn : ""}`} style={{ animationDelay: `${Math.min(index, 10) * 40}ms` }}>
@@ -57,11 +63,6 @@ export function VoiceCard({ e, index = 0 }: { e: GalleryEntry; index?: number })
             <NameLine name={name} look={e.look} />
           </b>
           {e.featured && <span className={styles.pickMini}>⭐ {t("픽", "Pick")}</span>}
-          {e.notes > 0 ? (
-            <span className={styles.noteMini}>💬 {e.notes}</span>
-          ) : (
-            e.feedbackOn && <span className={styles.noteAsk}>{t("💬 피드백 원해요", "💬 Wants feedback")}</span>
-          )}
         </Link>
         <span className={styles.cardMeta}>
           {e.week.emoji} {t(e.week.title, e.week.titleEn)}
@@ -73,6 +74,21 @@ export function VoiceCard({ e, index = 0 }: { e: GalleryEntry; index?: number })
         </button>
       </div>
 
+      <div className={styles.cardActs}>
+      {canComment && (
+        <button
+          type="button"
+          className={styles.commentBtn}
+          onClick={() => {
+            setSheet(true);
+            track("feedback_open", { via: e.id });
+          }}
+          aria-label={t(`${name} 댓글 ${notes}개 · 댓글 달기`, `${notes} comments on ${name} · add one`)}
+        >
+          <span className={styles.commentIco} aria-hidden="true">💬</span>
+          <b>{notes > 0 ? notes : t("댓글", "Say")}</b>
+        </button>
+      )}
       {canLike ? (
         <button
           type="button"
@@ -92,6 +108,8 @@ export function VoiceCard({ e, index = 0 }: { e: GalleryEntry; index?: number })
           <i aria-hidden="true">›</i>
         </Link>
       )}
+      </div>
+      {sheet && <CommentSheet entryId={e.id} name={name} onClose={() => setSheet(false)} onCount={setNotes} />}
 
       {fresh && scriptId && (
         <Link href={`/practice/${scriptId}`} className={styles.afterLike}>

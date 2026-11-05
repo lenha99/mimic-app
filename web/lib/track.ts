@@ -79,7 +79,8 @@ export type TrackKind =
   // 갤러리 피드백 댓글 (11/6 게시판을 합친 뒤) — 댓글 · 답글 · 주인이 받기 끄고 켜기(via=on|off)
   | "feedback_note"
   | "feedback_reply"
-  | "feedback_toggle";
+  | "feedback_toggle"
+  | "feedback_open";
 
 const URL_ =
   process.env.NEXT_PUBLIC_TRACK_URL ?? "https://lenha99--meme-scoring-track.modal.run";

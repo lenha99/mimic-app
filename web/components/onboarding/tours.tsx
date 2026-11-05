@@ -132,7 +132,7 @@ const sets = (t: T) => {
             <b>목소리</b> — 올라온 목소리 듣기 · ❤ 순위 · 운영자 픽
           </li>
           <li>
-            <b>연습실</b> — 대본 연습 · 피드백 게시판
+            <b>연습실</b> — 대본 연습 · 서로 들어주기
           </li>
           <li>
             <b>나</b> — 캐릭터 · 내 출전작 · 알림 설정
@@ -298,12 +298,12 @@ const sets = (t: T) => {
       title: t("서로 들어주기", "Listen to each other"),
       body: t(
         <p>
-          피드백을 원하는 목소리가 모인 갤러리로 가요. 듣고 댓글로 한 줄 남겨 보세요. 내 테이크는 연습 화면에서{" "}
-          <b>들려주기</b>를 누를 때 <b>피드백도 받을래요</b>를 켜 두면 돼요.
+          댓글을 받는 목소리가 모인 갤러리로 가요. 카드의 💬 를 누르면 바로 응원·피드백·한마디를 남길 수 있어요. 내 테이크는
+          연습 화면에서 <b>들려주기</b>를 누를 때 <b>댓글도 받을래요</b>를 켜 두면 돼요.
         </p>,
         <p>
-          Opens the gallery of voices asking for feedback. Listen and leave a line as a comment. For your own take, keep{" "}
-          <b>I&apos;d like feedback too</b> on when you post.
+          Opens the gallery of voices open to comments. Tap 💬 on a card to leave a cheer, a tip or anything. For your own
+          take, keep <b>Open comments</b> on when you post.
         </p>,
       ),
     },
@@ -361,11 +361,11 @@ const sets = (t: T) => {
       title: t("연습 녹음은 내 폰에만", "Practice takes stay private"),
       body: t(
         <p>
-          녹음은 🔒 이 폰에만 저장돼 아무도 못 들어요. <b>목소리 갤러리</b>나 <b>피드백 게시판</b>에 직접 올린 테이크만 🌐 다른
+          녹음은 🔒 이 폰에만 저장돼 아무도 못 들어요. <b>목소리 갤러리</b>에 직접 올린 테이크만 🌐 다른
           사람이 들을 수 있어요.
         </p>,
         <p>
-          Takes are 🔒 saved on this phone only. Only takes you <b>post to the gallery</b> or <b>the feedback board</b> can be 🌐 heard
+          Takes are 🔒 saved on this phone only. Only takes you <b>post to the gallery</b> can be 🌐 heard
           by others.
         </p>,
       ),
