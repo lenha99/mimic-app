@@ -21,6 +21,9 @@ export const config = {
   transcribeUrl:
     env.NEXT_PUBLIC_TRANSCRIBE_URL ?? "https://lenha99--meme-scoring-transcribe.modal.run",
 
+  /** 업로드 녹음 압축 — AAC 48kbps 로 (modal_app.encode). 서버 전용 (PROXY_TOKEN). */
+  encodeUrl: env.ENCODE_URL ?? "https://lenha99--meme-scoring-encode.modal.run",
+
   /** 사용자 챌린지 기준 음성 만들기·지우기 — 서버 전용 (UGC_TOKEN 필요). */
   ugcCreateUrl: env.UGC_CREATE_URL ?? "https://lenha99--meme-scoring-ugc-create.modal.run",
   ugcRemoveUrl: env.UGC_REMOVE_URL ?? "https://lenha99--meme-scoring-ugc-remove.modal.run",

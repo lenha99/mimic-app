@@ -1,3 +1,4 @@
+import { AUDIO_CACHE_CONTROL, toAac } from "@/lib/encode-audio";
 import { MAX_ASK, MAX_LIVE_POSTS, MAX_POST_BYTES, MAX_POSTS_PER_USER } from "@/lib/board";
 import { allow, tooMany } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
@@ -76,11 +77,13 @@ export async function POST(req: Request) {
   }
 
   const id = crypto.randomUUID();
-  const ext = file.type.includes("mp4") ? "m4a" : file.type.includes("ogg") ? "ogg" : "webm";
+  // AAC 48k 로 줄여서 올린다 — 실패하면 원본 그대로 (lib/encode-audio)
+  const audio = (await toAac(file)) ?? file;
+  const ext = audio.type.includes("mp4") ? "m4a" : audio.type.includes("ogg") ? "ogg" : "webm";
   const path = `practice/${user.id}/${id}.${ext}`;
   const { error: upError } = await service.storage
     .from("recordings")
-    .upload(path, file, { contentType: file.type.split(";")[0], upsert: false });
+    .upload(path, audio, { contentType: audio.type.split(";")[0], upsert: false, cacheControl: AUDIO_CACHE_CONTROL });
   if (upError) {
     return Response.json({ error: t("녹음을 올리지 못했어요. 다시 해주세요.", "Couldn't upload the recording. Please try again.") }, { status: 500 });
   }
