@@ -1,5 +1,5 @@
 import { signAudio } from "@/lib/audio-url";
-import { isNoteTag, type BoardTrack, type PostSummary, type PostView } from "@/lib/board";
+import { FRESH_MS, isNoteTag, type BoardTrack, type PostSummary, type PostView } from "@/lib/board";
 import { createServiceClient } from "@/lib/supabase/service";
 
 /**
@@ -55,10 +55,30 @@ export async function listPosts(viewer: string | null, sort: Sort, limit = 30): 
 }
 
 export async function waitingCount(): Promise<number> {
+  return (await boardPulse()).waiting;
+}
+
+/** 게시판 밖(연습실)에 띄울 소식 — 첫 피드백 기다리는 수, 막 올라온 글 수, 그중 대표 하나. */
+export type BoardPulse = {
+  waiting: number;
+  fresh: number;
+  latest: { id: string; nickname: string; title: string; firstPost: boolean; createdAt: string } | null;
+};
+
+export async function boardPulse(): Promise<BoardPulse> {
   try {
-    return (await listPosts(null, "waiting", 100)).filter((p) => p.notes === 0).length;
+    const rows = await listPosts(null, "new", 100);
+    const now = Date.now();
+    const fresh = rows.filter((p) => now - Date.parse(p.createdAt) < FRESH_MS);
+    // 처음 올린 사람이 먼저 — "새로운 사람이 올렸어요"가 제일 반가운 소식이다
+    const pick = [...fresh].sort((a, b) => Number(b.firstPost) - Number(a.firstPost) || b.createdAt.localeCompare(a.createdAt))[0];
+    return {
+      waiting: rows.filter((p) => p.notes === 0).length,
+      fresh: fresh.length,
+      latest: pick ? { id: pick.id, nickname: pick.nickname, title: pick.title, firstPost: pick.firstPost, createdAt: pick.createdAt } : null,
+    };
   } catch {
-    return 0;
+    return { waiting: 0, fresh: 0, latest: null };
   }
 }
 

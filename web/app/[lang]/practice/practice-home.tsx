@@ -11,6 +11,7 @@ import { fieldName, scriptTitle } from "@/lib/script-i18n";
 import { summaries, type ItemSummary } from "@/lib/take-store";
 import { ScreenTour } from "@/components/onboarding/tours";
 import { TourHelp } from "@/components/onboarding/tour";
+import type { BoardPulse } from "@/lib/board-server";
 import styles from "./practice.module.css";
 import { GoalChips, TodayCard, type Goal } from "./today";
 
@@ -38,13 +39,14 @@ const LEVEL_LABEL: [string, string][] = [["", ""], ["쉬움", "Easy"], ["보통"
 export default function PracticeHome({
   scripts,
   lines,
-  waiting = 0,
+  pulse = { waiting: 0, fresh: 0, latest: null },
 }: {
   scripts: Script[];
   lines: Line[];
-  /** 피드백을 하나도 못 받은 게시물 수 (5분마다 갱신) */
-  waiting?: number;
+  /** 게시판 소식 — 첫 피드백 기다리는 수 · 새 글 (5분마다 갱신) */
+  pulse?: BoardPulse;
 }) {
+  const { waiting, latest } = pulse;
   const t = useT();
   const lang = useLang();
   const [tab, setTab] = useState<Tab>("all");
@@ -237,6 +239,37 @@ export default function PracticeHome({
 
       <PracticeStrip />
 
+      {/* 게시판 입구 — 연습실 맨 위에서 빛나게. 새 글이 있으면 누가 올렸는지까지 보여 준다. */}
+      <Link
+        href={latest ? `/practice/board/${latest.id}` : "/practice/board"}
+        className={latest ? `${styles.board} ${styles.boardLive}` : styles.board}
+        data-tour="practice-board"
+      >
+        <span className={styles.boardIcon} aria-hidden="true">
+          🎧
+        </span>
+        <span className={styles.boardText}>
+          <b>
+            {t("연습 피드백 · 서로 들어주기", "Feedback board · listen to each other")}
+            {latest && <i className={styles.boardNew}>{latest.firstPost ? t("첫 연습", "FIRST") : "NEW"}</i>}
+          </b>
+          {latest ? (
+            <small className={styles.boardNews}>
+              {latest.firstPost
+                ? t(`🎉 새로운 사람이 올렸어요! ${latest.nickname} 님의 첫 연습 · 들어주러 가기`, `🎉 Someone new posted! ${latest.nickname}'s first take · go listen`)
+                : t(`✨ ${latest.nickname} 님이 새 연습을 올렸어요 · ${ago(Date.parse(latest.createdAt), lang)}`, `✨ ${latest.nickname} posted a new take · ${ago(Date.parse(latest.createdAt), lang)}`)}
+            </small>
+          ) : (
+            <small>
+              {waiting > 0
+                ? t(`${waiting}명이 첫 피드백을 기다리고 있어요. 한 줄 남겨볼까요?`, `${waiting} people are waiting for their first note. Leave one?`)
+                : t("내 테이크를 올리고 다른 준비생에게 피드백 받아보세요", "Post a take and get notes from other learners")}
+            </small>
+          )}
+        </span>
+        <span aria-hidden="true">→</span>
+      </Link>
+
       <TodayCard scripts={scripts} done={doneIds} />
 
       {last && (
@@ -257,20 +290,6 @@ export default function PracticeHome({
       {/* 예전엔 "내 대본" 탭 안에만 있어서 아무도 못 찾았다. 위쪽에 늘 보이게 둔다. */}
       {tab !== "mine" && addMine}
 
-      <Link href="/practice/board" className={styles.board} data-tour="practice-board">
-        <span className={styles.boardIcon} aria-hidden="true">
-          🎧
-        </span>
-        <span className={styles.boardText}>
-          <b>{t("연습 피드백 · 서로 들어주기", "Feedback board · listen to each other")}</b>
-          <small>
-            {waiting > 0
-              ? t(`${waiting}명이 첫 피드백을 기다리고 있어요. 한 줄 남겨볼까요?`, `${waiting} people are waiting for their first note. Leave one?`)
-              : t("내 테이크를 올리고 다른 준비생에게 피드백 받아보세요", "Post a take and get notes from other learners")}
-          </small>
-        </span>
-        <span aria-hidden="true">→</span>
-      </Link>
 
       <label className={styles.search}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
