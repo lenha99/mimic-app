@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getMemes } from "@/lib/memes";
-import { waitingCount } from "@/lib/board-server";
+import { boardPulse } from "@/lib/board-server";
 import { practiceLines, SCRIPTS } from "@/lib/practice";
 import { getT } from "@/lib/i18n-server";
 import PracticeHome from "./practice-home";
@@ -20,12 +20,12 @@ export async function generateMetadata(): Promise<Metadata> {
 export const revalidate = 300;
 
 export default async function PracticePage() {
-  const [{ memes }, waiting] = await Promise.all([getMemes(), waitingCount()]);
+  const [{ memes }, pulse] = await Promise.all([getMemes(), boardPulse()]);
   const lines = practiceLines(memes).map((m) => ({
     id: m.id,
     title: m.title,
     source: m.source,
     line: m.line ?? "",
   }));
-  return <PracticeHome scripts={SCRIPTS} lines={lines} waiting={waiting} />;
+  return <PracticeHome scripts={SCRIPTS} lines={lines} pulse={pulse} />;
 }

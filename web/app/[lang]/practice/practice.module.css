@@ -507,10 +507,64 @@
   margin-top: 14px;
   padding: 14px 16px;
   border-radius: 18px;
-  border: 1px solid rgba(124, 200, 242, 0.3);
-  background: linear-gradient(120deg, rgba(124, 200, 242, 0.1), transparent 70%), var(--panel);
+  border: 1.5px solid transparent;
+  background:
+    radial-gradient(120% 160% at 0% 0%, rgba(255, 201, 60, 0.12), transparent 60%) padding-box,
+    linear-gradient(var(--panel), var(--panel)) padding-box,
+    linear-gradient(120deg, rgba(255, 201, 60, 0.75), rgba(124, 200, 242, 0.6), rgba(255, 201, 60, 0.75)) border-box;
+  background-size: 100% 100%, 100% 100%, 220% 100%;
+  box-shadow: 0 0 20px rgba(255, 201, 60, 0.12);
   color: var(--white);
   text-decoration: none;
+  animation: boardSweep 6s linear infinite;
+}
+
+/* 새 글이 있을 때 — 더 밝게, 더 빨리 */
+.boardLive {
+  background:
+    radial-gradient(120% 160% at 0% 0%, rgba(255, 201, 60, 0.2), transparent 60%) padding-box,
+    linear-gradient(var(--panel), var(--panel)) padding-box,
+    linear-gradient(120deg, var(--volt), var(--pink), var(--volt)) border-box;
+  background-size: 100% 100%, 100% 100%, 220% 100%;
+  box-shadow: 0 0 28px rgba(255, 201, 60, 0.24);
+  animation-duration: 3.5s;
+}
+
+.boardNew {
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--volt);
+  color: var(--on-accent);
+  font-size: 10.5px;
+  font-style: normal;
+  font-weight: 900;
+  vertical-align: 2px;
+  animation: boardPulse 2.4s ease-in-out infinite;
+}
+
+.boardText small.boardNews {
+  color: var(--volt);
+  font-weight: 700;
+}
+
+@keyframes boardSweep {
+  to {
+    background-position: 0 0, 0 0, 220% 0;
+  }
+}
+
+@keyframes boardPulse {
+  50% {
+    box-shadow: 0 0 10px rgba(255, 201, 60, 0.7);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board,
+  .boardNew {
+    animation: none;
+  }
 }
 
 .boardIcon {
