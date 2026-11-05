@@ -360,6 +360,9 @@ export type GalleryEntry = {
   featured: boolean;
   /** 픽으로 고른 시각 — 가장 최근 것이 지금 픽, 나머지는 지난 픽 (splitPicks) */
   featuredAt: string | null;
+  /** 피드백 받기 · 달린 댓글 수 (11/6 게시판을 합친 뒤) */
+  feedbackOn: boolean;
+  notes: number;
   badges: string[];
   /** 주인의 VOICE PASS 겉모습 — 레벨 · 프레임 · 닉네임 효과 · 배지 (lib/pass) */
   look: Look;
@@ -377,13 +380,14 @@ export async function galleryEntries(limit = 60, opts: { admin?: boolean } = {})
   const query = (cols: string) =>
     service.from("weekly_entries").select(cols).eq("hidden", false).order("updated_at", { ascending: false }).limit(limit);
   // 픽·배지 칸(마이그레이션 27)이 아직 없으면 없는 채로.
-  let res = await query(`${base}, featured_at, badges, promo_ok`);
+  let res = await query(`${base}, featured_at, badges, promo_ok, feedback_on`);
+  if (res.error) res = await query(`${base}, featured_at, badges, promo_ok`);
   if (res.error) res = await query(base);
   else {
     // 픽은 최근 목록(limit) 밖으로 밀려나도 빠지면 안 된다 — 따로 불러 붙인다.
     const picks = await service
       .from("weekly_entries")
-      .select(`${base}, featured_at, badges, promo_ok`)
+      .select(`${base}, featured_at, badges, promo_ok, feedback_on`)
       .eq("hidden", false)
       .not("featured_at", "is", null)
       .order("featured_at", { ascending: false })
@@ -407,8 +411,15 @@ export async function galleryEntries(limit = 60, opts: { admin?: boolean } = {})
     featured_at?: string | null;
     badges?: string[] | null;
     promo_ok?: boolean;
+    feedback_on?: boolean;
   };
   const rows = (res.data ?? []) as unknown as Row[];
+  // 피드백 댓글 수 — 표(마이그레이션 31)가 아직 없으면 0
+  const noteCount = new Map<string, number>();
+  if (rows.length) {
+    const { data: notes } = await service.from("entry_notes").select("entry_id").in("entry_id", rows.map((r) => r.id)).eq("hidden", false).limit(5000);
+    (notes ?? []).forEach((n) => noteCount.set(n.entry_id, (noteCount.get(n.entry_id) ?? 0) + 1));
+  }
   const users = [...new Set(rows.map((r) => r.user_id).filter((x): x is string => !!x))];
   const { data: profiles } = users.length
     ? await service.from("profiles").select("id, nickname, avatar").in("id", users)
@@ -440,6 +451,8 @@ export async function galleryEntries(limit = 60, opts: { admin?: boolean } = {})
         week: { id: w.id, season: w.season, emoji: w.emoji, title: w.title, titleEn: w.titleEn, live: thisWeek(r, Boolean(w.free)), free: Boolean(w.free) },
         featured: Boolean(r.featured_at),
         featuredAt: r.featured_at ?? null,
+        feedbackOn: r.feedback_on !== false,
+        notes: noteCount.get(r.id) ?? 0,
         badges: (r.badges ?? []).slice(0, 3),
         look: lookOf(stats.get(whoOwns(r)) ?? { ...EMPTY_STATS, posts: 1, likesReceived: r.like_count, picked: Boolean(r.featured_at) }),
         ...(opts.admin ? { promoOk: Boolean(r.promo_ok) } : {}),

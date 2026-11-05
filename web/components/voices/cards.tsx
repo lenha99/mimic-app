@@ -57,6 +57,11 @@ export function VoiceCard({ e, index = 0 }: { e: GalleryEntry; index?: number })
             <NameLine name={name} look={e.look} />
           </b>
           {e.featured && <span className={styles.pickMini}>⭐ {t("픽", "Pick")}</span>}
+          {e.notes > 0 ? (
+            <span className={styles.noteMini}>💬 {e.notes}</span>
+          ) : (
+            e.feedbackOn && <span className={styles.noteAsk}>{t("💬 피드백 원해요", "💬 Wants feedback")}</span>
+          )}
         </Link>
         <span className={styles.cardMeta}>
           {e.week.emoji} {t(e.week.title, e.week.titleEn)}

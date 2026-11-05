@@ -11,8 +11,6 @@ import Link from "next/link";
 import { VoiceAvatar } from "@/components/voice-avatar";
 import { MyChallenges, type MyChallenge } from "./my-challenges";
 import { MyRecordings, type MyRecording } from "./my-recordings";
-import { MyPracticePosts } from "./my-practice-posts";
-import { myPosts } from "@/lib/board-server";
 import { isAdmin } from "@/lib/admin";
 import { createServiceClient } from "@/lib/supabase/service";
 import { followerCount } from "@/lib/social-server";
@@ -60,8 +58,7 @@ export default async function ProfilePage() {
     .order("created_at", { ascending: false })
     .limit(30);
 
-  const [practicePosts, admin, awards, weeklyEntries, social] = await Promise.all([
-    myPosts(user.id).catch(() => []),
+  const [admin, awards, weeklyEntries, social] = await Promise.all([
     adminCounts(),
     myAwards(user.id).catch(() => []),
     myEntries(user.id).catch(() => []),
@@ -128,9 +125,6 @@ export default async function ProfilePage() {
           <div data-tour="profile-weekly">
             {/* eslint-disable-next-line react-hooks/purity */}
             <MyWeekly awards={awards} entries={weeklyEntries} now={Date.now()} />
-          </div>
-          <div data-tour="profile-posts">
-            <MyPracticePosts items={practicePosts} />
           </div>
           <div data-tour="profile-challenges">
             <MyChallenges items={(challenges ?? []) as MyChallenge[]} />

@@ -18,7 +18,6 @@ import { deleteTake, listTakes, newTakeId, saveTake, updateTake, type Take } fro
 import { track } from "@/lib/track";
 import { Scorecard } from "@/components/practice/scorecard";
 import { analyze, analyzeBlob, decodeMono, type Analysis } from "@/lib/voice-analysis";
-import { AskFeedback } from "./ask-feedback";
 import { WeeklyBanner, WeeklyEnter } from "./weekly-enter";
 import { reportTake, SoloToast, type SoloResult } from "@/components/practice/solo-progress";
 import { voiceTypeOf } from "@/lib/scorecard";
@@ -94,6 +93,12 @@ export default function Room({ item }: { item: RoomItem }) {
   const [count, setCount] = useState(3);
   const [elapsed, setElapsed] = useState(0);
   const [level, setLevel] = useState(0);
+  // 일시정지 — 녹음기를 멈췄다가 이어 붙인다. 멈춘 시간은 녹음 길이·상한에 안 센다.
+  const [paused, setPaused] = useState(false);
+  const pausedAt = useRef<number | null>(null);
+  const pausedTotal = useRef(0);
+  // 녹음은 브라우저에서만 일어나니 서버 렌더 값과 어긋날 일이 없다
+  const [canPause] = useState(() => typeof MediaRecorder !== "undefined" && typeof MediaRecorder.prototype.pause === "function");
   const [takes, setTakes] = useState<Take[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
   const [solo, setSolo] = useState<{ r: SoloResult; key: string } | null>(null);
@@ -316,6 +321,23 @@ export default function Room({ item }: { item: RoomItem }) {
     if (rec && rec.state !== "inactive") rec.stop();
   }, []);
 
+  /** 일시정지 ↔ 이어서. 녹음기가 pause 를 못 하면(아주 오래된 브라우저) 버튼을 안 보인다. */
+  const togglePause = useCallback(() => {
+    const rec = recorder.current;
+    if (!rec || rec.state === "inactive") return;
+    if (rec.state === "recording") {
+      rec.pause();
+      pausedAt.current = performance.now();
+      setPaused(true);
+      setLevel(0);
+    } else if (rec.state === "paused") {
+      if (pausedAt.current !== null) pausedTotal.current += performance.now() - pausedAt.current;
+      pausedAt.current = null;
+      rec.resume();
+      setPaused(false);
+    }
+  }, []);
+
   /** 녹음 중단 — 삑사리 났을 때. 테이크를 저장하지 않고 준비 상태로, again 이면 곧장 다시 센다. */
   const abort = useCallback(
     (again: boolean) => {
@@ -328,6 +350,8 @@ export default function Room({ item }: { item: RoomItem }) {
       recorder.current = null;
       setElapsed(0);
       setLevel(0);
+      setPaused(false);
+      pausedAt.current = null;
       restart.current = again;
       setPhase("ready");
       track("practice_abort", { meme_id: itemId, via: again ? "restart" : "stop" });
@@ -390,6 +414,8 @@ export default function Room({ item }: { item: RoomItem }) {
         rec.onstop = () => {
           // 중단한 테이크 — 마이크·타이머는 abort 가 이미 정리했다. 여기서 또 정리하면
           // "처음부터"로 새로 잡은 마이크와 카운트다운을 끈다.
+          setPaused(false);
+          pausedAt.current = null;
           if (discard.current) {
             discard.current = false;
             return;
@@ -415,11 +441,17 @@ export default function Room({ item }: { item: RoomItem }) {
         );
         const max = item.kind === "line" ? Math.max(3000, (refSec ?? 5) * 1000 + LINE_TAIL_MS) : MAX_SCRIPT_MS;
         const t0 = performance.now();
+        pausedTotal.current = 0;
+        pausedAt.current = null;
         const buf = new Uint8Array(analyser?.fftSize ?? 1024);
         let smooth = 0;
         const loop = () => {
           if (rec.state === "inactive") return;
-          const ms = performance.now() - t0;
+          if (rec.state === "paused") {
+            requestAnimationFrame(loop);
+            return;
+          }
+          const ms = performance.now() - t0 - pausedTotal.current;
           setElapsed(ms);
           if (analyser) {
             analyser.getByteTimeDomainData(buf);
@@ -765,18 +797,8 @@ export default function Room({ item }: { item: RoomItem }) {
           />
         )}
         {phase !== "analyzing" && open && (
-          <>
-            <AskFeedback
-              key={open.id}
-              take={open}
-              scriptId={itemId}
-              title={item.kind === "script" ? item.script.title : item.meme.title}
-              text={text}
-              track={item.kind === "script" ? (item.script.track === "speech" ? "anchor" : item.script.track) : "line"}
-              onPosted={() => void refresh()}
-            />
-            <QuickFeedback page="practice" item={itemId} />
-          </>
+          // 다른 사람 피드백은 갤러리에 올릴 때 "피드백도 받기"로 받는다(11/6, 게시판을 합쳤다).
+          <QuickFeedback page="practice" item={itemId} />
         )}
         {phase !== "analyzing" && !open && (
           <div className={styles.empty} data-tour="room-privacy">
@@ -891,25 +913,54 @@ export default function Room({ item }: { item: RoomItem }) {
 
       <div className={styles.dock}>
         {phase === "recording" || phase === "count" ? (
-          <div className={styles.recRow}>
-            <button type="button" className={styles.recAbort} onClick={() => abort(false)} aria-label={L("녹음 중단 · 이번 테이크 버리기", "Stop and discard this take")}>
-              ✕<small>{L("중단", "Cancel")}</small>
-            </button>
+          <div className={styles.recPanel}>
             {phase === "recording" ? (
-              <button type="button" className={styles.recStop} onClick={stop}>
-                <span className={styles.meter} style={{ transform: `scaleX(${0.08 + level * 0.92})` }} />
+              <p className={paused ? `${styles.recStatus} ${styles.recStatusPaused}` : styles.recStatus} aria-live="polite">
                 <span className={styles.recDot} aria-hidden="true" />
                 <span className={styles.recTime}>{clock(elapsed)}</span>
-                <span>{L("다 읽었으면 탭", "Tap when done")}</span>
-              </button>
+                <span className={styles.recLevel} aria-hidden="true">
+                  <i style={{ transform: `scaleX(${paused ? 0 : 0.06 + level * 0.94})` }} />
+                </span>
+                <span>{paused ? L("일시정지", "Paused") : L("녹음 중", "Recording")}</span>
+              </p>
             ) : (
-              <button type="button" className={styles.rec} disabled>
-                <span className={styles.countNum}>{count}</span>
-              </button>
+              <p className={styles.recStatus}>
+                <span>{L("곧 시작해요", "Starting")}</span>
+              </p>
             )}
-            <button type="button" className={styles.recAbort} onClick={() => abort(true)} aria-label={L("버리고 처음부터 다시", "Discard and restart")}>
-              ↺<small>{L("처음부터", "Restart")}</small>
-            </button>
+            <div className={styles.recRow}>
+              <button
+                type="button"
+                className={styles.recSide}
+                onClick={() => abort(phase === "recording")}
+                aria-label={phase === "recording" ? L("버리고 처음부터 다시", "Discard and start over") : L("취소", "Cancel")}
+              >
+                <span aria-hidden="true">{phase === "recording" ? "↺" : "✕"}</span>
+                <small>{phase === "recording" ? L("처음부터", "Restart") : L("취소", "Cancel")}</small>
+              </button>
+              {phase === "recording" ? (
+                canPause ? (
+                  <button
+                    type="button"
+                    className={paused ? `${styles.recMain} ${styles.recMainPaused}` : styles.recMain}
+                    onClick={togglePause}
+                    aria-label={paused ? L("이어서 녹음", "Resume") : L("일시정지", "Pause")}
+                  >
+                    <span className={paused ? styles.icoRec : styles.icoPause} aria-hidden="true" />
+                  </button>
+                ) : (
+                  <span className={styles.recMainSpacer} aria-hidden="true" />
+                )
+              ) : (
+                <span className={`${styles.recMain} ${styles.recMainCount}`} aria-live="assertive">
+                  {count}
+                </span>
+              )}
+              <button type="button" className={`${styles.recSide} ${styles.recDone}`} onClick={stop} disabled={phase !== "recording"} aria-label={L("다 읽었어요 · 결과 보기", "Done · see results")}>
+                <span aria-hidden="true">✓</span>
+                <small>{L("완료", "Done")}</small>
+              </button>
+            </div>
           </div>
         ) : (
           <button

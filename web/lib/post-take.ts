@@ -22,6 +22,8 @@ export async function postTake(opts: {
   analysis: Analysis | null | undefined;
   week: Week;
   token?: string | null;
+  /** 피드백 받기 — 기본 켜짐 */
+  feedback?: boolean;
 }): Promise<PostResult> {
   const { blob, analysis, week } = opts;
   try {
@@ -35,6 +37,7 @@ export async function postTake(opts: {
     const nick = cleanNickname(readNickname());
     if (nick) body.append("name", nick);
     if (opts.token) body.append("token", opts.token);
+    body.append("feedback", opts.feedback === false ? "0" : "1");
     body.append("duration", String(Math.round(duration * 10) / 10));
     body.append("bars", JSON.stringify(downsample(analysis?.bars ?? [], 40)));
     const avatar = readLocalAvatar();

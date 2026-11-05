@@ -2,7 +2,7 @@
 
 import { splitPicks } from "@/lib/picks";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLang, useT } from "@/components/lang";
 import { TourHelp } from "@/components/onboarding/tour";
 import { ScreenTour } from "@/components/onboarding/tours";
@@ -22,7 +22,7 @@ import styles from "./gallery.module.css";
  * 이번 주 대본은 올리고 싶게 만드는 카드 하나로 둔다. 출전작이 RANKED_MIN 개 모이면
  * 원래의 순위판(hub)이 돌아온다 — 그 진행도도 숨기지 않고 보여 준다.
  */
-type Filter = "new" | "hot" | "week";
+type Filter = "new" | "hot" | "week" | "feedback";
 
 export default function Gallery({
   week,
@@ -40,10 +40,17 @@ export default function Gallery({
   const t = useT();
   const lang = useLang();
   const [filter, setFilter] = useState<Filter>("new");
+  // 연습실 입구 등에서 ?f=feedback 으로 들어오면 피드백 칸부터 (정적 페이지라 붙은 뒤에 읽는다)
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (new URLSearchParams(window.location.search).get("f") === "feedback") setFilter("feedback");
+  }, []);
   const { pick, past } = useMemo(() => splitPicks(entries), [entries]);
   const shown = useMemo(() => {
     if (filter === "hot") return [...entries].sort((a, b) => b.likes - a.likes || b.plays - a.plays);
     if (filter === "week") return entries.filter((e) => e.week.live);
+    // 피드백 — 받기를 켠 목소리, 댓글이 적은 것부터(첫 피드백이 제일 받기 어렵다)
+    if (filter === "feedback") return entries.filter((e) => e.feedbackOn).sort((a, b) => a.notes - b.notes || b.at.localeCompare(a.at));
     return entries;
   }, [entries, filter]);
   const left = Math.max(0, rankedMin - thisWeek);
@@ -52,6 +59,7 @@ export default function Gallery({
     { id: "new", label: t("최신", "Latest") },
     { id: "hot", label: t("♥ 인기", "♥ Popular") },
     { id: "week", label: t(`이번 주 ${thisWeek}`, `This week ${thisWeek}`) },
+    { id: "feedback", label: t("💬 피드백", "💬 Feedback") },
   ];
 
   const ids = useMemo(() => entries.map((e) => e.id), [entries]);

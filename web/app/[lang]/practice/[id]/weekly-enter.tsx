@@ -69,6 +69,21 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
     return v && /^[0-9a-f-]{36}$/i.test(v) ? v : null;
   });
   const [toast, showToast] = useToast();
+  // 피드백 받기 — 기본 켜짐, 이 기기에서 마지막으로 고른 걸 기억한다.
+  const [feedback, setFeedback] = useState(() => {
+    try {
+      return localStorage.getItem("mimic.feedback") !== "off";
+    } catch {
+      return true;
+    }
+  });
+  const toggleFeedback = () => {
+    const next = !feedback;
+    setFeedback(next);
+    try {
+      localStorage.setItem("mimic.feedback", next ? "on" : "off");
+    } catch {}
+  };
   // 목소리 타입 — 이 녹음에서 잰 값으로만 정한다(속도·억양 폭·음높이).
   const vtype = voiceTypeOf(take.analysis, t);
 
@@ -108,7 +123,7 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
     setBusy(true);
     setError(null);
     track("enter_open", { via: free ? "free" : week.id });
-    const r = await postTake({ blob: take.blob, analysis: take.analysis, week, token: local?.token });
+    const r = await postTake({ blob: take.blob, analysis: take.analysis, week, token: local?.token, feedback });
     setBusy(false);
     setConfirmReplace(false);
     if (!r.ok) {
@@ -164,6 +179,19 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
         </p>
       ) : (
         <>
+          <button type="button" className={styles.fbToggle} aria-pressed={feedback} onClick={toggleFeedback}>
+            <span className={styles.fbCheck} aria-hidden="true">
+              {feedback ? "✓" : ""}
+            </span>
+            <span>
+              <b>{t("💬 피드백도 받을래요", "💬 I'd like feedback too")}</b>
+              <small>
+                {feedback
+                  ? t("듣는 사람이 댓글로 한 줄씩 남겨 줘요", "Listeners can leave a line as a comment")
+                  : t("댓글 없이 ❤ 만 받아요", "No comments, just ❤")}
+              </small>
+            </span>
+          </button>
           <button
             type="button"
             className={replacing ? styles.openAlt : styles.open}

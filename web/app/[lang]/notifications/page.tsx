@@ -18,6 +18,8 @@ const ICON: Record<string, string> = {
   listen_first: "🎧",
   listen_daily: "🎧",
   new_entry: "🎙",
+  note: "💬",
+  note_reply: "↩️",
 };
 
 /** VOICE PASS 알림은 이모지 대신 패스 칩으로 — 앱 안 다른 곳(배지·레벨 알약)과 같은 말투 */
@@ -119,6 +121,10 @@ function textOf(kind: string, actor: string, count: number | null, t: T): string
       return t("누군가 당신 목소리를 처음으로 끝까지 들었어요 🎧", "Someone listened to your voice for the first time 🎧");
     case "listen_daily":
       return t(`오늘 ${count ?? 0}명이 당신 목소리를 들었어요`, `${count ?? 0} people listened to your voice today`);
+    case "note":
+      return t(`${actor}님이 당신 목소리에 피드백을 남겼어요`, `${actor} left feedback on your voice`);
+    case "note_reply":
+      return t(`${actor}님이 당신 댓글에 답글을 달았어요`, `${actor} replied to your comment`);
     case "new_entry":
       return t(`구독한 ${actor}님이 새 목소리를 올렸어요`, `${actor} posted a new take`);
     case "reward_likes":

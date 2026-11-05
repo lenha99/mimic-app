@@ -295,15 +295,15 @@ const sets = (t: T) => {
     },
     {
       target: "practice-board",
-      title: t("연습 피드백 게시판", "Feedback board"),
+      title: t("서로 들어주기", "Listen to each other"),
       body: t(
         <p>
-          다른 준비생의 연습을 듣고 한 줄 피드백을 남기는 곳이에요. 내 테이크는 연습 화면에서{" "}
-          <b>피드백 받기</b>를 누르면 올라가요. (로그인 필요 · 14일 뒤 자동 삭제)
+          피드백을 원하는 목소리가 모인 갤러리로 가요. 듣고 댓글로 한 줄 남겨 보세요. 내 테이크는 연습 화면에서{" "}
+          <b>들려주기</b>를 누를 때 <b>피드백도 받을래요</b>를 켜 두면 돼요.
         </p>,
         <p>
-          Listen to other learners and leave one-line notes. Post your own take with <b>Get feedback</b> on the practice
-          screen. (Login required · auto-deleted after 14 days)
+          Opens the gallery of voices asking for feedback. Listen and leave a line as a comment. For your own take, keep{" "}
+          <b>I&apos;d like feedback too</b> on when you post.
         </p>,
       ),
     },
@@ -384,19 +384,6 @@ const sets = (t: T) => {
         <p>
           Tap <b>🦜 Ask Coco to check</b> and skipped or misread words get highlighted on the script — and stay there while you record your next take.
           Below: your voice type plus pace, pauses, pitch range and endings.
-        </p>,
-      ),
-    },
-    {
-      target: "room-ask",
-      title: t("피드백 받기", "Get feedback"),
-      body: t(
-        <p>
-          누르면 이 테이크가 <b>연습 피드백 게시판</b>에 올라가고, 다른 사람이 듣고 한 줄 피드백을 남겨요. 14일 뒤 자동
-          삭제돼요.
-        </p>,
-        <p>
-          Posts this take to the <b>feedback board</b> so others can leave a one-line note. Auto-deleted after 14 days.
         </p>,
       ),
     },
@@ -596,11 +583,6 @@ const sets = (t: T) => {
         <p>출전작과 트로피가 여기 남아요. 출전작을 눌러 순위를 보고 공유해 보세요.</p>,
         <p>Your entries and trophies. Tap an entry to see its rank and share it.</p>,
       ),
-    },
-    {
-      target: "profile-posts",
-      title: t("피드백 받은 연습", "Takes with feedback"),
-      body: t(<p>게시판에 올린 내 연습과 받은 피드백 수예요.</p>, <p>Your board posts and how much feedback they got.</p>),
     },
     {
       target: "profile-challenges",

@@ -254,6 +254,31 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["practice_notes"]["Insert"]>;
         Relationships: [];
       };
+      /** 출전작 피드백 댓글 (11/6, 게시판을 갤러리로 합쳤다). 읽기·쓰기는 서버만. */
+      entry_notes: {
+        Row: {
+          id: string;
+          entry_id: string;
+          user_id: string;
+          parent_id: string | null;
+          body: string;
+          hidden: boolean;
+          reports: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          entry_id: string;
+          user_id: string;
+          parent_id?: string | null;
+          body: string;
+          hidden?: boolean;
+          reports?: number;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["entry_notes"]["Insert"]>;
+        Relationships: [];
+      };
       practice_reports: {
         Row: { user_id: string; post_id: string | null; note_id: string | null; created_at: string };
         Insert: { user_id: string; post_id?: string | null; note_id?: string | null; created_at?: string };
@@ -343,6 +368,8 @@ export interface Database {
           battle_losses: number;
           /** 운영자 픽 · 인스타 소개 동의 · 강점 배지 (마이그레이션 27) */
           featured_at: string | null;
+          feedback_on: boolean;
+          expires_at: string | null;
           promo_ok: boolean;
           badges: string[];
         };
@@ -364,6 +391,8 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
           featured_at?: string | null;
+          feedback_on?: boolean;
+          expires_at?: string | null;
           promo_ok?: boolean;
           badges?: string[];
         };
@@ -602,6 +631,8 @@ export type NotificationKind =
   | "listen_first"
   | "listen_daily"
   | "new_entry"
+  | "note"
+  | "note_reply"
   | "reward_likes"
   | "reward_follows"
   | "reward_pick"
