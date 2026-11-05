@@ -53,6 +53,7 @@ export default async function EntryPage({ params }: Props) {
         trophies: entry.trophies,
         createdAt: entry.createdAt,
         featured: entry.featured,
+        featuredNow: entry.featuredNow,
         badges: entry.badges,
       }}
       week={entry.week}

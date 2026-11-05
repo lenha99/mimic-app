@@ -153,6 +153,8 @@ export type EntryView = EntryCard & {
   userId: string | null;
   owner: string;
   featured: boolean;
+  /** 지금 걸려 있는 픽인가 — 픽은 한 번에 하나, 가장 최근에 고른 것. 나머지는 지난 픽. */
+  featuredNow: boolean;
   badges: string[];
 };
 
@@ -172,7 +174,10 @@ export async function getEntry(id: string): Promise<EntryView | null> {
   const card = board.entries.find((x) => x.id === id);
   if (!card) return null;
   // 픽·배지(마이그레이션 27) — 칸이 없으면 없는 채로.
-  const { data: extra } = await service.from("weekly_entries").select("featured_at, badges").eq("id", id).maybeSingle();
+  const [{ data: extra }, nowId] = await Promise.all([
+    service.from("weekly_entries").select("featured_at, badges").eq("id", id).maybeSingle(),
+    currentPickId(),
+  ]);
   return {
     ...card,
     week,
@@ -180,8 +185,22 @@ export async function getEntry(id: string): Promise<EntryView | null> {
     userId: e.user_id,
     owner: e.owner,
     featured: Boolean(extra?.featured_at),
+    featuredNow: Boolean(extra?.featured_at) && nowId === id,
     badges: (extra?.badges ?? []).slice(0, 3),
   };
+}
+
+/** 지금 픽 — 숨기지 않은 것 중 가장 최근에 고른 하나. */
+async function currentPickId(): Promise<string | null> {
+  const { data, error } = await createServiceClient()
+    .from("weekly_entries")
+    .select("id")
+    .eq("hidden", false)
+    .not("featured_at", "is", null)
+    .order("featured_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return error ? null : (data?.id ?? null);
 }
 
 /** 오디오 경로 — /api/weekly/audio 만 쓴다. 숨긴 건 숨겼다고 같이 알려준다(운영자만 듣는다). */
@@ -339,6 +358,8 @@ export type GalleryEntry = {
   at: string;
   week: { id: string; season: number; emoji: string; title: string; titleEn: string; live: boolean; free: boolean };
   featured: boolean;
+  /** 픽으로 고른 시각 — 가장 최근 것이 지금 픽, 나머지는 지난 픽 (splitPicks) */
+  featuredAt: string | null;
   badges: string[];
   /** 주인의 VOICE PASS 겉모습 — 레벨 · 프레임 · 닉네임 효과 · 배지 (lib/pass) */
   look: Look;
@@ -358,6 +379,19 @@ export async function galleryEntries(limit = 60, opts: { admin?: boolean } = {})
   // 픽·배지 칸(마이그레이션 27)이 아직 없으면 없는 채로.
   let res = await query(`${base}, featured_at, badges, promo_ok`);
   if (res.error) res = await query(base);
+  else {
+    // 픽은 최근 목록(limit) 밖으로 밀려나도 빠지면 안 된다 — 따로 불러 붙인다.
+    const picks = await service
+      .from("weekly_entries")
+      .select(`${base}, featured_at, badges, promo_ok`)
+      .eq("hidden", false)
+      .not("featured_at", "is", null)
+      .order("featured_at", { ascending: false })
+      .limit(20);
+    const have = new Set(((res.data ?? []) as unknown as { id: string }[]).map((r) => r.id));
+    const extra = ((picks.data ?? []) as unknown as { id: string }[]).filter((r) => !have.has(r.id));
+    if (extra.length) res = { ...res, data: [...(res.data ?? []), ...extra] as typeof res.data };
+  }
   type Row = {
     id: string;
     challenge_id: string;
@@ -405,6 +439,7 @@ export async function galleryEntries(limit = 60, opts: { admin?: boolean } = {})
         at: r.updated_at,
         week: { id: w.id, season: w.season, emoji: w.emoji, title: w.title, titleEn: w.titleEn, live: thisWeek(r, Boolean(w.free)), free: Boolean(w.free) },
         featured: Boolean(r.featured_at),
+        featuredAt: r.featured_at ?? null,
         badges: (r.badges ?? []).slice(0, 3),
         look: lookOf(stats.get(whoOwns(r)) ?? { ...EMPTY_STATS, posts: 1, likesReceived: r.like_count, picked: Boolean(r.featured_at) }),
         ...(opts.admin ? { promoOk: Boolean(r.promo_ok) } : {}),

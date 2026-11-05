@@ -34,6 +34,7 @@ type Entry = {
   trophies: number;
   createdAt: string;
   featured?: boolean;
+  featuredNow?: boolean;
   badges?: string[];
 };
 
@@ -215,7 +216,7 @@ export default function Stage({
         {/* 잘한 점 배지는 11/4 부터 안 보인다(규민: 테이크에 배지 붙이지 말 것). 운영자 픽만 남는다. */}
         {entry.featured && (
           <div className={styles.badgeRow}>
-            <span className={styles.pick}>⭐ {t("운영자 픽", "Editor's pick")}</span>
+            <span className={styles.pick}>⭐ {entry.featuredNow ? t("운영자 픽", "Editor's pick") : t("지난 운영자 픽", "Past editor's pick")}</span>
           </div>
         )}
         <AdminPick entryId={entry.id} />

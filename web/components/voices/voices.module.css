@@ -591,3 +591,43 @@
   font-size: 12px;
   color: var(--pink);
 }
+
+/* 지난 운영자 픽 — 지금 픽 아래 작은 줄. 내려가도 기록은 남는다. */
+.pastPicks {
+  margin-top: 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.pastLabel {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ash);
+}
+
+.pastRail {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.pastRail::-webkit-scrollbar {
+  display: none;
+}
+
+.pastItem {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px 4px 4px;
+  border-radius: 999px;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  color: var(--white);
+  font-size: 12.5px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
