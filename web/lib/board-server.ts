@@ -62,6 +62,8 @@ export async function waitingCount(): Promise<number> {
 export type BoardPulse = {
   waiting: number;
   fresh: number;
+  /** 막 올라온 글을 올린 사람들 — 최신순, 중복 없이 */
+  freshNames: string[];
   latest: { id: string; nickname: string; title: string; firstPost: boolean; createdAt: string } | null;
 };
 
@@ -75,10 +77,11 @@ export async function boardPulse(): Promise<BoardPulse> {
     return {
       waiting: rows.filter((p) => p.notes === 0).length,
       fresh: fresh.length,
+      freshNames: [...new Set(fresh.map((p) => p.nickname))],
       latest: pick ? { id: pick.id, nickname: pick.nickname, title: pick.title, firstPost: pick.firstPost, createdAt: pick.createdAt } : null,
     };
   } catch {
-    return { waiting: 0, fresh: 0, latest: null };
+    return { waiting: 0, fresh: 0, freshNames: [], latest: null };
   }
 }
 
