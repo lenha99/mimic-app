@@ -1,0 +1,250 @@
+/* 출전작 피드백 — 플레이어 아래에 펼쳐지는 댓글. 고정·모달 없이 흐름 안에 둔다. */
+.wrap {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid var(--rule);
+  background: var(--panel);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.count {
+  font-size: 12.5px;
+  font-weight: 800;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--panel-hi);
+  color: var(--ash);
+}
+
+/* 주인만 보는 켜기/끄기 */
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 5px;
+  border-radius: 999px;
+  border: 1px solid var(--rule);
+  background: transparent;
+  color: var(--ash);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.knob {
+  position: relative;
+  width: 30px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--panel-hi);
+  transition: background 0.15s;
+}
+
+.knob::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--ash);
+  transition: transform 0.15s, background 0.15s;
+}
+
+.switch[aria-checked="true"] {
+  color: var(--cyan);
+}
+
+.switch[aria-checked="true"] .knob {
+  background: rgba(124, 200, 242, 0.3);
+}
+
+.switch[aria-checked="true"] .knob::after {
+  transform: translateX(12px);
+  background: var(--cyan);
+}
+
+.composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 6px 6px 6px 14px;
+  border-radius: 22px;
+  border: 1px solid var(--rule);
+  background: var(--stage);
+}
+
+.composer:focus-within {
+  border-color: rgba(124, 200, 242, 0.6);
+}
+
+.composer textarea {
+  flex: 1;
+  min-width: 0;
+  min-height: 32px;
+  padding: 6px 0;
+  border: 0;
+  outline: none;
+  resize: none;
+  background: transparent;
+  color: var(--white);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.composer textarea::placeholder {
+  color: var(--ash);
+}
+
+.composerSmall {
+  border-radius: 18px;
+}
+
+.send {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--cyan);
+  color: var(--stage);
+  font-size: 17px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.send:disabled {
+  background: var(--panel-hi);
+  color: var(--ash);
+  cursor: default;
+}
+
+.login {
+  display: block;
+  padding: 11px 14px;
+  border-radius: 14px;
+  border: 1px dashed var(--rule);
+  color: var(--cyan);
+  font-size: 13.5px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.off,
+.empty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ash);
+}
+
+.error {
+  margin: 0;
+  font-size: 12.5px;
+  color: #ff7a45;
+}
+
+.list,
+.replies {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+
+.replies {
+  margin-top: 10px;
+  padding-left: 14px;
+  border-left: 2px solid var(--rule);
+  gap: 10px;
+}
+
+.note {
+  display: grid;
+  gap: 3px;
+}
+
+.meta {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 12.5px;
+}
+
+.meta b {
+  font-weight: 800;
+}
+
+.ownerChip {
+  padding: 0 7px;
+  border-radius: 999px;
+  background: rgba(255, 201, 60, 0.16);
+  color: var(--volt);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.ago {
+  color: var(--ash);
+}
+
+.body {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  margin: 0;
+  display: flex;
+  gap: 12px;
+}
+
+.actions button {
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  color: var(--ash);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.actions .danger {
+  color: #ff7a45;
+}
+
+.more {
+  justify-self: start;
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  color: var(--cyan);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}

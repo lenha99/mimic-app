@@ -648,3 +648,57 @@
   font-weight: 800;
   cursor: pointer;
 }
+
+/* 피드백도 받기 — 올리기 버튼 바로 위의 가벼운 선택. 한 번 눌러 올리는 흐름은 그대로. */
+.fbToggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--rule);
+  background: transparent;
+  color: var(--white);
+  text-align: left;
+  cursor: pointer;
+}
+
+.fbToggle > span:nth-child(2) {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.fbToggle b {
+  font-size: 13.5px;
+  font-weight: 800;
+}
+
+.fbToggle small {
+  font-size: 11.5px;
+  color: var(--ash);
+}
+
+.fbCheck {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  border: 1.5px solid var(--rule);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.fbToggle[aria-pressed="true"] {
+  border-color: rgba(124, 200, 242, 0.55);
+}
+
+.fbToggle[aria-pressed="true"] .fbCheck {
+  background: var(--cyan);
+  border-color: var(--cyan);
+  color: var(--stage);
+}

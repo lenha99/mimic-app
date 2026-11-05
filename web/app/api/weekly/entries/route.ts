@@ -47,6 +47,8 @@ export async function POST(req: Request) {
   } catch {}
   // 인스타 소개 동의(스스로 켠 사람만) · 잘한 점 배지(정해진 목록 안에서만, 최대 셋).
   const promoOk = String(form?.get("promo") ?? "") === "1";
+  // 피드백 받기 — 안 보내면 받는다(기본 켜짐). "0" 일 때만 끈다.
+  const feedbackOn = String(form?.get("feedback") ?? "1") !== "0";
   // 잘한 점 배지는 더 받지 않는다(11/4) — 예전 클라이언트가 보내도 빈 목록으로 덮는다.
   const badges: string[] = [];
   let avatar = null;
@@ -157,6 +159,8 @@ export async function POST(req: Request) {
   if (existing) {
     // ❤ 부터 지운다 — 트리거가 숫자를 따라 내리고, 아래에서 0 으로 못박는다.
     await service.from("weekly_likes").delete().eq("entry_id", id);
+    // 피드백 댓글도 — 예전 녹음에 대한 말이라 새 녹음 아래에 남으면 헷갈린다.
+    await service.from("entry_notes").delete().eq("entry_id", id);
     const { error } = await service
       .from("weekly_entries")
       .update({
@@ -168,6 +172,7 @@ export async function POST(req: Request) {
         ...(user ? {} : { guest_name: name ?? guestName(client) }),
         like_count: 0,
         play_count: 0,
+        feedback_on: feedbackOn,
         updated_at: now,
       })
       .eq("id", id);
@@ -192,6 +197,7 @@ export async function POST(req: Request) {
       audio_path: path,
       duration_s: duration,
       bars,
+      feedback_on: feedbackOn,
       created_at: now,
       updated_at: now,
     });

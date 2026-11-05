@@ -21,6 +21,7 @@ export async function GET(req: Request) {
   const service = createServiceClient();
   // 연습 피드백 게시판 — 14일 지난 게시물은 녹음째 지운다 (피드백 행은 cascade).
   const practice = await purgePractice(service);
+  const expired = await purgeExpiredEntries(service);
   // 주간 챌린지 — 끝난 주 정산, 귀속 안 된 게스트 출전작은 마감 30일 뒤 삭제.
   const weekly = await weeklyChores(service);
 
@@ -36,7 +37,7 @@ export async function GET(req: Request) {
     return Response.json({ error: error.message }, { status: 500 });
   }
   if (!rows || rows.length === 0) {
-    return Response.json({ purged: 0, practice, weekly });
+    return Response.json({ purged: 0, practice, expired, weekly });
   }
 
   // 파일을 먼저 지운다. 행을 먼저 지우고 파일 삭제가 실패하면 경로를 잃어 다시 못 찾는다.
@@ -58,7 +59,29 @@ export async function GET(req: Request) {
     return Response.json({ error: rowError.message }, { status: 500 });
   }
 
-  return Response.json({ purged: rows.length, more: rows.length === BATCH, practice, weekly });
+  return Response.json({ purged: rows.length, more: rows.length === BATCH, practice, expired, weekly });
+}
+
+/** 기한이 있는 출전작(게시판에서 옮겨 온 것, 30일) — 녹음과 함께 지운다. 댓글·❤ 는 cascade. */
+async function purgeExpiredEntries(service: ReturnType<typeof createServiceClient>): Promise<number | string> {
+  const { data: rows, error } = await service
+    .from("weekly_entries")
+    .select("id, audio_path")
+    .not("expires_at", "is", null)
+    .lt("expires_at", new Date().toISOString())
+    .limit(BATCH);
+  if (error) return error.message;
+  if (!rows?.length) return 0;
+  const { error: fileError } = await service.storage.from("recordings").remove(rows.map((r) => r.audio_path));
+  if (fileError) return fileError.message;
+  await service
+    .from("weekly_entries")
+    .delete()
+    .in(
+      "id",
+      rows.map((r) => r.id),
+    );
+  return rows.length;
 }
 
 async function purgePractice(service: ReturnType<typeof createServiceClient>): Promise<number | string> {

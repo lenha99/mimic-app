@@ -13,6 +13,10 @@ import { requestT } from "@/lib/i18n";
  */
 export async function POST(req: Request) {
   const t = requestT(req);
+  // 11/6 게시판을 갤러리로 합쳤다 — 새 글은 갤러리에 "피드백도 받기"로 올린다. 아래는 되살릴 때를 위해 남겨 둔다.
+  if (process.env.BOARD_OPEN !== "1") {
+    return Response.json({ error: t("피드백은 이제 갤러리에서 받아요. 들려주기를 눌러 올려 주세요.", "Feedback now lives in the gallery. Post with Let people hear this.") }, { status: 410 });
+  }
   const supabase = await createClient();
   const {
     data: { user },

@@ -753,8 +753,7 @@
   background: linear-gradient(to top, var(--stage) 62%, rgba(22, 20, 26, 0));
 }
 
-.rec,
-.recStop {
+.rec {
   position: relative;
   display: flex;
   align-items: center;
@@ -783,87 +782,154 @@
   cursor: default;
 }
 
-.recRow {
-  display: flex;
-  align-items: stretch;
-  gap: 8px;
+/* 녹음 중 — 위에 상태 한 줄, 아래 [처음부터] (⏸/●) [완료]. 보통 녹음기처럼 가운데가 주인공 */
+.recPanel {
+  display: grid;
+  gap: 10px;
   max-width: 680px;
   margin: 0 auto;
 }
 
-.recRow .rec,
-.recRow .recStop {
-  flex: 1;
-  min-width: 0;
-  width: auto;
+.recStatus {
   margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ash);
 }
 
-/* 중단 · 처음부터 — 삑사리 났을 때 결과 화면 없이 버린다 */
-.recAbort {
-  flex: none;
-  width: 60px;
+.recStatus .recDot {
+  animation: blink 1s steps(2, start) infinite;
+}
+
+.recStatusPaused .recDot {
+  animation: none;
+  background: var(--ash);
+}
+
+.recTime {
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--white);
+}
+
+.recLevel {
+  width: 64px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--panel-hi);
+  overflow: hidden;
+}
+
+.recLevel i {
+  display: block;
+  height: 100%;
+  background: #ff7a45;
+  transform-origin: left center;
+  transition: transform 80ms linear;
+}
+
+.recRow {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 18px;
+}
+
+.recSide {
+  justify-self: center;
   display: grid;
   place-items: center;
-  align-content: center;
-  gap: 1px;
-  border: 1px solid var(--rule);
-  border-radius: 20px;
-  background: var(--panel);
+  gap: 3px;
+  width: 64px;
+  padding: 0;
+  border: 0;
+  background: none;
   color: var(--white);
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 800;
   line-height: 1;
   cursor: pointer;
 }
 
-.recAbort small {
-  font-size: 10.5px;
+.recSide > span {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--panel-hi);
+}
+
+.recSide small {
+  font-size: 11px;
   font-weight: 700;
   color: var(--ash);
 }
 
-.recStop {
-  background: var(--panel-hi);
-  color: var(--white);
-  border: 1px solid #ff7a45;
+.recDone > span {
+  background: var(--volt);
+  color: var(--stage);
 }
 
-.meter {
-  position: absolute;
-  inset: 0;
-  transform-origin: left center;
-  background: rgba(255, 122, 69, 0.18);
-  transition: transform 80ms linear;
+.recSide:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 
-.recDot {
-  position: relative;
-  width: 12px;
-  height: 12px;
+.recMain {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  padding: 0;
   border-radius: 50%;
+  border: 3px solid #ff7a45;
+  background: rgba(255, 122, 69, 0.14);
+  cursor: pointer;
+  transition: transform 0.12s, background 0.15s;
+}
+
+.recMain:active {
+  transform: scale(0.94);
+}
+
+.recMainPaused {
   background: #ff7a45;
 }
 
-.rec .recDot {
-  background: var(--stage);
+.recMainCount {
+  border-color: var(--rule);
+  background: var(--panel);
+  color: var(--white);
+  font-family: var(--display);
+  font-size: 30px;
+  font-weight: 800;
+  cursor: default;
 }
 
-.recStop .recDot {
-  animation: blink 1s steps(2, start) infinite;
+.recMainSpacer {
+  width: 72px;
 }
 
-.recTime {
-  position: relative;
-  font-family: var(--mono);
-  font-size: 16px;
+/* 일시정지 — 두 줄 */
+.icoPause {
+  width: 22px;
+  height: 24px;
+  background: linear-gradient(to right, #ff7a45 0 8px, transparent 8px 14px, #ff7a45 14px 22px);
+  border-radius: 2px;
 }
 
-.recStop > span:last-child {
-  position: relative;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ash);
+/* 이어서 녹음 — 동그라미 */
+.icoRec {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--white);
 }
 
 .countNum {

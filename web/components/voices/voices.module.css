@@ -631,3 +631,23 @@
   text-decoration: none;
   white-space: nowrap;
 }
+
+/* 카드의 피드백 표시 — 댓글 수, 또는 아직 없으면 "피드백 원해요" */
+.noteMini,
+.noteAsk {
+  flex: none;
+  padding: 2px 7px;
+  border-radius: 99px;
+  font-size: 10.5px;
+  font-weight: 900;
+}
+
+.noteMini {
+  background: var(--panel-hi);
+  color: var(--white);
+}
+
+.noteAsk {
+  background: rgba(124, 200, 242, 0.14);
+  color: var(--cyan);
+}

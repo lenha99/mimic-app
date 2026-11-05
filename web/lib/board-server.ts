@@ -1,169 +1,68 @@
-import { signAudio } from "@/lib/audio-url";
-import { FRESH_MS, isNoteTag, type BoardTrack, type PostSummary, type PostView } from "@/lib/board";
+import { FRESH_MS } from "@/lib/board";
 import { createServiceClient } from "@/lib/supabase/service";
+import { challengeById } from "@/lib/weekly";
 
 /**
- * 게시판 조회 — 서버 전용. 표에 RLS 정책을 하나도 안 열었으므로(마이그레이션 18)
- * 숨김·만료 조건은 여기서 반드시 건다.
+ * 연습실 입구("서로 들어주기")에 띄울 소식 — 서버 전용.
+ *
+ * 11/6 게시판을 갤러리로 합쳤다. 이제 "피드백 받기"를 켠 갤러리 목소리를 센다:
+ * 아직 댓글이 하나도 없는 수, 막 올라온(48시간) 수, 그중 대표 하나(처음 올린 사람이 먼저).
  */
-
-type Sort = "waiting" | "new";
-
-export async function listPosts(viewer: string | null, sort: Sort, limit = 30): Promise<PostSummary[]> {
-  const service = createServiceClient();
-  const now = new Date().toISOString();
-  const { data: posts } = await service
-    .from("practice_posts")
-    .select("id, user_id, title, track, ask, created_at")
-    .eq("hidden", false)
-    .gt("expires_at", now)
-    .order("created_at", { ascending: false })
-    .limit(100);
-  if (!posts?.length) return [];
-
-  const ids = posts.map((p) => p.id);
-  const users = [...new Set(posts.map((p) => p.user_id))];
-  const [{ data: notes }, { data: profiles }, { data: history }] = await Promise.all([
-    service.from("practice_notes").select("post_id").in("post_id", ids).eq("hidden", false),
-    service.from("profiles").select("id, nickname").in("id", users),
-    // 첫 연습인지 — 만료·내린 것까지 포함해 그 사람이 처음 올린 글
-    service.from("practice_posts").select("id, user_id").in("user_id", users).order("created_at", { ascending: true }).limit(2000),
-  ]);
-  const first = new Map<string, string>();
-  (history ?? []).forEach((h) => {
-    if (!first.has(h.user_id)) first.set(h.user_id, h.id);
-  });
-  const count = new Map<string, number>();
-  (notes ?? []).forEach((n) => count.set(n.post_id, (count.get(n.post_id) ?? 0) + 1));
-  const nick = new Map((profiles ?? []).map((p) => [p.id, p.nickname]));
-
-  const rows: PostSummary[] = posts.map((p) => ({
-    id: p.id,
-    title: p.title,
-    track: p.track as BoardTrack,
-    ask: p.ask,
-    nickname: nick.get(p.user_id) ?? "알 수 없음",
-    notes: count.get(p.id) ?? 0,
-    createdAt: p.created_at,
-    mine: viewer === p.user_id,
-    userId: p.user_id,
-    firstPost: first.get(p.user_id) === p.id,
-  }));
-  // "기다리는 중" — 피드백이 적은 것부터. 첫 피드백이 제일 받기 어렵다.
-  if (sort === "waiting") rows.sort((a, b) => a.notes - b.notes || b.createdAt.localeCompare(a.createdAt));
-  return rows.slice(0, limit);
-}
-
-export async function waitingCount(): Promise<number> {
-  return (await boardPulse()).waiting;
-}
-
-/** 게시판 밖(연습실)에 띄울 소식 — 첫 피드백 기다리는 수, 막 올라온 글 수, 그중 대표 하나. */
 export type BoardPulse = {
   waiting: number;
   fresh: number;
-  /** 막 올라온 글을 올린 사람들 — 최신순, 중복 없이 */
+  /** 막 올라온 목소리를 올린 사람들 — 최신순, 중복 없이 */
   freshNames: string[];
   latest: { id: string; nickname: string; title: string; firstPost: boolean; createdAt: string } | null;
 };
 
+const EMPTY: BoardPulse = { waiting: 0, fresh: 0, freshNames: [], latest: null };
+
 export async function boardPulse(): Promise<BoardPulse> {
   try {
-    const rows = await listPosts(null, "new", 100);
+    const service = createServiceClient();
+    const { data: rows, error } = await service
+      .from("weekly_entries")
+      .select("id, challenge_id, owner, user_id, guest_name, created_at")
+      .eq("hidden", false)
+      .eq("feedback_on", true)
+      .order("created_at", { ascending: false })
+      .limit(100);
+    if (error || !rows?.length) return EMPTY;
+
+    const ids = rows.map((r) => r.id);
+    const owners = [...new Set(rows.map((r) => r.owner))];
+    const users = [...new Set(rows.map((r) => r.user_id).filter((x): x is string => !!x))];
+    const [{ data: notes }, { data: profiles }, { data: history }] = await Promise.all([
+      service.from("entry_notes").select("entry_id").in("entry_id", ids).eq("hidden", false),
+      users.length ? service.from("profiles").select("id, nickname").in("id", users) : Promise.resolve({ data: [] as { id: string; nickname: string }[] }),
+      // 처음 올린 목소리인지 — 그 사람이 갤러리에 올린 첫 작품
+      service.from("weekly_entries").select("id, owner").in("owner", owners).order("created_at", { ascending: true }).limit(2000),
+    ]);
+    const noted = new Set((notes ?? []).map((n) => n.entry_id));
+    const nick = new Map((profiles ?? []).map((p) => [p.id, p.nickname]));
+    const first = new Map<string, string>();
+    (history ?? []).forEach((h) => {
+      if (!first.has(h.owner)) first.set(h.owner, h.id);
+    });
+
     const now = Date.now();
-    const fresh = rows.filter((p) => now - Date.parse(p.createdAt) < FRESH_MS);
-    // 처음 올린 사람이 먼저 — "새로운 사람이 올렸어요"가 제일 반가운 소식이다
+    const view = rows.map((r) => ({
+      id: r.id,
+      nickname: (r.user_id ? nick.get(r.user_id) : null) ?? r.guest_name ?? "익명의 목소리",
+      title: challengeById(r.challenge_id)?.title ?? "",
+      firstPost: first.get(r.owner) === r.id,
+      createdAt: r.created_at,
+    }));
+    const fresh = view.filter((p) => now - Date.parse(p.createdAt) < FRESH_MS);
     const pick = [...fresh].sort((a, b) => Number(b.firstPost) - Number(a.firstPost) || b.createdAt.localeCompare(a.createdAt))[0];
     return {
-      waiting: rows.filter((p) => p.notes === 0).length,
+      waiting: rows.filter((r) => !noted.has(r.id)).length,
       fresh: fresh.length,
       freshNames: [...new Set(fresh.map((p) => p.nickname))],
-      latest: pick ? { id: pick.id, nickname: pick.nickname, title: pick.title, firstPost: pick.firstPost, createdAt: pick.createdAt } : null,
+      latest: pick ?? null,
     };
   } catch {
-    return { waiting: 0, fresh: 0, freshNames: [], latest: null };
+    return EMPTY;
   }
-}
-
-export async function getPost(id: string, viewer: string | null): Promise<PostView | null> {
-  if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
-  const service = createServiceClient();
-  const { data: p } = await service.from("practice_posts").select("*").eq("id", id).maybeSingle();
-  if (!p) return null;
-  const live = !p.hidden && p.expires_at > new Date().toISOString();
-  if (!live && p.user_id !== viewer) return null;
-
-  const { data: notes } = await service
-    .from("practice_notes")
-    .select("id, user_id, tags, body, created_at")
-    .eq("post_id", id)
-    .eq("hidden", false)
-    .order("created_at", { ascending: true });
-  const noteUsers = [...new Set((notes ?? []).map((n) => n.user_id))];
-  const people = [...new Set([p.user_id, ...noteUsers])];
-  const [{ data: profiles }, urls, { data: givenRows }, { data: firstRow }] = await Promise.all([
-    service.from("profiles").select("id, nickname").in("id", people),
-    signAudio([p.audio_path]),
-    noteUsers.length
-      ? service.from("practice_notes").select("user_id").in("user_id", noteUsers).eq("hidden", false).limit(5000)
-      : Promise.resolve({ data: [] as { user_id: string }[] }),
-    service.from("practice_posts").select("id").eq("user_id", p.user_id).order("created_at", { ascending: true }).limit(1).maybeSingle(),
-  ]);
-  const nick = new Map((profiles ?? []).map((x) => [x.id, x.nickname]));
-  const given = new Map<string, number>();
-  (givenRows ?? []).forEach((r) => given.set(r.user_id, (given.get(r.user_id) ?? 0) + 1));
-
-  return {
-    id: p.id,
-    title: p.title,
-    track: p.track as BoardTrack,
-    ask: p.ask,
-    nickname: nick.get(p.user_id) ?? "알 수 없음",
-    notes: notes?.length ?? 0,
-    createdAt: p.created_at,
-    mine: viewer === p.user_id,
-    userId: p.user_id,
-    firstPost: firstRow?.id === p.id,
-    scriptText: p.script_text,
-    audioUrl: urls.get(p.audio_path) ?? null,
-    expiresAt: p.expires_at,
-    daysLeft: Math.max(0, Math.ceil((Date.parse(p.expires_at) - Date.now()) / 86_400_000)),
-    noteList: (notes ?? []).map((n) => ({
-      id: n.id,
-      tags: n.tags.filter(isNoteTag),
-      body: n.body,
-      nickname: nick.get(n.user_id) ?? "알 수 없음",
-      createdAt: n.created_at,
-      mine: viewer === n.user_id,
-      userId: n.user_id,
-      given: given.get(n.user_id) ?? 0,
-    })),
-  };
-}
-
-/** 프로필용 — 내가 올린 것. 만료·숨김도 보인다(왜 안 보이는지 알아야 한다). */
-export async function myPosts(userId: string) {
-  const service = createServiceClient();
-  const { data: posts } = await service
-    .from("practice_posts")
-    .select("id, title, hidden, created_at, expires_at")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false })
-    .limit(20);
-  if (!posts?.length) return [];
-  const { data: notes } = await service
-    .from("practice_notes")
-    .select("post_id")
-    .in("post_id", posts.map((p) => p.id))
-    .eq("hidden", false);
-  const count = new Map<string, number>();
-  (notes ?? []).forEach((n) => count.set(n.post_id, (count.get(n.post_id) ?? 0) + 1));
-  const now = new Date().toISOString();
-  return posts.map((p) => ({
-    id: p.id,
-    title: p.title,
-    notes: count.get(p.id) ?? 0,
-    state: p.hidden ? ("hidden" as const) : p.expires_at <= now ? ("expired" as const) : ("live" as const),
-    expiresAt: p.expires_at,
-  }));
 }

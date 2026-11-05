@@ -16,6 +16,7 @@ import { audioSrc, displayName, LISTEN_RATIO, readMine, type Week } from "@/lib/
 import { useLang, useT } from "@/components/lang";
 import { PrivacyTag } from "@/components/privacy-tag";
 import { CreatorBar } from "@/components/social/creator-bar";
+import { EntryFeedback } from "@/components/voices/entry-feedback";
 import { PushButton } from "@/components/social/push-button";
 import { AdminPick } from "./admin-pick";
 import { OwnerPass } from "@/components/pass/owner-pass";
@@ -241,6 +242,9 @@ export default function Stage({
       </section>
 
       <OwnerPass entry={entry.id} />
+
+      {/* 피드백 댓글 — 듣고 바로 아래에서 남긴다 (11/6, 게시판을 합쳤다) */}
+      <EntryFeedback entryId={entry.id} />
 
       {mine ? (
         <section className={styles.minePanel}>
