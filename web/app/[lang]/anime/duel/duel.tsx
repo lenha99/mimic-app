@@ -5,13 +5,15 @@ import { useEffect, useState } from "react";
 import { useT } from "@/components/lang";
 import { LineCard, MicError, Replay, ScoreView, ShoutButton } from "@/components/anime/parts";
 import { useTake } from "@/components/anime/use-take";
-import { animeLine, ANIME_LINES, hypeScore, type AnimeLine, type HypeScore } from "@/lib/anime";
+import { scoreWithOriginal, useOriginal, warmScorer } from "@/components/anime/original";
+import { animeLine, animeRefId, ANIME_LINES, hypeScore, type AnimeLine, type HypeScore } from "@/lib/anime";
 import { track } from "@/lib/track";
 import s from "@/components/anime/anime.module.css";
 
 /**
- * 오프라인 명대사 대결 — 폰 하나를 돌려 가며 외친다.
- * 서버·로그인 없음. 친구들이 모인 자리에서 링크 하나 열면 바로 시작한다.
+ * 오프라인 명대사 대결 — 폰 하나를 돌려 가며 외친다. 로그인 없음.
+ * 원본 클립이 있는 대사는 차례마다 원본을 듣고, 원본과 얼마나 닮았나로 채점한다(서버).
+ * 원본이 없거나 서버가 실패하면 브라우저 기합 점수(최대 89). 친구들이 모인 자리에서 링크 하나면 된다.
  * 이름은 다음 판을 위해 이 폰에만 기억한다.
  */
 const NAMES = "mimic.duel.names";
@@ -57,6 +59,8 @@ export default function Duel({ first }: { first: string | null }) {
   const players = names.map((n, i) => n.trim() || `${i + 1}P`);
   const line = lines[round];
   const take = useTake((line?.span[1] ?? 5) + 3);
+  const original = useOriginal(line ? animeRefId(line) : null);
+  const [judging, setJudging] = useState(false);
 
   const begin = () => {
     try {
@@ -74,9 +78,17 @@ export default function Duel({ first }: { first: string | null }) {
 
   const shoot = async () => {
     if (!line) return;
+    if (original) warmScorer();
     const r = await take.start();
     if (!r) return;
-    const shot = { score: hypeScore(r.analysis, line), url: r.url };
+    const local = hypeScore(r.analysis, line);
+    let score = local;
+    if (original && !local.silent) {
+      setJudging(true);
+      score = (await scoreWithOriginal(animeRefId(line), r.url)) ?? local;
+      setJudging(false);
+    }
+    const shot = { score, url: r.url };
     setShots((prev) => prev.map((row, i) => (i === round ? [...row.slice(0, turn), shot] : row)));
     setLast(shot);
     setStage("shot");
@@ -144,8 +156,8 @@ export default function Duel({ first }: { first: string | null }) {
         </h1>
         <p className={s.sub}>
           {t(
-            "폰 하나로 차례대로 외치고, 기합 점수 합계로 1등을 가려요. 모두 같은 기준으로 재니까 공평해요.",
-            "Take turns on one phone. Highest total hype score wins. Same rules for everyone.",
+            "폰 하나로 차례대로 외치고, 점수 합계로 1등을 가려요. 원본이 있는 대사는 원본을 듣고 누가 더 똑같이 했나로 재요.",
+            "Take turns on one phone. Highest total wins. Lines with an original are scored on how close you get to it.",
           )}
         </p>
 
@@ -288,7 +300,17 @@ export default function Duel({ first }: { first: string | null }) {
         <b>{players[turn]}</b>
       </div>
       {line && <LineCard line={line} big />}
-      {stage === "turn" || !last ? (
+      {original && stage === "turn" && (
+        <div className={s.row} style={{ justifyContent: "center", marginTop: 4 }}>
+          <span className={s.note}>{t("원본 듣고 똑같이 →", "Hear the original →")}</span>
+          <Replay url={original} small />
+        </div>
+      )}
+      {judging ? (
+        <p className={s.note} style={{ textAlign: "center", marginTop: 16 }}>
+          {t("원본이랑 견주는 중…", "Comparing with the original…")}
+        </p>
+      ) : stage === "turn" || !last ? (
         <>
           <ShoutButton
             phase={take.phase}
