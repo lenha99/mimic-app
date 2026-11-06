@@ -20,7 +20,11 @@ function useMounted(): boolean {
   return useSyncExternalStore(noop, () => true, () => false);
 }
 
-/** 갤러리 카드 하나 — 얼굴을 누르면 바로 재생, 이름 쪽을 누르면 그 목소리 화면(구독·❤). */
+/**
+ * 갤러리 카드 하나 — 위: 얼굴(누르면 재생) · 이름 · 파형. 아래: 할 수 있는 것을 글자로 적은 한 줄
+ * [♡ 좋아요] [💬 댓글] [🎯 피드백 주기]. 버튼을 오른쪽 좁은 칸에 몰아넣었더니 이름이 잘리고
+ * 💬 가 무슨 버튼인지 몰랐다(11/6) — 아이콘만 두지 않고 이름을 붙여 카드 폭 전체에 편다.
+ */
 export function VoiceCard({ e, index = 0 }: { e: GalleryEntry; index?: number }) {
   const t = useT();
   const lang = useLang();
@@ -44,6 +48,10 @@ export function VoiceCard({ e, index = 0 }: { e: GalleryEntry; index?: number })
   const [sheet, setSheet] = useState(false);
   const [notes, setNotes] = useState(e.notes);
   const canComment = e.feedbackOn || notes > 0;
+  const openSheet = (via: "comment" | "feedback") => () => {
+    setSheet(true);
+    track("feedback_open", { via });
+  };
 
   return (
     <li className={`${styles.card} ${on ? styles.cardOn : ""}`} style={{ animationDelay: `${Math.min(index, 10) * 40}ms` }}>
@@ -63,7 +71,6 @@ export function VoiceCard({ e, index = 0 }: { e: GalleryEntry; index?: number })
             <NameLine name={name} look={e.look} />
           </b>
           {e.featured && <span className={styles.pickMini}>⭐ {t("픽", "Pick")}</span>}
-          {e.wantsFeedback && <span className={styles.noteAsk}>🎯 {t("피드백 요청", "Wants feedback")}</span>}
         </Link>
         <span className={styles.cardMeta}>
           {e.week.emoji} {t(e.week.title, e.week.titleEn)}
@@ -75,40 +82,43 @@ export function VoiceCard({ e, index = 0 }: { e: GalleryEntry; index?: number })
         </button>
       </div>
 
-      <div className={styles.cardActs}>
-      {canComment && (
-        <button
-          type="button"
-          className={styles.commentBtn}
-          onClick={() => {
-            setSheet(true);
-            track("feedback_open", { via: e.id });
-          }}
-          aria-label={t(`${name} 댓글 ${notes}개 · 댓글 달기`, `${notes} comments on ${name} · add one`)}
-        >
-          <span className={styles.commentIco} aria-hidden="true">💬</span>
-          <b>{notes > 0 ? notes : t("댓글", "Say")}</b>
-        </button>
-      )}
-      {canLike ? (
-        <button
-          type="button"
-          className={`${styles.likeBtn} ${liked ? styles.likeOn : ""} ${ask ? styles.likeAsk : ""}`}
-          onClick={() => void likes!.toggle(e.id)}
-          aria-pressed={liked}
-          aria-label={liked ? t(`${name} ❤ 취소 — ${count}`, `Un-❤ ${name} — ${count}`) : t(`${name}에게 ❤ — ${count}`, `❤ ${name} — ${count}`)}
-        >
-          <span className={styles.likeHeart}>{liked ? "♥" : "♡"}</span>
-          <b>{count}</b>
-          {ask && <small>{t("좋았으면", "Liked it?")}</small>}
-        </button>
-      ) : (
-        <Link href={`/weekly/e/${e.id}`} className={styles.cardSide} aria-label={t(`${name} 화면으로 — ❤ ${count}`, `Open ${name} — ❤ ${count}`)}>
-          <span className={styles.heart}>♥</span>
-          <b>{count}</b>
-          <i aria-hidden="true">›</i>
-        </Link>
-      )}
+      <div className={styles.cardBar}>
+        {canLike ? (
+          <button
+            type="button"
+            className={`${styles.actBtn} ${styles.actLike} ${liked ? styles.likeOn : ""} ${ask ? styles.likeAsk : ""}`}
+            onClick={() => void likes!.toggle(e.id)}
+            aria-pressed={liked}
+            aria-label={liked ? t(`${name} ❤ 취소 — ${count}`, `Un-❤ ${name} — ${count}`) : t(`${name}에게 ❤ — ${count}`, `❤ ${name} — ${count}`)}
+          >
+            <span className={styles.likeHeart} aria-hidden="true">
+              {liked ? "♥" : "♡"}
+            </span>
+            {ask ? t("좋았으면", "Liked it?") : t("좋아요", "Like")}
+            <b>{count}</b>
+          </button>
+        ) : (
+          <Link href={`/weekly/e/${e.id}`} className={`${styles.actBtn} ${styles.actLike}`} aria-label={t(`${name} 화면으로 — ❤ ${count}`, `Open ${name} — ❤ ${count}`)}>
+            <span className={styles.likeHeart} aria-hidden="true">
+              ♥
+            </span>
+            {t("좋아요", "Likes")}
+            <b>{count}</b>
+          </Link>
+        )}
+        {canComment && (
+          <button type="button" className={styles.actBtn} onClick={openSheet("comment")} aria-label={t(`${name} 댓글 ${notes}개 보기·달기`, `${notes} comments on ${name}`)}>
+            <span aria-hidden="true">💬</span>
+            {t("댓글", "Comments")}
+            {notes > 0 && <b>{notes}</b>}
+          </button>
+        )}
+        {e.wantsFeedback && (
+          <button type="button" className={`${styles.actBtn} ${styles.actFeedback}`} onClick={openSheet("feedback")}>
+            <span aria-hidden="true">🎯</span>
+            {t("피드백 주기", "Give feedback")}
+          </button>
+        )}
       </div>
       {sheet && <CommentSheet entryId={e.id} name={name} onClose={() => setSheet(false)} onCount={setNotes} />}
 
