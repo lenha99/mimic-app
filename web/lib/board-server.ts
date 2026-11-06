@@ -5,7 +5,7 @@ import { challengeById } from "@/lib/weekly";
 /**
  * 연습실 입구("서로 들어주기")에 띄울 소식 — 서버 전용.
  *
- * 11/6 게시판을 갤러리로 합쳤다. 이제 "피드백 받기"를 켠 갤러리 목소리를 센다:
+ * 11/6 게시판을 갤러리로 합쳤다. 이제 🎯 피드백을 요청한 갤러리 목소리를 센다:
  * 아직 댓글이 하나도 없는 수, 막 올라온(48시간) 수, 그중 대표 하나(처음 올린 사람이 먼저).
  */
 export type BoardPulse = {
@@ -25,7 +25,7 @@ export async function boardPulse(): Promise<BoardPulse> {
       .from("weekly_entries")
       .select("id, challenge_id, owner, user_id, guest_name, created_at")
       .eq("hidden", false)
-      .eq("feedback_on", true)
+      .eq("wants_feedback", true)
       .order("created_at", { ascending: false })
       .limit(100);
     if (error || !rows?.length) return EMPTY;

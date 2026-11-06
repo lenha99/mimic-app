@@ -264,6 +264,7 @@ export interface Database {
           body: string;
           hidden: boolean;
           reports: number;
+          helpful: boolean;
           created_at: string;
         };
         Insert: {
@@ -273,6 +274,7 @@ export interface Database {
           parent_id?: string | null;
           body: string;
           hidden?: boolean;
+          helpful?: boolean;
           reports?: number;
           created_at?: string;
         };
@@ -369,6 +371,9 @@ export interface Database {
           /** 운영자 픽 · 인스타 소개 동의 · 강점 배지 (마이그레이션 27) */
           featured_at: string | null;
           feedback_on: boolean;
+          /** 피드백 요청 · 봐 줬으면 하는 곳 (마이그레이션 33) */
+          wants_feedback: boolean;
+          feedback_ask: string | null;
           expires_at: string | null;
           promo_ok: boolean;
           badges: string[];
@@ -392,6 +397,8 @@ export interface Database {
           updated_at?: string;
           featured_at?: string | null;
           feedback_on?: boolean;
+          wants_feedback?: boolean;
+          feedback_ask?: string | null;
           expires_at?: string | null;
           promo_ok?: boolean;
           badges?: string[];
@@ -633,6 +640,7 @@ export type NotificationKind =
   | "new_entry"
   | "note"
   | "note_reply"
+  | "note_helpful"
   | "reward_likes"
   | "reward_follows"
   | "reward_pick"

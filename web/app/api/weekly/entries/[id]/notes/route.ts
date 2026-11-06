@@ -1,4 +1,4 @@
-import { MAX_ENTRY_NOTE, MAX_NOTES_PER_ENTRY, type EntryNote, type EntryNotes } from "@/lib/entry-notes";
+import { MAX_ENTRY_NOTE, MAX_FEEDBACK_ASK, MAX_NOTES_PER_ENTRY, type EntryNote, type EntryNotes } from "@/lib/entry-notes";
 import { notify } from "@/lib/notify-server";
 import { allow, tooMany } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
@@ -26,7 +26,7 @@ async function viewer(): Promise<string | null> {
 async function entryOf(id: string) {
   const { data } = await createServiceClient()
     .from("weekly_entries")
-    .select("id, user_id, hidden, feedback_on")
+    .select("id, user_id, hidden, feedback_on, wants_feedback, feedback_ask")
     .eq("id", id)
     .maybeSingle();
   return data && !data.hidden ? data : null;
@@ -40,7 +40,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   const service = createServiceClient();
   const { data: rows } = await service
     .from("entry_notes")
-    .select("id, user_id, parent_id, body, created_at")
+    .select("id, user_id, parent_id, body, helpful, created_at")
     .eq("entry_id", id)
     .eq("hidden", false)
     .order("created_at", { ascending: true })
@@ -60,6 +60,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
       createdAt: r.created_at,
       mine: me === r.user_id,
       byOwner: Boolean(e.user_id) && r.user_id === e.user_id,
+      helpful: r.helpful === true,
       replies: [],
     };
     byId.set(r.id, n);
@@ -69,11 +70,13 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   }
   const body: EntryNotes = {
     feedbackOn: e.feedback_on !== false,
+    wantsFeedback: e.wants_feedback === true,
+    ask: e.feedback_ask ?? null,
     owner: Boolean(me) && me === e.user_id,
     loggedIn: Boolean(me),
     count: rows?.length ?? 0,
-    // 새 댓글이 위, 답글은 그 아래에 오래된 순
-    notes: top.reverse(),
+    // 주인이 도움됐다고 한 피드백이 맨 위, 그다음 새 댓글. 답글은 그 아래에 오래된 순
+    notes: top.reverse().sort((a, b) => Number(b.helpful) - Number(a.helpful)),
   };
   return Response.json(body, { headers: { "cache-control": "no-store" } });
 }
@@ -130,22 +133,52 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     await notify({ userId: replyTo, kind: "note_reply", actor: me, entryId: id, push: push(t("내 댓글에 답글이 달렸어요", "Someone replied to you")) });
   }
   if (!owner && e.user_id && e.user_id !== replyTo) {
-    await notify({ userId: e.user_id, kind: "note", actor: me, entryId: id, push: push(t("내 목소리에 댓글이 달렸어요 💬", "New comment on your voice 💬")) });
+    const title = e.wants_feedback ? t("부탁한 피드백이 왔어요 🎯", "Feedback arrived 🎯") : t("내 목소리에 댓글이 달렸어요 💬", "New comment on your voice 💬");
+    await notify({ userId: e.user_id, kind: "note", actor: me, entryId: id, push: push(title) });
   }
   return Response.json({ id: note.id });
 }
 
-/** 주인 — 피드백 받기 켜고 끄기. */
+/**
+ * 주인만. 두 가지:
+ *  - 받는 방식 바꾸기 { feedbackOn?, wantsFeedback?, ask? } — 피드백 요청은 댓글을 연다
+ *  - 댓글에 "도움됐어요" { noteId, helpful } — 켜면 쓴 사람에게 알림(한 번만)
+ */
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const t = requestT(req);
   const { id } = await ctx.params;
   if (!ID.test(id)) return Response.json({ error: "bad request" }, { status: 400 });
   const [me, e] = await Promise.all([viewer(), entryOf(id)]);
   if (!me || !e || e.user_id !== me) return Response.json({ error: t("내 목소리만 바꿀 수 있어요.", "Only your own voice.") }, { status: 403 });
-  const input = (await req.json().catch(() => ({}))) as { feedbackOn?: unknown };
-  const on = input.feedbackOn !== false;
-  await createServiceClient().from("weekly_entries").update({ feedback_on: on }).eq("id", id);
-  return Response.json({ feedbackOn: on });
+  const input = (await req.json().catch(() => ({}))) as { feedbackOn?: unknown; wantsFeedback?: unknown; ask?: unknown; noteId?: unknown; helpful?: unknown };
+  const service = createServiceClient();
+
+  if (typeof input.noteId === "string" && ID.test(input.noteId)) {
+    const on = input.helpful === true;
+    const { data: n } = await service.from("entry_notes").update({ helpful: on }).eq("id", input.noteId).eq("entry_id", id).select("user_id").maybeSingle();
+    if (n && on && n.user_id !== me) {
+      await notify({
+        userId: n.user_id,
+        kind: "note_helpful",
+        actor: me,
+        entryId: id,
+        push: { title: t("내 피드백이 도움됐대요 👍", "Your feedback helped 👍"), body: t("들어 준 목소리에서 확인해 보세요", "See it on the voice you reviewed"), url: `/weekly/e/${id}` },
+        pushKey: `helpful:${input.noteId}`,
+      });
+    }
+    return Response.json({ helpful: on });
+  }
+
+  const patch: { feedback_on?: boolean; wants_feedback?: boolean; feedback_ask?: string | null } = {};
+  if (typeof input.feedbackOn === "boolean") patch.feedback_on = input.feedbackOn;
+  if (typeof input.wantsFeedback === "boolean") {
+    patch.wants_feedback = input.wantsFeedback;
+    if (input.wantsFeedback) patch.feedback_on = true;
+  }
+  if (patch.feedback_on === false) patch.wants_feedback = false;
+  if (typeof input.ask === "string") patch.feedback_ask = input.ask.trim().slice(0, MAX_FEEDBACK_ASK) || null;
+  await service.from("weekly_entries").update(patch).eq("id", id);
+  return Response.json({ ok: true });
 }
 
 /** 지우기 — 쓴 사람, 또는 출전작 주인(자기 목소리에 달린 것). 답글도 같이 지워진다. */
