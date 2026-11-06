@@ -20,6 +20,7 @@ const ICON: Record<string, string> = {
   new_entry: "🎙",
   note: "💬",
   note_reply: "↩️",
+  note_helpful: "👍",
 };
 
 /** VOICE PASS 알림은 이모지 대신 패스 칩으로 — 앱 안 다른 곳(배지·레벨 알약)과 같은 말투 */
@@ -125,6 +126,8 @@ function textOf(kind: string, actor: string, count: number | null, t: T): string
       return t(`${actor}님이 당신 목소리에 댓글을 남겼어요`, `${actor} commented on your voice`);
     case "note_reply":
       return t(`${actor}님이 당신 댓글에 답글을 달았어요`, `${actor} replied to your comment`);
+    case "note_helpful":
+      return t(`${actor}님이 당신 피드백이 도움됐대요 👍`, `${actor} found your feedback helpful 👍`);
     case "new_entry":
       return t(`구독한 ${actor}님이 새 목소리를 올렸어요`, `${actor} posted a new take`);
     case "reward_likes":

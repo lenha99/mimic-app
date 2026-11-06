@@ -1,3 +1,4 @@
+import type { CommentMode } from "@/lib/entry-notes";
 import { readLocalAvatar } from "@/lib/avatar";
 import { clientId } from "@/lib/client-id";
 import { cleanNickname, readNickname } from "@/lib/nickname";
@@ -22,8 +23,10 @@ export async function postTake(opts: {
   analysis: Analysis | null | undefined;
   week: Week;
   token?: string | null;
-  /** 피드백 받기 — 기본 켜짐 */
-  feedback?: boolean;
+  /** 댓글·피드백 받기 — 안 주면 ❤ 만 */
+  mode?: CommentMode;
+  /** 피드백 요청일 때 봐 줬으면 하는 곳 */
+  ask?: string;
 }): Promise<PostResult> {
   const { blob, analysis, week } = opts;
   try {
@@ -37,7 +40,8 @@ export async function postTake(opts: {
     const nick = cleanNickname(readNickname());
     if (nick) body.append("name", nick);
     if (opts.token) body.append("token", opts.token);
-    body.append("feedback", opts.feedback === false ? "0" : "1");
+    body.append("feedback", opts.mode === "feedback" ? "want" : opts.mode === "comments" ? "1" : "0");
+    if (opts.mode === "feedback" && opts.ask?.trim()) body.append("ask", opts.ask.trim());
     body.append("duration", String(Math.round(duration * 10) / 10));
     body.append("bars", JSON.stringify(downsample(analysis?.bars ?? [], 40)));
     const avatar = readLocalAvatar();

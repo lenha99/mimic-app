@@ -1,3 +1,4 @@
+import { MAX_FEEDBACK_ASK } from "@/lib/entry-notes";
 import { AUDIO_CACHE_CONTROL, toAac } from "@/lib/encode-audio";
 import { refreshVoicePages } from "@/lib/revalidate-voices";
 import { randomUUID } from "node:crypto";
@@ -47,8 +48,11 @@ export async function POST(req: Request) {
   } catch {}
   // 인스타 소개 동의(스스로 켠 사람만) · 잘한 점 배지(정해진 목록 안에서만, 최대 셋).
   const promoOk = String(form?.get("promo") ?? "") === "1";
-  // 피드백 받기 — 안 보내면 받는다(기본 켜짐). "0" 일 때만 끈다.
-  const feedbackOn = String(form?.get("feedback") ?? "1") !== "0";
+  // 댓글 받기 — "0" ❤ 만 · "1" 댓글 · "want" 피드백 요청(댓글 포함). 안 보내면 ❤ 만.
+  const mode = String(form?.get("feedback") ?? "0");
+  const feedbackOn = mode === "1" || mode === "want";
+  const wantsFeedback = mode === "want";
+  const feedbackAsk = wantsFeedback ? String(form?.get("ask") ?? "").trim().slice(0, MAX_FEEDBACK_ASK) || null : null;
   // 잘한 점 배지는 더 받지 않는다(11/4) — 예전 클라이언트가 보내도 빈 목록으로 덮는다.
   const badges: string[] = [];
   let avatar = null;
@@ -173,6 +177,8 @@ export async function POST(req: Request) {
         like_count: 0,
         play_count: 0,
         feedback_on: feedbackOn,
+        wants_feedback: wantsFeedback,
+        feedback_ask: feedbackAsk,
         updated_at: now,
       })
       .eq("id", id);
@@ -198,6 +204,8 @@ export async function POST(req: Request) {
       duration_s: duration,
       bars,
       feedback_on: feedbackOn,
+      wants_feedback: wantsFeedback,
+      feedback_ask: feedbackAsk,
       created_at: now,
       updated_at: now,
     });

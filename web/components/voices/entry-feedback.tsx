@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useT } from "@/components/lang";
-import { MAX_ENTRY_NOTE, type EntryNote, type EntryNotes } from "@/lib/entry-notes";
+import { MAX_ENTRY_NOTE, MAX_FEEDBACK_ASK, type CommentMode, type EntryNote, type EntryNotes } from "@/lib/entry-notes";
 import { track } from "@/lib/track";
 import styles from "./entry-feedback.module.css";
 
@@ -68,7 +68,8 @@ export function EntryFeedback({
   }, [load]);
 
   if (!data) return sheet ? <p className={styles.loading}>{t("불러오는 중…", "Loading…")}</p> : null;
-  const { feedbackOn, owner, loggedIn, count, notes } = data;
+  const { feedbackOn, wantsFeedback, ask, owner, loggedIn, count, notes } = data;
+  const mode: CommentMode = wantsFeedback ? "feedback" : feedbackOn ? "comments" : "off";
   const canWrite = loggedIn && (feedbackOn || owner);
   // 댓글을 안 받고 하나도 없으면 자리를 차지하지 않는다 — 주인에게만 켜는 스위치를 보인다.
   if (!feedbackOn && count === 0 && !owner && !sheet) return null;
@@ -96,15 +97,31 @@ export function EntryFeedback({
     await load();
   };
 
-  const toggle = async () => {
-    const next = !feedbackOn;
-    setData({ ...data, feedbackOn: next });
-    track("feedback_toggle", { via: next ? "on" : "off" });
+  const patch = async (body: Record<string, unknown>) => {
     await fetch(`/api/weekly/entries/${entryId}/notes`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ feedbackOn: next }),
+      body: JSON.stringify(body),
     }).catch(() => null);
+  };
+
+  /** 주인 — ❤ 만 / 댓글 / 피드백 요청 바꾸기 */
+  const changeMode = async (m: CommentMode) => {
+    setData({ ...data, feedbackOn: m !== "off", wantsFeedback: m === "feedback" });
+    track("feedback_toggle", { via: m });
+    await patch({ feedbackOn: m !== "off", wantsFeedback: m === "feedback" });
+  };
+
+  const saveAsk = async (text: string) => {
+    setData({ ...data, ask: text.trim() || null });
+    await patch({ ask: text });
+  };
+
+  /** 주인 — 이 피드백이 도움됐어요(쓴 사람에게 알림) */
+  const markHelpful = async (n: EntryNote) => {
+    track("feedback_helpful", { via: n.helpful ? "off" : "on" });
+    await patch({ noteId: n.id, helpful: !n.helpful });
+    await load();
   };
 
   const composer = (
@@ -116,7 +133,9 @@ export function EntryFeedback({
             placeholder={
               owner
                 ? t("듣는 분들께 한마디 · 예: 끝 문장 어땠어요?", "Say something to listeners · e.g. How was the last line?")
-                : t(`댓글 달기 · 예: ${EXAMPLES[ex][0]}`, `Add a comment · e.g. ${EXAMPLES[ex][1]}`)
+                : wantsFeedback
+                  ? t("들은 대로 솔직하게 · 예: 둘째 문장 끝이 올라가서 놀란 느낌이에요. 내려 보면 더 여유로울 듯", "Be honest · e.g. The 2nd line rises at the end, try bringing it down")
+                  : t(`댓글 달기 · 예: ${EXAMPLES[ex][0]}`, `Add a comment · e.g. ${EXAMPLES[ex][1]}`)
             }
             onSend={(b) => send(b, null)}
           />
@@ -145,13 +164,33 @@ export function EntryFeedback({
         <h2 id={`fb-${entryId}`} className={styles.title}>
           💬 {t("댓글", "Comments")} {count > 0 && <span className={styles.count}>{count}</span>}
         </h2>
-        {owner && (
-          <button type="button" className={styles.switch} role="switch" aria-checked={feedbackOn} onClick={() => void toggle()}>
-            <span className={styles.knob} aria-hidden="true" />
-            {feedbackOn ? t("댓글 받는 중", "Comments on") : t("❤ 만 받기", "❤ only")}
-          </button>
-        )}
       </div>
+
+      {owner && (
+        <div className={styles.modes} role="radiogroup" aria-label={t("받을 것", "What you'd like back")}>
+          {(
+            [
+              ["off", t("❤ 만", "❤ only")],
+              ["comments", t("💬 댓글", "💬 Comments")],
+              ["feedback", t("🎯 피드백 요청", "🎯 Ask feedback")],
+            ] as const
+          ).map(([id, label]) => (
+            <button key={id} type="button" role="radio" aria-checked={mode === id} className={styles.modeBtn} onClick={() => void changeMode(id)}>
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+      {wantsFeedback &&
+        (owner ? (
+          <AskEditor initial={ask ?? ""} onSave={saveAsk} />
+        ) : (
+          <div className={styles.askCard}>
+            <b>🎯 {t("피드백을 원해요", "Wants feedback")}</b>
+            {ask && <q>{ask}</q>}
+            <small>{t("좋았던 점 하나, 바꿔 보면 좋을 점 하나면 충분해요", "One thing that worked, one thing to try")}</small>
+          </div>
+        ))}
 
       {!sheet && composer}
       {notes.length === 0 ? (
@@ -160,7 +199,13 @@ export function EntryFeedback({
         <ol className={styles.list}>
           {shown.map((n) => (
             <li key={n.id} className={styles.item}>
-              <Note n={n} canDelete={n.mine || owner} onDelete={remove} onReply={canWrite ? () => setReplyTo(replyTo === n.id ? null : n.id) : undefined} />
+              <Note
+                n={n}
+                canDelete={n.mine || owner}
+                onDelete={remove}
+                onReply={canWrite ? () => setReplyTo(replyTo === n.id ? null : n.id) : undefined}
+                onHelpful={owner && !n.byOwner ? () => void markHelpful(n) : undefined}
+              />
               {(n.replies.length > 0 || replyTo === n.id) && (
                 <ol className={styles.replies}>
                   {n.replies.map((r) => (
@@ -196,7 +241,19 @@ export function EntryFeedback({
   );
 }
 
-function Note({ n, canDelete, onDelete, onReply }: { n: EntryNote; canDelete: boolean; onDelete: (id: string) => void; onReply?: () => void }) {
+function Note({
+  n,
+  canDelete,
+  onDelete,
+  onReply,
+  onHelpful,
+}: {
+  n: EntryNote;
+  canDelete: boolean;
+  onDelete: (id: string) => void;
+  onReply?: () => void;
+  onHelpful?: () => void;
+}) {
   const t = useT();
   const [confirm, setConfirm] = useState(false);
   return (
@@ -205,9 +262,15 @@ function Note({ n, canDelete, onDelete, onReply }: { n: EntryNote; canDelete: bo
         <b>{n.nickname}</b>
         {n.byOwner && <span className={styles.ownerChip}>{t("작성자", "Author")}</span>}
         <span className={styles.ago}>{agoOf(n.createdAt, t)}</span>
+        {n.helpful && <span className={styles.helpfulChip}>👍 {t("도움된 피드백", "Helpful")}</span>}
       </p>
       <p className={styles.body}>{n.body}</p>
       <p className={styles.actions}>
+        {onHelpful && (
+          <button type="button" className={n.helpful ? styles.helpfulOn : undefined} onClick={onHelpful} aria-pressed={n.helpful}>
+            👍 {n.helpful ? t("도움됐어요", "Helpful") : t("도움됐어요?", "Helpful?")}
+          </button>
+        )}
         {onReply && (
           <button type="button" onClick={onReply}>
             {t("답글", "Reply")}
@@ -225,6 +288,33 @@ function Note({ n, canDelete, onDelete, onReply }: { n: EntryNote; canDelete: bo
           ))}
       </p>
     </div>
+  );
+}
+
+/** 주인 — 봐 줬으면 하는 곳 한 줄. 칸을 떠나면 저장한다. */
+function AskEditor({ initial, onSave }: { initial: string; onSave: (text: string) => void }) {
+  const t = useT();
+  const [v, setV] = useState(initial);
+  const [saved, setSaved] = useState(false);
+  return (
+    <label className={styles.askEdit}>
+      <span>{t("🎯 특히 봐 줬으면 하는 곳", "🎯 What to listen for")}</span>
+      <input
+        value={v}
+        maxLength={MAX_FEEDBACK_ASK}
+        placeholder={t("예: 끝 문장 톤이 어색한지 (비워도 돼요)", "e.g. Is the last line's tone off? (optional)")}
+        onChange={(e) => {
+          setV(e.target.value);
+          setSaved(false);
+        }}
+        onBlur={() => {
+          if (v.trim() === initial.trim()) return;
+          onSave(v);
+          setSaved(true);
+        }}
+      />
+      {saved && <small>{t("저장했어요", "Saved")}</small>}
+    </label>
   );
 }
 

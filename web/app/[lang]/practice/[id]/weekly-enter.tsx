@@ -1,5 +1,6 @@
 "use client";
 
+import { MAX_FEEDBACK_ASK, type CommentMode } from "@/lib/entry-notes";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useToast } from "@/components/weekly/toast";
@@ -69,21 +70,23 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
     return v && /^[0-9a-f-]{36}$/i.test(v) ? v : null;
   });
   const [toast, showToast] = useToast();
-  // 피드백 받기 — 기본 켜짐, 이 기기에서 마지막으로 고른 걸 기억한다.
-  const [feedback, setFeedback] = useState(() => {
+  // 올린 뒤 받을 것 — ❤ 만 / 💬 댓글 / 🎯 피드백 요청. 이 기기에서 마지막으로 고른 걸 기억한다.
+  const [mode, setModeState] = useState<CommentMode>(() => {
     try {
-      return localStorage.getItem("mimic.feedback") !== "off";
+      const v = localStorage.getItem("mimic.cmode");
+      if (v === "off" || v === "comments" || v === "feedback") return v;
+      return localStorage.getItem("mimic.feedback") === "off" ? "off" : "comments";
     } catch {
-      return true;
+      return "comments";
     }
   });
-  const toggleFeedback = () => {
-    const next = !feedback;
-    setFeedback(next);
+  const setMode = (m: CommentMode) => {
+    setModeState(m);
     try {
-      localStorage.setItem("mimic.feedback", next ? "on" : "off");
+      localStorage.setItem("mimic.cmode", m);
     } catch {}
   };
+  const [ask, setAsk] = useState("");
   // 목소리 타입 — 이 녹음에서 잰 값으로만 정한다(속도·억양 폭·음높이).
   const vtype = voiceTypeOf(take.analysis, t);
 
@@ -123,7 +126,7 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
     setBusy(true);
     setError(null);
     track("enter_open", { via: free ? "free" : week.id });
-    const r = await postTake({ blob: take.blob, analysis: take.analysis, week, token: local?.token, feedback });
+    const r = await postTake({ blob: take.blob, analysis: take.analysis, week, token: local?.token, mode, ask });
     setBusy(false);
     setConfirmReplace(false);
     if (!r.ok) {
@@ -179,19 +182,40 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
         </p>
       ) : (
         <>
-          <button type="button" className={styles.fbToggle} aria-pressed={feedback} onClick={toggleFeedback}>
-            <span className={styles.fbCheck} aria-hidden="true">
-              {feedback ? "✓" : ""}
-            </span>
-            <span>
-              <b>{t("💬 댓글도 받을래요", "💬 Open comments")}</b>
-              <small>
-                {feedback
-                  ? t("응원 · 피드백 · 한마디 — 듣는 사람이 댓글로 남겨요", "Cheers, tips, anything — listeners can comment")
-                  : t("댓글 없이 ❤ 만 받아요 · 나중에 켤 수 있어요", "Just ❤ · you can turn comments on later")}
-              </small>
-            </span>
-          </button>
+          <div className={styles.modeBox}>
+            <p className={styles.modeLabel}>{t("올린 뒤 받을 것", "What you'd like back")}</p>
+            <div className={styles.modes} role="radiogroup" aria-label={t("올린 뒤 받을 것", "What you'd like back")}>
+              {(
+                [
+                  ["off", "❤", t("❤ 만", "❤ only")],
+                  ["comments", "💬", t("댓글", "Comments")],
+                  ["feedback", "🎯", t("피드백 요청", "Ask feedback")],
+                ] as const
+              ).map(([id, ico, label]) => (
+                <button key={id} type="button" role="radio" aria-checked={mode === id} className={styles.modeBtn} onClick={() => setMode(id)}>
+                  <span aria-hidden="true">{ico}</span>
+                  {label}
+                </button>
+              ))}
+            </div>
+            <small className={styles.modeHint}>
+              {mode === "off"
+                ? t("댓글 없이 ❤ 만 받아요. 나중에 바꿀 수 있어요", "Just ❤. You can change this later")
+                : mode === "comments"
+                  ? t("응원 · 한마디를 댓글로 받아요", "Get cheers and comments")
+                  : t("갤러리 🎯 피드백 칸에 올라가고, 듣는 사람이 고칠 곳까지 솔직하게 남겨 줘요", "Shows in the 🎯 Feedback tab. Listeners leave honest notes")}
+            </small>
+            {mode === "feedback" && (
+              <input
+                className={styles.askInput}
+                value={ask}
+                maxLength={MAX_FEEDBACK_ASK}
+                onChange={(e) => setAsk(e.target.value)}
+                placeholder={t("특히 봐 줬으면 하는 곳 (선택) · 예: 끝 문장 톤이 어색한지", "Anything specific? (optional) · e.g. Is the last line's tone off?")}
+                aria-label={t("특히 봐 줬으면 하는 곳", "What to listen for")}
+              />
+            )}
+          </div>
           <button
             type="button"
             className={replacing ? styles.openAlt : styles.open}
