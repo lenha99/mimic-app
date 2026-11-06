@@ -33,10 +33,10 @@
 .card {
   position: relative;
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr;
   align-items: center;
-  gap: 12px;
-  padding: 12px 10px 12px 12px;
+  gap: 10px 12px;
+  padding: 12px 12px 10px;
   border-radius: 22px;
   border: 1px solid var(--rule);
   background: var(--panel);
@@ -652,44 +652,56 @@
   color: var(--cyan);
 }
 
-/* 카드 오른쪽 — 💬 댓글 · ❤ 를 나란히. 댓글을 안 받는 목소리는 ❤ 만 */
-.cardActs {
-  align-self: stretch;
+/* 카드 아래 한 줄 — 할 수 있는 것을 글자로 */
+.cardBar {
+  grid-column: 1 / -1;
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--rule);
 }
 
-.commentBtn {
-  display: grid;
-  justify-items: center;
-  align-content: center;
-  gap: 2px;
-  min-width: 48px;
-  min-height: 52px;
-  padding: 6px 4px;
+.actBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
   border: 1px solid var(--rule);
-  border-radius: 16px;
   background: var(--panel-hi);
   color: var(--white);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-decoration: none;
   cursor: pointer;
-  transition: transform 0.15s ease, border-color 0.15s ease;
+  transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
 }
 
-.commentBtn:active {
-  transform: scale(0.92);
+.actBtn:active {
+  transform: scale(0.95);
 }
 
-.commentBtn:hover {
-  border-color: rgba(124, 200, 242, 0.55);
-}
-
-.commentIco {
-  font-size: 19px;
-  line-height: 1;
-}
-
-.commentBtn b {
-  font-size: 12px;
+.actBtn b {
   font-weight: 800;
+  color: var(--ash);
+}
+
+.actLike .likeHeart {
+  font-size: 16px;
+}
+
+.actLike.likeOn b {
+  color: var(--white);
+}
+
+/* 피드백 요청한 목소리 — 오른쪽 끝에서 눈에 띄게 */
+.actFeedback {
+  margin-left: auto;
+  border-color: rgba(124, 200, 242, 0.5);
+  background: rgba(124, 200, 242, 0.12);
   color: var(--cyan);
+  font-weight: 800;
 }
