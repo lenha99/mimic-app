@@ -1,55 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useT } from "@/components/lang";
 import { LineCard, MicError, Replay, ScoreView, ShoutButton } from "@/components/anime/parts";
 import { useTake } from "@/components/anime/use-take";
-import {
-  animeLine,
-  animeRefId,
-  ANIME_LINES,
-  fromOriginal,
-  hypeScore,
-  type HypeScore,
-  type OriginalScore,
-} from "@/lib/anime";
-import { clientId } from "@/lib/client-id";
+import { scoreWithOriginal, useOriginal, warmScorer } from "@/components/anime/original";
+import { animeLine, animeRefId, ANIME_LINES, hypeScore, type HypeScore } from "@/lib/anime";
 import { track } from "@/lib/track";
 import s from "@/components/anime/anime.module.css";
 
 const BEST = "mimic.anime.best";
-
-/**
- * 원본 클립이 올라가 있나 — /api/ref 가 200 이면 원본과 견줘 채점한다.
- * 픽커로 구간을 골라 올리기 전엔 404 이고, 그땐 브라우저 기합 점수(최대 89)로 간다.
- */
-async function probeRef(id: string): Promise<string | null> {
-  try {
-    const res = await fetch(`/api/ref/${id}`);
-    if (!res.ok) return null;
-    return URL.createObjectURL(await res.blob());
-  } catch {
-    return null;
-  }
-}
-
-async function scoreWithOriginal(refId: string, takeUrl: string): Promise<HypeScore | null> {
-  try {
-    const blob = await (await fetch(takeUrl)).blob();
-    const body = new FormData();
-    body.append("file", blob, "recording.webm");
-    const res = await fetch(
-      `/api/score?meme_id=${encodeURIComponent(refId)}&profile=anime&client=${encodeURIComponent(clientId())}`,
-      { method: "POST", body },
-    );
-    const data = (await res.json()) as OriginalScore & { error?: string };
-    if (!res.ok || data.error || typeof data.score !== "number") return null;
-    return fromOriginal(data);
-  } catch {
-    return null;
-  }
-}
 
 function readBest(id: string): number | null {
   try {
@@ -74,29 +35,15 @@ export default function Solo({ id }: { id: string }) {
   const line = animeLine(id)!;
   const take = useTake(line.span[1] + 3);
   const [result, setResult] = useState<{ score: HypeScore; url: string; best: number | null } | null>(null);
-  const [original, setOriginal] = useState<string | null>(null);
   const [judging, setJudging] = useState(false);
   const refId = animeRefId(line);
-
-  useEffect(() => {
-    let alive = true;
-    let made: string | null = null;
-    void probeRef(refId).then((u) => {
-      made = u;
-      if (alive) setOriginal(u);
-      else if (u) URL.revokeObjectURL(u);
-    });
-    return () => {
-      alive = false;
-      if (made) URL.revokeObjectURL(made);
-    };
-  }, [refId]);
+  const original = useOriginal(refId);
   const idx = ANIME_LINES.findIndex((l) => l.id === id);
   const next = ANIME_LINES[(idx + 1) % ANIME_LINES.length];
 
   const go = async () => {
     setResult(null);
-    if (original) void fetch("/api/warm", { method: "POST" }).catch(() => {});
+    if (original) warmScorer();
     const r = await take.start();
     if (!r) return;
     const local = hypeScore(r.analysis, line);

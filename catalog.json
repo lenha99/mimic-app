@@ -234,6 +234,60 @@
       "source": "돌고래",
       "emoji": "🐬",
       "plays": 0
+    },
+    {
+      "id": "anime_sasageyo",
+      "title": "신조오 사사게요!",
+      "source": "진격의 거인 · 엘빈",
+      "emoji": "🫀",
+      "plays": 0,
+      "line": "신조오 사사게요!",
+      "draft": true
+    },
+    {
+      "id": "anime_kaizokuou",
+      "title": "카이조쿠오니 오레와 나루!",
+      "source": "원피스 · 루피",
+      "emoji": "🏴‍☠️",
+      "plays": 0,
+      "line": "카이조쿠오니 오레와 나루!",
+      "draft": true
+    },
+    {
+      "id": "anime_keikaku",
+      "title": "케이카쿠 도오리…",
+      "source": "데스노트 · 라이토",
+      "emoji": "📓",
+      "plays": 0,
+      "line": "케이카쿠 도오리…",
+      "draft": true
+    },
+    {
+      "id": "anime_nigecha",
+      "title": "니게차 다메다, 니게차 다메다…!",
+      "source": "에반게리온 · 신지",
+      "emoji": "🤖",
+      "plays": 0,
+      "line": "니게차 다메다, 니게차 다메다…!",
+      "draft": true
+    },
+    {
+      "id": "anime_mizunokokyu",
+      "title": "미즈노 코큐, 이치노카타! 미나모기리!",
+      "source": "귀멸의 칼날 · 탄지로",
+      "emoji": "🌊",
+      "plays": 0,
+      "line": "미즈노 코큐, 이치노카타! 미나모기리!",
+      "draft": true
+    },
+    {
+      "id": "anime_ryoiki",
+      "title": "료이키 텐카이… 무료오쿠쇼.",
+      "source": "주술회전 · 고죠",
+      "emoji": "🫴",
+      "plays": 0,
+      "line": "료이키 텐카이… 무료오쿠쇼.",
+      "draft": true
     }
   ]
 }
