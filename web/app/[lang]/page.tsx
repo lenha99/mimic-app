@@ -120,7 +120,7 @@ export default async function Home() {
           </span>
           <span className={home.tileText}>
             <b>{t("애니 명대사 기합 대결", "Anime lines hype battle")}</b>
-            <small>{t("심장을 바쳐라! 나선환! · 친구랑 폰 하나로", "Shout iconic lines · battle friends on one phone")}</small>
+            <small>{t("심장을 바쳐라! 오마에와 모 신데이루 · 친구랑 폰 하나로", "Shout iconic lines · battle friends on one phone")}</small>
           </span>
           <i className={home.tileNew}>NEW</i>
         </Link>
