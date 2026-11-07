@@ -107,6 +107,9 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
 
   const entered = local?.takeId === take.id && me.mineId === local.entryId;
   const replacing = Boolean(me.mineId) && !entered;
+  // 하루 새 목소리 상한(도배 방지) — 바꾸기는 안 센다. 막히기 전에 버튼 위에서 미리 알린다.
+  const daily = me.daily;
+  const full = !replacing && daily !== null && daily.today >= daily.max;
 
   const share = async (id: string) => {
     const r = await shareLink(
@@ -220,7 +223,7 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
             type="button"
             className={replacing ? styles.openAlt : styles.open}
             onClick={() => (replacing && !confirmReplace ? setConfirmReplace(true) : void submit())}
-            disabled={busy}
+            disabled={busy || full}
             data-tour="room-enter"
           >
             <span className={styles.openIcon} aria-hidden="true">
@@ -236,7 +239,13 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
                       : t("이 테이크로 바꿔 들려주기", "Swap in this take")
                     : t("이 목소리 들려주기", "Let people hear this")}
               </b>
-              <small>{t("모두가 들을 수 있어요 · 언제든 내릴 수 있어요", "Anyone can listen · remove it anytime")}</small>
+              <small>
+                {full
+                  ? t(`오늘은 ${daily.max}개 다 올렸어요 · 내일 다시 열려요`, `You've posted ${daily.max} today · opens again tomorrow`)
+                  : daily && !replacing && daily.today >= daily.max - 3
+                    ? t(`오늘 ${daily.today}/${daily.max}개 올렸어요 · 하루 ${daily.max}개까지`, `${daily.today}/${daily.max} posted today · ${daily.max} a day max`)
+                    : t("모두가 들을 수 있어요 · 언제든 내릴 수 있어요", "Anyone can listen · remove it anytime")}
+              </small>
             </span>
             {!replacing && <i className={styles.xp}>+30 XP</i>}
           </button>

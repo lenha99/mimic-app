@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { currentWeek } from "@/lib/weekly";
-import { weekRows } from "@/lib/weekly-server";
+import { DAILY_POSTS, postsToday, weekRows } from "@/lib/weekly-server";
 
 /**
  * 이번 주에 "나"와 관련된 것 — 내가 ❤ 누른 출전작, 로그인 출전이면 내 출전작.
@@ -56,6 +56,9 @@ export async function GET(req: Request) {
       liked: [...new Set((likes ?? []).map((l) => l.entry_id))],
       likedAny: [...new Set((likesAny ?? []).map((l) => l.entry_id))],
       mine: mine?.id ?? null,
+      // 오늘 새로 올린 목소리 수 · 하루 상한 — 연습실 올리기 버튼이 미리 보여 준다
+      today: await postsToday(service, voters, user?.id),
+      dailyMax: DAILY_POSTS,
     },
     { headers: { "cache-control": "no-store" } },
   );

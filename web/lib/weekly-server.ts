@@ -348,6 +348,8 @@ export async function liveWeek(): Promise<Week> {
 /** 갤러리 카드 — 주를 넘어 쌓이는 목소리 하나. */
 export type GalleryEntry = {
   id: string;
+  /** 올린 사람을 가리는 짧은 키(주인 해시) — 한 사람 목소리를 묶어 접을 때만 쓴다. 기기 id 는 내보내지 않는다. */
+  who: string;
   name: string;
   guest: boolean;
   avatar: unknown;
@@ -379,6 +381,29 @@ export type GalleryEntry = {
  * 목소리 갤러리 — 지난 주 것까지 전부, 최근 순. 사람이 적은 지금은 콘텐츠가 쌓여야 한다
  * (매주 0 으로 돌아가면 좋은 목소리가 월요일에 묻힌다). 운영자 픽은 따로 표시.
  */
+/** 주인 → 공개해도 되는 짧은 키. 손님 기기 id 를 그대로 내보내지 않으려고 해시한다. */
+function personKey(owner: string): string {
+  return createHash("sha256").update(`mimic-who:${owner}`).digest("hex").slice(0, 12);
+}
+
+/** 한 사람이 하루(KST)에 새로 올릴 수 있는 목소리 수 — 도배 방지(11/7). 교체는 세지 않는다. */
+export const DAILY_POSTS = 10;
+
+/** 오늘(KST 0시부터) 이 주인(들)이 새로 만든 출전작 수. 교체는 created_at 이 안 바뀌니 안 센다. */
+export async function postsToday(service: Service, owners: string[], userId?: string | null): Promise<number> {
+  if (!owners.length && !userId) return 0;
+  const KST = 9 * 3_600_000;
+  const DAY = 86_400_000;
+  const since = new Date(Math.floor((Date.now() + KST) / DAY) * DAY - KST).toISOString();
+  const or = [owners.length ? `owner.in.(${owners.map((o) => `"${o}"`).join(",")})` : null, userId ? `user_id.eq.${userId}` : null].filter(Boolean).join(",");
+  const { count, error } = await service
+    .from("weekly_entries")
+    .select("id", { count: "exact", head: true })
+    .or(or)
+    .gte("created_at", since);
+  return error ? 0 : (count ?? 0);
+}
+
 export async function galleryEntries(limit = 60, opts: { admin?: boolean } = {}): Promise<GalleryEntry[]> {
   const service = createServiceClient();
   const base = "id, challenge_id, owner, user_id, guest_name, avatar, duration_s, bars, like_count, play_count, updated_at";
@@ -453,6 +478,7 @@ export async function galleryEntries(limit = 60, opts: { admin?: boolean } = {})
     return [
       {
         id: r.id,
+        who: personKey(whoOwns(r)),
         name: p?.nickname ?? r.guest_name ?? "익명의 목소리",
         guest: !r.user_id,
         avatar: normalizeAvatar(p?.avatar ?? r.avatar, r.owner ?? r.id),

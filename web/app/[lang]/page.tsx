@@ -12,6 +12,7 @@ import { HomeHero } from "@/components/weekly/home-hero";
 import { getMemes } from "@/lib/memes";
 import { findScript, SCRIPTS } from "@/lib/practice";
 import { galleryEntries, getBoard, liveWeek } from "@/lib/weekly-server";
+import { perPerson } from "@/lib/per-person";
 import { HomePick } from "@/components/home/home-pick";
 import { FirstMission } from "@/components/home/first-mission";
 import { ScreenTour } from "@/components/onboarding/tours";
@@ -47,13 +48,13 @@ export default async function Home() {
   const [{ memes }, weekly, gallery] = await Promise.all([
     getMemes(),
     getBoard(week).catch(() => ({ week, entries: [], totalLikes: 0 })),
-    galleryEntries(24).catch(() => []),
+    galleryEntries(60).catch(() => []),
   ]);
   const lines = memes.filter((m) => m.line);
   const t = await getT();
   const line = firstLine(findScript(weekly.week.scriptId)?.text ?? "");
   // 첫 미션 — 운영자 픽부터, 그다음 최근 목소리. 대사는 이번 주 추천 대본 첫 줄(자르지 않은 것).
-  const missionVoices = [...gallery.filter((e) => e.featured), ...gallery.filter((e) => !e.featured)]
+  const missionVoices = perPerson([...gallery.filter((e) => e.featured), ...gallery.filter((e) => !e.featured)], 1)
     .slice(0, 3)
     .map((e) => ({ id: e.id, name: e.name, avatar: e.avatar, look: e.look }));
   const missionLine = plainFirst(findScript(weekly.week.scriptId)?.text ?? "");
@@ -65,8 +66,9 @@ export default async function Home() {
         <TourHelp id="home" welcome short />
       </TopBar>
 
-      {/* 올라온 목소리 — 인스타 스토리처럼. 주를 넘어 쌓인 것까지(월요일에 비지 않게). 맨 앞은 "+ 내 목소리". */}
-      <VoiceStories entries={gallery.slice(0, 20).map((e) => ({ id: e.id, name: e.name, avatar: e.avatar, look: e.look }))} />
+      {/* 올라온 목소리 — 인스타 스토리처럼. 주를 넘어 쌓인 것까지(월요일에 비지 않게). 맨 앞은 "+ 내 목소리".
+          한 사람당 최신 2개까지 — 한 사람이 열 개를 올려도 동그라미를 덮지 않게(11/7). */}
+      <VoiceStories entries={perPerson(gallery, 2).slice(0, 20).map((e) => ({ id: e.id, name: e.name, avatar: e.avatar, look: e.look }))} />
       <StreakChip />
 
       {/* 연습실 — 첫 한 걸음. 아래에 이번 주 추천 대본과 목소리 갤러리(❤ 순위)가 붙어 있다. */}
@@ -77,7 +79,7 @@ export default async function Home() {
         line={line}
         scripts={SCRIPTS.length}
         total={gallery.length}
-        faces={gallery.map((e) => e.avatar)}
+        faces={perPerson(gallery, 1).map((e) => e.avatar)}
       />
 
       {/* 운영자 픽 — 좋은 목소리는 첫 화면에서 바로 들린다. */}

@@ -218,6 +218,23 @@
   color: var(--stage);
 }
 
+.more {
+  margin-top: -4px;
+}
+
+.more button {
+  width: 100%;
+  min-height: 38px;
+  border: 1px dashed var(--rule);
+  border-radius: 14px;
+  background: transparent;
+  color: var(--ash);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
 .list {
   margin: 0;
   padding: 0;
