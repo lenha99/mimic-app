@@ -1,14 +1,10 @@
-import type { Analysis } from "./voice-analysis";
-
 /**
  * 애니 명대사 — "잘하면 멋지고 못해도 웃긴" 기합 대사.
  *
- * 채점은 두 가지다.
- *  1) 원본 비교 — 사람이 픽커로 고른 원본 구간이 `anime_<id>` 로 올라가 있으면(draft 라
- *     밈 목록엔 안 뜬다) 서버가 원본과 견준다(modal_app._score profile="anime": 억양 모양·
- *     끊어 외친 박자 중심, 음절 덩어리 수가 안 맞으면 상한). 원본처럼 해야 점수가 나온다.
- *  2) 원본이 아직 없으면 브라우저 "기합 점수" — 대사가 요구하는 것(성량·억양 폭·길이·끝·
- *     덩어리 수)과 견준다. 닮음은 못 재니 최대 89점(ESTIMATE_CAP). 오프라인 대결도 이쪽.
+ * 채점은 원본 비교 하나뿐이다 — 사람이 픽커로 고른 원본 구간이 `anime_<id>` 로 올라가 있고(draft 라
+ * 밈 목록엔 안 뜬다) 서버가 원본과 견준다(modal_app._score profile="anime": 억양 모양·끊어 외친
+ * 박자 중심, 음절 덩어리 수가 안 맞으면 상한). 원본이 없는 대사는 목록에 올리지 않는다.
+ * 원본을 듣는 건 선택이다 — 이미 아는 사람은 바로 외쳐도 같은 자로 잰다.
  *
  * say: 원어 발음을 한글로 (따라 하는 사람 대부분이 원어로 외친다). ko: 뜻 / 더빙 대사.
  */
@@ -27,7 +23,7 @@ export type AnimeLine = {
   style: AnimeStyle;
   /** 외치는 길이(초) 적당한 범위 */
   span: [number, number];
-  /** 원본이 끊어 외치는 덩어리 수(대략). 원본 음성이 없을 때 "아아악" 한 덩어리를 거른다 */
+  /** 원본이 끊어 외치는 덩어리 수(대략) — 설명·운영 참고용. 채점은 서버가 원본에서 직접 센다 */
   beats: number;
   tip: string;
   tipEn: string;
@@ -209,86 +205,29 @@ export type HypeScore = {
   silent: boolean;
   /** 화면 막대 [한국어, 영어, 0~100] */
   bars: [string, string, number][];
-  /** true 면 원본 없이 잰 추정치(최대 ESTIMATE_CAP) */
-  estimate: boolean;
   /** 원본과 덩어리 수가 안 맞아 상한에 걸렸을 때 */
   burstMiss?: { ref: number; user: number };
 };
 
 const clamp = (v: number) => Math.max(0, Math.min(100, Math.round(v)));
-/** a → 0점, b → 100점 사이를 잇는다 (a > b 도 된다) */
-const lerp = (v: number, a: number, b: number) => clamp(((v - a) / (b - a)) * 100);
 
-/** 원본이 없을 때의 상한 — 100점은 원본과 견줘서만 나온다 */
-export const ESTIMATE_CAP = 89;
-
-/** 기합 점수 — 원본 없이, 대사마다 원래 요구하는 것과 견준다 */
-export function hypeScore(a: Analysis, line: AnimeLine): HypeScore {
-  const silent = a.span < 0.35 || a.peakDb < -45;
-  const st = line.style;
-
-  // 성량: 외치는 대사는 클수록, 음흉한 대사는 작고 또렷할수록.
-  // 마이크가 찢어질 만큼 지르면 소리가 뭉개진다 — 만점이 아니다.
-  const rawPower =
-    st === "evil"
-      ? 100 - Math.min(100, Math.abs(a.peakDb + 16) * 6)
-      : st === "cool"
-        ? 100 - Math.min(100, Math.max(0, Math.abs(a.peakDb + 11) - 4) * 7)
-        : lerp(a.peakDb, -32, -5);
-  const power = a.clipped ? Math.min(rawPower, 75) : rawPower;
-
-  // 억양 폭(반음): 기합·귀여움은 출렁여야, 쿨·음흉은 눌러야.
-  const pr = a.pitchRange ?? 0;
-  const range =
-    st === "shout" || st === "cute"
-      ? lerp(pr, 1.5, st === "cute" ? 10 : 8)
-      : st === "tense"
-        ? lerp(pr, 1, 6)
-        : 100 - Math.min(100, Math.max(0, pr - 6) * 14 + Math.max(0, 1.5 - pr) * 30);
-
-  // 길이: 범위 가운데가 만점, 끝으로 갈수록·벗어날수록 깎인다.
-  const [lo, hi] = line.span;
-  const mid = (lo + hi) / 2;
-  const half = (hi - lo) / 2;
-  const off = Math.max(0, Math.abs(a.span - mid) - half * 0.4);
-  const timing = clamp(100 - (off / Math.max(0.3, half)) * 60);
-
-  // 끝 처리: 외치는 대사는 끝이 살아야, 음흉·쿨은 흐려도 된다.
-  const drop = a.endDrop ?? -6;
-  const ending = st === "evil" || st === "cool" ? clamp(90 + Math.min(10, drop + 10)) : lerp(drop, -16, -2);
-
-  // 박자: 끊어 외친 덩어리 수가 대사와 맞나. 이어 말하면 덜 세지므로 60% 면 만점,
-  // 넘치게 쪼개도(1.8배 넘게) 깎는다. 한 덩어리로 "아아악" 지르면 여기서 무너진다.
-  const ratio = a.bursts / line.beats;
-  const beat = ratio > 1.8 ? clamp(100 - (ratio - 1.8) * 120) : lerp(ratio, 0.2, 0.6);
-
-  let total = clamp(power * 0.25 + range * 0.2 + timing * 0.15 + ending * 0.1 + beat * 0.3);
-  // 박자가 틀리면 다른 게 아무리 좋아도 "따라 한" 게 아니다.
-  if (beat < 40) total = Math.min(total, 55);
-  total = Math.min(total, ESTIMATE_CAP);
-  if (silent) total = 0;
-
-  const badges: HypeScore["badges"] = [];
-  if (!silent && st === "evil" && a.peakDb < -20) badges.push({ ko: "속삭임 장인", en: "Whisper pro" });
-  if (!silent && timing === 100 && beat === 100) badges.push({ ko: "칼박자", en: "Perfect timing" });
-
+/**
+ * 소리가 안 들렸을 때 — 서버에 보내지 않고 바로 "음소거". 점수를 지어내지 않는다.
+ * (예전엔 원본 없이 브라우저가 재는 "기합 점수"가 있었다. 화면이 원본을 다 받기 전에 외치면
+ * 그 점수로 빠져서 "원본을 들어야만 진짜 점수가 나오냐"는 말이 나왔다 — 11/7 걷어냄.
+ * 채점은 늘 서버가 원본과 견준다. 사용자가 원본을 들었는지와는 상관없다.)
+ */
+export function silentScore(movie = false): HypeScore {
   return {
-    total,
-    power: clamp(power),
-    range: clamp(range),
-    timing,
-    ending,
-    tier: tierOf(total, silent, Boolean(line.movie)),
-    badges,
-    silent,
-    bars: [
-      ["박자", "Beats", clamp(beat)],
-      ["성량", "Power", clamp(power)],
-      ["억양", "Range", clamp(range)],
-      ["길이", "Timing", timing],
-      ["끝 처리", "Ending", ending],
-    ],
-    estimate: true,
+    total: 0,
+    power: 0,
+    range: 0,
+    timing: 0,
+    ending: 0,
+    tier: tierOf(0, true, movie),
+    badges: [],
+    silent: true,
+    bars: [],
   };
 }
 
@@ -325,7 +264,6 @@ export function fromOriginal(r: OriginalScore, movie = false): HypeScore {
     badges,
     silent,
     bars,
-    estimate: false,
     burstMiss: r.bursts && !r.bursts.ok ? r.bursts : undefined,
   };
 }

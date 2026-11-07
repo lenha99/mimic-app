@@ -23,8 +23,8 @@ export default function AnimeHub() {
       </h1>
       <p className={s.sub}>
         {t(
-          "잘하면 멋지고, 못해도 웃겨요. 원어 그대로 외치면 성량·억양·길이·끝 처리로 기합 점수를 매겨요.",
-          "Nail it and you look cool, miss and it's hilarious. We score power, range, timing and the ending.",
+          "잘하면 멋지고, 못해도 웃겨요. 원어 그대로 외치면 원본이랑 얼마나 똑같은지로 점수를 매겨요.",
+          "Nail it and you look cool, miss and it's hilarious. You are scored on how close you get to the original.",
         )}
       </p>
 

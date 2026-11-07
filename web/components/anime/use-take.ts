@@ -1,14 +1,20 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { analyzeBlob, type Analysis } from "@/lib/voice-analysis";
 
 /**
- * 한 테이크 녹음 — 3·2·1 카운트다운 → 녹음(소리 크기 막대) → 멈춤 → 브라우저에서 측정.
- * 서버로 아무것도 안 보낸다. 대결 중 다시 듣기용 blob URL 만 손에 쥔다.
+ * 한 테이크 녹음 — 3·2·1 카운트다운 → 녹음(소리 크기 막대) → 멈춤.
+ * 멈추는 즉시 테이크를 돌려준다. 예전엔 여기서 브라우저 분석(디코드·억양 측정)을 끝낸 뒤에야
+ * 서버로 보냈는데, 그 시간이 고스란히 "점수가 늦다"였다. 무음 판정은 녹음 중 소리 막대의
+ * 최대값(peak)으로 한다 — 이미 손에 있는 값이라 기다릴 게 없다.
+ * env 는 녹음 중 소리 크기를 촘촘히 적은 것 — 채점 기다리는 동안 내 파형으로 그린다.
  */
 export type TakePhase = "idle" | "count" | "rec" | "busy" | "done" | "error";
-export type Take = { url: string; analysis: Analysis };
+export type Take = { url: string; blob: Blob; peak: number; seconds: number; env: number[]; silent: boolean };
+
+/** 이보다 작게만 들어왔으면 "소리가 안 들렸어요" — 서버에 안 보낸다 */
+const SILENT_PEAK = 0.03;
+const SILENT_SECONDS = 0.4;
 
 export function useTake(maxSeconds: number) {
   const [phase, setPhase] = useState<TakePhase>("idle");
@@ -64,12 +70,17 @@ export function useTake(maxSeconds: number) {
       ctx.createMediaStreamSource(live).connect(an);
     }
     const buf = new Uint8Array(an?.fftSize ?? 0);
+    let peak = 0;
+    const env: number[] = [];
     const meter = () => {
       if (an) {
         an.getByteTimeDomainData(buf);
         let m = 0;
         for (const v of buf) m = Math.max(m, Math.abs(v - 128));
-        setLevel(Math.min(1, m / 100));
+        const lv = Math.min(1, m / 100);
+        peak = Math.max(peak, lv);
+        env.push(lv);
+        setLevel(lv);
       }
       raf.current = requestAnimationFrame(meter);
     };
@@ -87,21 +98,19 @@ export function useTake(maxSeconds: number) {
           r.ondataavailable = (e) => {
             if (e.data.size > 0) chunks.push(e.data);
           };
-          r.onstop = async () => {
+          let began = 0;
+          r.onstop = () => {
             cleanup();
             void ctx?.close().catch(() => {});
             setLevel(0);
-            setPhase("busy");
             const blob = new Blob(chunks, { type: r.mimeType || "audio/webm" });
-            try {
-              const analysis = await analyzeBlob(blob, null);
-              setPhase("done");
-              done.current?.({ url: URL.createObjectURL(blob), analysis });
-            } catch {
-              setPhase("error");
-              done.current?.(null);
-            }
+            const seconds = (performance.now() - began) / 1000;
+            // 소리 막대를 못 만든 브라우저(AudioContext 없음)는 peak 를 모른다 — 서버에 맡긴다
+            const silent = Boolean(an) && (peak < SILENT_PEAK || seconds < SILENT_SECONDS);
+            setPhase("done");
+            done.current?.({ url: URL.createObjectURL(blob), blob, peak, seconds, env: squeeze(env, 48), silent });
           };
+          began = performance.now();
           r.start();
           setPhase("rec");
           meter();
@@ -117,4 +126,14 @@ export function useTake(maxSeconds: number) {
   }, []);
 
   return { phase, count, level, error, start, stop, reset };
+}
+
+/** 프레임마다 적은 소리 크기를 n 칸으로 줄인다(칸마다 최대값) */
+function squeeze(xs: number[], n: number): number[] {
+  if (!xs.length) return Array(n).fill(0);
+  return Array.from({ length: n }, (_, i) => {
+    const a = Math.floor((i * xs.length) / n);
+    const b = Math.max(a + 1, Math.floor(((i + 1) * xs.length) / n));
+    return Math.max(...xs.slice(a, b));
+  });
 }
