@@ -33,6 +33,11 @@ export type AnimeLine = {
   tipEn: string;
   /** 카드 색 */
   hue: number;
+  /**
+   * 영화·드라마 명대사(밈 카탈로그)를 대결에 태울 때만 — 원본 클립 id 와 채점 기준.
+   * 애니 대사는 비워 둔다(`anime_<id>`, profile "anime").
+   */
+  movie?: { ref: string };
 };
 
 export const ANIME_LINES: AnimeLine[] = [
@@ -273,7 +278,7 @@ export function hypeScore(a: Analysis, line: AnimeLine): HypeScore {
     range: clamp(range),
     timing,
     ending,
-    tier: tierOf(total, silent),
+    tier: tierOf(total, silent, Boolean(line.movie)),
     badges,
     silent,
     bars: [
@@ -296,14 +301,15 @@ export type OriginalScore = {
   waveform?: { ref: number[]; user: number[] };
 };
 
-export function fromOriginal(r: OriginalScore): HypeScore {
+export function fromOriginal(r: OriginalScore, movie = false): HypeScore {
   const b = r.breakdown;
   const silent = false;
   const total = clamp(r.score);
+  // 밈 기준 채점(영화 대사)은 기세(energy)를 따로 안 돌려준다 — 없는 칸을 0 으로 그리지 않는다
   const bars: [string, string, number][] = [
     ...(r.pitch_scored === false ? [] : ([["억양 모양", "Intonation", b.pitch]] as [string, string, number][])),
     ["박자", "Rhythm", b.timing],
-    ["기세", "Drive", b.energy ?? 0],
+    ...(typeof b.energy === "number" ? ([["기세", "Drive", b.energy]] as [string, string, number][]) : []),
     ["목소리 결", "Tone", b.tone],
   ];
   const badges: HypeScore["badges"] = [];
@@ -315,7 +321,7 @@ export function fromOriginal(r: OriginalScore): HypeScore {
     range: b.pitch,
     timing: b.timing,
     ending: b.tone,
-    tier: tierOf(total, silent),
+    tier: tierOf(total, silent, movie),
     badges,
     silent,
     bars,
@@ -324,10 +330,19 @@ export function fromOriginal(r: OriginalScore): HypeScore {
   };
 }
 
-/** 원본 클립 id — 사람이 픽커로 골라 `ingest.py pick --id anime_<id> --kind anime` 로 올린다 */
-export const animeRefId = (line: AnimeLine) => `anime_${line.id}`;
+/** 원본 클립 id — 사람이 픽커로 골라 `ingest.py pick --id anime_<id> --kind anime` 로 올린다. 영화 대사는 밈 id 그대로 */
+export const animeRefId = (line: AnimeLine) => line.movie?.ref ?? `anime_${line.id}`;
 
-function tierOf(total: number, silent: boolean): HypeScore["tier"] {
+function tierOf(total: number, silent: boolean, movie = false): HypeScore["tier"] {
+  if (silent) return { ko: "음소거", en: "Muted", note: "소리가 안 들렸어요. 마이크에 대고 한 번 더!", noteEn: "We couldn't hear you. Try again, closer!" };
+  if (movie) {
+    if (total >= 92) return { ko: "배우 데뷔각", en: "Casting call", note: "감독님이 명함 주고 갔어요", noteEn: "The director left you a card" };
+    if (total >= 80) return { ko: "천만 관객", en: "Box office hit", note: "극장에서 박수 나올 퀄리티", noteEn: "The theater is clapping" };
+    if (total >= 65) return { ko: "본방 사수", en: "Prime time", note: "방송 나가도 손색없어요", noteEn: "Good enough to air" };
+    if (total >= 50) return { ko: "재방송", en: "Rerun", note: "느낌은 왔다… 말투만 조금 더", noteEn: "You've got it, nail the delivery" };
+    if (total >= 35) return { ko: "NG 모음", en: "Blooper reel", note: "다들 배 잡는 중", noteEn: "Everyone's laughing (with you)" };
+    return { ko: "지나가는 행인", en: "Passerby", note: "대사 없는 엑스트라", noteEn: "Extra with no lines" };
+  }
   if (silent) return { ko: "음소거", en: "Muted", note: "소리가 안 들렸어요. 마이크에 대고 한 번 더!", noteEn: "We couldn't hear you. Try again, closer!" };
   if (total >= 92) return { ko: "성우 데뷔각", en: "Pro debut", note: "제작사에서 연락 올 것 같아요", noteEn: "The studio is calling" };
   if (total >= 80) return { ko: "극장판 작화", en: "Movie quality", note: "극장판 클라이맥스 퀄리티", noteEn: "Climax-of-the-movie quality" };

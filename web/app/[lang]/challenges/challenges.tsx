@@ -102,11 +102,18 @@ export default function Challenges({
         ))}
       </div>
 
-      <Link href="/anime/duel" className={an.duel} style={{ margin: "0 0 16px" }}>
-        <i>2~8P</i>
-        <b>{t("친구랑 명대사 대결", "Line battle with friends")}</b>
-        <span>{t("모인 자리에서 폰 하나로 돌려 가며 외치고, 기합 점수로 1등을 가려요", "Pass one phone around, shout in turns, crown a winner")}</span>
-      </Link>
+      {/* 보고 있는 탭의 대사로 대결한다 — 명대사 탭에서 눌렀는데 애니만 나오던 것(11/7)을 고쳤다 */}
+      {(current === "lines" || current === "anime") && (
+        <Link href={current === "anime" ? "/anime/duel" : "/duel?pack=movie"} className={an.duel} style={{ margin: "0 0 16px" }}>
+          <i>2~8P</i>
+          <b>{current === "anime" ? t("친구랑 애니 명대사 대결", "Anime line battle") : t("친구랑 영화 명대사 대결", "Movie line battle")}</b>
+          <span>
+            {current === "anime"
+              ? t("폰 하나로 돌려 가며 원어로 외치고, 원본과 누가 더 똑같은지로 1등을 가려요", "Pass one phone around and see who sounds most like the original")
+              : t("「어이가 없네」「드루와」… 폰 하나로 돌려 가며 외치고, 원본과 누가 더 똑같은지로 1등을 가려요", "Pass one phone around and see who sounds most like the original")}
+          </span>
+        </Link>
+      )}
 
       {current === "anime" ? (
         <>
