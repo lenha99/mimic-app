@@ -82,7 +82,25 @@ export type TrackKind =
   | "feedback_toggle"
   | "feedback_open"
   | "feedback_helpful"
-  | "comment_note";
+  | "comment_note"
+  // 릴레이 더빙 (11/8) — 허브 → 녹음(rec) → 출연(post) · 장면 열기 · 작가 · 감독 · 개봉관
+  | "relay_view"
+  | "relay_cta"
+  | "relay_rec"
+  | "relay_post"
+  | "relay_next"
+  | "relay_undo"
+  | "relay_skip"
+  | "relay_adlib"
+  | "relay_open"
+  | "relay_preview"
+  | "relay_write"
+  | "relay_cast"
+  | "relay_stamp"
+  | "relay_share"
+  | "relay_premiere_view"
+  | "relay_listen"
+  | "relay_home";
 
 const URL_ =
   process.env.NEXT_PUBLIC_TRACK_URL ?? "https://lenha99--meme-scoring-track.modal.run";

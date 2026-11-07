@@ -44,6 +44,10 @@ web/                 # Next.js 웹앱 (유일한 클라이언트)
   components/practice/scorecard.tsx  # 코코의 심사표 — 대본 확인(버튼 눌러야만·테이크당 한 번, 받아쓰기) 정확도·목소리 타입. 틀린 곳은 대본 위 형광펜(다음 테이크 녹음 중에도 남는다)
   lib/scorecard.ts       # 목소리 타입 14가지(브라우저 측정만, 비용 0)
   components/brand/coco.tsx  # 마스코트 코코(왕관앵무·헤드셋). 순수 SVG, mood 로 표정
+  app/relay/         # 릴레이 더빙 — 허브 · rec(버튼 하나 녹음) · s/[id](대본·갈림길·감독 도구) · premiere(개봉관) · studio(LV7) · guide
+                     # 장면 10줄, 빈 줄은 TTS. 사흘째 21시 KST 개봉(cron /api/cron/relay + 조회마다 ensureSchedule). 한 장면 한 사람 한 배역
+  lib/relay.ts       # 공유 규칙(계급 LV3/5/6/7/9 · 정식판 고르기 computeFinal). lib/relay-server.ts 는 배정·개봉·스케줄
+  lib/relay-stock.ts # 비축 장면 (생성됨 — content/relay_scenes.json → tools/make_relay_tts.py, 정적 TTS web/public/relay/tts)
   lib/memes.ts       # 카탈로그 조회 + 폴백 (생성됨)
   lib/config.ts      # 엔드포인트 한 곳
   lib/scripts.ts     # 연습실 대본 (생성됨 — registry.json 의 scripts)

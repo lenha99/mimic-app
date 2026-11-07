@@ -637,6 +637,77 @@ const sets = (t: T) => {
     },
   ];
 
+  const RELAY: TourStep[] = [
+    {
+      target: "relay-cta",
+      title: t("버튼 하나면 출연", "One button to appear"),
+      body: t(
+        <p>
+          누르면 앱이 <b>배역과 대사 한 줄</b>을 정해 줘요. 앞 대사가 흘러나오고 끝나자마자 녹음 — 녹음이 끝나면 <b>앞 대사 + 내 목소리</b>가
+          바로 이어 나와요. 마음에 들면 <b>출연하기</b>. 한 장면에 배역은 한 사람 하나씩이에요.
+        </p>,
+        <p>
+          We pick <b>your role and one line</b>. The previous line plays, then you record — and hear <b>it + your voice</b> right away. Like it?
+          Tap <b>Appear</b>. One role per person per scene.
+        </p>,
+      ),
+    },
+    {
+      target: "relay-rank",
+      title: t("레벨이 오르면 판을 짜요", "Level up to run the show"),
+      body: t(
+        <p>
+          VOICE PASS 레벨이 곧 제작 계급이에요. <b>LV3 애드리브 · LV5 작가 · LV6 반전 카드 · LV7 감독 · LV9 명감독</b>. 출연하면 +30 XP, 개봉하면
+          +60 XP.
+        </p>,
+        <p>
+          Your VOICE PASS level is your rank: <b>LV3 ad-lib · LV5 writer · LV6 twist · LV7 director · LV9 master</b>. +30 XP per appearance, +60 XP
+          per premiere.
+        </p>,
+      ),
+    },
+    {
+      target: "relay-prompt",
+      title: t("레벨 1도 창작할 수 있어요", "Anyone can pitch"),
+      body: t(
+        <p>보고 싶은 상황을 한 줄로 신청하면 감독이 장면으로 만들어요. 뽑히면 크레딧에 &apos;원안&apos;으로 이름이 올라가요.</p>,
+        <p>Pitch a one-line premise. If a director picks it, you get an &apos;Original idea&apos; credit.</p>,
+      ),
+    },
+  ];
+
+  const RELAY_SCENE: TourStep[] = [
+    {
+      target: "relay-scene-cast",
+      title: t("배역과 개봉 시각", "Roles & premiere"),
+      body: t(
+        <p>
+          맡은 사람이 없는 배역은 <b>모집 중</b>이에요. 빈 줄은 TTS가 읽어서 <b>사람이 없어도 장면은 사흘째 밤 9시에 무조건 개봉</b>해요.
+        </p>,
+        <p>
+          Roles nobody has are <b>open</b>. TTS reads empty lines, so <b>every scene premieres on night 3 at 9 pm</b> no matter what.
+        </p>,
+      ),
+    },
+    {
+      target: "relay-scene-play",
+      title: t("지금까지 이어 듣기", "Play so far"),
+      body: t(<p>지금 상태 그대로 정식판을 미리 들어요. 개봉 때는 자막·크레딧과 함께 다시 상영돼요.</p>, <p>Hear the current cut. The premiere adds subtitles and credits.</p>),
+    },
+    {
+      target: "relay-scene-cta",
+      title: t("한 줄 녹음", "Record a line"),
+      body: t(
+        <p>
+          6번·10번은 <b>갈림길</b>이에요. 작가(LV5)들이 쓴 대사 중 <b>가장 많이 녹음된 대사</b>가 정식판에 들어가요 — 녹음이 곧 투표!
+        </p>,
+        <p>
+          Lines 6 and 10 are <b>branches</b>. Of the writers&apos; lines, <b>the most-recorded one</b> makes the cut — recording is voting!
+        </p>,
+      ),
+    },
+  ];
+
   return {
     home: HOME,
     weekly: WEEKLY,
@@ -651,6 +722,8 @@ const sets = (t: T) => {
     me: ME,
     profile: PROFILE,
     challenges: CHALLENGES,
+    relay: RELAY,
+    "relay-scene": RELAY_SCENE,
   } satisfies Record<string, TourStep[]>;
 };
 

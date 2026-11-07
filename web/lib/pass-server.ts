@@ -1,6 +1,6 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { notify, once, ownerTarget } from "@/lib/notify-server";
-import { EMPTY_STATS, FOLLOW_STEPS, LIKE_STEPS, SOLO_XP, type PassStats } from "@/lib/pass";
+import { EMPTY_STATS, FOLLOW_STEPS, LIKE_STEPS, RELAY_XP, SOLO_XP, type PassStats } from "@/lib/pass";
 
 /** 한국 날짜 'YYYY-MM-DD' — 연속 기록은 KST 자정에 넘어간다. */
 export function kstDay(at: number = Date.now(), offsetDays = 0): string {
@@ -116,6 +116,7 @@ export async function statsBatch(people: string[][], service: Service = createSe
       }
       if (r.helpful) s.feedbackHelpful += 1;
     }
+    await relayStats(service, keys, keyOf, get);
     const pk = picks.data ?? [];
     if (pk.length) {
       const { data: early } = await service.from("weekly_likes").select("entry_id, voter, created_at").in("entry_id", pk.map((p) => p.id)).in("voter", keys);
@@ -236,4 +237,95 @@ export async function dexOf(keys: string[], service: Service = createServiceClie
   if (!keys.length) return [];
   const { data } = await service.from("voice_dex").select("type_id").in("owner", keys).limit(200);
   return [...new Set((data ?? []).map((r) => r.type_id as string))];
+}
+
+/**
+ * 릴레이 더빙 숫자 (11/8). 표(마이그레이션 36)가 아직 없으면 전부 0 으로 본다.
+ * 출연은 장면마다 한 번 · 투표 녹음은 하루 5번 · 작가 수입(남이 내 대사를 연기)은 하루 10명까지 —
+ * 같은 사람(이름표 묶음)이 자기 대사를 녹음한 건 세지 않는다.
+ */
+async function relayStats(
+  service: Service,
+  keys: string[],
+  keyOf: Map<string, string>,
+  get: (k: string) => PassStats | null,
+): Promise<void> {
+  try {
+    const [takes, authored, directed, prompts, best] = await Promise.all([
+      service.from("relay_takes").select("owner, line_id, scene_id, kind, stamp, created_at").in("owner", keys).eq("hidden", false).limit(20000),
+      service.from("relay_lines").select("id, author, won").in("author", keys).eq("candidate", true).eq("hidden", false).limit(5000),
+      service.from("relay_scenes").select("director").in("director", keys).eq("status", "premiered").gte("real_actors", 2).limit(2000),
+      service.from("relay_prompts").select("owner").in("owner", keys).not("scene_id", "is", null).limit(2000),
+      service.from("relay_scenes").select("id").not("best_week", "is", null).limit(500),
+    ]);
+    const tk = takes.data ?? [];
+    const lineIds = [...new Set(tk.map((t) => t.line_id))];
+    const cand = new Set<string>();
+    for (let i = 0; i < lineIds.length; i += 500) {
+      const { data } = await service.from("relay_lines").select("id").in("id", lineIds.slice(i, i + 500)).eq("candidate", true);
+      for (const l of data ?? []) cand.add(l.id);
+    }
+    const bestIds = new Set((best.data ?? []).map((b) => b.id));
+    const acted = new Map<string, Set<string>>();
+    const votesByDay = new Map<string, number>();
+    for (const t of tk) {
+      const id = keyOf.get(t.owner);
+      const s = get(t.owner);
+      if (!id || !s) continue;
+      if (t.stamp === "ok") s.relayOk = (s.relayOk ?? 0) + 1;
+      if (t.kind !== "line") continue;
+      if (cand.has(t.line_id)) {
+        const k = `${id}|${kstDay(new Date(t.created_at).getTime())}`;
+        const n = votesByDay.get(k) ?? 0;
+        if (n < RELAY_XP.votePerDay) {
+          votesByDay.set(k, n + 1);
+          s.relayVotes = (s.relayVotes ?? 0) + 1;
+        }
+        continue;
+      }
+      if (!acted.has(id)) acted.set(id, new Set());
+      acted.get(id)!.add(t.scene_id);
+    }
+    for (const [id, scenes] of acted) {
+      const s = get(id);
+      if (!s) continue;
+      s.relayActs = (s.relayActs ?? 0) + scenes.size;
+      s.relayBest = (s.relayBest ?? 0) + [...scenes].filter((x) => bestIds.has(x)).length;
+    }
+    const au = authored.data ?? [];
+    for (const l of au) {
+      const s = l.author ? get(l.author) : null;
+      if (s && l.won) s.relayWins = (s.relayWins ?? 0) + 1;
+    }
+    if (au.length) {
+      const authorOf = new Map(au.map((l) => [l.id, l.author!]));
+      const { data: perf } = await service.from("relay_takes").select("line_id, owner, created_at").in("line_id", [...authorOf.keys()]).eq("kind", "line").eq("hidden", false).limit(20000);
+      const seen = new Set<string>();
+      const perDay = new Map<string, number>();
+      for (const p of perf ?? []) {
+        const author = authorOf.get(p.line_id)!;
+        const id = keyOf.get(author);
+        const s = get(author);
+        if (!id || !s || keyOf.get(p.owner) === id) continue;
+        const uniq = `${id}|${p.owner}|${p.line_id}`;
+        if (seen.has(uniq)) continue;
+        seen.add(uniq);
+        const dk = `${id}|${kstDay(new Date(p.created_at).getTime())}`;
+        const n = perDay.get(dk) ?? 0;
+        if (n >= RELAY_XP.voicedPerDay) continue;
+        perDay.set(dk, n + 1);
+        s.relayVoiced = (s.relayVoiced ?? 0) + 1;
+      }
+    }
+    for (const d of directed.data ?? []) {
+      const s = d.director ? get(d.director) : null;
+      if (s) s.relayPremieres = (s.relayPremieres ?? 0) + 1;
+    }
+    for (const p of prompts.data ?? []) {
+      const s = get(p.owner);
+      if (s) s.relayPrompts = (s.relayPrompts ?? 0) + 1;
+    }
+  } catch {
+    // 릴레이 표가 없으면 0
+  }
 }
