@@ -265,6 +265,9 @@ export interface Database {
           hidden: boolean;
           reports: number;
           helpful: boolean;
+          /** comment: 자유 댓글 · feedback: 좋았던 점(body) + 바꿔 볼 점(tip) */
+          kind: "comment" | "feedback";
+          tip: string | null;
           created_at: string;
         };
         Insert: {
@@ -275,6 +278,8 @@ export interface Database {
           body: string;
           hidden?: boolean;
           helpful?: boolean;
+          kind?: "comment" | "feedback";
+          tip?: string | null;
           reports?: number;
           created_at?: string;
         };
@@ -641,6 +646,7 @@ export type NotificationKind =
   | "note"
   | "note_reply"
   | "note_helpful"
+  | "note_feedback"
   | "reward_likes"
   | "reward_follows"
   | "reward_pick"

@@ -3,14 +3,26 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useT } from "@/components/lang";
-import { EntryFeedback } from "./entry-feedback";
+import { EntryFeedback, type NoteTab } from "./entry-feedback";
 import styles from "./comment-sheet.module.css";
 
 /**
- * 갤러리 카드 💬 → 아래에서 올라오는 댓글 시트. 화면 절반 남짓만 덮고, 위쪽 어두운 곳·✕·Esc 로 닫는다.
+ * 갤러리 카드 💬/🎯 → 아래에서 올라오는 댓글·피드백 시트. 누른 쪽 탭으로 열린다. 화면 절반 남짓만 덮고, 위쪽 어두운 곳·✕·Esc 로 닫는다.
  * 카드(li)는 움직임 효과(transform)가 있어 그 안에선 fixed 가 안 먹으니 body 로 띄운다.
  */
-export function CommentSheet({ entryId, name, onClose, onCount }: { entryId: string; name: string; onClose: () => void; onCount?: (n: number) => void }) {
+export function CommentSheet({
+  entryId,
+  name,
+  tab = "comments",
+  onClose,
+  onCount,
+}: {
+  entryId: string;
+  name: string;
+  tab?: NoteTab;
+  onClose: () => void;
+  onCount?: (comments: number, feedback: number) => void;
+}) {
   const t = useT();
   // 부모가 닫기 함수를 매번 새로 만들어도 열고 닫는 준비는 한 번만
   const close = useRef(onClose);
@@ -38,7 +50,7 @@ export function CommentSheet({ entryId, name, onClose, onCount }: { entryId: str
         className={styles.sheet}
         role="dialog"
         aria-modal="true"
-        aria-label={t(`${name} 댓글`, `Comments on ${name}`)}
+        aria-label={tab === "feedback" ? t(`${name} 피드백`, `Feedback on ${name}`) : t(`${name} 댓글`, `Comments on ${name}`)}
         onClick={(e) => e.stopPropagation()}
       >
         <div className={styles.top}>
@@ -49,7 +61,7 @@ export function CommentSheet({ entryId, name, onClose, onCount }: { entryId: str
           </button>
         </div>
         <div className={styles.body}>
-          <EntryFeedback entryId={entryId} variant="sheet" onCount={onCount} />
+          <EntryFeedback entryId={entryId} variant="sheet" tab={tab} onCount={onCount} />
         </div>
       </div>
     </div>,

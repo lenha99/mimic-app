@@ -73,7 +73,7 @@ export async function pushTo(subs: Sub[], payload: PushPayload, service: Service
 type Pref = "mine" | "dm";
 function prefOf(kind: NotificationKind): Pref | null {
   if (kind === "dm" || kind === "dm_request") return "dm";
-  if (kind === "follow" || kind === "note" || kind === "note_reply" || kind === "note_helpful" || kind === "listen_first" || kind === "listen_daily" || kind.startsWith("reward_")) return "mine";
+  if (kind === "follow" || kind === "note" || kind === "note_reply" || kind === "note_helpful" || kind === "note_feedback" || kind === "listen_first" || kind === "listen_daily" || kind.startsWith("reward_")) return "mine";
   return null;
 }
 

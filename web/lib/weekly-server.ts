@@ -360,9 +360,11 @@ export type GalleryEntry = {
   featured: boolean;
   /** 픽으로 고른 시각 — 가장 최근 것이 지금 픽, 나머지는 지난 픽 (splitPicks) */
   featuredAt: string | null;
-  /** 피드백 받기 · 달린 댓글 수 (11/6 게시판을 합친 뒤) */
+  /** 댓글 받기 · 달린 댓글 수 (11/6 게시판을 합친 뒤) */
   feedbackOn: boolean;
   notes: number;
+  /** 달린 피드백 수 — 댓글과 따로 센다 (11/7, 마이그레이션 34) */
+  feedbacks: number;
   /** 🎯 피드백 요청 중 · 봐 줬으면 하는 곳 (마이그레이션 33) */
   wantsFeedback: boolean;
   ask: string | null;
@@ -421,11 +423,15 @@ export async function galleryEntries(limit = 60, opts: { admin?: boolean } = {})
     feedback_ask?: string | null;
   };
   const rows = (res.data ?? []) as unknown as Row[];
-  // 피드백 댓글 수 — 표(마이그레이션 31)가 아직 없으면 0
+  // 댓글 수 · 피드백 수 — 따로 센다. 표가 아직 없으면 0
   const noteCount = new Map<string, number>();
+  const fbCount = new Map<string, number>();
   if (rows.length) {
-    const { data: notes } = await service.from("entry_notes").select("entry_id").in("entry_id", rows.map((r) => r.id)).eq("hidden", false).limit(5000);
-    (notes ?? []).forEach((n) => noteCount.set(n.entry_id, (noteCount.get(n.entry_id) ?? 0) + 1));
+    const { data: notes } = await service.from("entry_notes").select("entry_id, kind").in("entry_id", rows.map((r) => r.id)).eq("hidden", false).limit(5000);
+    (notes ?? []).forEach((n) => {
+      const m = n.kind === "feedback" ? fbCount : noteCount;
+      m.set(n.entry_id, (m.get(n.entry_id) ?? 0) + 1);
+    });
   }
   const users = [...new Set(rows.map((r) => r.user_id).filter((x): x is string => !!x))];
   const { data: profiles } = users.length
@@ -460,6 +466,7 @@ export async function galleryEntries(limit = 60, opts: { admin?: boolean } = {})
         featuredAt: r.featured_at ?? null,
         feedbackOn: r.feedback_on !== false,
         notes: noteCount.get(r.id) ?? 0,
+        feedbacks: fbCount.get(r.id) ?? 0,
         wantsFeedback: r.wants_feedback === true,
         ask: r.wants_feedback ? (r.feedback_ask ?? null) : null,
         badges: (r.badges ?? []).slice(0, 3),

@@ -81,7 +81,8 @@ export type TrackKind =
   | "feedback_reply"
   | "feedback_toggle"
   | "feedback_open"
-  | "feedback_helpful";
+  | "feedback_helpful"
+  | "comment_note";
 
 const URL_ =
   process.env.NEXT_PUBLIC_TRACK_URL ?? "https://lenha99--meme-scoring-track.modal.run";

@@ -34,7 +34,8 @@ export async function boardPulse(): Promise<BoardPulse> {
     const owners = [...new Set(rows.map((r) => r.owner))];
     const users = [...new Set(rows.map((r) => r.user_id).filter((x): x is string => !!x))];
     const [{ data: notes }, { data: profiles }, { data: history }] = await Promise.all([
-      service.from("entry_notes").select("entry_id").in("entry_id", ids).eq("hidden", false),
+      // 기다리는 중 = 아직 피드백(댓글 말고)이 하나도 없는 것
+      service.from("entry_notes").select("entry_id").in("entry_id", ids).eq("hidden", false).eq("kind", "feedback"),
       users.length ? service.from("profiles").select("id, nickname").in("id", users) : Promise.resolve({ data: [] as { id: string; nickname: string }[] }),
       // 처음 올린 목소리인지 — 그 사람이 갤러리에 올린 첫 작품
       service.from("weekly_entries").select("id, owner").in("owner", owners).order("created_at", { ascending: true }).limit(2000),

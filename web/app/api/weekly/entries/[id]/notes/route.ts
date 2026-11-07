@@ -1,4 +1,4 @@
-import { MAX_ENTRY_NOTE, MAX_FEEDBACK_ASK, MAX_NOTES_PER_ENTRY, type EntryNote, type EntryNotes } from "@/lib/entry-notes";
+import { MAX_ENTRY_NOTE, MAX_FEEDBACK_ASK, MAX_FEEDBACK_PER_ENTRY, MAX_NOTES_PER_ENTRY, type EntryNote, type EntryNotes, type NoteKind } from "@/lib/entry-notes";
 import { notify } from "@/lib/notify-server";
 import { allow, tooMany } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
@@ -6,7 +6,9 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { requestT } from "@/lib/i18n";
 
 /**
- * 출전작 피드백 댓글 — 갤러리에서 바로 단다 (11/6, 게시판을 합쳤다).
+ * 출전작 댓글·피드백 — 갤러리에서 바로 단다 (11/6, 게시판을 합쳤다).
+ * 댓글(kind=comment)은 자유 한마디, 피드백(kind=feedback)은 좋았던 점 + 바꿔 볼 점 두 칸이고
+ * 주인이 🎯 피드백을 부탁한 목소리에만 남는다(11/7 — 전엔 둘이 같은 칸이었다).
  *
  * GET 은 누구나(댓글 목록 · 피드백을 받는지). 쓰기는 로그인한 사람만 — 누가 남겼는지 보여야
  * 피드백이 오가고, 지울 사람도 분명해진다. 주인은 답글로 되묻고, 피드백 받기를 끄고 켜고,
@@ -40,7 +42,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   const service = createServiceClient();
   const { data: rows } = await service
     .from("entry_notes")
-    .select("id, user_id, parent_id, body, helpful, created_at")
+    .select("id, user_id, parent_id, body, helpful, kind, tip, created_at")
     .eq("entry_id", id)
     .eq("hidden", false)
     .order("created_at", { ascending: true })
@@ -55,7 +57,9 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   for (const r of rows ?? []) {
     const n: EntryNote = {
       id: r.id,
+      kind: r.kind === "feedback" ? "feedback" : "comment",
       body: r.body,
+      tip: r.tip ?? null,
       nickname: nick.get(r.user_id) ?? "알 수 없음",
       createdAt: r.created_at,
       mine: me === r.user_id,
@@ -65,18 +69,25 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     };
     byId.set(r.id, n);
     const parent = r.parent_id ? byId.get(r.parent_id) : null;
-    if (parent) parent.replies.push(n);
+    // 답글은 원글 쪽(댓글/피드백)을 따른다
+    if (parent) parent.replies.push({ ...n, kind: parent.kind });
     else top.push(n);
   }
+  const newest = top.reverse();
+  const comments = newest.filter((n) => n.kind === "comment");
+  // 주인이 도움됐다고 한 피드백이 맨 위, 그다음 새것. 답글은 그 아래에 오래된 순
+  const feedback = newest.filter((n) => n.kind === "feedback").sort((a, b) => Number(b.helpful) - Number(a.helpful));
+  const size = (xs: EntryNote[]) => xs.reduce((a, n) => a + 1 + n.replies.length, 0);
   const body: EntryNotes = {
     feedbackOn: e.feedback_on !== false,
     wantsFeedback: e.wants_feedback === true,
     ask: e.feedback_ask ?? null,
     owner: Boolean(me) && me === e.user_id,
     loggedIn: Boolean(me),
-    count: rows?.length ?? 0,
-    // 주인이 도움됐다고 한 피드백이 맨 위, 그다음 새 댓글. 답글은 그 아래에 오래된 순
-    notes: top.reverse().sort((a, b) => Number(b.helpful) - Number(a.helpful)),
+    count: size(comments),
+    feedbackCount: size(feedback),
+    comments,
+    feedback,
   };
   return Response.json(body, { headers: { "cache-control": "no-store" } });
 }
@@ -91,10 +102,14 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     return tooMany(t("너무 자주 남겼어요. 잠깐 쉬었다가 다시 해 주세요.", "Too many notes. Take a breather and try again."));
   }
 
-  const input = (await req.json().catch(() => ({}))) as { body?: unknown; parentId?: unknown };
+  const input = (await req.json().catch(() => ({}))) as { body?: unknown; tip?: unknown; kind?: unknown; parentId?: unknown };
   const text = typeof input.body === "string" ? input.body.trim() : "";
+  const tipText = typeof input.tip === "string" ? input.tip.trim() : "";
+  let kind: NoteKind = input.kind === "feedback" ? "feedback" : "comment";
   if (!text) return Response.json({ error: t("한 줄이라도 적어 주세요.", "Please write at least one line.") }, { status: 400 });
-  if (text.length > MAX_ENTRY_NOTE) return Response.json({ error: t(`${MAX_ENTRY_NOTE}자까지예요.`, `Up to ${MAX_ENTRY_NOTE} characters.`) }, { status: 400 });
+  if (text.length > MAX_ENTRY_NOTE || tipText.length > MAX_ENTRY_NOTE) {
+    return Response.json({ error: t(`${MAX_ENTRY_NOTE}자까지예요.`, `Up to ${MAX_ENTRY_NOTE} characters.`) }, { status: 400 });
+  }
 
   const e = await entryOf(id);
   if (!e) return Response.json({ error: t("내려간 목소리예요.", "This voice was removed.") }, { status: 404 });
@@ -108,10 +123,29 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   let parentId: string | null = null;
   let replyTo: string | null = null;
   if (typeof input.parentId === "string" && ID.test(input.parentId)) {
-    const { data: p } = await service.from("entry_notes").select("id, user_id, parent_id").eq("id", input.parentId).eq("entry_id", id).maybeSingle();
+    const { data: p } = await service.from("entry_notes").select("id, user_id, parent_id, kind").eq("id", input.parentId).eq("entry_id", id).maybeSingle();
     if (p) {
       parentId = p.parent_id ?? p.id;
       replyTo = p.user_id;
+      kind = p.kind === "feedback" ? "feedback" : "comment";
+    }
+  }
+
+  // 피드백 원글 — 주인이 부탁한 목소리에만, 주인 자신은 못 쓰고, 두 칸 다 있어야 한다
+  const feedbackTop = kind === "feedback" && !parentId;
+  if (feedbackTop) {
+    if (!e.wants_feedback) return Response.json({ error: t("피드백을 부탁하지 않은 목소리예요. 댓글로 남겨 주세요.", "This voice isn't asking for feedback. Leave a comment instead.") }, { status: 403 });
+    if (owner) return Response.json({ error: t("내 목소리엔 피드백 대신 댓글로 남겨요.", "Use a comment on your own voice.") }, { status: 403 });
+    if (!tipText) return Response.json({ error: t("바꿔 보면 좋을 점도 한 줄 적어 주세요.", "Add one thing to try, too.") }, { status: 400 });
+    const { count: mine } = await service
+      .from("entry_notes")
+      .select("id", { count: "exact", head: true })
+      .eq("entry_id", id)
+      .eq("user_id", me)
+      .eq("kind", "feedback")
+      .is("parent_id", null);
+    if ((mine ?? 0) >= MAX_FEEDBACK_PER_ENTRY) {
+      return Response.json({ error: t("이 목소리엔 피드백을 이미 남겼어요. 더 할 말은 답글로!", "You've already given feedback here. Reply to add more.") }, { status: 409 });
     }
   }
 
@@ -122,19 +156,25 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 
   const { data: note, error } = await service
     .from("entry_notes")
-    .insert({ entry_id: id, user_id: me, body: text, parent_id: parentId })
+    .insert({ entry_id: id, user_id: me, body: text, parent_id: parentId, kind, tip: feedbackTop ? tipText : null })
     .select("id")
     .single();
   if (error || !note) return Response.json({ error: t("남기지 못했어요. 다시 해 주세요.", "Couldn't post. Please try again.") }, { status: 500 });
 
   // 알림 — 남의 목소리에 단 댓글은 주인에게, 답글은 답한 상대에게. 나에게는 안 보낸다.
-  const push = (title: string) => ({ title, body: text.slice(0, 80), url: `/weekly/e/${id}` });
+  const push = (title: string) => ({ title, body: (feedbackTop ? `👍 ${text} · 🔧 ${tipText}` : text).slice(0, 80), url: `/weekly/e/${id}` });
   if (replyTo && replyTo !== me) {
-    await notify({ userId: replyTo, kind: "note_reply", actor: me, entryId: id, push: push(t("내 댓글에 답글이 달렸어요", "Someone replied to you")) });
+    await notify({
+      userId: replyTo,
+      kind: "note_reply",
+      actor: me,
+      entryId: id,
+      push: push(kind === "feedback" ? t("내 피드백에 답글이 달렸어요", "Someone replied to your feedback") : t("내 댓글에 답글이 달렸어요", "Someone replied to you")),
+    });
   }
   if (!owner && e.user_id && e.user_id !== replyTo) {
-    const title = e.wants_feedback ? t("부탁한 피드백이 왔어요 🎯", "Feedback arrived 🎯") : t("내 목소리에 댓글이 달렸어요 💬", "New comment on your voice 💬");
-    await notify({ userId: e.user_id, kind: "note", actor: me, entryId: id, push: push(title) });
+    const title = kind === "feedback" ? t("부탁한 피드백이 왔어요 🎯", "Feedback arrived 🎯") : t("내 목소리에 댓글이 달렸어요 💬", "New comment on your voice 💬");
+    await notify({ userId: e.user_id, kind: kind === "feedback" ? "note_feedback" : "note", actor: me, entryId: id, push: push(title) });
   }
   return Response.json({ id: note.id });
 }
@@ -155,7 +195,16 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 
   if (typeof input.noteId === "string" && ID.test(input.noteId)) {
     const on = input.helpful === true;
-    const { data: n } = await service.from("entry_notes").update({ helpful: on }).eq("id", input.noteId).eq("entry_id", id).select("user_id").maybeSingle();
+    // 도움됐어요는 피드백 원글에만
+    const { data: n } = await service
+      .from("entry_notes")
+      .update({ helpful: on })
+      .eq("id", input.noteId)
+      .eq("entry_id", id)
+      .eq("kind", "feedback")
+      .is("parent_id", null)
+      .select("user_id")
+      .maybeSingle();
     if (n && on && n.user_id !== me) {
       await notify({
         userId: n.user_id,
