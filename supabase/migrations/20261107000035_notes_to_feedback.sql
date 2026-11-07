@@ -8,7 +8,7 @@ set kind = 'feedback'
 from weekly_entries e
 where n.entry_id = e.id
   and n.parent_id is null
-  and n.created_at < '2026-11-07 05:00:00+00'
+  and n.created_at < '2026-11-07 04:36:00+00'
   and (e.user_id is null or n.user_id <> e.user_id);
 
 update entry_notes c
