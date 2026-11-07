@@ -401,7 +401,12 @@ export async function postsToday(service: Service, owners: string[], userId?: st
     .select("id", { count: "exact", head: true })
     .or(or)
     .gte("created_at", since);
-  return error ? 0 : (count ?? 0);
+  if (error) {
+    // 셀 수 없으면 막지 않는다(올리기가 멈추는 것보다 낫다) — 대신 로그는 남긴다.
+    console.error("postsToday", error.code, error.message);
+    return 0;
+  }
+  return count ?? 0;
 }
 
 export async function galleryEntries(limit = 60, opts: { admin?: boolean } = {}): Promise<GalleryEntry[]> {
