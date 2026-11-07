@@ -34,7 +34,7 @@ export default async function RelayGuidePage() {
         <p>
           {t("상영관은 두 곳이 동시에 열려요.", "Two halls run at once.")} <b>{t("🎭 연기관", "🎭 Act hall")}</b>
           {t(" — 모험·애니·영화·호러. ", " — adventure, anime, movies. ")}
-          <b>{t("🎙 실전관", "🎙 Real hall")}</b>
+          <b>{t("🎙 현실관", "🎙 Real-life hall")}</b>
           {t(" — 면접·아나운서·뉴스·스피치. 가끔 둘이 섞인 크로스오버(마왕이 면접을 본다든가)도 나와요.", " — interviews, announcing, news, speeches. Sometimes they cross over.")}
         </p>
 
@@ -147,7 +147,7 @@ export default async function RelayGuidePage() {
         </div>
         <div className={s.track}>
           <b>📺 {t("아나운서·뉴스", "Announcer / news")}</b>
-          <span>{t("실전관의 앵커·기자·캐스터 배역. 정해진 길이 안에 또박또박 — 시간 막대가 기준이에요.", "Anchor and reporter roles — clear delivery within the time bar.")}</span>
+          <span>{t("현실관의 앵커·기자·캐스터 배역. 정해진 길이 안에 또박또박 — 시간 막대가 기준이에요.", "Anchor and reporter roles — clear delivery within the time bar.")}</span>
         </div>
         <div className={s.track}>
           <b>🎤 {t("면접·스피치", "Interview / speech")}</b>
