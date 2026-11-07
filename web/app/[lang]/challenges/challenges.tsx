@@ -118,7 +118,7 @@ export default function Challenges({
       {current === "anime" ? (
         <>
           <p className={styles.note}>
-            {t("원어 그대로 외쳐요. 성량·억양·길이·끝 처리로 기합 점수를 매겨요 🌀", "Shout it in the original. Scored on power, range, timing and ending 🌀")}
+            {t("원어 그대로 외쳐요. 원본이랑 억양·박자가 얼마나 똑같은지로 점수를 매겨요 🌀", "Shout it in the original. Scored on how close your intonation and rhythm get 🌀")}
           </p>
           <ul className={an.grid} data-tour="challenges-list">
             {ANIME_LINES.map((l) => (

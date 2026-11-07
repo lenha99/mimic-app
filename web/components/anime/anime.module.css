@@ -656,3 +656,164 @@
     animation: none;
   }
 }
+
+/* 원본 플레이어 — 대사 카드 아래, 외치기 버튼과 같은 너비 */
+.orig {
+  --hue: 20;
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0 0;
+  padding: 12px 14px 10px 12px;
+  border-radius: 20px;
+  border: 1px solid hsl(var(--hue) 90% 70% / 0.22);
+  background: hsl(var(--hue) 60% 50% / 0.08);
+}
+
+.origBtn {
+  width: 56px;
+  height: 56px;
+  border: 0;
+  border-radius: 50%;
+  background: hsl(var(--hue) 95% 62%);
+  color: #14100a;
+  font: inherit;
+  font-size: 20px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 0 0 0 hsl(var(--hue) 95% 62% / 0.5);
+}
+
+.origBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.origBtnOn {
+  animation: ring 1.2s ease-out infinite;
+}
+
+.origBody {
+  min-width: 0;
+}
+
+.origTitle {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 6px;
+  font-size: 14.5px;
+  font-weight: 900;
+  color: var(--white);
+}
+
+.origTitle small {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ash);
+}
+
+.origHint {
+  margin: 6px 0 0;
+  font-size: 11.5px;
+  color: var(--ash);
+}
+
+.wave {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 34px;
+}
+
+.wave i {
+  flex: 1;
+  min-width: 2px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.22);
+  transition: background 120ms linear;
+}
+
+.wave i.waveOn {
+  background: hsl(var(--hue, 20) 95% 66%);
+}
+
+/* 채점 기다리는 화면 */
+.judge {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  margin: 18px 0 0;
+  padding: 18px 16px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--panel);
+  text-align: center;
+  animation: rise 0.25s ease-out;
+}
+
+.judgeCoco {
+  animation: bob 0.9s ease-in-out infinite alternate;
+}
+
+.judgeText {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--white);
+}
+
+.judge .wave {
+  width: 100%;
+  height: 40px;
+}
+
+.waveScan i {
+  animation: scan 0.9s ease-in-out infinite;
+}
+
+.totalLand b {
+  animation: land 0.35s ease-out;
+  color: var(--volt);
+}
+
+@keyframes ring {
+  to {
+    box-shadow: 0 0 0 14px hsl(var(--hue) 95% 62% / 0);
+  }
+}
+
+@keyframes bob {
+  to {
+    transform: translateY(-4px) rotate(-3deg);
+  }
+}
+
+@keyframes scan {
+  0%,
+  100% {
+    background: rgba(255, 255, 255, 0.22);
+  }
+  30% {
+    background: hsl(var(--hue, 20) 95% 66%);
+  }
+}
+
+@keyframes land {
+  from {
+    transform: scale(1.25);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .origBtnOn,
+  .judge,
+  .judgeCoco,
+  .waveScan i,
+  .totalLand b {
+    animation: none;
+  }
+}

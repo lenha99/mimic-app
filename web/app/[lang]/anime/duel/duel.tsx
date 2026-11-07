@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useT } from "@/components/lang";
-import { LineCard, MicError, Replay, ScoreView, ShoutButton } from "@/components/anime/parts";
+import { Judging, LineCard, MicError, OriginalPlayer, Replay, ScoreFail, ScoreView, ShoutButton } from "@/components/anime/parts";
 import { useTake } from "@/components/anime/use-take";
-import { scoreWithOriginal, useOriginal, warmScorer } from "@/components/anime/original";
-import { animeLine, animeRefId, ANIME_LINES, hypeScore, type AnimeLine, type HypeScore } from "@/lib/anime";
+import { prefetchOriginals, scoreWithOriginal, useOriginal, useWarmScorer } from "@/components/anime/original";
+import { animeLine, animeRefId, ANIME_LINES, silentScore, type AnimeLine, type HypeScore } from "@/lib/anime";
 import { track } from "@/lib/track";
 import s from "@/components/anime/anime.module.css";
 
@@ -14,11 +14,13 @@ import s from "@/components/anime/anime.module.css";
  * 오프라인 명대사 대결 — 폰 하나를 돌려 가며 외친다. 로그인 없음.
  * 대사 묶음은 영화·드라마 / 애니 / 섞어서 중에 고른다. 예전엔 "명대사 대결"이라 해 놓고 애니만
  * 나왔다(11/7) — 챌린지 "명대사" 탭에서 들어온 사람은 영화 대사를 기대한다.
- * 차례마다 원본을 듣고, 원본과 얼마나 닮았나로 채점한다(서버 — 애니는 anime 기준, 영화는 /record 와 같은 밈 기준).
- * 원본이 없거나 서버가 실패하면 브라우저 기합 점수(최대 89). 친구들이 모인 자리에서 링크 하나면 된다.
- * 이름은 다음 판을 위해 이 폰에만 기억한다.
+ * 점수는 늘 원본과 얼마나 닮았나 하나다(서버 — 애니는 anime 기준, 영화는 /record 와 같은 밈 기준).
+ * 원본을 듣는 건 선택이다. 판이 시작될 때(첫 선수 차례) 원본을 한 번 자동으로 틀어 다 같이 듣는다 —
+ * 끄면 각자 알아서. 서버가 실패하면 점수를 지어내지 않고 그 차례만 다시 외친다.
+ * 친구들이 모인 자리에서 링크 하나면 된다. 이름·원본 먼저 설정은 이 폰에만 기억한다.
  */
 const NAMES = "mimic.duel.names";
+const LISTEN = "mimic.duel.listenFirst";
 export type Pack = "movie" | "anime" | "mix";
 const MAX = 8;
 
@@ -61,49 +63,83 @@ export default function Duel({ first, movies, pack: initialPack, back }: { first
   const [turn, setTurn] = useState(0);
   const [shots, setShots] = useState<Shot[][]>([]); // [round][player]
   const [last, setLast] = useState<Shot | null>(null);
+  const [failed, setFailed] = useState<string | null>(null);
+  const [judging, setJudging] = useState<number[] | null>(null);
+  const [listenFirst, setListenFirst] = useState(true);
+  useEffect(() => {
+    try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (localStorage.getItem(LISTEN) === "0") setListenFirst(false);
+    } catch {}
+  }, []);
+  const chooseListen = (v: boolean) => {
+    setListenFirst(v);
+    try {
+      localStorage.setItem(LISTEN, v ? "1" : "0");
+    } catch {}
+  };
+  useWarmScorer();
 
   const players = names.map((n, i) => n.trim() || `${i + 1}P`);
   const line = lines[round];
   const take = useTake((line?.span[1] ?? 5) + 3);
   const original = useOriginal(line ? animeRefId(line) : null);
   const packName = (p: Pack) => (p === "movie" ? t("영화·드라마 명대사", "Movie & drama lines") : p === "anime" ? t("애니 명대사", "Anime lines") : t("영화+애니 명대사", "Movie + anime lines"));
-  const [judging, setJudging] = useState(false);
 
   const begin = () => {
     try {
       localStorage.setItem(NAMES, JSON.stringify(names.map((n) => n.trim())));
     } catch {}
     const pool = shuffle(poolOf(pack).filter((l) => l.id !== firstLine?.id));
-    setLines(firstLine ? [firstLine, ...pool].slice(0, rounds) : pool.slice(0, rounds));
+    const picked = firstLine ? [firstLine, ...pool].slice(0, rounds) : pool.slice(0, rounds);
+    // 판이 바뀔 때 원본이 늦게 뜨지 않게 이번 대결 원본을 한꺼번에 받아 둔다
+    prefetchOriginals(picked.map(animeRefId));
+    setLines(picked);
     setShots(Array.from({ length: rounds }, () => []));
     setRound(0);
     setTurn(0);
     setLast(null);
+    setFailed(null);
     setStage("turn");
     track("duel_start", { via: `${pack}:${players.length}p${rounds}r` });
   };
 
-  const shoot = async () => {
-    if (!line) return;
-    if (original) warmScorer();
-    const r = await take.start();
-    if (!r) return;
-    const local = hypeScore(r.analysis, line);
-    let score = local;
-    if (original && !local.silent) {
-      setJudging(true);
-      score = (await scoreWithOriginal(animeRefId(line), r.url, Boolean(line.movie))) ?? local;
-      setJudging(false);
-    }
-    const shot = { score, url: r.url };
+  const record = (shot: Shot) => {
     setShots((prev) => prev.map((row, i) => (i === round ? [...row.slice(0, turn), shot] : row)));
     setLast(shot);
+    setFailed(null);
     setStage("shot");
   };
 
-  const after = () => {
+  const shoot = async () => {
+    if (!line) return;
+    setFailed(null);
+    const r = await take.start();
+    if (!r) return;
+    if (r.silent) return record({ score: silentScore(Boolean(line.movie)), url: r.url });
+    setJudging(r.env);
+    const score = await scoreWithOriginal(animeRefId(line), r.blob, Boolean(line.movie));
+    setJudging(null);
+    if (!score) {
+      setFailed(r.url);
+      track("anime_take", { meme_id: animeRefId(line), via: "duel:fail" });
+      return;
+    }
+    record({ score, url: r.url });
+  };
+
+  // 서버가 계속 안 되면 판이 멈추지 않게 — 이 차례는 0점으로 넘긴다
+  const skipTurn = () => {
+    if (!line) return;
+    const shot = { score: silentScore(Boolean(line.movie)), url: failed ?? "" };
+    setShots((prev) => prev.map((row, i) => (i === round ? [...row.slice(0, turn), shot] : row)));
+    after();
+  };
+
+  function after() {
     take.reset();
     setLast(null);
+    setFailed(null);
     if (turn + 1 < players.length) {
       setTurn(turn + 1);
       setStage("turn");
@@ -111,7 +147,7 @@ export default function Duel({ first, movies, pack: initialPack, back }: { first
       setStage(round + 1 < rounds ? "round" : "final");
       if (round + 1 >= rounds) track("duel_done", { via: `${players.length}p${rounds}r` });
     }
-  };
+  }
 
   const nextRound = () => {
     setRound(round + 1);
@@ -163,8 +199,8 @@ export default function Duel({ first, movies, pack: initialPack, back }: { first
         </h1>
         <p className={s.sub}>
           {t(
-            "폰 하나로 차례대로 외치고, 점수 합계로 1등을 가려요. 차례마다 원본을 듣고 누가 더 똑같이 했나로 재요.",
-            "Take turns on one phone. Highest total wins. Everyone hears the original and is scored on how close they get.",
+            "폰 하나로 차례대로 외치고, 점수 합계로 1등을 가려요. 점수는 누가 원본이랑 더 똑같은지예요.",
+            "Take turns on one phone. Highest total wins. Scores are how close you get to the original.",
           )}
         </p>
 
@@ -229,6 +265,19 @@ export default function Duel({ first, movies, pack: initialPack, back }: { first
           {firstLine
             ? t(`첫 판은 「${firstLine.say}」, 나머지는 랜덤이에요`, `Round 1 is "${firstLine.en}", the rest are random`)
             : t(`판마다 ${packName(pack)} 중 하나가 랜덤으로 나와요`, `A random line from ${packName(pack)} each round`)}
+        </p>
+
+        <h2 className={s.section}>{t("원본은?", "The original")}</h2>
+        <div className={s.opts}>
+          <button type="button" className={listenFirst ? s.optOn : s.opt} onClick={() => chooseListen(true)} aria-pressed={listenFirst}>
+            🎧 {t("판마다 다 같이 듣기", "Play at round start")}
+          </button>
+          <button type="button" className={!listenFirst ? s.optOn : s.opt} onClick={() => chooseListen(false)} aria-pressed={!listenFirst}>
+            ⚡ {t("안 틀고 바로", "Go straight")}
+          </button>
+        </div>
+        <p className={s.note} style={{ marginTop: 8 }}>
+          {t("어느 쪽이든 점수는 원본이랑 견줘요. 원본 듣기 버튼은 차례마다 늘 있어요", "Either way you're scored against the original. The play button is always there")}
         </p>
 
         <button type="button" className={s.shout} onClick={begin}>
@@ -328,16 +377,14 @@ export default function Duel({ first, movies, pack: initialPack, back }: { first
         <b>{players[turn]}</b>
       </div>
       {line && <LineCard line={line} big />}
-      {original && stage === "turn" && (
-        <div className={s.row} style={{ justifyContent: "center", marginTop: 4 }}>
-          <span className={s.note}>{t("원본 듣고 똑같이 →", "Hear the original →")}</span>
-          <Replay url={original} small />
-        </div>
+      {stage === "turn" && !judging && !failed && take.phase !== "count" && take.phase !== "rec" && (
+        // key: 차례마다 새로 — 판의 첫 차례에만 자동으로 튼다
+        <OriginalPlayer key={`${round}:${turn}`} url={original} hue={line?.hue} autoPlay={listenFirst && turn === 0} />
       )}
       {judging ? (
-        <p className={s.note} style={{ textAlign: "center", marginTop: 16 }}>
-          {t("원본이랑 견주는 중…", "Comparing with the original…")}
-        </p>
+        <Judging env={judging} hue={line?.hue} />
+      ) : failed ? (
+        <ScoreFail url={failed} onRetry={shoot} onSkip={skipTurn} skipLabel={t("0점으로 넘기기", "Skip (0 pts)")} />
       ) : stage === "turn" || !last ? (
         <>
           <ShoutButton
