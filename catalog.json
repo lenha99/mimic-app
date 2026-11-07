@@ -288,6 +288,33 @@
       "plays": 0,
       "line": "료이키 텐카이… 무료오쿠쇼.",
       "draft": true
+    },
+    {
+      "id": "anime_omaewa",
+      "title": "오마에와 모오 신데이루",
+      "source": "북두신권 · 켄시로",
+      "emoji": "👊",
+      "plays": 0,
+      "line": "오마에와 모오 신데이루",
+      "draft": true
+    },
+    {
+      "id": "anime_yareyare",
+      "title": "야레야레다제",
+      "source": "죠죠의 기묘한 모험 · 죠타로",
+      "emoji": "🧢",
+      "plays": 0,
+      "line": "야레야레다제",
+      "draft": true
+    },
+    {
+      "id": "anime_tatakae",
+      "title": "타타카에, 타타카에",
+      "source": "진격의 거인 · 에렌",
+      "emoji": "⚔️",
+      "plays": 0,
+      "line": "타타카에, 타타카에",
+      "draft": true
     }
   ]
 }
