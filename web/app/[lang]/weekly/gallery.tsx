@@ -1,8 +1,9 @@
 "use client";
 
 import { splitPicks } from "@/lib/picks";
+import { foldRuns, perPerson } from "@/lib/per-person";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useLang, useT } from "@/components/lang";
 import { TourHelp } from "@/components/onboarding/tour";
 import { ScreenTour } from "@/components/onboarding/tours";
@@ -50,13 +51,20 @@ export default function Gallery({
   }, []);
   const { pick, past } = useMemo(() => splitPicks(entries), [entries]);
   const shown = useMemo(() => {
-    if (filter === "hot") return [...entries].sort((a, b) => b.likes - a.likes || b.plays - a.plays);
+    // 인기 — 한 사람당 2개까지. 한 사람 목소리로 상위가 다 차지 않게(11/7)
+    if (filter === "hot") return perPerson([...entries].sort((a, b) => b.likes - a.likes || b.plays - a.plays), 2);
     if (filter === "week") return entries.filter((e) => e.week.live);
     // 피드백 — 받기를 켠 목소리, 댓글이 적은 것부터(첫 피드백이 제일 받기 어렵다)
     if (filter === "feedback") return entries.filter((e) => e.wantsFeedback).sort((a, b) => a.feedbacks - b.feedbacks || b.at.localeCompare(a.at));
     return entries;
   }, [entries, filter]);
   const left = Math.max(0, rankedMin - thisWeek);
+  // 최신 · 이번 주 — 같은 사람이 연달아 올린 건 하나로 접고 "N개 더"로 편다(11/7 — 한 사람이 열 개를 연달아 올렸다).
+  const groups = useMemo(
+    () => (filter === "new" || filter === "week" ? foldRuns(shown) : shown.map((head) => ({ head, more: [] as GalleryEntry[] }))),
+    [shown, filter],
+  );
+  const [opened, setOpened] = useState<Set<string>>(new Set());
 
   const chips: { id: Filter; label: string }[] = [
     { id: "new", label: t("최신", "Latest") },
@@ -147,8 +155,20 @@ export default function Gallery({
             </nav>
             {shown.length > 0 ? (
               <ul className={styles.list} data-tour="voices-list" key={filter}>
-                {shown.map((e, i) => (
-                  <VoiceCard key={e.id} e={e} index={i} />
+                {groups.map(({ head, more }, i) => (
+                  <Fragment key={head.id}>
+                    <VoiceCard e={head} index={i} />
+                    {more.length > 0 &&
+                      (opened.has(head.id) ? (
+                        more.map((e) => <VoiceCard key={e.id} e={e} index={0} />)
+                      ) : (
+                        <li className={styles.more}>
+                          <button type="button" onClick={() => setOpened((s) => new Set(s).add(head.id))}>
+                            {t(`＋ 이 사람 목소리 ${more.length}개 더 보기`, `＋ ${more.length} more from this voice`)}
+                          </button>
+                        </li>
+                      ))}
+                  </Fragment>
                 ))}
               </ul>
             ) : (

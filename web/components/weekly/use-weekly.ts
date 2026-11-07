@@ -19,6 +19,8 @@ export function useWeeklyMe(weekId: string, also?: string) {
   const [loggedIn, setLoggedIn] = useState(false);
   const [heard, setHeard] = useState<Set<string>>(new Set());
   const [ready, setReady] = useState(false);
+  // 오늘 새로 올린 수 · 하루 상한 (서버가 셈) — 모르면 null
+  const [daily, setDaily] = useState<{ today: number; max: number } | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -29,9 +31,10 @@ export function useWeeklyMe(weekId: string, also?: string) {
     if (local) setMineId(local.entryId);
     void fetch(`/api/weekly/me?client=${encodeURIComponent(clientId())}${also ? `&ids=${also}` : ""}`, { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
-      .then((d: { week: string; loggedIn: boolean; liked: string[]; likedAny?: string[]; mine: string | null } | null) => {
+      .then((d: { week: string; loggedIn: boolean; liked: string[]; likedAny?: string[]; mine: string | null; today?: number; dailyMax?: number } | null) => {
         if (!alive || !d) return;
         setLoggedIn(d.loggedIn);
+        if (typeof d.today === "number" && typeof d.dailyMax === "number") setDaily({ today: d.today, max: d.dailyMax });
         if (d.week === weekId) {
           setLiked(new Set([...d.liked, ...(d.likedAny ?? [])]));
           if (d.mine) setMineId(d.mine);
@@ -88,7 +91,7 @@ export function useWeeklyMe(weekId: string, also?: string) {
     setMineId(null);
   }, [weekId]);
 
-  return { liked, mineId, loggedIn, heard, hear, toggleLike, forgetMine, ready };
+  return { liked, mineId, loggedIn, heard, hear, toggleLike, forgetMine, ready, daily };
 }
 
 /** 링크 공유 — 폰이면 공유 시트, 아니면 복사. 무엇을 했는지 돌려준다. */

@@ -10,7 +10,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { currentWeek, FREE_PREFIX, freeWeek, guestName, isLive, MAX_ENTRY_SECONDS } from "@/lib/weekly";
 import { cleanNickname } from "@/lib/nickname";
-import { ensureWeek, getBoard } from "@/lib/weekly-server";
+import { DAILY_POSTS, ensureWeek, getBoard, postsToday } from "@/lib/weekly-server";
 import { requestT } from "@/lib/i18n";
 
 /**
@@ -30,7 +30,8 @@ const CLIENT = /^[a-z0-9]{8,40}$/;
 export async function POST(req: Request) {
   const t = requestT(req);
   const ip = clientIp(req);
-  if (!allow(`weekly-enter:${ip}`, 8, 3_600_000)) {
+  // 봇 막기용 거친 선(인스턴스 메모리). 사람 기준 상한은 아래 하루 DAILY_POSTS(DB) 가 맡는다.
+  if (!allow(`weekly-enter:${ip}`, 20, 3_600_000)) {
     return tooMany(t("한 시간에 너무 많이 올렸어요. 잠시 뒤에 해주세요.", "Too many uploads this hour. Please try again later."));
   }
 
@@ -136,6 +137,20 @@ export async function POST(req: Request) {
     }
   }
   if (!existing) {
+    // 하루 새 목소리 상한 — 한 사람이 한 번에 열 개 넘게 올려 갤러리·스토리를 덮지 않게(11/7). 교체는 안 센다.
+    const today = await postsToday(service, [owner, ...(user && CLIENT.test(client) ? [`g:${client}`] : [])], user?.id);
+    if (today >= DAILY_POSTS) {
+      return Response.json(
+        {
+          error: t(
+            `오늘은 새 목소리를 ${DAILY_POSTS}개까지 올릴 수 있어요. 내일 다시 올려 주세요! (이미 올린 대본을 다시 녹음해 바꾸는 건 돼요)`,
+            `You can post up to ${DAILY_POSTS} new voices a day. Come back tomorrow! (Re-recording a script you already posted still works)`,
+          ),
+          limit: "daily",
+        },
+        { status: 429 },
+      );
+    }
     const { count } = await service
       .from("weekly_entries")
       .select("id", { count: "exact", head: true })
