@@ -1250,6 +1250,129 @@
         "score_spread": 52
       },
       "draft": true
+    },
+    {
+      "id": "anime_omaewa",
+      "title": "오마에와 모오 신데이루",
+      "source": "북두신권 · 켄시로",
+      "emoji": "👊",
+      "plays": 0,
+      "line": "오마에와 모오 신데이루",
+      "kind": "anime",
+      "origin": {
+        "url": "local:C:/Users/kyumin/AppData/Local/Temp/claude/C--Users-kyumin-Desktop-Projects-meme-app/b7501336-3b50-4f80-84fc-f9141b44cca3/scratchpad/clips/new/omaewa_1.wav",
+        "start": "00:00:00.00",
+        "end": "00:00:02.14"
+      },
+      "license": {
+        "kind": "original-clip",
+        "holder": "東映アニメーション · 武論尊/原哲夫",
+        "note": "짧은 인용. 권리자 요청 시 즉시 삭제. (youtube:5kLbIgC-RnQ)",
+        "rights": "clip"
+      },
+      "added": "2026-11-07",
+      "duration_ms": 2130,
+      "qa": {
+        "duration_s": 2.13,
+        "trimmed_s": 2.09,
+        "peak": 0.828,
+        "clip_ratio": 0.0,
+        "lufs": -14.0,
+        "true_peak_db": -1.62,
+        "sr": 22050,
+        "samples": 46984,
+        "voiced_frames": 70,
+        "voiced_ratio": 0.76,
+        "semitone_std": 1.78,
+        "semitone_range": 8.2,
+        "self_score": 100,
+        "self_pitch": 100,
+        "degraded_score": 46,
+        "score_spread": 54
+      },
+      "draft": true
+    },
+    {
+      "id": "anime_yareyare",
+      "title": "야레야레다제",
+      "source": "죠죠의 기묘한 모험 · 죠타로",
+      "emoji": "🧢",
+      "plays": 0,
+      "line": "야레야레다제",
+      "kind": "anime",
+      "origin": {
+        "url": "local:C:/Users/kyumin/AppData/Local/Temp/claude/C--Users-kyumin-Desktop-Projects-meme-app/b7501336-3b50-4f80-84fc-f9141b44cca3/scratchpad/clips/new/yareyare_1.wav",
+        "start": "00:00:00.00",
+        "end": "00:00:02.02"
+      },
+      "license": {
+        "kind": "original-clip",
+        "holder": "david production · 荒木飛呂彦/集英社",
+        "note": "짧은 인용. 권리자 요청 시 즉시 삭제. (youtube:CSSMn6yrh34)",
+        "rights": "clip"
+      },
+      "added": "2026-11-07",
+      "duration_ms": 2020,
+      "qa": {
+        "duration_s": 2.02,
+        "trimmed_s": 2.02,
+        "peak": 0.8913,
+        "clip_ratio": 0.0,
+        "lufs": -14.21,
+        "true_peak_db": -0.91,
+        "sr": 22050,
+        "samples": 44543,
+        "voiced_frames": 39,
+        "voiced_ratio": 0.45,
+        "semitone_std": 1.72,
+        "semitone_range": 5.4,
+        "self_score": 100,
+        "self_pitch": 100,
+        "degraded_score": 67,
+        "score_spread": 33
+      },
+      "draft": true
+    },
+    {
+      "id": "anime_tatakae",
+      "title": "타타카에, 타타카에",
+      "source": "진격의 거인 · 에렌",
+      "emoji": "⚔️",
+      "plays": 0,
+      "line": "타타카에, 타타카에",
+      "kind": "anime",
+      "origin": {
+        "url": "local:C:/Users/kyumin/AppData/Local/Temp/claude/C--Users-kyumin-Desktop-Projects-meme-app/b7501336-3b50-4f80-84fc-f9141b44cca3/scratchpad/clips/new/tatakae_1.wav",
+        "start": "00:00:00.00",
+        "end": "00:00:04.13"
+      },
+      "license": {
+        "kind": "original-clip",
+        "holder": "MAPPA · 講談社",
+        "note": "짧은 인용. 권리자 요청 시 즉시 삭제. (youtube:sclIKvWAExo)",
+        "rights": "clip"
+      },
+      "added": "2026-11-07",
+      "duration_ms": 4130,
+      "qa": {
+        "duration_s": 4.13,
+        "trimmed_s": 4.13,
+        "peak": 0.8913,
+        "clip_ratio": 0.0,
+        "lufs": -14.27,
+        "true_peak_db": -0.44,
+        "sr": 22050,
+        "samples": 91069,
+        "voiced_frames": 151,
+        "voiced_ratio": 0.85,
+        "semitone_std": 1.68,
+        "semitone_range": 5.5,
+        "self_score": 100,
+        "self_pitch": 100,
+        "degraded_score": 59,
+        "score_spread": 41
+      },
+      "draft": true
     }
   ],
   "scripts": [
