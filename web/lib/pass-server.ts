@@ -43,7 +43,7 @@ export async function statsBatch(people: string[][], service: Service = createSe
   const keys = [...keyOf.keys()];
   const users = keys.filter((k) => k.startsWith("u:")).map((k) => k.slice(2));
   try {
-    const [entries, fans, given, picks, solo, dex] = await Promise.all([
+    const [entries, fans, given, picks, solo, dex, fb] = await Promise.all([
       service.from("weekly_entries").select("owner, user_id, like_count, featured_at").eq("hidden", false).limit(5000),
       service.from("follows").select("creator").in("creator", keys).limit(5000),
       service.from("weekly_likes").select("voter").in("voter", keys).limit(20000),
@@ -51,6 +51,10 @@ export async function statsBatch(people: string[][], service: Service = createSe
       // 혼자 하는 진행 — 표(마이그레이션 30)가 아직 없으면 error 로 오고 0 으로 본다.
       service.from("solo_days").select("owner, day, takes").in("owner", keys).limit(20000),
       service.from("voice_dex").select("owner, type_id").in("owner", keys).limit(5000),
+      // 남긴 피드백(원글) — 로그인해야 쓰니 계정(u:)으로만 센다. 표·컬럼이 아직 없으면 0
+      users.length
+        ? service.from("entry_notes").select("user_id, entry_id, helpful").eq("kind", "feedback").is("parent_id", null).eq("hidden", false).in("user_id", users).limit(20000)
+        : Promise.resolve({ data: [] as { user_id: string; entry_id: string; helpful: boolean }[] }),
     ]);
     const get = (k: string) => {
       const id = keyOf.get(k);
@@ -99,6 +103,18 @@ export async function statsBatch(people: string[][], service: Service = createSe
         set.add(r.type_id);
         s.dex += 1;
       }
+    }
+    // 피드백 — 목소리 하나당 한 번(여러 개 써도 +40 한 번), 👍 받은 것은 따로 더
+    const fbSeen = new Set<string>();
+    for (const r of fb.data ?? []) {
+      const s = get(`u:${r.user_id}`);
+      if (!s) continue;
+      const k = `${keyOf.get(`u:${r.user_id}`)}|${r.entry_id}`;
+      if (!fbSeen.has(k)) {
+        fbSeen.add(k);
+        s.feedbackGiven += 1;
+      }
+      if (r.helpful) s.feedbackHelpful += 1;
     }
     const pk = picks.data ?? [];
     if (pk.length) {

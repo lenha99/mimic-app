@@ -380,3 +380,65 @@
 .actions .helpfulOn {
   color: var(--cyan);
 }
+
+/* 댓글 · 피드백 탭 (11/7 — 둘은 다른 칸) */
+.tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--stage);
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 38px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--ash);
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.tab[aria-selected="true"] {
+  background: var(--panel-hi);
+  color: var(--white);
+}
+
+.tabFeedback[aria-selected="true"] {
+  background: rgba(124, 200, 242, 0.16);
+  color: var(--cyan);
+}
+
+/* 피드백 카드 — 좋았던 점 / 바꿔 볼 점 두 줄 */
+.fbItem {
+  padding: 12px 13px;
+  border-radius: 14px;
+  border: 1px solid var(--rule);
+  background: var(--stage);
+}
+
+/* 피드백 남긴 뒤 잠깐 — +XP */
+.xpToast {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(255, 201, 60, 0.16);
+  color: var(--volt);
+  font-size: 13px;
+  font-weight: 900;
+  animation: xpIn 0.3s ease-out;
+}
+
+@keyframes xpIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}

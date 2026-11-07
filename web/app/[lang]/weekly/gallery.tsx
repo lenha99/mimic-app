@@ -50,7 +50,7 @@ export default function Gallery({
     if (filter === "hot") return [...entries].sort((a, b) => b.likes - a.likes || b.plays - a.plays);
     if (filter === "week") return entries.filter((e) => e.week.live);
     // 피드백 — 받기를 켠 목소리, 댓글이 적은 것부터(첫 피드백이 제일 받기 어렵다)
-    if (filter === "feedback") return entries.filter((e) => e.wantsFeedback).sort((a, b) => a.notes - b.notes || b.at.localeCompare(a.at));
+    if (filter === "feedback") return entries.filter((e) => e.wantsFeedback).sort((a, b) => a.feedbacks - b.feedbacks || b.at.localeCompare(a.at));
     return entries;
   }, [entries, filter]);
   const left = Math.max(0, rankedMin - thisWeek);

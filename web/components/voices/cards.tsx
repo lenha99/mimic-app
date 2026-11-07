@@ -44,12 +44,13 @@ export function VoiceCard({ e, index = 0 }: { e: GalleryEntry; index?: number })
   const scriptId = challengeById(e.week.id)?.scriptId;
   const fresh = likes?.fresh === e.id && liked;
   const note = likes?.note?.id === e.id ? likes.note.text : null;
-  // 💬 — 댓글을 받는 목소리(또는 이미 달린 게 있으면)만. 누르면 시트가 올라오고 바로 쓴다.
-  const [sheet, setSheet] = useState(false);
+  // 💬 댓글 · 🎯 피드백 — 따로 센다. 누르면 그 탭으로 시트가 올라온다(11/7 — 전엔 둘이 같은 시트였다).
+  const [sheet, setSheet] = useState<"comments" | "feedback" | null>(null);
   const [notes, setNotes] = useState(e.notes);
+  const [feedbacks, setFeedbacks] = useState(e.feedbacks);
   const canComment = e.feedbackOn || notes > 0;
   const openSheet = (via: "comment" | "feedback") => () => {
-    setSheet(true);
+    setSheet(via === "feedback" ? "feedback" : "comments");
     track("feedback_open", { via });
   };
 
@@ -113,14 +114,31 @@ export function VoiceCard({ e, index = 0 }: { e: GalleryEntry; index?: number })
             {notes > 0 && <b>{notes}</b>}
           </button>
         )}
-        {e.wantsFeedback && (
-          <button type="button" className={`${styles.actBtn} ${styles.actFeedback}`} onClick={openSheet("feedback")}>
+        {(e.wantsFeedback || feedbacks > 0) && (
+          <button
+            type="button"
+            className={`${styles.actBtn} ${styles.actFeedback}`}
+            onClick={openSheet("feedback")}
+            aria-label={t(`${name} 피드백 ${feedbacks}개 보기·남기기`, `${feedbacks} feedback on ${name}`)}
+          >
             <span aria-hidden="true">🎯</span>
-            {t("피드백 주기", "Give feedback")}
+            {e.wantsFeedback ? t("피드백 주기", "Give feedback") : t("피드백", "Feedback")}
+            {feedbacks > 0 && <b>{feedbacks}</b>}
           </button>
         )}
       </div>
-      {sheet && <CommentSheet entryId={e.id} name={name} onClose={() => setSheet(false)} onCount={setNotes} />}
+      {sheet && (
+        <CommentSheet
+          entryId={e.id}
+          name={name}
+          tab={sheet}
+          onClose={() => setSheet(null)}
+          onCount={(c, f) => {
+            setNotes(c);
+            setFeedbacks(f);
+          }}
+        />
+      )}
 
       {fresh && scriptId && (
         <Link href={`/practice/${scriptId}`} className={styles.afterLike}>

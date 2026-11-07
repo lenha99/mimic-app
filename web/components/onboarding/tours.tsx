@@ -298,12 +298,12 @@ const sets = (t: T) => {
       title: t("서로 들어주기", "Listen to each other"),
       body: t(
         <p>
-          댓글을 받는 목소리가 모인 갤러리로 가요. 카드의 💬 를 누르면 바로 응원·피드백·한마디를 남길 수 있어요. 내 테이크는
-          연습 화면에서 <b>들려주기</b>를 누를 때 <b>댓글도 받을래요</b>를 켜 두면 돼요.
+          목소리가 모인 갤러리로 가요. 카드의 💬 는 응원·한마디 <b>댓글</b>, 🎯 는 좋았던 점과 바꿔 볼 점을 적는 <b>피드백</b>이에요.
+          내 테이크는 <b>들려주기</b>를 누를 때 <b>🎯 피드백 요청</b>을 고르면 피드백을 받아요.
         </p>,
         <p>
-          Opens the gallery of voices open to comments. Tap 💬 on a card to leave a cheer, a tip or anything. For your own
-          take, keep <b>Open comments</b> on when you post.
+          Opens the voice gallery. 💬 is for <b>comments</b> (cheers, anything), 🎯 is <b>feedback</b>: one thing that worked and one to
+          try. Pick <b>🎯 Ask feedback</b> when you post to get it on yours.
         </p>,
       ),
     },

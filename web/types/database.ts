@@ -265,6 +265,8 @@ export interface Database {
           hidden: boolean;
           reports: number;
           helpful: boolean;
+          /** comment: 응원·감상 댓글 · feedback: 🎯 부탁받고 남긴 피드백 */
+          kind: "comment" | "feedback";
           created_at: string;
         };
         Insert: {
@@ -275,6 +277,7 @@ export interface Database {
           body: string;
           hidden?: boolean;
           helpful?: boolean;
+          kind?: "comment" | "feedback";
           reports?: number;
           created_at?: string;
         };
@@ -641,6 +644,7 @@ export type NotificationKind =
   | "note"
   | "note_reply"
   | "note_helpful"
+  | "note_feedback"
   | "reward_likes"
   | "reward_follows"
   | "reward_pick"
