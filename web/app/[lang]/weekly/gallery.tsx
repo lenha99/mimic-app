@@ -30,12 +30,15 @@ export default function Gallery({
   thisWeek,
   rankedMin,
   line,
+  switcher,
 }: {
   week: Week;
   entries: GalleryEntry[];
   thisWeek: number;
   rankedMin: number;
   line: string;
+  /** 순위판이 열린 뒤 순위 | 갤러리 전환 (views.tsx) */
+  switcher?: React.ReactNode;
 }) {
   const t = useT();
   const lang = useLang();
@@ -82,6 +85,8 @@ export default function Gallery({
           </Link>
           <TourHelp id="voices" short />
         </TopBar>
+
+        {switcher}
 
         <header className={styles.head}>
           <h1>{t("목소리 갤러리", "Voice gallery")}</h1>

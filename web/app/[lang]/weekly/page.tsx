@@ -6,7 +6,7 @@ import { galleryEntries, getBoard, lastWeekWinners, liveWeek, RANKED_MIN } from 
 import { getLang } from "@/lib/i18n-server";
 import { tr } from "@/lib/i18n";
 import Gallery from "./gallery";
-import Hub from "./hub";
+import WeeklyViews from "./views";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = tr(await getLang());
@@ -32,31 +32,29 @@ export default async function WeeklyPage() {
     lastWeekWinners().catch(() => null),
   ]);
   const script = weekScript(week);
+  const gallery = {
+    week,
+    entries: await galleryEntries(80).catch(() => []),
+    thisWeek: board.entries.length,
+    rankedMin: RANKED_MIN,
+    line: firstLine(findScript(week.scriptId)?.text ?? ""),
+  };
   // 이번 주 출전작이 모이기 전엔 갤러리(쌓인 목소리 듣기)가 첫 화면이다. 순위판은 RANKED_MIN 개부터.
-  if (board.entries.length < RANKED_MIN) {
-    const gallery = await galleryEntries(80).catch(() => []);
-    return (
-      <Gallery
-        week={week}
-        entries={gallery}
-        thisWeek={board.entries.length}
-        rankedMin={RANKED_MIN}
-        line={firstLine(findScript(week.scriptId)?.text ?? "")}
-      />
-    );
-  }
+  if (board.entries.length < RANKED_MIN) return <Gallery {...gallery} />;
+  // 순위판이 열린 뒤에도 갤러리(💬 댓글 · 🎯 피드백)는 위쪽 전환으로 남긴다.
   return (
-    <Hub
-      week={week}
-      label={seasonLabel(week, await getLang())}
-      entries={board.entries}
-      totalLikes={board.totalLikes}
-      script={
-        script
+    <WeeklyViews
+      gallery={gallery}
+      hub={{
+        week,
+        label: seasonLabel(week, await getLang()),
+        entries: board.entries,
+        totalLikes: board.totalLikes,
+        script: script
           ? { text: script.text, direction: script.direction, seconds: expectedSeconds(script), category: script.category }
-          : null
-      }
-      last={last}
+          : null,
+        last,
+      }}
     />
   );
 }

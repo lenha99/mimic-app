@@ -33,6 +33,10 @@ type Props = {
     category: string;
   } | null;
   last: { week: Week; awards: Award[] } | null;
+  /** 순위 | 갤러리 전환 (views.tsx) — 위쪽 바 바로 아래 */
+  switcher?: React.ReactNode;
+  /** 출전작별 💬 댓글 · 🎯 피드백 수 (갤러리 데이터에서) — 줄 아래 들어가는 길 */
+  talk?: Record<string, { notes: number; feedbacks: number }>;
 };
 
 type Tab = "rank" | "fresh" | "blind";
@@ -48,7 +52,7 @@ const battled = (e: EntryCard) => !!e.battle && e.battle.wins + e.battle.losses 
  *  3) 시상대와 트로피 — 이기면 다음 주에도 이름 옆에 남는다
  * 그리고 ❤ 를 얻는 길(링크 공유)이 그 거리 바로 옆에 붙어 있다.
  */
-export default function Hub({ week, label, entries: initial, totalLikes, script, last }: Props) {
+export default function Hub({ week, label, entries: initial, totalLikes, script, last, switcher, talk }: Props) {
   const t = useT();
   const lang = useLang();
   const me = useWeeklyMe(week.id);
@@ -184,6 +188,8 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
         <TourHelp id="weekly" short />
       </TopBar>
 
+      {switcher}
+
       {/* 무대 — 이번 주 대본과 마감 */}
       <section className={styles.hero} data-tour="weekly-hero">
         <div className={styles.heroGlow} aria-hidden="true" />
@@ -315,6 +321,7 @@ export default function Hub({ week, label, entries: initial, totalLikes, script,
                   progress={playing === e.id ? progress : null}
                   level={playing === e.id ? level : 0}
                   liked={me.liked.has(e.id)}
+                  talk={talk ? (talk[e.id] ?? { notes: 0, feedbacks: 0 }) : undefined}
                   onPlay={() => play(e.id)}
                   onLike={() => void like(e.id)}
                 />
@@ -552,6 +559,7 @@ function Row({
   progress,
   level,
   liked,
+  talk,
   onPlay,
   onLike,
 }: {
@@ -565,6 +573,7 @@ function Row({
   progress: number | null;
   level: number;
   liked: boolean;
+  talk?: { notes: number; feedbacks: number };
   onPlay: () => void;
   onLike: () => void;
 }) {
@@ -629,6 +638,13 @@ function Row({
           mine={isMine}
           onPress={onLike}
         />
+        {talk && (
+          <Link href={`/weekly/e/${e.id}`} className={styles.rowTalk}>
+            <span>💬 {t(`댓글 ${talk.notes}`, `${talk.notes} comments`)}</span>
+            <span>🎯 {t(`피드백 ${talk.feedbacks}`, `${talk.feedbacks} feedback`)}</span>
+            <i aria-hidden="true">→</i>
+          </Link>
+        )}
       </li>
       {cutAfter && (
         <li className={styles.cut} aria-hidden="true">
