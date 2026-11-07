@@ -1,0 +1,58 @@
+name: 스모크
+
+# Vercel 배포가 끝나면(GitHub deployment_status) 그 주소에 대고 핵심 흐름을 눌러 본다.
+# 빌드가 통과해도 버튼이 안 먹는 일(11/3 자유 출전이 하루 동안 한 건도 저장 안 됨)을 잡으려는 것.
+# 운영에 아무것도 쓰지 않는다 — web/e2e/smoke.spec.ts 의 readOnly().
+#
+# 운영(Production): 항상.
+# 미리보기(Preview, PR): Vercel 로그인으로 막혀 있어서 저장소 Secret
+#   VERCEL_AUTOMATION_BYPASS_SECRET (Vercel → Settings → Deployment Protection →
+#   Protection Bypass for Automation) 이 있을 때만.
+on:
+  deployment_status:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: "검사할 주소 (비우면 운영)"
+        required: false
+
+concurrency:
+  group: smoke-${{ github.event.deployment.environment || 'manual' }}-${{ github.event.deployment.sha || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: 스모크 — 홈 · 연습실 · 들려주기
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.deployment_status.state == 'success' &&
+       (github.event.deployment.environment == 'Production' ||
+        (github.event.deployment.environment == 'Preview' && vars.SMOKE_PREVIEW == '1')))
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: web
+    env:
+      SMOKE_URL: ${{ github.event.deployment.environment == 'Production' && 'https://mimic-web-omega.vercel.app' || github.event.deployment_status.environment_url || inputs.url || 'https://mimic-web-omega.vercel.app' }}
+      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.deployment.sha || github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run smoke
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-report
+          path: |
+            web/playwright-report
+            web/test-results
+          retention-days: 7
