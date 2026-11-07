@@ -61,6 +61,7 @@ tools/
   sync_catalog.py    # registry → catalog.json / memes.json / 웹 FALLBACK 생성
   picker.html        # 파형 보고 귀로 구간 고르는 UI
   trend_scan.py      # 새 밈 후보 발굴
+  funnel.py          # 퍼널·사람별 경로 (Modal 이벤트 → 표). `python tools/funnel.py 2026-11-06 --people`
   make_examples.py   # 주간 예시 순위표 소리(대본마다 AI 네 목소리) → web/public/examples/demo + web/lib/examples.ts. ROTATION 늘리면 다시
 refs_kr/             # 원본 유래 클립 (gitignore — 레지스트리로 재생성한다)
 refs_animals/        # CC0 동물 소리 원본 (제자리 수정 금지)
@@ -107,6 +108,10 @@ modal deploy modal_app.py          # 로컬에서 직접 (토큰 있는 사람�
 pytest test/ -q                      # 채점 엔진 + 카탈로그 드리프트
 cd web && npm run build && npm run lint
 ```
+- **스모크** `cd web && npm run smoke` — 배포된 앱(기본 운영, `SMOKE_URL=` 로 바꿈)에서 홈 → 연습실 녹음(가짜 마이크
+  `e2e/voice.wav`) → 들려주기까지 실제 브라우저로 누른다. 쓰기 요청은 전부 가짜 응답이라 운영에 안 남는다.
+  운영 배포가 끝나면 GitHub Actions `smoke.yml` 이 자동으로 돌린다. 버튼 문구를 바꾸면 `e2e/smoke.spec.ts` 도 같이
+- **퍼널** 홍보·기능 변경 뒤엔 즉석 분석 대신 `python tools/funnel.py` 부터. 단계 정의는 파일 위쪽 `FUNNELS`
 
 ## 이 레포에서 배운 것
 - **경계마다 되읽어라.** "보냈다"로 끝내지 말고 "그쪽에서 실제로 그렇게 됐나"를
