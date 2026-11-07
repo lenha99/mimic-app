@@ -12,10 +12,11 @@ export function LineCard({ line, big }: { line: AnimeLine; big?: boolean }) {
   return (
     <div className={`${s.line} ${big ? s.lineBig : ""}`} style={{ "--hue": line.hue } as CSSProperties}>
       <p className={s.lineMeta}>
-        <span aria-hidden="true">{line.emoji}</span> {t(line.series, line.seriesEn)} · {t(line.who, line.whoEn)}
+        <span aria-hidden="true">{line.emoji}</span> {t(line.series, line.seriesEn)}
+        {line.who && ` · ${t(line.who, line.whoEn)}`}
       </p>
       <p className={s.say}>{line.say}</p>
-      <p className={s.ko}>{t(line.ko, line.en)}</p>
+      {t(line.ko, line.en) && <p className={s.ko}>{t(line.ko, line.en)}</p>}
       {big && <p className={s.tip}>{t(line.tip, line.tipEn)}</p>}
     </div>
   );
