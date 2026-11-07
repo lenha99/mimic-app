@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useT } from "@/components/lang";
-import { MAX_ENTRY_NOTE, MAX_FEEDBACK_ASK, MAX_FEEDBACK_PER_ENTRY, type CommentMode, type EntryNote, type EntryNotes, type NoteKind } from "@/lib/entry-notes";
+import { MAX_ENTRY_NOTE, MAX_FEEDBACK_ASK, type CommentMode, type EntryNote, type EntryNotes, type NoteKind } from "@/lib/entry-notes";
+import { FEEDBACK_XP } from "@/lib/pass";
 import { track } from "@/lib/track";
 import styles from "./entry-feedback.module.css";
 
@@ -11,8 +12,8 @@ import styles from "./entry-feedback.module.css";
  * 출전작 댓글 · 피드백 — 둘은 다른 칸이다(11/7).
  *
  *  - 💬 댓글: 자유로운 한마디(응원·감상). 한 줄 입력칸.
- *  - 🎯 피드백: 주인이 부탁한 목소리에만. "좋았던 점" + "바꿔 보면 좋을 점" 두 칸을 다 채워야 남고,
- *    카드도 두 줄로 보인다. 주인은 도움된 피드백에 👍(쓴 사람에게 알림). 목록·숫자·알림이 댓글과 따로다.
+ *  - 🎯 피드백: 주인이 부탁한 목소리에만. 쓰는 건 댓글처럼 한 칸 — 칸을 여러 개 채우라고 하면 아무도 안 쓴다.
+ *    남긴 사람은 XP 를 크게 받고(+40, 주인이 👍 하면 +60 더), 주인은 답글로 되묻는다.
  *  전엔 둘이 같은 시트·같은 목록·같은 입력칸이라 받는 사람 눈엔 똑같았다.
  *
  * 두 군데서 쓴다. 출전작 화면(page)에선 플레이어 아래에 펼쳐지고 처음엔 세 개만 보인다.
@@ -51,6 +52,8 @@ export function EntryFeedback({
   const [all, setAll] = useState(false);
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // 피드백을 남기면 잠깐 "+40 XP" — 남을 도운 게 바로 보상으로 보이게
+  const [gained, setGained] = useState(0);
   // 예시는 열 때마다 하나 — 서버 렌더와 안 어긋나게 붙은 뒤에 고른다
   const [ex, setEx] = useState(0);
   useEffect(() => {
@@ -89,23 +92,27 @@ export function EntryFeedback({
   // 아무것도 안 받고 하나도 없으면 자리를 차지하지 않는다 — 주인에게만 스위치를 보인다.
   if (!feedbackOn && count === 0 && feedbackCount === 0 && !owner && !sheet) return null;
 
-  const myFeedback = feedback.filter((n) => n.mine).length;
-  const canFeedback = loggedIn && wantsFeedback && !owner && myFeedback < MAX_FEEDBACK_PER_ENTRY;
+  const gaveFeedback = feedback.some((n) => n.mine);
+  const canFeedback = loggedIn && wantsFeedback && !owner;
 
-  const send = async (kind: NoteKind, body: string, tip: string | null, parentId: string | null): Promise<boolean> => {
+  const send = async (kind: NoteKind, body: string, parentId: string | null): Promise<boolean> => {
     setError(null);
     const res = await fetch(`/api/weekly/entries/${entryId}/notes`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ kind, body, tip, parentId }),
+      body: JSON.stringify({ kind, body, parentId }),
     }).catch(() => null);
-    const d = (await res?.json().catch(() => ({}))) as { error?: string } | undefined;
+    const d = (await res?.json().catch(() => ({}))) as { error?: string; xp?: number } | undefined;
     if (!res?.ok) {
       setError(d?.error ?? t("남기지 못했어요. 다시 해 주세요", "Couldn't post. Please try again"));
       return false;
     }
     track(parentId ? "feedback_reply" : kind === "feedback" ? "feedback_note" : "comment_note", { via: entryId });
     setReplyTo(null);
+    if (d?.xp) {
+      setGained(d.xp);
+      setTimeout(() => setGained(0), 4000);
+    }
     await load();
     return true;
   };
@@ -161,7 +168,7 @@ export function EntryFeedback({
               ? t("듣는 분들께 한마디 · 예: 들어 줘서 고마워요!", "Say something to listeners · e.g. Thanks for listening!")
               : t(`댓글 달기 · 예: ${EXAMPLES[ex][0]}`, `Add a comment · e.g. ${EXAMPLES[ex][1]}`)
           }
-          onSend={(b) => send("comment", b, null, null)}
+          onSend={(b) => send("comment", b, null)}
         />
       ) : !loggedIn && feedbackOn ? (
         <Link href={loginHref} className={styles.login}>
@@ -176,20 +183,32 @@ export function EntryFeedback({
 
   const feedbackComposer = (
     <>
+      {gained > 0 && (
+        <p className={styles.xpToast} role="status">
+          🎯 {t(`피드백 고마워요! +${gained} XP`, `Thanks for the feedback! +${gained} XP`)}
+        </p>
+      )}
       {canFeedback ? (
-        <FeedbackForm key="fb" autoFocus={sheet} onSend={(good, tip) => send("feedback", good, tip, null)} />
+        <Composer
+          key="fb"
+          autoFocus={sheet}
+          placeholder={
+            gaveFeedback
+              ? t("더 하고 싶은 말이 있으면 또 남겨요", "Anything else? Leave another")
+              : t(`들은 느낌 한마디 · 예: 끝이 살짝 빨라요 (+${FEEDBACK_XP.give} XP)`, `How did it sound? e.g. The ending felt rushed (+${FEEDBACK_XP.give} XP)`)
+          }
+          onSend={(b) => send("feedback", b, null)}
+        />
       ) : owner ? (
         <p className={styles.off}>
           {wantsFeedback
-            ? t("피드백은 들은 사람들이 남겨요. 도움된 피드백엔 👍 를 눌러 주세요 — 쓴 사람에게 알려 줘요", "Listeners leave feedback here. Tap 👍 on the helpful ones — we'll let them know")
+            ? t(`피드백은 들은 사람들이 남겨요. 궁금하면 답글로 되묻고, 도움됐으면 👍 — 쓴 사람이 +${FEEDBACK_XP.helpful} XP 를 받아요`, `Listeners leave feedback here. Reply to ask more, tap 👍 if it helped — they get +${FEEDBACK_XP.helpful} XP`)
             : t("지금은 피드백을 받지 않아요. 위에서 🎯 피드백 요청을 켜면 다시 받아요", "Not taking feedback now. Turn on 🎯 above to ask again")}
         </p>
       ) : !loggedIn && wantsFeedback ? (
         <Link href={loginHref} className={styles.login}>
           {t("로그인하고 피드백 남기기 →", "Log in to give feedback →")}
         </Link>
-      ) : wantsFeedback && myFeedback >= MAX_FEEDBACK_PER_ENTRY ? (
-        <p className={styles.off}>{t("피드백 고마워요! 더 할 말은 내 피드백에 답글로 남겨요", "Thanks for the feedback! Reply to it to add more")}</p>
       ) : !wantsFeedback ? (
         <p className={styles.off}>{t("지금은 피드백을 받지 않는 목소리예요", "This voice isn't taking feedback now")}</p>
       ) : null}
@@ -265,7 +284,7 @@ export function EntryFeedback({
           <div className={styles.askCard}>
             <b>🎯 {t("이 목소리는 피드백을 원해요", "This voice wants feedback")}</b>
             {ask && <q>{ask}</q>}
-            <small>{t("좋았던 점 하나, 바꿔 보면 좋을 점 하나. 들은 대로 솔직하게, 말투는 다정하게", "One thing that worked, one thing to try. Honest, but kind")}</small>
+            <small>{t(`짧게 한마디면 충분해요. 남기면 +${FEEDBACK_XP.give} XP`, `A short note is plenty. +${FEEDBACK_XP.give} XP for you`)}</small>
           </div>
         ))}
 
@@ -301,7 +320,7 @@ export function EntryFeedback({
                         autoFocus
                         small
                         placeholder={t(`${n.nickname}님에게 답글`, `Reply to ${n.nickname}`)}
-                        onSend={(b) => send(n.kind, b, null, n.id)}
+                        onSend={(b) => send(n.kind, b, n.id)}
                         onCancel={() => setReplyTo(null)}
                       />
                     </li>
@@ -345,20 +364,7 @@ function Note({
         <span className={styles.ago}>{agoOf(n.createdAt, t)}</span>
         {n.helpful && <span className={styles.helpfulChip}>👍 {t("도움된 피드백", "Helpful")}</span>}
       </p>
-      {n.tip !== null ? (
-        <dl className={styles.fbBody}>
-          <div>
-            <dt>👍 {t("좋았던 점", "What worked")}</dt>
-            <dd>{n.body}</dd>
-          </div>
-          <div>
-            <dt>🔧 {t("바꿔 보면 좋을 점", "Try this")}</dt>
-            <dd>{n.tip}</dd>
-          </div>
-        </dl>
-      ) : (
-        <p className={styles.body}>{n.body}</p>
-      )}
+      <p className={styles.body}>{n.body}</p>
       <p className={styles.actions}>
         {onHelpful && (
           <button type="button" className={n.helpful ? styles.helpfulOn : undefined} onClick={onHelpful} aria-pressed={n.helpful}>
@@ -381,60 +387,6 @@ function Note({
             </button>
           ))}
       </p>
-    </div>
-  );
-}
-
-/** 피드백 쓰기 — 좋았던 점 + 바꿔 보면 좋을 점. 둘 다 있어야 보낸다. */
-function FeedbackForm({ onSend, autoFocus }: { onSend: (good: string, tip: string) => Promise<boolean>; autoFocus?: boolean }) {
-  const t = useT();
-  const [good, setGood] = useState("");
-  const [tip, setTip] = useState("");
-  const [busy, setBusy] = useState(false);
-  const ref = useRef<HTMLTextAreaElement>(null);
-  useEffect(() => {
-    if (autoFocus) ref.current?.focus();
-  }, [autoFocus]);
-  const ready = good.trim() && tip.trim() && !busy;
-  const submit = async () => {
-    if (!ready) return;
-    setBusy(true);
-    const ok = await onSend(good.trim(), tip.trim());
-    setBusy(false);
-    if (ok) {
-      setGood("");
-      setTip("");
-    }
-  };
-  return (
-    <div className={styles.fbForm}>
-      <label>
-        <span>👍 {t("좋았던 점", "What worked")}</span>
-        <textarea
-          ref={ref}
-          rows={2}
-          value={good}
-          maxLength={MAX_ENTRY_NOTE}
-          placeholder={t("예: 첫 문장 톤이 차분해서 귀에 쏙 들어왔어요", "e.g. Your calm tone on the first line really landed")}
-          onChange={(e) => setGood(e.target.value)}
-        />
-      </label>
-      <label>
-        <span>🔧 {t("바꿔 보면 좋을 점", "Try this")}</span>
-        <textarea
-          rows={2}
-          value={tip}
-          maxLength={MAX_ENTRY_NOTE}
-          placeholder={t("예: 둘째 문장 끝이 올라가요. 내려 보면 더 여유로울 듯", "e.g. The 2nd line rises at the end, try bringing it down")}
-          onChange={(e) => setTip(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void submit();
-          }}
-        />
-      </label>
-      <button type="button" className={styles.fbSend} onClick={() => void submit()} disabled={!ready}>
-        {busy ? t("남기는 중…", "Posting…") : !good.trim() || !tip.trim() ? t("두 칸을 채우면 남길 수 있어요", "Fill both to post") : t("🎯 피드백 남기기", "🎯 Post feedback")}
-      </button>
     </div>
   );
 }

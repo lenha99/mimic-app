@@ -424,89 +424,21 @@
   background: var(--stage);
 }
 
-.fbBody {
-  margin: 4px 0 2px;
-  display: grid;
-  gap: 8px;
-}
-
-.fbBody div {
-  display: grid;
-  gap: 2px;
-}
-
-.fbBody dt {
-  font-size: 11.5px;
-  font-weight: 900;
-  color: var(--ash);
-}
-
-.fbBody div:last-child dt {
-  color: var(--cyan);
-}
-
-.fbBody dd {
+/* 피드백 남긴 뒤 잠깐 — +XP */
+.xpToast {
   margin: 0;
-  font-size: 14px;
-  line-height: 1.5;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-/* 피드백 쓰기 — 두 칸 */
-.fbForm {
-  display: grid;
-  gap: 8px;
-}
-
-.fbForm label {
-  display: grid;
-  gap: 4px;
-  font-size: 12px;
-  font-weight: 900;
-  color: var(--ash);
-}
-
-.fbForm label:nth-of-type(2) {
-  color: var(--cyan);
-}
-
-.fbForm textarea {
-  min-height: 52px;
-  padding: 9px 12px;
+  padding: 8px 12px;
   border-radius: 12px;
-  border: 1px solid var(--rule);
-  background: var(--stage);
-  color: var(--white);
-  font: inherit;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 1.45;
-  resize: none;
-}
-
-.fbForm textarea:focus {
-  outline: none;
-  border-color: rgba(124, 200, 242, 0.6);
-}
-
-.fbForm textarea::placeholder {
-  color: var(--ash);
-}
-
-.fbSend {
-  min-height: 42px;
-  border: 0;
-  border-radius: 12px;
-  background: var(--cyan);
-  color: var(--stage);
-  font-size: 14px;
+  background: rgba(255, 201, 60, 0.16);
+  color: var(--volt);
+  font-size: 13px;
   font-weight: 900;
-  cursor: pointer;
+  animation: xpIn 0.3s ease-out;
 }
 
-.fbSend:disabled {
-  background: var(--panel-hi);
-  color: var(--ash);
-  cursor: default;
+@keyframes xpIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
 }

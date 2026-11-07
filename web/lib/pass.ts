@@ -22,6 +22,9 @@ export type PassStats = {
   takes: number;
   dex: number;
   streak: number;
+  /** 남의 목소리에 남긴 피드백 — 목소리마다 한 번 센다 · 그중 주인이 👍 도움됐어요 한 것 (11/7) */
+  feedbackGiven: number;
+  feedbackHelpful: number;
 };
 
 export const EMPTY_STATS: PassStats = {
@@ -35,16 +38,26 @@ export const EMPTY_STATS: PassStats = {
   takes: 0,
   dex: 0,
   streak: 0,
+  feedbackGiven: 0,
+  feedbackHelpful: 0,
 };
 
 /** 혼자 하는 XP 는 "아주 조금" — 남이 주는 XP(❤ +10 · 구독 +25 · 들려주기 +30)가 늘 더 크게 보이게. */
 export const SOLO_XP = { day: 5, take: 1, takeCapPerDay: 10, dex: 5 } as const;
+
+/**
+ * 남을 돕는 XP 는 크게 — 피드백은 목소리 올리기(30)보다 많이 준다. 들어 주고 한마디 남기는 사람이
+ * 있어야 올린 사람이 다시 올린다. 도배를 막으려고 목소리 하나당 한 번만 센다.
+ */
+export const FEEDBACK_XP = { give: 40, helpful: 60 } as const;
 
 /** XP 얻는 법 — 화면(/pass)에 그대로 보여 준다 */
 export const XP_RULES = [
   { key: "posts", xp: 30, ko: "목소리 들려주기", en: "Post a voice", noteKo: "목소리마다", noteEn: "per voice" },
   { key: "likesReceived", xp: 10, ko: "❤ 받기", en: "Get a ❤", noteKo: "❤ 하나마다", noteEn: "per ❤" },
   { key: "followers", xp: 25, ko: "구독자 생기기", en: "Gain a subscriber", noteKo: "한 명마다", noteEn: "per sub" },
+  { key: "feedbackGiven", xp: FEEDBACK_XP.give, ko: "🎯 피드백 남기기", en: "Give feedback", noteKo: "목소리마다", noteEn: "per voice" },
+  { key: "feedbackHelpful", xp: FEEDBACK_XP.helpful, ko: "내 피드백이 도움됐어요 👍", en: "Your feedback helped 👍", noteKo: "👍 마다 더", noteEn: "bonus per 👍" },
   { key: "likesGiven", xp: 3, ko: "다른 목소리에 ❤", en: "Give a ❤", noteKo: "누를 때마다", noteEn: "per ❤" },
   { key: "picked", xp: 150, ko: "운영자 픽 되기", en: "Get picked", noteKo: "한 번", noteEn: "once" },
   { key: "prophet", xp: 50, ko: "픽 될 목소리 먼저 알아보기", en: "❤ a voice before it's picked", noteKo: "한 번", noteEn: "once" },
@@ -63,7 +76,9 @@ export function xpOf(s: PassStats): number {
     (s.prophet ? 50 : 0) +
     (s.activeDays ?? 0) * SOLO_XP.day +
     (s.takes ?? 0) * SOLO_XP.take +
-    (s.dex ?? 0) * SOLO_XP.dex
+    (s.dex ?? 0) * SOLO_XP.dex +
+    (s.feedbackGiven ?? 0) * FEEDBACK_XP.give +
+    (s.feedbackHelpful ?? 0) * FEEDBACK_XP.helpful
   );
 }
 
