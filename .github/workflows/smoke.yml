@@ -28,7 +28,8 @@ jobs:
       (github.event.deployment_status.state == 'success' &&
        (github.event.deployment.environment == 'Production' ||
         (github.event.deployment.environment == 'Preview' && vars.SMOKE_PREVIEW == '1')))
-    runs-on: ubuntu-latest
+    # ubuntu-latest(26.04)는 Playwright 1.56 이 아직 지원 안 한다 — Playwright 올릴 때 같이 풀 것
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     defaults:
       run:
