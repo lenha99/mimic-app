@@ -8,6 +8,9 @@ export type AvatarJson = Partial<
   Record<"body" | "color" | "eyes" | "hair" | "hairColor" | "face" | "glasses" | "hat" | "fx", string>
 >;
 
+/** jsonb 칸 — 릴레이 더빙 배역·정식판 */
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+
 export interface Database {
   public: {
     Tables: {
@@ -476,6 +479,7 @@ export interface Database {
           entry_id: string | null;
           thread_id: string | null;
           count: number | null;
+          scene_id?: string | null;
           created_at: string;
           read_at: string | null;
         };
@@ -485,6 +489,7 @@ export interface Database {
           actor?: string | null;
           entry_id?: string | null;
           thread_id?: string | null;
+          scene_id?: string | null;
           count?: number | null;
           created_at?: string;
           read_at?: string | null;
@@ -544,6 +549,156 @@ export interface Database {
         Update: { user_id?: string | null };
         Relationships: [];
       };
+      relay_scenes: {
+        Row: {
+          id: string;
+          hall: "act" | "real";
+          stock_key: string | null;
+          title: string;
+          logline: string;
+          genre: string;
+          roles: Json;
+          director: string | null;
+          director_user: string | null;
+          director_name: string | null;
+          prompt_id: string | null;
+          mode: "normal" | "chaos";
+          status: "pending" | "queued" | "live" | "premiered" | "void";
+          opens_at: string | null;
+          premiere_at: string | null;
+          final: Json | null;
+          real_actors: number;
+          listens: number;
+          best_week: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          hall: "act" | "real";
+          stock_key?: string | null;
+          title: string;
+          logline?: string;
+          genre?: string;
+          roles?: Json;
+          director?: string | null;
+          director_user?: string | null;
+          director_name?: string | null;
+          prompt_id?: string | null;
+          mode?: "normal" | "chaos";
+          status?: "pending" | "queued" | "live" | "premiered" | "void";
+          opens_at?: string | null;
+          premiere_at?: string | null;
+          final?: Json | null;
+          real_actors?: number;
+          listens?: number;
+          best_week?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["relay_scenes"]["Insert"]>;
+        Relationships: [];
+      };
+      relay_lines: {
+        Row: {
+          id: string;
+          scene_id: string;
+          n: number;
+          role: string;
+          text: string;
+          dir: string;
+          tip: string;
+          tts: string | null;
+          sec: number;
+          candidate: boolean;
+          twist: boolean;
+          author: string | null;
+          author_user: string | null;
+          author_name: string | null;
+          won: boolean;
+          hidden: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          scene_id: string;
+          n: number;
+          role: string;
+          text: string;
+          dir?: string;
+          tip?: string;
+          tts?: string | null;
+          sec?: number;
+          candidate?: boolean;
+          twist?: boolean;
+          author?: string | null;
+          author_user?: string | null;
+          author_name?: string | null;
+          won?: boolean;
+          hidden?: boolean;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["relay_lines"]["Insert"]>;
+        Relationships: [];
+      };
+      relay_roles: {
+        Row: { scene_id: string; role: string; owner: string; user_id: string | null; late: boolean; claimed_at: string; priority_until: string };
+        Insert: { scene_id: string; role: string; owner: string; user_id?: string | null; late?: boolean; claimed_at?: string; priority_until: string };
+        Update: { owner?: string; user_id?: string | null; late?: boolean; priority_until?: string };
+        Relationships: [];
+      };
+      relay_takes: {
+        Row: {
+          id: string;
+          scene_id: string;
+          line_id: string;
+          owner: string;
+          user_id: string | null;
+          name: string;
+          avatar: AvatarJson;
+          audio_path: string;
+          duration_s: number;
+          kind: "line" | "adlib";
+          stamp: "ok" | "ng" | null;
+          direction: string | null;
+          hidden: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          scene_id: string;
+          line_id: string;
+          owner: string;
+          user_id?: string | null;
+          name?: string;
+          avatar?: AvatarJson;
+          audio_path: string;
+          duration_s?: number;
+          kind?: "line" | "adlib";
+          stamp?: "ok" | "ng" | null;
+          direction?: string | null;
+          hidden?: boolean;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["relay_takes"]["Insert"]>;
+        Relationships: [];
+      };
+      relay_casts: {
+        Row: { scene_id: string; role: string; owner: string; created_at: string };
+        Insert: { scene_id: string; role: string; owner: string; created_at?: string };
+        Update: { owner?: string };
+        Relationships: [];
+      };
+      relay_sfx: {
+        Row: { scene_id: string; after_n: number; sfx: string };
+        Insert: { scene_id: string; after_n: number; sfx: string };
+        Update: { sfx?: string };
+        Relationships: [];
+      };
+      relay_prompts: {
+        Row: { id: string; owner: string; user_id: string | null; name: string; text: string; scene_id: string | null; hidden: boolean; created_at: string };
+        Insert: { id?: string; owner: string; user_id?: string | null; name?: string; text: string; scene_id?: string | null; hidden?: boolean; created_at?: string };
+        Update: { scene_id?: string | null; hidden?: boolean };
+        Relationships: [];
+      };
     };
     Views: {
       rankings: {
@@ -561,6 +716,10 @@ export interface Database {
       };
     };
     Functions: {
+      relay_bump_listen: {
+        Args: { p_scene: string };
+        Returns: undefined;
+      };
       get_vote_matchup: {
         Args: { p_exclude_user?: string | null };
         Returns: { meme_id: string; id: string; audio_path: string; user_id: string | null }[];
@@ -648,4 +807,10 @@ export type NotificationKind =
   | "reward_likes"
   | "reward_follows"
   | "reward_pick"
-  | "reward_prophet";
+  | "reward_prophet"
+  | "relay_cast"
+  | "relay_ng"
+  | "relay_voiced"
+  | "relay_premiere"
+  | "relay_role"
+  | "relay_unlock";

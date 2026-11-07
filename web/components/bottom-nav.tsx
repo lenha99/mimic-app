@@ -30,7 +30,7 @@ const TABS = [
 ];
 
 /** 탭이 보이는 화면 — 목록·허브 화면만. */
-const SHOW = [/^\/$/, /^\/weekly$/, /^\/weekly\/hall$/, /^\/challenges$/, /^\/practice$/, /^\/practice\/board$/, /^\/me$/, /^\/profile$/, /^\/rank$/, /^\/notifications$/, /^\/messages$/, /^\/following$/];
+const SHOW = [/^\/$/, /^\/weekly$/, /^\/weekly\/hall$/, /^\/challenges$/, /^\/practice$/, /^\/practice\/board$/, /^\/me$/, /^\/profile$/, /^\/rank$/, /^\/notifications$/, /^\/messages$/, /^\/following$/, /^\/relay$/, /^\/relay\/guide$/];
 
 export function BottomNav() {
   const path = usePathname() ?? "/";

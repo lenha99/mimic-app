@@ -25,6 +25,16 @@ export type PassStats = {
   /** 남의 목소리에 남긴 피드백 — 목소리마다 한 번 센다 · 그중 주인이 👍 도움됐어요 한 것 (11/7) */
   feedbackGiven: number;
   feedbackHelpful: number;
+  /** 릴레이 더빙 (11/8) — 출연한 장면 · 갈림길 투표(하루 5) · 감독 OK · 내 대사를 남이 연기(하루 10명) ·
+   *  갈림길·반전 채택 · 내가 연 장면 개봉 · 상황 신청 채택 · 이주의 명작 참여 */
+  relayActs?: number;
+  relayVotes?: number;
+  relayOk?: number;
+  relayVoiced?: number;
+  relayWins?: number;
+  relayPremieres?: number;
+  relayPrompts?: number;
+  relayBest?: number;
 };
 
 export const EMPTY_STATS: PassStats = {
@@ -40,6 +50,14 @@ export const EMPTY_STATS: PassStats = {
   streak: 0,
   feedbackGiven: 0,
   feedbackHelpful: 0,
+  relayActs: 0,
+  relayVotes: 0,
+  relayOk: 0,
+  relayVoiced: 0,
+  relayWins: 0,
+  relayPremieres: 0,
+  relayPrompts: 0,
+  relayBest: 0,
 };
 
 /** 혼자 하는 XP 는 "아주 조금" — 남이 주는 XP(❤ +10 · 구독 +25 · 들려주기 +30)가 늘 더 크게 보이게. */
@@ -50,6 +68,9 @@ export const SOLO_XP = { day: 5, take: 1, takeCapPerDay: 10, dex: 5 } as const;
  * 있어야 올린 사람이 다시 올린다. 도배를 막으려고 목소리 하나당 한 번만 센다.
  */
 export const FEEDBACK_XP = { give: 40, helpful: 60 } as const;
+
+/** 릴레이 더빙 XP — 출연은 들려주기와 같은 값. 남이 내 대사를 연기해 주는 작가 수입은 하루 10명까지 */
+export const RELAY_XP = { act: 30, vote: 5, votePerDay: 5, ok: 15, voiced: 15, voicedPerDay: 10, win: 50, premiere: 60, prompt: 40, best: 30 } as const;
 
 /** XP 얻는 법 — 화면(/pass)에 그대로 보여 준다 */
 export const XP_RULES = [
@@ -64,6 +85,14 @@ export const XP_RULES = [
   { key: "activeDays", xp: 5, ko: "오늘 첫 연습", en: "First practice of the day", noteKo: "하루 한 번", noteEn: "once a day" },
   { key: "takes", xp: 1, ko: "연습 녹음", en: "Practice take", noteKo: "하루 10번까지", noteEn: "up to 10 a day" },
   { key: "dex", xp: 5, ko: "새 목소리 타입 발견", en: "Discover a voice type", noteKo: "도감 한 칸마다", noteEn: "per dex slot" },
+  { key: "relayActs", xp: RELAY_XP.act, ko: "🎬 릴레이 더빙 출연", en: "Appear in a Relay scene", noteKo: "장면마다", noteEn: "per scene" },
+  { key: "relayVotes", xp: RELAY_XP.vote, ko: "🎬 갈림길 대사 녹음(투표)", en: "Vote by recording a branch line", noteKo: "하루 5번까지", noteEn: "up to 5 a day" },
+  { key: "relayOk", xp: RELAY_XP.ok, ko: "🎬 감독 OK 받기", en: "Get a director's OK", noteKo: "OK 마다", noteEn: "per OK" },
+  { key: "relayVoiced", xp: RELAY_XP.voiced, ko: "✍️ 내가 쓴 대사를 누가 연기", en: "Someone performs your line", noteKo: "하루 10명까지", noteEn: "up to 10 a day" },
+  { key: "relayWins", xp: RELAY_XP.win, ko: "✍️ 갈림길·반전 채택", en: "Your branch/twist wins", noteKo: "채택마다", noteEn: "per win" },
+  { key: "relayPremieres", xp: RELAY_XP.premiere, ko: "🎬 내가 연 장면 개봉", en: "Your scene premieres", noteKo: "배우 2명 이상", noteEn: "2+ actors" },
+  { key: "relayPrompts", xp: RELAY_XP.prompt, ko: "💡 상황 신청이 장면이 됨", en: "Your premise becomes a scene", noteKo: "채택마다", noteEn: "per pick" },
+  { key: "relayBest", xp: RELAY_XP.best, ko: "🏆 이주의 명작 참여", en: "Part of Scene of the Week", noteKo: "장면마다", noteEn: "per scene" },
 ] as const;
 
 export function xpOf(s: PassStats): number {
@@ -78,7 +107,15 @@ export function xpOf(s: PassStats): number {
     (s.takes ?? 0) * SOLO_XP.take +
     (s.dex ?? 0) * SOLO_XP.dex +
     (s.feedbackGiven ?? 0) * FEEDBACK_XP.give +
-    (s.feedbackHelpful ?? 0) * FEEDBACK_XP.helpful
+    (s.feedbackHelpful ?? 0) * FEEDBACK_XP.helpful +
+    (s.relayActs ?? 0) * RELAY_XP.act +
+    (s.relayVotes ?? 0) * RELAY_XP.vote +
+    (s.relayOk ?? 0) * RELAY_XP.ok +
+    (s.relayVoiced ?? 0) * RELAY_XP.voiced +
+    (s.relayWins ?? 0) * RELAY_XP.win +
+    (s.relayPremieres ?? 0) * RELAY_XP.premiere +
+    (s.relayPrompts ?? 0) * RELAY_XP.prompt +
+    (s.relayBest ?? 0) * RELAY_XP.best
   );
 }
 

@@ -9,6 +9,7 @@ import { StreakChip } from "@/components/home/streak-chip";
 import { MyVoiceCard } from "@/components/home/my-voice-card";
 import home from "@/components/home/home.module.css";
 import { HomeHero } from "@/components/weekly/home-hero";
+import { RelayHomeCard } from "@/components/relay/home-card";
 import { getMemes } from "@/lib/memes";
 import { findScript, SCRIPTS } from "@/lib/practice";
 import { galleryEntries, getBoard, liveWeek } from "@/lib/weekly-server";
@@ -82,6 +83,9 @@ export default async function Home() {
         faces={perPerson(gallery, 1).map((e) => e.avatar)}
       />
 
+      {/* 릴레이 더빙(11/8) — 여러 사람 목소리로 장면 하나. 연습실 바로 아래, 처음 온 사람도 버튼 하나로 출연. */}
+      <RelayHomeCard />
+
       {/* 운영자 픽 — 좋은 목소리는 첫 화면에서 바로 들린다. */}
       <HomePick pick={splitPicks(gallery).pick} />
 
@@ -123,6 +127,16 @@ export default async function Home() {
           <span className={home.tileText}>
             <b>{t("애니 명대사 기합 대결", "Anime lines hype battle")}</b>
             <small>{t("심장을 바쳐라! 오마에와 모 신데이루 · 친구랑 폰 하나로", "Shout iconic lines · battle friends on one phone")}</small>
+          </span>
+          <i className={home.tileNew}>NEW</i>
+        </Link>
+        <Link href="/relay" className={`${home.tile} ${home.tileLine}`} data-tour="home-relay-tile" style={{ gridColumn: "1 / -1", minHeight: 96 }}>
+          <span className={home.tileEmoji} aria-hidden="true">
+            🎞️
+          </span>
+          <span className={home.tileText}>
+            <b>{t("릴레이 더빙", "Relay Dubbing")}</b>
+            <small>{t("한 줄씩 이어 만드는 장면 · 모험·면접·뉴스", "One line each · adventure, interview, news")}</small>
           </span>
           <i className={home.tileNew}>NEW</i>
         </Link>

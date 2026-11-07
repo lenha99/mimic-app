@@ -22,6 +22,12 @@ const ICON: Record<string, string> = {
   note_reply: "↩️",
   note_helpful: "👍",
   note_feedback: "🎯",
+  relay_cast: "🎬",
+  relay_ng: "🎬",
+  relay_voiced: "✍️",
+  relay_premiere: "🍿",
+  relay_role: "🎙",
+  relay_unlock: "🎟",
 };
 
 /** VOICE PASS 알림은 이모지 대신 패스 칩으로 — 앱 안 다른 곳(배지·레벨 알약)과 같은 말투 */
@@ -50,7 +56,7 @@ export default async function NotificationsPage() {
   const service = createServiceClient();
   const { data } = await service
     .from("notifications")
-    .select("id, kind, actor, entry_id, thread_id, count, created_at, read_at")
+    .select("id, kind, actor, entry_id, thread_id, scene_id, count, created_at, read_at")
     .eq("user_id", me)
     .order("id", { ascending: false })
     .limit(50);
@@ -101,10 +107,13 @@ export default async function NotificationsPage() {
   );
 }
 
-type Row = { kind: string; entry_id: string | null; thread_id: string | null };
+type Row = { kind: string; entry_id: string | null; thread_id: string | null; scene_id?: string | null };
 
 function hrefOf(n: Row, actor?: string): string {
   if (n.thread_id) return `/messages/${n.thread_id}`;
+  if (n.kind === "relay_unlock") return "/relay/guide";
+  if (n.kind === "relay_premiere" && n.scene_id) return `/relay/s/${n.scene_id}/premiere`;
+  if (n.kind.startsWith("relay_")) return n.scene_id ? `/relay/s/${n.scene_id}` : "/relay";
   if (n.kind === "reward_follows" || n.kind === "reward_prophet") return "/pass";
   if (n.kind === "follow" && actor) return `/v/${encodeURIComponent(actor)}`;
   if (n.entry_id) return `/weekly/e/${n.entry_id}`;
@@ -143,6 +152,18 @@ function textOf(kind: string, actor: string, count: number | null, t: T): string
       return t("코코가 당신 목소리를 운영자 픽으로 골랐어요 — 홈 맨 위 · 스포트라이트 프레임 · PICK 배지", "Coco picked your voice — top of Home, Spotlight frame and PICK badge");
     case "reward_prophet":
       return t("당신이 먼저 ❤ 한 목소리가 운영자 픽이 됐어요 — ORACLE 배지 +50 XP", "A voice you ❤'d early got picked — ORACLE badge, +50 XP");
+    case "relay_cast":
+      return t("🎬 감독이 당신을 캐스팅했어요 — 눌러서 바로 녹음", "🎬 A director cast you — tap to record");
+    case "relay_ng":
+      return t("🎬 감독님이 NG 를 찍었어요 — 디렉션 보고 다시 한 번!", "🎬 The director called NG — check the note and try again");
+    case "relay_voiced":
+      return t(`✍️ 누군가 당신이 쓴 대사를 연기했어요${count && count > 1 ? ` (${count}명)` : ""}`, "✍️ Someone performed the line you wrote");
+    case "relay_premiere":
+      return t("🍿 출연작이 개봉했어요 — 크레딧에 이름이 올랐어요", "🍿 Your scene premiered — you're in the credits");
+    case "relay_role":
+      return t("🎙 맡은 배역에 남은 대사가 있어요 — 우선권이 곧 끝나요", "🎙 Your role still has lines — your priority ends soon");
+    case "relay_unlock":
+      return t("🎟 릴레이 더빙 새 권한이 열렸어요", "🎟 New Relay Dubbing power unlocked");
     default:
       return t("새 알림", "New notification");
   }
