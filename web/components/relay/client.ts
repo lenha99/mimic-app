@@ -113,20 +113,19 @@ export async function postJson<T = Record<string, unknown>>(url: string, body: R
 
 // ---- 재생 목록 ----
 
-function itemOfCut(l: CutLine, sfx: { afterN: number; sfx: string }[]): PlayItem {
+function itemOfCut(l: CutLine): PlayItem {
   return {
     key: l.lineId,
     url: l.takeId ? takeUrl(l.takeId) : ttsUrl({ lineId: l.lineId, tts: l.tts }),
     text: l.text,
     adlib: l.adlibId ? takeUrl(l.adlibId) : null,
-    sfx: sfx.find((x) => x.afterN === l.n)?.sfx ?? null,
   };
 }
 
 /** 개봉작(박제된 정식판) → 재생 목록. twist 를 주면 10번을 반전판으로 */
 export function itemsOfFinal(f: FinalCut, twist = false): { items: PlayItem[]; lines: CutLine[] } {
   const lines = f.lines.map((l) => (twist && l.n === 10 && f.twist ? f.twist : l));
-  return { items: lines.map((l) => itemOfCut(l, f.sfx)), lines };
+  return { items: lines.map((l) => itemOfCut(l)), lines };
 }
 
 /** 상영 중 장면 — 지금 상태의 정식판 미리 듣기 */
@@ -159,7 +158,7 @@ export function previewLines(s: SceneView): CutLine[] {
 }
 export function itemsOfPreview(s: SceneView): { items: PlayItem[]; lines: CutLine[] } {
   const lines = previewLines(s);
-  return { items: lines.map((l) => itemOfCut(l, s.sfx)), lines };
+  return { items: lines.map((l) => itemOfCut(l)), lines };
 }
 
 export function lineItem(l: LineView, takeId?: string | null): PlayItem {

@@ -6,9 +6,9 @@ import { useLang, useT } from "@/components/lang";
 import { Coco } from "@/components/brand/coco";
 import { TourHelp } from "@/components/onboarding/tour";
 import { ScreenTour } from "@/components/onboarding/tours";
-import { playSfx, usePlaylist } from "@/components/relay/audio";
+import { usePlaylist } from "@/components/relay/audio";
 import { fetchScene, itemsOfPreview, lineItem, postJson } from "@/components/relay/client";
-import { AvatarDot, useLevel } from "@/components/relay/parts";
+import { AvatarDot, Poster, RoleCards, useLevel } from "@/components/relay/parts";
 import {
   can,
   chosenLine,
@@ -20,9 +20,8 @@ import {
   isBranch,
   MAX_LINE_CHARS,
   premiereLabel,
-  SFX,
+  roleColor,
   timeLeft,
-  TYPE_LABEL,
   type LineView,
   type SceneView,
   type TakeView,
@@ -34,7 +33,7 @@ const votesOf = (lineId: string, takes: TakeView[]) => new Set(takes.filter((t) 
 
 /**
  * 장면 — 대본 10줄(지금 정식판으로 갈 줄이 굵게) · 갈림길 후보와 표 · 미리 듣기.
- * 작가(LV5)는 갈림길에 대사를 쓰고, 감독은 NG/OK · 효과음 · 캐스팅을 한다.
+ * 작가(LV5)는 갈림길에 대사를 쓰고, 감독은 NG/OK · 캐스팅을 한다.
  */
 export default function RelayScene({ id, initial }: { id: string; initial: SceneView | null }) {
   const t = useT();
@@ -101,12 +100,6 @@ export default function RelayScene({ id, initial }: { id: string; initial: Scene
     setNgFor(null);
     void reload();
   };
-  const setSfx = async (n: number, sfx: string | null) => {
-    if (sfx) void playSfx(sfx);
-    const r = await postJson("/api/relay/sfx", { sceneId: scene.id, afterN: n, sfx });
-    if (!r.ok) setMsg(r.data.error ?? t("넣지 못했어요", "Failed"));
-    void reload();
-  };
 
   const playAll = () => {
     if (!preview) return;
@@ -121,17 +114,29 @@ export default function RelayScene({ id, initial }: { id: string; initial: Scene
         <Link href="/relay" className={s.back} onClick={() => pl.stop()}>
           ‹ {t("상영관", "Halls")}
         </Link>
-        <TourHelp id="relay-scene" short />
+        <span className={s.row}>
+          <Link href="/relay/guide" className={s.guideBtn}>
+            📖 {t("가이드", "Guide")}
+          </Link>
+          <TourHelp id="relay-scene" short />
+        </span>
       </div>
 
-      <p className={s.kicker}>
-        {ko ? hall.ko : hall.en} · {genreLabel(scene.genre, ko)}
-        {scene.mode === "chaos" ? ` · ${t("🌀 막장 모드", "🌀 Chaos mode")}` : ""}
-      </p>
-      <h1 className={s.h1}>{scene.title}</h1>
-      <p className={s.sub}>{scene.logline}</p>
+      <h1 className={s.srOnly}>{scene.title}</h1>
+      <Poster
+        genre={scene.genre}
+        title={scene.title}
+        sub={scene.logline}
+        tag={
+          <span className={s.hallTag}>
+            {live && <i className={s.live} aria-hidden="true" />} {ko ? hall.ko : hall.en} · {genreLabel(scene.genre, ko)}
+            {scene.mode === "chaos" ? ` · ${t("🌀 막장", "🌀 Chaos")}` : ""}
+          </span>
+        }
+        right={<span className={s.posterWhen}>{live ? timeLeft(scene.premiereAt, ko) : scene.status === "premiered" ? t("개봉작", "Premiered") : ""}</span>}
+      />
       {(scene.directorName || scene.promptName) && (
-        <p className={s.tiny} style={{ marginTop: -6 }}>
+        <p className={s.tiny} style={{ margin: "8px 0 0" }}>
           {scene.directorName ? `🎬 ${t("감독", "Director")} ${scene.directorName}` : ""}
           {scene.promptName ? ` · 💡 ${t("원안", "Idea")} ${scene.promptName}` : ""}
         </p>
@@ -140,47 +145,17 @@ export default function RelayScene({ id, initial }: { id: string; initial: Scene
       {scene.status === "pending" && <div className={s.lock}>⏳ {t("운영자 확인을 기다리는 장면이에요. 승인되면 차례대로 열려요.", "Waiting for review.")}</div>}
       {scene.status === "queued" && <div className={s.lock}>🎟 {t("다음 상영을 기다리는 중이에요. 상영관이 비면 바로 열려요.", "Queued for the next opening.")}</div>}
 
-      <div className={s.card} data-tour="relay-scene-cast">
+      <div className={s.card} data-tour="relay-scene-cast" style={{ marginTop: 14 }}>
         <span className={s.spread}>
-          <b>{t("배역", "Cast")}</b>
-          <span className={s.tiny}>{live ? `${premiereLabel(scene.premiereAt, ko)} · ${timeLeft(scene.premiereAt, ko)}` : scene.status === "premiered" ? t("개봉작", "Premiered") : ""}</span>
+          <b>🎭 {live ? t("배역 고르기", "Pick a role") : t("출연진", "Cast")}</b>
+          <span className={s.tiny}>{live ? premiereLabel(scene.premiereAt, ko) : ""}</span>
         </span>
-        <span className={s.castRow}>
-          {scene.roles.map((r) => {
-            const o = scene.owners.find((x) => x.role === r.id);
-            const take = o ? scene.takes.find((x) => x.owner === o.owner && x.kind === "line") : undefined;
-            const cast = scene.casts.find((c) => c.role === r.id);
-            return (
-              <span key={r.id} className={`${s.castChip} ${o?.mine ? s.castMine : o ? "" : s.castOpen}`} title={r.desc}>
-                {o && <AvatarDot avatar={take?.avatar} seed={o.owner} />}
-                {r.name}{" "}
-                <em>
-                  {o
-                    ? o.mine
-                      ? t("나", "me")
-                      : o.name
-                    : cast
-                      ? cast.mine
-                        ? t("· 나를 지명!", "· cast: me!")
-                        : t("· 지명됨", "· cast")
-                      : `· ${ko ? TYPE_LABEL[r.type].ko : TYPE_LABEL[r.type].en}`}
-                </em>
-                {dir && !o && (
-                  <button type="button" className={s.chip} style={{ marginLeft: 4, padding: "0 6px" }} onClick={() => setCastOpen(r.id)}>
-                    {cast ? t("변경", "edit") : t("지명", "cast")}
-                  </button>
-                )}
-              </span>
-            );
-          })}
-        </span>
+        {live && !mineRole && <span className={s.muted}>{t("하고 싶은 역의 「이 배역 하기」를 누르면 그 배역 첫 대사부터 녹음해요.", "Tap “Play this” to record that role's first line.")}</span>}
+        <RoleCards scene={scene} onCast={dir ? (r) => setCastOpen(r.id) : undefined} />
         <span className={s.meter}>
           <i style={{ width: `${(voiced / 10) * 100}%` }} />
         </span>
-        <span className={s.tiny}>
-          {t(`사람 목소리 ${voiced}/10줄 · 빈 줄은 TTS가 읽어요`, `${voiced}/10 human lines · TTS reads the rest`)}
-          {mineRole ? ` · ${t("내 배역", "my role")}: ${scene.roles.find((r) => r.id === mineRole.role)?.name}` : ""}
-        </span>
+        <span className={s.tiny}>{t(`사람 목소리 ${voiced}/10줄 · 빈 줄은 AI 대역이 읽어요`, `${voiced}/10 human lines · an AI stand-in reads the rest`)}</span>
       </div>
 
       <div className={s.row} style={{ gap: 8, marginTop: 10 }}>
@@ -212,7 +187,6 @@ export default function RelayScene({ id, initial }: { id: string; initial: Scene
           if (!b) return null;
           const cands = scene.lines.filter((l) => l.n === n && l.candidate).sort((x, y) => votesOf(y.id, scene.takes) - votesOf(x.id, scene.takes) || x.at.localeCompare(y.at));
           const chosen = chosenLine(n, scene.lines, scene.takes).line;
-          const sfx = scene.sfx.find((x) => x.afterN === n)?.sfx ?? null;
           return (
             <li key={n}>
               <LineRow
@@ -275,21 +249,6 @@ export default function RelayScene({ id, initial }: { id: string; initial: Scene
                     ))}
                 </div>
               )}
-              {dir ? (
-                <div className={s.chips} style={{ margin: "4px 0 8px 28px" }} aria-label={t("효과음", "Sound effect")}>
-                  {SFX.map((x) => (
-                    <button key={x.id} type="button" className={`${s.chip} ${sfx === x.id ? s.chipOn : ""}`} onClick={() => setSfx(n, sfx === x.id ? null : x.id)} title={ko ? x.ko : x.en}>
-                      {x.icon}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                sfx && (
-                  <span className={s.tiny} style={{ marginLeft: 28 }}>
-                    {SFX.find((x) => x.id === sfx)?.icon} {t("효과음", "SFX")}
-                  </span>
-                )
-              )}
             </li>
           );
         })}
@@ -304,7 +263,7 @@ export default function RelayScene({ id, initial }: { id: string; initial: Scene
       ) : live ? (
         <div className={s.bottomBarNav}>
           <Link href={`/relay/rec?scene=${scene.id}`} className={s.cta} data-tour="relay-scene-cta" onClick={() => pl.stop()}>
-            🎙 {mineRole ? t("내 배역 이어서 녹음", "Continue my role") : t("이 장면에서 한 줄 녹음", "Record a line here")}
+            🎙 {mineRole ? t("내 배역 이어서 녹음", "Continue my role") : t("아무 배역이나 바로 녹음", "Any open role, now")}
           </Link>
         </div>
       ) : null}
@@ -363,7 +322,9 @@ function LineRow({
     <div className={`${s.line} ${now ? s.lineNow : ""} ${mine ? s.lineMine : ""}`} style={compact ? { border: 0, padding: 0, background: "transparent" } : chosen ? undefined : { opacity: 0.72 }}>
       {!compact && <span className={s.lineN}>{line.n}</span>}
       <span className={s.lineBody}>
-        <span className={s.roleName}>{role?.name ?? line.role}</span>
+        <span className={s.roleName} style={{ color: roleColor(scene.roles, line.role) }}>
+          {role?.name ?? line.role}
+        </span>
         <span className={s.lineText}>{line.text}</span>
         {line.dir && !compact && <span className={s.lineDir}>({line.dir})</span>}
         {myNg && (
@@ -374,7 +335,7 @@ function LineRow({
         )}
         {list.length === 0 ? (
           <span className={s.voice}>
-            <span className={s.tts}>TTS</span>
+            <span className={s.tts}>{t("AI 대역 · 아직 비어 있어요", "AI stand-in · still open")}</span>
             <button type="button" className={s.playBtn} onClick={() => onPlay(null)} aria-label={t("듣기", "Play")}>
               ▶
             </button>

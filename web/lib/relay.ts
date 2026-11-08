@@ -119,18 +119,6 @@ export const directionLabel = (id: string | null | undefined, ko = true) => {
   return d ? (ko ? d.ko : d.en) : "";
 };
 
-/** 효과음 — 파일 없이 브라우저가 합성한다(components/relay/sfx.ts). 저작권·용량 걱정 없음 */
-export const SFX: { id: string; icon: string; ko: string; en: string }[] = [
-  { id: "boom", icon: "💥", ko: "폭발", en: "Boom" },
-  { id: "heart", icon: "💓", ko: "심장박동", en: "Heartbeat" },
-  { id: "whoosh", icon: "💨", ko: "휙", en: "Whoosh" },
-  { id: "ding", icon: "🔔", ko: "띵", en: "Ding" },
-  { id: "thunder", icon: "⚡", ko: "천둥", en: "Thunder" },
-  { id: "drum", icon: "🥁", ko: "두구두구", en: "Drumroll" },
-  { id: "door", icon: "🚪", ko: "문 쾅", en: "Door slam" },
-  { id: "sparkle", icon: "✨", ko: "반짝", en: "Sparkle" },
-];
-
 export const GENRES: { id: string; ko: string; en: string; hall: Hall }[] = [
   { id: "fantasy", ko: "판타지·모험", en: "Fantasy", hall: "act" },
   { id: "battle", ko: "배틀·열혈", en: "Battle", hall: "act" },
@@ -232,7 +220,6 @@ export type SceneView = {
   takes: TakeView[];
   owners: RoleOwner[];
   casts: { role: string; owner: string; mine?: boolean }[];
-  sfx: { afterN: number; sfx: string }[];
   final: FinalCut | null;
   /** 보는 사람이 이 장면의 감독인가 */
   amDirector?: boolean;
@@ -271,10 +258,9 @@ export type FinalCut = {
     tts: number;
   };
   realActors: number;
-  sfx: { afterN: number; sfx: string }[];
 };
 
-type CutInput = Pick<SceneView, "roles" | "lines" | "takes" | "owners" | "sfx" | "directorName" | "promptName">;
+type CutInput = Pick<SceneView, "roles" | "lines" | "takes" | "owners" | "directorName" | "promptName">;
 
 function votes(lineId: string, takes: TakeView[]): number {
   return new Set(takes.filter((t) => t.lineId === lineId && t.kind === "line").map((t) => t.owner)).size;
@@ -357,7 +343,6 @@ export function computeFinal(s: CutInput): FinalCut {
       tts: lines.filter((l) => !l.takeId).length,
     },
     realActors: new Set(lines.filter((l) => l.owner).map((l) => l.owner)).size,
-    sfx: s.sfx,
   };
 }
 
@@ -389,3 +374,41 @@ export function premiereLabel(iso: string | null, ko: boolean): string {
   const wk = (ko ? ["일", "월", "화", "수", "목", "금", "토"] : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"])[d.getUTCDay()];
   return ko ? `${wk} ${d.getUTCHours()}시 개봉` : `${wk} ${d.getUTCHours()}:00`;
 }
+
+
+// ---- 배역 고르기 ----
+
+export type RolePick =
+  | { state: "mine"; lineId: string | null; left: number }
+  | { state: "open"; lineId: string }
+  | { state: "taken"; name: string }
+  | { state: "blocked" };
+
+/**
+ * 장면 화면·허브에서 "이 배역 하기" 버튼이 어디로 갈지 — 서버 checkRole 과 같은 규칙.
+ * 열린 배역이면 그 배역의 첫 빈 줄로 바로 녹음하러 간다(/relay/rec?scene=&line=).
+ */
+export function rolePick(s: Pick<SceneView, "lines" | "takes" | "owners" | "premiereAt" | "status">, roleId: string, now = Date.now()): RolePick {
+  const base = s.lines.filter((l) => !l.candidate && l.role === roleId).sort((a, b) => a.n - b.n);
+  const owner = s.owners.find((o) => o.role === roleId);
+  const mineCount = s.owners.filter((o) => o.mine).length;
+  const late = !!s.premiereAt && new Date(s.premiereAt).getTime() - now <= LATE_MS;
+  if (owner?.mine) {
+    const todo = base.filter((l) => !s.takes.some((t) => t.lineId === l.id && t.kind === "line" && t.mine));
+    return { state: "mine", lineId: todo[0]?.id ?? null, left: todo.length };
+  }
+  if (s.status !== "live") return owner ? { state: "taken", name: owner.name } : { state: "blocked" };
+  if (owner) {
+    if (new Date(owner.priorityUntil).getTime() > now) return { state: "taken", name: owner.name };
+    const empty = base.find((l) => !s.takes.some((t) => t.lineId === l.id && t.kind === "line"));
+    if (!empty || (mineCount >= 1 && !late)) return { state: "taken", name: owner.name };
+    return { state: "open", lineId: empty.id };
+  }
+  if (!base.length) return { state: "blocked" };
+  if (mineCount === 0 || (late && mineCount < MAX_LATE_ROLES)) return { state: "open", lineId: base[0].id };
+  return { state: "blocked" };
+}
+
+/** 배역별 색 — 대본에서 누가 말하는지 색으로 구분 */
+export const ROLE_COLORS = ["#ffc93c", "#7cc8f2", "#ff7a45", "#8fd96b", "#b79cff", "#ff5d8f"];
+export const roleColor = (roles: { id: string }[], id: string) => ROLE_COLORS[Math.max(0, roles.findIndex((r) => r.id === id)) % ROLE_COLORS.length];
