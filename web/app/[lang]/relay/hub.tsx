@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useLang, useT } from "@/components/lang";
 import { TourHelp } from "@/components/onboarding/tour";
 import { ScreenTour } from "@/components/onboarding/tours";
-import { HallCard, HowItWorks, Ladder, PromptCard, RankBar, RelayIntro, useLevel } from "@/components/relay/parts";
+import { HallCard, HowItWorks, Ladder, MyDesk, PromptCard, RankBar, RelayIntro, useLevel } from "@/components/relay/parts";
 import { fetchScene } from "@/components/relay/client";
 import { can, genreLabel, HALL_LABEL, type Hall, type SceneView } from "@/lib/relay";
 import { track } from "@/lib/track";
@@ -68,6 +68,8 @@ export default function RelayHub({ live: initial, premiered, best }: { live: Sce
         ))}
       </section>
 
+      <MyDesk live={live} />
+
       <div className={s.bottomBarNav}>
         <Link href="/relay/rec" className={s.cta} data-tour="relay-cta" onClick={() => track("relay_cta")}>
           🎲 {t("고르기 귀찮다면 — 아무 배역이나 바로", "Feeling lucky — any role, now")}
@@ -119,14 +121,10 @@ export default function RelayHub({ live: initial, premiered, best }: { live: Sce
         <Link href="/relay/guide#ranks">{t("자세히 ›", "Details ›")}</Link>
       </div>
       <RankBar />
-      <Ladder />
-      {can.direct(level) ? (
-        <Link href="/relay/studio" className={s.ctaGhost} style={{ marginTop: 10 }}>
-          🎬 {t("감독 스튜디오 — 새 장면 열기", "Director studio — open a scene")}
-        </Link>
-      ) : (
+      <Ladder writeHref={live[0] ? `/relay/s/${live[0].id}?write=6` : null} />
+      {!can.direct(level) && (
         <Link href="/relay/studio" className={s.lock} style={{ marginTop: 10 }}>
-          🔒 {t("감독 스튜디오는 LV7부터 — 미리 구경하기", "Director studio unlocks at LV7 — take a peek")}
+          👀 {t("감독 스튜디오는 LV7부터 — 어떻게 생겼는지 미리 보기", "Director studio unlocks at LV7 — take a peek")}
         </Link>
       )}
 

@@ -1519,3 +1519,497 @@
   background: var(--panel-hi);
   color: var(--white);
 }
+
+/* ==== 계급 · 작업실 · 작가 · 스튜디오 (11/9) ==== */
+
+/* 계급 사다리 — 누적 */
+.ladderBox {
+  display: grid;
+  gap: 10px;
+}
+
+.ladderNote {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--ash);
+  font-size: 12.5px;
+  line-height: 1.5;
+  word-break: keep-all;
+}
+
+.ladder {
+  position: relative;
+  gap: 8px;
+}
+
+.rung {
+  position: relative;
+  grid-template-columns: 40px 1fr;
+  align-items: start;
+  padding: 12px 14px 12px 12px;
+}
+
+.rung + .rung::before {
+  /* 아래 칸과 이어지는 선 — 쌓인다는 느낌 */
+  content: "";
+  position: absolute;
+  left: 31px;
+  top: -9px;
+  width: 2px;
+  height: 10px;
+  background: var(--rule);
+}
+
+.rungIcon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--panel-hi);
+}
+
+.rungBody {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.rungHead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rungHead b {
+  font-size: 15px;
+}
+
+.rungLv {
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--rule);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ash);
+}
+
+.rungNow {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--volt);
+  color: var(--on-accent);
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
+.rungPerk {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--white);
+  word-break: keep-all;
+}
+
+.rungWhere {
+  font-size: 12px;
+  color: var(--ash);
+  word-break: keep-all;
+}
+
+.rungLock {
+  font-size: 12px;
+  color: var(--ash-dim);
+}
+
+.rungGo {
+  justify-self: start;
+  margin-top: 4px;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: var(--volt);
+  color: var(--on-accent);
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.rungLocked {
+  opacity: 0.6;
+}
+
+/* 내 작업실 */
+.desk {
+  display: grid;
+  gap: 10px;
+  margin: 4px 0 18px;
+  padding: 14px;
+  border-radius: 20px;
+  background: linear-gradient(160deg, rgba(255, 201, 60, 0.1), transparent 60%), var(--panel);
+  border: 1px solid rgba(255, 201, 60, 0.35);
+}
+
+.deskHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.deskHead b {
+  font-size: 16px;
+}
+
+.deskBlock {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--stage);
+}
+
+.deskBlock > b {
+  font-size: 14px;
+}
+
+.deskRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--rule);
+}
+
+.deskTitle {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 장면 화면 — 갈림길 칸 */
+.branch {
+  display: grid;
+  gap: 8px;
+  margin: 6px 0 10px 40px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px dashed rgba(255, 122, 69, 0.55);
+  background: rgba(255, 122, 69, 0.06);
+  scroll-margin: 120px;
+}
+
+.branchHead b {
+  font-size: 14px;
+  color: var(--pink);
+}
+
+.branchHow {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ash);
+  word-break: keep-all;
+}
+
+.writeBtn {
+  min-height: 46px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--pink);
+  color: var(--on-accent);
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* 작가 쓰기 창 */
+.sheetTitle {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.sheetX {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: 50%;
+  border: 0;
+  background: var(--panel-hi);
+  color: var(--ash);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.wStep {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.wStep b {
+  font-size: 14px;
+}
+
+.wNum {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--volt);
+  color: var(--on-accent);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ctx {
+  list-style: none;
+  margin: 0;
+  padding: 10px 12px;
+  display: grid;
+  gap: 8px;
+  border-radius: 14px;
+  background: var(--stage);
+}
+
+.ctx li {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 8px;
+  align-items: start;
+}
+
+.ctxN {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ash-dim);
+  padding-top: 2px;
+}
+
+.ctxBody {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  word-break: keep-all;
+}
+
+.ctxBody b {
+  font-size: 11.5px;
+}
+
+.ctxOld {
+  padding-top: 8px;
+  border-top: 1px dashed var(--rule);
+}
+
+.ctxOld .ctxBody > span {
+  color: var(--ash);
+  text-decoration: line-through;
+  text-decoration-color: rgba(255, 122, 69, 0.7);
+}
+
+.twistBox {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--rule);
+}
+
+.twistBox span {
+  display: grid;
+  gap: 2px;
+}
+
+.twistBox small {
+  color: var(--ash);
+  font-size: 12px;
+}
+
+.wAfter {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(143, 217, 107, 0.08);
+  color: var(--lime);
+  font-size: 12.5px;
+  line-height: 1.5;
+  word-break: keep-all;
+}
+
+/* 스튜디오 */
+.stepHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 26px 0 10px;
+}
+
+.stepHead h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.modeRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.modeCard {
+  display: grid;
+  gap: 3px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid var(--rule);
+  background: var(--stage);
+  color: var(--white);
+  text-align: left;
+  cursor: pointer;
+}
+
+.modeCard b {
+  font-size: 14px;
+}
+
+.modeCard small {
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--ash);
+  word-break: keep-all;
+}
+
+.modeOn {
+  border-color: var(--volt);
+  background: rgba(255, 201, 60, 0.08);
+}
+
+.roleDrafts {
+  display: grid;
+  gap: 8px;
+}
+
+.roleDraft {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--role);
+}
+
+.roleDraftHead {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.miniLabel {
+  font-size: 12px;
+  color: var(--ash);
+}
+
+.drafts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.draft {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px 12px;
+  border-radius: 16px;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--role);
+}
+
+.draftBranch {
+  border-style: dashed;
+  border-left-style: solid;
+  border-color: rgba(255, 122, 69, 0.55);
+  border-left-color: var(--role);
+}
+
+.draftTop {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.draftN {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--panel-hi);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.roleChip {
+  min-height: 32px;
+  padding: 0 11px;
+  border-radius: 999px;
+  border: 1px solid var(--rule);
+  background: var(--stage);
+  color: var(--ash);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.roleChipOn {
+  border-color: var(--role);
+  background: color-mix(in srgb, var(--role) 20%, var(--stage));
+  color: var(--white);
+}
+
+.inputSoft {
+  min-height: 38px;
+  font-size: 14px;
+  background: transparent;
+  border-style: dashed;
+}
+
+.checks {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.checks li {
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--rule);
+  font-size: 12px;
+  color: var(--ash);
+}
+
+.checks li[data-ok="1"] {
+  border-color: rgba(143, 217, 107, 0.5);
+  color: var(--lime);
+}
