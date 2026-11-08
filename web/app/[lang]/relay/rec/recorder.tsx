@@ -7,7 +7,7 @@ import { Coco } from "@/components/brand/coco";
 import { useRecorder, usePlaylist, type PlayItem } from "@/components/relay/audio";
 import { addSkip, assignNext, fetchScene, postTake, previewLines, undoTake } from "@/components/relay/client";
 import { AvatarDot, useLevel } from "@/components/relay/parts";
-import { ADLIB_MS, can, HALL_LABEL, isBranch, maxTakeMs, premiereLabel, takeUrl, timeLeft, ttsUrl, type Assignment, type CutLine, type LineView, type SceneView } from "@/lib/relay";
+import { ADLIB_MS, can, HALL_LABEL, isBranch, maxTakeMs, sceneLength, premiereLabel, takeUrl, timeLeft, ttsUrl, type Assignment, type CutLine, type LineView, type SceneView } from "@/lib/relay";
 import { track } from "@/lib/track";
 import s from "@/components/relay/relay.module.css";
 
@@ -246,7 +246,7 @@ export default function RelayRecorder({ sceneId, lineId }: { sceneId: string | n
               <span className={s.roleName}>
                 {line.n}. {role.name} — {t("당신 차례", "your turn")}
               </span>
-              {isBranch(line.n) && <span className={s.branchTag}>{line.candidate ? t("작가 대사 · 투표", "writer line · vote") : t("갈림길", "branch")}</span>}
+              {isBranch(line.n, sceneLength(scene.lines)) && <span className={s.branchTag}>{line.candidate ? t("작가 대사 · 투표", "writer line · vote") : t("갈림길", "branch")}</span>}
             </span>
             <p className={s.lineText}>{line.text}</p>
             <span className={s.lineMeta}>

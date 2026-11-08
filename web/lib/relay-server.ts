@@ -10,6 +10,7 @@ import {
   LATE_MS,
   MAX_LATE_ROLES,
   premiereAt,
+  sceneLength,
   type Assignment,
   type FinalCut,
   type Hall,
@@ -25,7 +26,7 @@ import type { Json } from "@/types/database";
 /**
  * 릴레이 더빙 — 서버 전용. 상영 일정 · 장면 조회 · 개봉 · 배역 배정 · 계급 판정.
  *
- * 일정은 크론(/api/cron/relay, 매일 21시 KST)과 화면 조회(ensureSchedule) 둘 다에서 돈다.
+ * 일정은 크론(/api/cron/relay, 매일 21시 KST — 개봉 시각)과 화면 조회(ensureSchedule) 둘 다에서 돈다.
  * 크론이 한 번 빠져도 누가 허브를 열면 개봉·다음 장면 열기가 일어난다. 둘이 겹쳐도
  * 상태 전환은 "where status = …" 조건부 갱신이고 상영관당 상영 중은 유일 인덱스로 하나라 안전하다.
  */
@@ -240,9 +241,21 @@ async function openNext(hall: Hall, service: Service): Promise<void> {
     .select("id")
     .single();
   if (error || !scene) return; // 동시에 다른 요청이 먼저 열었다(유일 인덱스)
-  await service.from("relay_lines").insert(
-    pick.lines.map((l) => ({ scene_id: scene.id, n: l.n, role: l.role, text: l.text, dir: l.dir, tip: l.tip, tts: l.tts, sec: l.sec })),
-  );
+  const row = (l: (typeof pick.lines)[number], n = l.n) => ({ scene_id: scene.id, n, role: l.role, text: l.text, dir: l.dir, tip: l.tip, tts: l.tts, sec: l.sec });
+  const { error: lineErr } = await service.from("relay_lines").insert(pick.lines.map((l) => row(l)));
+  if (!lineErr) return;
+  console.error("relay openNext lines", lineErr.message);
+  // 13줄을 못 넣으면(줄 수 제약 마이그레이션 37 전) 원래 10줄판으로 연다 — 옛 줄은 옛 TTS 파일(<n>.mp3)을 그대로 쓰고 있어 번호까지 안다.
+  const legacy = pick.lines
+    .map((l) => ({ l, n: Number(/\/(\d+)\.mp3/.exec(l.tts)?.[1] ?? 0) }))
+    .filter((x) => x.n > 0)
+    .map((x) => row(x.l, x.n));
+  if (legacy.length === 10) {
+    const { error: e2 } = await service.from("relay_lines").insert(legacy);
+    if (!e2) return;
+  }
+  // 대사 없는 장면이 상영관을 3일 동안 막지 않게 — 지우고 다음 조회 때 다시 연다
+  await service.from("relay_scenes").delete().eq("id", scene.id);
 }
 
 /** 개봉 — 정식판 박제 · 갈림길 채택 표시 · 출연자 알림. 진짜 배우가 0명이면 무효로 돌려 비축에 남긴다. */
@@ -335,18 +348,25 @@ export async function bestOfWeek(service: Service = createServiceClient()): Prom
 
 /** 홈 카드용 가벼운 요약 — 상영 중 장면, 사람 목소리가 들어간 줄 수 */
 /** 홈 카드용 — 읽기만 한다(정적 페이지를 그리는 중에 개봉·열기 같은 쓰기를 하지 않는다). */
-export async function liveSummary(service: Service = createServiceClient()): Promise<{ id: string; hall: Hall; title: string; premiereAt: string | null; voiced: number; actors: number; roles: number }[]> {
+export async function liveSummary(service: Service = createServiceClient()): Promise<{ id: string; hall: Hall; title: string; premiereAt: string | null; voiced: number; total: number; actors: number; roles: number }[]> {
   const { data: scenes } = await service.from("relay_scenes").select("id, hall, title, premiere_at, roles").eq("status", "live").order("hall");
   if (!scenes?.length) return [];
-  const { data: takes } = await service.from("relay_takes").select("scene_id, line_id, owner").in("scene_id", scenes.map((s) => s.id)).eq("kind", "line").eq("hidden", false);
+  const ids = scenes.map((s) => s.id);
+  const [{ data: takes }, { data: base }] = await Promise.all([
+    service.from("relay_takes").select("scene_id, line_id, owner").in("scene_id", ids).eq("kind", "line").eq("hidden", false),
+    service.from("relay_lines").select("scene_id, id, n").in("scene_id", ids).eq("candidate", false),
+  ]);
   return scenes.map((s) => {
+    const mine = (base ?? []).filter((l) => l.scene_id === s.id);
+    const baseIds = new Set(mine.map((l) => l.id));
     const ts = (takes ?? []).filter((t) => t.scene_id === s.id);
     return {
       id: s.id,
       hall: s.hall,
       title: s.title,
       premiereAt: s.premiere_at,
-      voiced: new Set(ts.map((t) => t.line_id)).size,
+      voiced: new Set(ts.filter((t) => baseIds.has(t.line_id)).map((t) => t.line_id)).size,
+      total: mine.reduce((m, l) => Math.max(m, l.n), 0) || 10,
       actors: new Set(ts.map((t) => t.owner)).size,
       roles: Array.isArray(s.roles) ? s.roles.length : 0,
     };
@@ -364,11 +384,12 @@ export function assign(scenes: SceneView[], v: Viewer, pref: RoleType | null, sk
   const keys = new Set(v.keys);
   const done = (s: SceneView, lineId: string) => s.takes.some((t) => t.lineId === lineId && t.kind === "line" && keys.has(t.owner));
   const lineFor = (s: SceneView, role: string, onlyEmpty = false) => {
-    for (let n = 1; n <= 10; n++) {
+    const total = sceneLength(s.lines);
+    for (let n = 1; n <= total; n++) {
       const base = s.lines.find((l) => l.n === n && !l.candidate && l.role === role);
       if (!base) continue;
       // 갈림길 자리는 지금 1위 후보(없으면 기본)
-      const cands = isBranch(n) ? s.lines.filter((l) => l.n === n && l.candidate && !l.twist && l.role === role) : [];
+      const cands = isBranch(n, total) ? s.lines.filter((l) => l.n === n && l.candidate && !l.twist && l.role === role) : [];
       const target = cands.length ? [...cands].sort((a, b) => votesOf(s, b.id) - votesOf(s, a.id) || a.at.localeCompare(b.at))[0] : base;
       if (done(s, target.id)) continue;
       if (onlyEmpty && s.takes.some((t) => t.lineId === target.id && t.kind === "line")) continue;

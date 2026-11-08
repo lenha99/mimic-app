@@ -24,6 +24,7 @@ import { getLang } from "@/lib/i18n-server";
 import { tr } from "@/lib/i18n";
 import { memeText } from "@/lib/meme-i18n";
 import { LangSwitch } from "@/components/lang";
+import { SupportCard } from "@/components/support-card";
 import styles from "./profile.module.css";
 
 /**
@@ -148,6 +149,7 @@ export default async function ProfilePage() {
           )}
         </p>
       )}
+      <SupportCard />
       <ScreenTour id="profile" />
     </main>
   );

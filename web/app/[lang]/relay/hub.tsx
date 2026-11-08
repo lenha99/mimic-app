@@ -11,7 +11,7 @@ import { can, genreLabel, HALL_LABEL, type Hall, type SceneView } from "@/lib/re
 import { track } from "@/lib/track";
 import s from "@/components/relay/relay.module.css";
 
-type Done = { id: string; title: string; hall: Hall; genre: string; premiereAt: string | null; listens: number; director: string | null };
+type Done = { id: string; title: string; hall: Hall; genre: string; premiereAt: string | null; listens: number; director: string | null; actors: number };
 
 /**
  * 릴레이 더빙 허브 — 큰 버튼 하나("한 줄 녹음하기")가 주인공. 상영관 둘, 개봉작, 내 직함과 다음 권한.
@@ -105,7 +105,7 @@ export default function RelayHub({ live: initial, premiered, best }: { live: Sce
                 <span className={s.itemText}>
                   <b>{p.title}</b>
                   <small>
-                    {(ko ? HALL_LABEL[p.hall].ko : HALL_LABEL[p.hall].en)} · {genreLabel(p.genre, ko)} · {t(`시청 ${p.listens}`, `${p.listens} listens`)}
+                    {(ko ? HALL_LABEL[p.hall].ko : HALL_LABEL[p.hall].en)} · {genreLabel(p.genre, ko)} · {t(`배우 ${p.actors}명 · 끝까지 ${p.listens}명`, `${p.actors} actors · ${p.listens} full listens`)}
                     {p.director ? ` · ${t("감독", "dir.")} ${p.director}` : ""}
                   </small>
                 </span>
@@ -121,7 +121,7 @@ export default function RelayHub({ live: initial, premiered, best }: { live: Sce
         <Link href="/relay/guide#ranks">{t("자세히 ›", "Details ›")}</Link>
       </div>
       <RankBar />
-      <Ladder writeHref={live[0] ? `/relay/s/${live[0].id}?write=6` : null} />
+      <Ladder writeHref={live[0] ? `/relay/s/${live[0].id}?write=twist` : null} />
       {!can.direct(level) && (
         <Link href="/relay/studio" className={s.lock} style={{ marginTop: 10 }}>
           👀 {t("감독 스튜디오는 LV7부터 — 어떻게 생겼는지 미리 보기", "Director studio unlocks at LV7 — take a peek")}

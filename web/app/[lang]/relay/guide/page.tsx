@@ -27,8 +27,8 @@ export default async function RelayGuidePage() {
         <h2>{t("① 뭐 하는 거예요?", "① What is it?")}</h2>
         <p>
           {t(
-            "장면 하나는 대사 10줄이에요. 여러 사람이 한 줄씩 녹음해서 이어 붙이면 장면이 완성돼요. 아무도 안 한 줄은 AI 대역(TTS)이 읽어 주니까, 혼자 한 줄만 해도 장면은 굴러가요.",
-            "A scene is 10 lines. People record one line each and the takes join into a full scene. TTS reads any empty line, so even one voice keeps it going.",
+            "장면 하나는 대사 열 몇 줄(보통 13줄)이에요. 여러 사람이 한 줄씩 녹음해서 이어 붙이면 장면이 완성돼요. 아무도 안 한 줄은 AI 대역(TTS)이 읽어 주니까, 혼자 한 줄만 해도 장면은 굴러가요.",
+            "A scene is about 13 lines. People record one line each and the takes join into a full scene. TTS reads any empty line, so even one voice keeps it going.",
           )}
         </p>
         <p>
@@ -69,7 +69,7 @@ export default async function RelayGuidePage() {
         <h2>{t("④ 갈림길과 개봉", "④ Branches & premiere")}</h2>
         <ul>
           <li>
-            <b>{t("6번·10번은 갈림길", "Lines 6 and 10 are branches")}</b>
+            <b>{t("🔀 전개 줄·결말 줄은 갈림길", "🔀 The twist and ending lines are branches")}</b>
             {t(" — 작가들이 다른 대사를 쓸 수 있어요. 배우가 녹음하는 게 곧 투표, 가장 많은 사람이 녹음한 대사가 정식판에 들어가요(같으면 먼저 쓴 대사). 2위는 「B 루트」로 따로 들을 수 있어요.", " — writers add alternatives; recording one is a vote. The most-recorded makes the cut; runner-up becomes Route B.")}
           </li>
           <li>
@@ -77,7 +77,7 @@ export default async function RelayGuidePage() {
             {t(" — LV6 작가가 쓰는 대체 결말. 투표 없이 「반전판」으로 상영돼요.", " — an alternate ending by LV6 writers, shown as the Twist cut.")}
           </li>
           <li>
-            <b>{t("사흘째 밤 9시 무조건 개봉", "Premieres on night 3 at 9 pm, always")}</b>
+            <b>{t("3일 뒤 무조건 개봉", "Premieres in 3 days, always")}</b>
             {t(" — 개봉하면 엔딩 크레딧에 이름이 올라가고, 그 상영관에 바로 다음 장면이 열려요. 일주일 동안 가장 많이 끝까지 들은 개봉작은 「이주의 명작」.", " — credits roll and the next scene opens. Most-listened premiere of the week becomes Scene of the Week.")}
           </li>
         </ul>

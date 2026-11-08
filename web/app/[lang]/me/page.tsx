@@ -9,6 +9,7 @@ import { TourHelp } from "@/components/onboarding/tour";
 import { GuestNickname } from "./guest-nickname";
 import { getT } from "@/lib/i18n-server";
 import { LangSwitch } from "@/components/lang";
+import { SupportCard } from "@/components/support-card";
 import styles from "./me.module.css";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -83,6 +84,7 @@ export default async function MePage() {
       <p className={styles.lang}>
         <LangSwitch />
       </p>
+      <SupportCard />
       <ScreenTour id="me" />
     </main>
   );

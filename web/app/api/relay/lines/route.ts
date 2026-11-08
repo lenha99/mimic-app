@@ -1,7 +1,7 @@
 import { allow, clientIp, tooMany } from "@/lib/rate-limit";
 import { createServiceClient } from "@/lib/supabase/service";
 import { requestT } from "@/lib/i18n";
-import { can, isBranch, MAX_LINE_CHARS, writesPerDay } from "@/lib/relay";
+import { can, isBranch, MAX_LINE_CHARS, sceneLength, twistN, writesPerDay } from "@/lib/relay";
 import { badText, cleanLine, displayName, levelFor, loadScene } from "@/lib/relay-server";
 import { ttsForLine } from "@/lib/relay-tts";
 import { json, requestViewer } from "@/lib/relay-req";
@@ -9,7 +9,7 @@ import { json, requestViewer } from "@/lib/relay-req";
 export const maxDuration = 30;
 
 /**
- * 작가 — 갈림길(6·10번) 대사 쓰기. STAR(LV5) · 로그인. 반전 카드(10번 대신 들어갈 결말)는 LV6, 장면당 한 장.
+ * 작가 — 갈림길(전개·결말 줄) 대사 쓰기. STAR(LV5) · 로그인. 반전 카드(결말 대신 들어갈 결말)는 LV6, 장면당 한 장.
  * 쓰면 그 배역 목소리로 TTS 를 한 번 읽어 둔다 — 작가는 녹음하지 않는다. 배우가 녹음하면 1표.
  */
 export async function POST(req: Request) {
@@ -27,7 +27,8 @@ export async function POST(req: Request) {
   const scene = await loadScene(String(b.sceneId ?? ""), v, service);
   if (!scene || scene.status !== "live") return json({ error: t("상영 중인 장면이 아니에요.", "Not a live scene.") }, 409);
   const n = Number(b.n);
-  if (!isBranch(n) || (twist && n !== 10)) return json({ error: t("갈림길 자리(6번·10번)에만 쓸 수 있어요.", "Only lines 6 and 10.") }, 400);
+  const total = sceneLength(scene.lines);
+  if (!isBranch(n, total) || (twist && n !== total)) return json({ error: t(`갈림길 자리(${twistN(total)}번·${total}번)에만 쓸 수 있어요.`, `Only lines ${twistN(total)} and ${total}.`) }, 400);
   const role = scene.roles.find((r) => r.id === b.role);
   if (!role) return json({ error: t("배역을 골라 주세요.", "Pick a role.") }, 400);
   const text = cleanLine(b.text, MAX_LINE_CHARS);

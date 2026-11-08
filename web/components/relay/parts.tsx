@@ -7,7 +7,7 @@ import { usePass } from "@/components/pass/use-pass";
 import { VoiceAvatar } from "@/components/voice-avatar";
 import { normalizeAvatar } from "@/lib/avatar";
 import { clientId } from "@/lib/client-id";
-import { genreLabel, HALL_LABEL, nextTitle, premiereLabel, roleColor, rolePick, timeLeft, titleOf, TITLES, TYPE_LABEL, type RelayRole, type SceneView, type Title } from "@/lib/relay";
+import { genreLabel, HALL_LABEL, nextTitle, roleColor, rolePick, sceneLength, timeLeft, titleOf, TITLES, TYPE_LABEL, type RelayRole, type SceneView, type Title } from "@/lib/relay";
 import { track } from "@/lib/track";
 import { LEVEL_XP } from "@/lib/pass";
 import { Coco } from "@/components/brand/coco";
@@ -219,6 +219,7 @@ export function HallCard({ scene, href }: { scene: SceneView; href: string }) {
     return () => clearInterval(id);
   }, []);
   const base = scene.lines.filter((l) => !l.candidate);
+  const total = sceneLength(scene.lines);
   const voiced = base.filter((l) => scene.takes.some((x) => x.lineId === l.id && x.kind === "line")).length;
   const hall = HALL_LABEL[scene.hall];
   return (
@@ -241,15 +242,15 @@ export function HallCard({ scene, href }: { scene: SceneView; href: string }) {
       </Link>
       <span className={s.pickHead}>
         <b>🎭 {t("배역 고르기", "Pick a role")}</b>
-        <span className={s.tiny}>{t(`사람 목소리 ${voiced}/10줄`, `${voiced}/10 voiced`)}</span>
+        <span className={s.tiny}>{t(`사람 목소리 ${voiced}/${total}줄`, `${voiced}/${total} voiced`)}</span>
       </span>
       <RoleCards scene={scene} compact />
-      <span className={s.meter} aria-label={t(`사람 목소리 ${voiced}/10줄`, `${voiced}/10 lines voiced`)}>
-        <i style={{ width: `${(voiced / 10) * 100}%` }} />
+      <span className={s.meter} aria-label={t(`사람 목소리 ${voiced}/${total}줄`, `${voiced}/${total} lines voiced`)}>
+        <i style={{ width: `${(voiced / total) * 100}%` }} />
       </span>
       <span className={s.hallFoot}>
         <span>{t("빈 줄은 AI 대역이 읽어 줘요", "Empty lines are read by an AI stand-in")}</span>
-        <span className={s.when}>{premiereLabel(scene.premiereAt, ko)}</span>
+        <span className={s.when}>🍿 {t("개봉하면 크레딧에 내 이름", "Your name in the credits")}</span>
       </span>
     </article>
   );
@@ -261,7 +262,7 @@ export function HowItWorks() {
   const steps = [
     { n: 1, icon: "🎭", title: t("배역 고르기", "Pick a role"), body: t("용사? 마왕? 면접관? 하고 싶은 역 하나", "Hero? Villain? Interviewer?") },
     { n: 2, icon: "🎙️", title: t("딱 한 줄 녹음", "Record one line"), body: t("앞 사람 대사 듣고 바로 받아치기", "Hear the cue, fire back") },
-    { n: 3, icon: "🍿", title: t("사흘째 밤 개봉", "Premiere night"), body: t("여러 목소리로 이어진 장면 + 내 이름 크레딧", "The full scene, your name in the credits") },
+    { n: 3, icon: "🍿", title: t("3일 뒤 개봉", "Premiere in 3 days"), body: t("여러 목소리로 이어진 장면 + 내 이름 크레딧", "The full scene, your name in the credits") },
   ];
   return (
     <section className={s.how} aria-label={t("이렇게 해요", "How it works")}>
@@ -314,10 +315,10 @@ export function RelayIntro() {
     },
     {
       mood: "wow" as const,
-      title: t("사흘째 밤 9시, 무조건 개봉", "Premieres on day 3 at 9 pm"),
+      title: t("3일 뒤, 무조건 개봉", "Premieres in 3 days, always"),
       body: t(
-        "장면은 열리고 사흘째 21시에 개봉해요. 크레딧에 내 이름이 올라가고, 바로 다음 장면이 열려요. 한 장면에 배역은 한 사람 하나씩!",
-        "Each scene premieres on its 3rd night at 9 pm, credits and all. One role per person per scene.",
+        "장면은 열리고 3일 뒤에 개봉해요. 내 목소리가 들어간 완성본이 자막과 함께 상영되고, 엔딩 크레딧에 내 이름이 올라가요. 한 장면에 배역은 한 사람 하나씩!",
+        "Each scene premieres 3 days after it opens — subtitles, credits and all. One role per person per scene.",
       ),
     },
     {
@@ -396,7 +397,7 @@ export function PromptCard() {
 
 /**
  * 내 작업실 — 작가(LV5)·감독(LV7)이 "어디 가서 뭘 하지?"를 안 묻게, 할 수 있는 일을 버튼으로.
- * 작가: 상영 중 장면마다 6번·10번 쓰기 → 장면 화면이 쓰기 창을 바로 연다(?write=6).
+ * 작가: 상영 중 장면마다 전개·결말 쓰기 → 장면 화면이 쓰기 창을 바로 연다(?write=twist|end).
  */
 export function MyDesk({ live }: { live: SceneView[] }) {
   const t = useT();
@@ -409,9 +410,9 @@ export function MyDesk({ live }: { live: SceneView[] }) {
         <span className={s.tiny}>{t(`LV${level} · 배우 일은 그대로 하면서`, `LV${level} · on top of acting`)}</span>
       </span>
       <div className={s.deskBlock}>
-        <b>✍️ {t("작가 — 6번·10번 대사 바꿔 쓰기", "Writer — rewrite lines 6 & 10")}</b>
+        <b>✍️ {t("작가 — 전개·결말 대사 바꿔 쓰기", "Writer — rewrite the twist & ending")}</b>
         <span className={s.muted}>
-          {t("장면마다 6번(전개)·10번(결말)은 작가가 새 대사를 쓸 수 있어요. 배우들이 내 대사를 녹음할 때마다 1표 — 표가 제일 많은 대사가 개봉판에 들어가요.", "Lines 6 (twist) and 10 (ending) are open to writers. Each actor who records your line is a vote — the top line makes the premiere.")}
+          {t("장면마다 🔀 전개 줄과 결말(마지막 줄)은 작가가 새 대사를 쓸 수 있어요. 배우들이 내 대사를 녹음할 때마다 1표 — 표가 제일 많은 대사가 개봉판에 들어가요.", "The 🔀 twist line and the ending are open to writers. Each actor who records your line is a vote — the top line makes the premiere.")}
         </span>
         {live.length === 0 ? (
           <span className={s.tiny}>{t("지금 상영 중인 장면이 없어요.", "No scenes showing right now.")}</span>
@@ -419,11 +420,11 @@ export function MyDesk({ live }: { live: SceneView[] }) {
           live.map((sc) => (
             <span key={sc.id} className={s.deskRow}>
               <span className={s.deskTitle}>{sc.title}</span>
-              <Link href={`/relay/s/${sc.id}?write=6`} className={s.roleBtnGhost}>
-                {t("6번 쓰기", "Line 6")}
+              <Link href={`/relay/s/${sc.id}?write=twist`} className={s.roleBtnGhost}>
+                {t("전개 쓰기", "Twist")}
               </Link>
-              <Link href={`/relay/s/${sc.id}?write=10`} className={s.roleBtnGhost}>
-                {t("10번 쓰기", "Line 10")}
+              <Link href={`/relay/s/${sc.id}?write=end`} className={s.roleBtnGhost}>
+                {t("결말 쓰기", "Ending")}
               </Link>
             </span>
           ))
@@ -432,7 +433,7 @@ export function MyDesk({ live }: { live: SceneView[] }) {
       {level >= 7 && (
         <div className={s.deskBlock}>
           <b>🎬 {t("감독 — 내 장면 올리기", "Director — post your own scene")}</b>
-          <span className={s.muted}>{t("스튜디오에서 배역과 대사 10줄을 쓰면 AI 대역 목소리가 입혀져 상영관에 올라가요. 상영되면 그 장면 화면에서 녹음마다 OK/NG를 찍고 배우를 지명해요.", "Write roles and 10 lines in the studio; it goes on screen with AI voices. Once live, stamp OK/NG and cast actors on its page.")}</span>
+          <span className={s.muted}>{t("스튜디오에서 배역과 대사 10~13줄을 쓰면 AI 대역 목소리가 입혀져 상영관에 올라가요. 상영되면 그 장면 화면에서 녹음마다 OK/NG를 찍고 배우를 지명해요.", "Write roles and 10–13 lines in the studio; it goes on screen with AI voices. Once live, stamp OK/NG and cast actors on its page.")}</span>
           <Link href="/relay/studio" className={s.roleBtn} style={{ justifySelf: "start" }}>
             {t("감독 스튜디오 열기", "Open the studio")} ›
           </Link>
