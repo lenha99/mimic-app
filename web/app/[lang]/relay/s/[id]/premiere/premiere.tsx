@@ -32,6 +32,7 @@ export default function RelayPremiere({ scene }: { scene: SceneView }) {
   const [listens, setListens] = useState(scene.listens);
   const counted = useRef(false);
   const fromStart = useRef(true);
+  const screenRef = useRef<HTMLDivElement>(null);
   const premiered = scene.status === "premiered" && !!scene.final;
   const [mineTakes, setMineTakes] = useState<Set<string>>(() => new Set());
 
@@ -68,6 +69,8 @@ export default function RelayPremiere({ scene }: { scene: SceneView }) {
     setEnded(false);
     setStarted(true);
     fromStart.current = from === 0;
+    // 대본 아래쪽 줄을 눌렀으면 화면(자막)이 보이게 올려 준다
+    if (from > 0) screenRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
     void pl.play(items, {
       from,
       onDone: (complete) => {
@@ -150,7 +153,7 @@ export default function RelayPremiere({ scene }: { scene: SceneView }) {
         </div>
       )}
 
-      <div className={s.screen} aria-live="polite">
+      <div className={s.screen} aria-live="polite" ref={screenRef}>
         {started && !ended && pl.index >= 0 && (
           <span className={s.reel} aria-hidden="true">
             <i style={{ width: `${((pl.index + 1) / Math.max(1, total)) * 100}%` }} />
