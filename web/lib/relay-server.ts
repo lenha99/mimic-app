@@ -85,12 +85,11 @@ export async function loadScene(id: string, v: Viewer | null, service: Service =
 async function hydrate(rows: SceneRow[], v: Viewer | null, service: Service): Promise<SceneView[]> {
   if (!rows.length) return [];
   const ids = rows.map((r) => r.id);
-  const [lines, takes, roles, casts, sfx] = await Promise.all([
+  const [lines, takes, roles, casts] = await Promise.all([
     service.from("relay_lines").select("id, scene_id, n, role, text, dir, tip, tts, sec, candidate, twist, author, author_name, won, created_at").in("scene_id", ids).eq("hidden", false).order("n").order("created_at"),
     service.from("relay_takes").select("id, scene_id, line_id, owner, name, avatar, kind, stamp, direction, duration_s, created_at").in("scene_id", ids).eq("hidden", false).order("created_at"),
     service.from("relay_roles").select("scene_id, role, owner, late, priority_until").in("scene_id", ids),
     service.from("relay_casts").select("scene_id, role, owner").in("scene_id", ids),
-    service.from("relay_sfx").select("scene_id, after_n, sfx").in("scene_id", ids),
   ]);
   const promptIds = rows.map((r) => r.prompt_id).filter((x): x is string => !!x);
   const prompts = promptIds.length ? ((await service.from("relay_prompts").select("id, text, name").in("id", promptIds)).data ?? []) : [];
@@ -157,7 +156,6 @@ async function hydrate(rows: SceneRow[], v: Viewer | null, service: Service): Pr
       takes: ts,
       owners: os,
       casts: (casts.data ?? []).filter((c) => c.scene_id === r.id).map((c) => ({ role: c.role, owner: c.owner, mine: mine.has(c.owner) })),
-      sfx: (sfx.data ?? []).filter((x) => x.scene_id === r.id).map((x) => ({ afterN: x.after_n, sfx: x.sfx })),
       final: (r.final ?? null) as unknown as FinalCut | null,
       amDirector: !!r.director && mine.has(r.director),
     };

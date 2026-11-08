@@ -9,7 +9,6 @@ import { ScreenTour } from "@/components/onboarding/tours";
 import { usePlaylist } from "@/components/relay/audio";
 import { fetchScene, itemsOfPreview, lineItem, postJson } from "@/components/relay/client";
 import { AvatarDot, Poster, RoleCards, useLevel } from "@/components/relay/parts";
-import { SfxCue, SfxPicker } from "@/components/relay/sfx-icon";
 import {
   can,
   chosenLine,
@@ -34,7 +33,7 @@ const votesOf = (lineId: string, takes: TakeView[]) => new Set(takes.filter((t) 
 
 /**
  * 장면 — 대본 10줄(지금 정식판으로 갈 줄이 굵게) · 갈림길 후보와 표 · 미리 듣기.
- * 작가(LV5)는 갈림길에 대사를 쓰고, 감독은 NG/OK · 효과음 · 캐스팅을 한다.
+ * 작가(LV5)는 갈림길에 대사를 쓰고, 감독은 NG/OK · 캐스팅을 한다.
  */
 export default function RelayScene({ id, initial }: { id: string; initial: SceneView | null }) {
   const t = useT();
@@ -99,11 +98,6 @@ export default function RelayScene({ id, initial }: { id: string; initial: Scene
     if (!r.ok) setMsg(r.data.error ?? t("찍지 못했어요", "Failed"));
     else track("relay_stamp", { via: value ?? "clear" });
     setNgFor(null);
-    void reload();
-  };
-  const setSfx = async (n: number, sfx: string | null) => {
-    const r = await postJson("/api/relay/sfx", { sceneId: scene.id, afterN: n, sfx });
-    if (!r.ok) setMsg(r.data.error ?? t("넣지 못했어요", "Failed"));
     void reload();
   };
 
@@ -193,7 +187,6 @@ export default function RelayScene({ id, initial }: { id: string; initial: Scene
           if (!b) return null;
           const cands = scene.lines.filter((l) => l.n === n && l.candidate).sort((x, y) => votesOf(y.id, scene.takes) - votesOf(x.id, scene.takes) || x.at.localeCompare(y.at));
           const chosen = chosenLine(n, scene.lines, scene.takes).line;
-          const sfx = scene.sfx.find((x) => x.afterN === n)?.sfx ?? null;
           return (
             <li key={n}>
               <LineRow
@@ -256,7 +249,6 @@ export default function RelayScene({ id, initial }: { id: string; initial: Scene
                     ))}
                 </div>
               )}
-              {dir && n < 10 ? <SfxPicker value={sfx} onPick={(v) => setSfx(n, v)} /> : sfx ? <SfxCue id={sfx} /> : null}
             </li>
           );
         })}

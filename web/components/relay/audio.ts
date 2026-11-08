@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
- * 릴레이 더빙 소리 — 줄 이어 재생 · 효과음 합성 · 녹음. 브라우저 전용.
+ * 릴레이 더빙 소리 — 줄 이어 재생 · 녹음. 브라우저 전용.
  *
  * 이어 재생은 <audio> 하나를 돌려 쓴다(아이폰은 사용자 탭 뒤 같은 요소를 계속 써야 소리가 난다).
  * 다음 줄은 미리 받아 두고(preload), 줄 사이엔 0.15초 쉰다. 주소가 없거나 깨진 줄은
@@ -17,8 +17,6 @@ export type PlayItem = {
   text?: string;
   /** 이 줄 다음에 붙일 애드리브 녹음 */
   adlib?: string | null;
-  /** 이 줄 다음에 낼 효과음 */
-  sfx?: string | null;
 };
 
 const GAP_MS = 150;
@@ -109,7 +107,6 @@ export function usePlaylist() {
         }
         await playOne(it.url, it.text, my);
         if (it.adlib) await playOne(it.adlib, undefined, my);
-        if (it.sfx && run.current === my) await playSfx(it.sfx);
         await new Promise((r) => setTimeout(r, GAP_MS));
       }
       if (run.current !== my) return;
@@ -123,7 +120,7 @@ export function usePlaylist() {
   return { play, stop, playing, index };
 }
 
-// ---- 효과음 — 파일 없이 합성 ----
+// ---- 오디오 컨텍스트 ----
 
 let ctx: AudioContext | null = null;
 function audioCtx(): AudioContext | null {
@@ -136,110 +133,6 @@ function audioCtx(): AudioContext | null {
   } catch {
     return null;
   }
-}
-
-function noise(c: AudioContext, sec: number): AudioBufferSourceNode {
-  const buf = c.createBuffer(1, Math.floor(c.sampleRate * sec), c.sampleRate);
-  const d = buf.getChannelData(0);
-  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-  const s = c.createBufferSource();
-  s.buffer = buf;
-  return s;
-}
-
-function env(c: AudioContext, peak: number, attack: number, decay: number, at = c.currentTime): GainNode {
-  const g = c.createGain();
-  g.gain.setValueAtTime(0.0001, at);
-  g.gain.exponentialRampToValueAtTime(peak, at + attack);
-  g.gain.exponentialRampToValueAtTime(0.0001, at + attack + decay);
-  g.connect(c.destination);
-  return g;
-}
-
-function tone(c: AudioContext, type: OscillatorType, f0: number, f1: number, at: number, dur: number, peak: number) {
-  const o = c.createOscillator();
-  o.type = type;
-  o.frequency.setValueAtTime(f0, at);
-  o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), at + dur);
-  o.connect(env(c, peak, 0.01, dur, at));
-  o.start(at);
-  o.stop(at + dur + 0.05);
-}
-
-/** 효과음 하나 — 끝날 때까지 기다린다 */
-export function playSfx(id: string): Promise<void> {
-  const c = audioCtx();
-  if (!c) return Promise.resolve();
-  const t = c.currentTime + 0.02;
-  let len = 0.8;
-  switch (id) {
-    case "boom": {
-      const n = noise(c, 1.4);
-      const f = c.createBiquadFilter();
-      f.type = "lowpass";
-      f.frequency.setValueAtTime(900, t);
-      f.frequency.exponentialRampToValueAtTime(60, t + 1.2);
-      n.connect(f).connect(env(c, 0.9, 0.01, 1.3, t));
-      n.start(t);
-      tone(c, "sine", 90, 30, t, 0.8, 0.8);
-      len = 1.4;
-      break;
-    }
-    case "heart":
-      for (const k of [0, 0.22, 0.8, 1.02]) tone(c, "sine", 70, 40, t + k, 0.16, 0.9);
-      len = 1.3;
-      break;
-    case "whoosh": {
-      const n = noise(c, 0.7);
-      const f = c.createBiquadFilter();
-      f.type = "bandpass";
-      f.Q.value = 2;
-      f.frequency.setValueAtTime(300, t);
-      f.frequency.exponentialRampToValueAtTime(3000, t + 0.5);
-      n.connect(f).connect(env(c, 0.6, 0.25, 0.4, t));
-      n.start(t);
-      len = 0.7;
-      break;
-    }
-    case "ding":
-      tone(c, "sine", 1320, 1310, t, 1.1, 0.4);
-      tone(c, "sine", 2640, 2630, t, 0.6, 0.12);
-      len = 1.1;
-      break;
-    case "thunder": {
-      const n = noise(c, 2.2);
-      const f = c.createBiquadFilter();
-      f.type = "lowpass";
-      f.frequency.value = 400;
-      n.connect(f).connect(env(c, 1, 0.05, 2, t));
-      n.start(t);
-      const crack = noise(c, 0.2);
-      crack.connect(env(c, 0.5, 0.005, 0.18, t));
-      crack.start(t);
-      len = 2;
-      break;
-    }
-    case "drum":
-      for (let i = 0; i < 14; i++) tone(c, "triangle", 180, 90, t + i * 0.07, 0.06, 0.35 + i * 0.02);
-      tone(c, "sine", 120, 50, t + 1.0, 0.5, 0.9);
-      len = 1.5;
-      break;
-    case "door": {
-      tone(c, "square", 110, 50, t, 0.25, 0.5);
-      const n = noise(c, 0.3);
-      n.connect(env(c, 0.7, 0.003, 0.25, t));
-      n.start(t);
-      len = 0.5;
-      break;
-    }
-    case "sparkle":
-      [1568, 1976, 2349, 3136].forEach((f, i) => tone(c, "sine", f, f, t + i * 0.08, 0.35, 0.18));
-      len = 0.7;
-      break;
-    default:
-      return Promise.resolve();
-  }
-  return new Promise((r) => setTimeout(r, len * 1000));
 }
 
 // ---- 녹음 ----

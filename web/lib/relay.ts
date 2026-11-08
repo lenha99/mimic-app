@@ -119,19 +119,6 @@ export const directionLabel = (id: string | null | undefined, ko = true) => {
   return d ? (ko ? d.ko : d.en) : "";
 };
 
-/** 효과음 — 파일 없이 브라우저가 합성한다(components/relay/audio.ts). 저작권·용량 걱정 없음.
- *  아이콘은 components/relay/sfx-icon.tsx(SVG). say 는 대본 사이에 적히는 의성어 */
-export const SFX: { id: string; ko: string; en: string; say: string; sayEn: string }[] = [
-  { id: "boom", ko: "폭발", en: "Boom", say: "콰광!", sayEn: "KABOOM!" },
-  { id: "heart", ko: "심장박동", en: "Heartbeat", say: "두근… 두근…", sayEn: "Ba-dum… ba-dum…" },
-  { id: "whoosh", ko: "휙", en: "Whoosh", say: "휘익—", sayEn: "Whoosh—" },
-  { id: "ding", ko: "띵", en: "Ding", say: "띵!", sayEn: "Ding!" },
-  { id: "thunder", ko: "천둥", en: "Thunder", say: "우르릉 쾅!", sayEn: "Rumble… CRACK!" },
-  { id: "drum", ko: "두구두구", en: "Drumroll", say: "두구두구두구…", sayEn: "Drrrrrumroll…" },
-  { id: "door", ko: "문 쾅", en: "Door slam", say: "쾅! (문)", sayEn: "SLAM!" },
-  { id: "sparkle", ko: "반짝", en: "Sparkle", say: "반짜악✧", sayEn: "Sparkle✧" },
-];
-
 export const GENRES: { id: string; ko: string; en: string; hall: Hall }[] = [
   { id: "fantasy", ko: "판타지·모험", en: "Fantasy", hall: "act" },
   { id: "battle", ko: "배틀·열혈", en: "Battle", hall: "act" },
@@ -233,7 +220,6 @@ export type SceneView = {
   takes: TakeView[];
   owners: RoleOwner[];
   casts: { role: string; owner: string; mine?: boolean }[];
-  sfx: { afterN: number; sfx: string }[];
   final: FinalCut | null;
   /** 보는 사람이 이 장면의 감독인가 */
   amDirector?: boolean;
@@ -272,10 +258,9 @@ export type FinalCut = {
     tts: number;
   };
   realActors: number;
-  sfx: { afterN: number; sfx: string }[];
 };
 
-type CutInput = Pick<SceneView, "roles" | "lines" | "takes" | "owners" | "sfx" | "directorName" | "promptName">;
+type CutInput = Pick<SceneView, "roles" | "lines" | "takes" | "owners" | "directorName" | "promptName">;
 
 function votes(lineId: string, takes: TakeView[]): number {
   return new Set(takes.filter((t) => t.lineId === lineId && t.kind === "line").map((t) => t.owner)).size;
@@ -358,7 +343,6 @@ export function computeFinal(s: CutInput): FinalCut {
       tts: lines.filter((l) => !l.takeId).length,
     },
     realActors: new Set(lines.filter((l) => l.owner).map((l) => l.owner)).size,
-    sfx: s.sfx,
   };
 }
 

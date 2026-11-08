@@ -137,7 +137,6 @@ export default function RelayStudio() {
             <li>{t("📝 제목·배역(2~4)·대사 10줄로 장면 열기 — 줄마다 배역 목소리 TTS가 자동으로 입혀져요", "📝 Write a 10-line scene — TTS voices every line")}</li>
             <li>{t("🎬 들어온 녹음에 OK(정식판 우선) / NG + 디렉션(\"더 비열하게\" 등)", "🎬 Stamp takes OK, or NG with a direction")}</li>
             <li>{t("📣 빈 배역에 배우 지명 — 장면당 둘까지", "📣 Cast actors to empty roles — two per scene")}</li>
-            <li>{t("💥 줄 사이 효과음 넣기", "💥 Add sound effects between lines")}</li>
             <li>{t("🌀 막장 모드 — 작가가 앞 두 줄만 보고 쓰는 장면", "🌀 Chaos mode — writers see only the last two lines")}</li>
           </ul>
         </>
