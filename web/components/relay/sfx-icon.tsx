@@ -59,8 +59,8 @@ function Glyph({ id }: { id: string }) {
     case "thunder":
       return (
         <>
-          <path d="M7 10.5a4.5 4.5 0 01.6-8.9 5.5 5.5 0 0110.2 2A3.8 3.8 0 0117 11H7z" fill="currentColor" fillOpacity=".22" />
-          <path d="M12.5 11l-3 5h4l-2.5 6" />
+          <path d="M7 14a3.8 3.8 0 01.4-7.6 4.6 4.6 0 018.9 1.2A3.2 3.2 0 0116.8 14H7z" fill="currentColor" fillOpacity=".22" />
+          <path d="M12.5 14l-2.3 3.6h3.3L11.6 22" />
         </>
       );
     case "drum":

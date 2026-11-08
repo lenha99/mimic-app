@@ -296,6 +296,7 @@
 
 .ctaSmall {
   display: inline-flex;
+  white-space: nowrap;
   align-items: center;
   justify-content: center;
   gap: 6px;
