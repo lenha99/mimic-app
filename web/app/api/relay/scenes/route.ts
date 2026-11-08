@@ -2,7 +2,7 @@ import { isAdmin } from "@/lib/admin";
 import { allow, clientIp, tooMany } from "@/lib/rate-limit";
 import { createServiceClient } from "@/lib/supabase/service";
 import { requestT } from "@/lib/i18n";
-import { can, GENRES, MAX_LINE_CHARS, scenesPerWeek, type RoleType } from "@/lib/relay";
+import { can, GENRES, MAX_LINE_CHARS, MAX_STUDIO_LINES, MIN_LINES, scenesPerWeek, type RoleType } from "@/lib/relay";
 import { badText, cleanLine, displayName, levelFor } from "@/lib/relay-server";
 import { ttsForLine, VOICE_PRESETS } from "@/lib/relay-tts";
 import { json, requestViewer } from "@/lib/relay-req";
@@ -73,13 +73,13 @@ export async function POST(req: Request) {
     desc: "",
   }));
   if (roles.length < 2 || roles.some((r) => !r.name)) return json({ error: t("배역은 2~4명, 이름을 모두 정해 주세요.", "2–4 named roles.") }, 400);
-  const lines = (b.lines ?? []).slice(0, 10).map((l, i) => ({
+  const lines = (b.lines ?? []).slice(0, MAX_STUDIO_LINES).map((l, i) => ({
     n: i + 1,
     role: roles[Number(l.role)]?.id ?? "",
     text: cleanLine(l.text, MAX_LINE_CHARS) ?? "",
     dir: cleanLine(l.dir, 20) ?? "",
   }));
-  if (lines.length !== 10 || lines.some((l) => !l.role || !l.text)) return json({ error: t("대사 10줄을 모두 채워 주세요.", "Fill all 10 lines.") }, 400);
+  if (lines.length < MIN_LINES || lines.some((l) => !l.role || !l.text)) return json({ error: t(`대사 ${MIN_LINES}~${MAX_STUDIO_LINES}줄을 모두 채워 주세요.`, `Fill ${MIN_LINES}–${MAX_STUDIO_LINES} lines.`) }, 400);
   const used = new Set(lines.map((l) => l.role));
   if (roles.some((r) => !used.has(r.id))) return json({ error: t("모든 배역에 대사가 하나 이상 있어야 해요.", "Every role needs a line.") }, 400);
   if (badText([title, logline, ...roles.map((r) => r.name), ...lines.map((l) => l.text + l.dir)].join(" "))) {
@@ -116,10 +116,14 @@ export async function POST(req: Request) {
     .select("id")
     .single();
   if (error || !scene) return json({ error: t("장면을 만들지 못했어요.", "Couldn't create the scene.") }, 500);
-  const { data: rows } = await service
+  const { data: rows, error: lineErr } = await service
     .from("relay_lines")
     .insert(lines.map((l) => ({ scene_id: scene.id, n: l.n, role: l.role, text: l.text, dir: l.dir, tip: "", sec: Math.max(2, l.text.length * 0.18) })))
     .select("id, role, text");
+  if (lineErr) {
+    await service.from("relay_scenes").delete().eq("id", scene.id);
+    return json({ error: t("대사를 저장하지 못했어요. 10줄로 줄여서 다시 해 주세요.", "Couldn't save the lines — try 10 lines.") }, 500);
+  }
   if (promptId) await service.from("relay_prompts").update({ scene_id: scene.id }).eq("id", promptId);
   // TTS — 동시에 셋씩
   const todo = rows ?? [];

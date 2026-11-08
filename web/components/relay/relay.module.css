@@ -2013,3 +2013,151 @@
   border-color: rgba(143, 217, 107, 0.5);
   color: var(--lime);
 }
+
+/* ---- 개봉관 — 상영 전 안내 · 진행 막대 · 내 목소리 · 대본 따라 보기 ---- */
+
+.marquee {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+}
+
+.marqueeInfo {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ash);
+}
+
+.reel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.reel i {
+  display: block;
+  height: 100%;
+  background: var(--volt);
+  transition: width 0.4s ease-out;
+}
+
+.frame {
+  display: grid;
+  justify-items: center;
+}
+
+.ghost {
+  margin: 0 0 14px;
+  max-width: 34ch;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ash-dim);
+  word-break: keep-all;
+}
+
+.ghost b {
+  font-weight: 700;
+  margin-right: 4px;
+}
+
+.screenRole small {
+  color: var(--ash);
+  letter-spacing: 0;
+}
+
+.meBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--volt);
+  color: #111;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.meName {
+  background: var(--volt);
+  color: #111;
+  padding: 0 4px;
+  border-radius: 4px;
+  font-weight: 800;
+}
+
+.meThanks {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.follow {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.followRow {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  gap: 10px;
+  align-items: start;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.followRow:hover {
+  background: var(--panel);
+}
+
+.followOn {
+  background: var(--panel-hi);
+  border-color: var(--volt);
+}
+
+.followMine .followWho {
+  color: var(--volt);
+  font-weight: 800;
+}
+
+.followN {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ash);
+  padding-top: 2px;
+}
+
+.followBody {
+  display: grid;
+  gap: 2px;
+  font-size: 14px;
+  line-height: 1.45;
+  word-break: keep-all;
+}
+
+.followBody b {
+  font-size: 12px;
+  color: var(--ash);
+}
+
+.followWho {
+  font-size: 12px;
+  color: var(--ash);
+  max-width: 7em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-top: 2px;
+}

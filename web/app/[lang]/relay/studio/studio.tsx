@@ -7,7 +7,7 @@ import { Coco } from "@/components/brand/coco";
 import { postJson } from "@/components/relay/client";
 import { genreArt, Ladder, useLevel } from "@/components/relay/parts";
 import { clientId } from "@/lib/client-id";
-import { can, GENRES, isBranch, MAX_LINE_CHARS, ROLE_COLORS, scenesPerWeek, TYPE_LABEL, VOICE_LABEL, type RoleType } from "@/lib/relay";
+import { can, GENRES, isBranch, MAX_LINE_CHARS, MAX_STUDIO_LINES, MIN_LINES, ROLE_COLORS, twistN, scenesPerWeek, TYPE_LABEL, VOICE_LABEL, type RoleType } from "@/lib/relay";
 import { track } from "@/lib/track";
 import s from "@/components/relay/relay.module.css";
 
@@ -27,10 +27,10 @@ const STATUS: Record<string, [string, string]> = {
   void: ["— 무산", "— Void"],
 };
 
-const emptyLines = (): LineDraft[] => Array.from({ length: 10 }, (_, i) => ({ role: i % 2, text: "", dir: "" }));
+const emptyLines = (): LineDraft[] => Array.from({ length: MAX_STUDIO_LINES }, (_, i) => ({ role: i % 2, text: "", dir: "" }));
 
 /**
- * 감독 스튜디오 — LV7. 제목·장르·배역(2~4)·대사 10줄을 쓰면 줄마다 배역 목소리로 TTS 를 입혀
+ * 감독 스튜디오 — LV7. 제목·장르·배역(2~4)·대사 10~13줄을 쓰면 줄마다 배역 목소리로 TTS 를 입혀
  * 상영 대기열에 올린다. 첫 장면은 운영자 확인을 거친다. 아직 감독이 아니면 잠긴 화면 + 사다리.
  */
 export default function RelayStudio() {
@@ -104,7 +104,7 @@ export default function RelayStudio() {
   const checks = [
     { ok: title.trim().length >= 2, ko: "제목", en: "Title" },
     { ok: roles.length >= 2 && roles.every((r) => r.name.trim()), ko: "배역 이름 전부", en: "All role names" },
-    { ok: lines.every((l) => l.text.trim().length >= 2), ko: `대사 10줄 (${lines.filter((l) => l.text.trim().length >= 2).length}/10)`, en: `10 lines (${lines.filter((l) => l.text.trim().length >= 2).length}/10)` },
+    { ok: lines.every((l) => l.text.trim().length >= 2), ko: `대사 ${lines.length}줄 (${lines.filter((l) => l.text.trim().length >= 2).length}/${lines.length})`, en: `${lines.length} lines (${lines.filter((l) => l.text.trim().length >= 2).length}/${lines.length})` },
     { ok: roles.every((_, i) => lines.some((l) => l.role === i)), ko: "배역마다 대사 한 줄 이상", en: "Every role speaks" },
   ];
   const colorOf = (i: number) => ROLE_COLORS[i % ROLE_COLORS.length];
@@ -112,7 +112,7 @@ export default function RelayStudio() {
   const steps = (
     <ol className={s.howSteps}>
       {[
-        { n: 1, icon: "📝", ko: ["장면 쓰기", "배역 2~4명 · 대사 10줄"], en: ["Write", "2–4 roles · 10 lines"] },
+        { n: 1, icon: "📝", ko: ["장면 쓰기", "배역 2~4명 · 대사 10~13줄"], en: ["Write", "2–4 roles · 10–13 lines"] },
         { n: 2, icon: "🎞️", ko: ["상영", "AI 대역 목소리로 바로 상영, 배우들이 한 줄씩 채워요"], en: ["Goes live", "AI voices first, actors fill in"] },
         { n: 3, icon: "🎬", ko: ["연출", "장면 화면에서 녹음마다 OK/NG · 배우 지명"], en: ["Direct", "Stamp OK/NG · cast on the scene page"] },
       ].map((x) => (
@@ -305,14 +305,22 @@ export default function RelayStudio() {
           {/* ③ 대본 */}
           <div className={s.stepHead}>
             <span className={s.wNum}>3</span>
-            <h2>{t("대본 10줄", "10 lines")}</h2>
+            <h2>{t(`대본 ${lines.length}줄`, `${lines.length} lines`)}</h2>
+            <span className={s.row} style={{ marginLeft: "auto", gap: 6 }}>
+              <button type="button" className={s.chip} disabled={lines.length <= MIN_LINES} onClick={() => setLines((ls) => ls.slice(0, -1))} aria-label={t("한 줄 빼기", "Remove a line")}>
+                −
+              </button>
+              <button type="button" className={s.chip} disabled={lines.length >= MAX_STUDIO_LINES} onClick={() => setLines((ls) => [...ls, { role: ls.length % 2, text: "", dir: "" }])} aria-label={t("한 줄 더", "Add a line")}>
+                +
+              </button>
+            </span>
           </div>
           <p className={s.tiny} style={{ margin: "-4px 0 8px" }}>
-            {t("줄마다 누가 말하는지 고르고 대사를 써요. 숫자는 한글로(속도를 음절로 재요). 🔀 6·10번은 작가들이 바꿔 쓸 수 있는 갈림길이에요.", "Pick who speaks and write the line. 🔀 Lines 6 & 10 are branches writers can rewrite.")}
+            {t(`줄마다 누가 말하는지 고르고 대사를 써요. 숫자는 한글로(속도를 음절로 재요). 🔀 ${twistN(lines.length)}번(전개)·${lines.length}번(결말)은 작가들이 바꿔 쓸 수 있는 갈림길이에요.`, `Pick who speaks and write the line. 🔀 Lines ${twistN(lines.length)} & ${lines.length} are branches writers can rewrite.`)}
           </p>
           <ol className={s.drafts}>
             {lines.map((l, i) => {
-              const branch = isBranch(i + 1);
+              const branch = isBranch(i + 1, lines.length);
               return (
                 <li key={i} className={`${s.draft} ${branch ? s.draftBranch : ""}`} style={{ ["--role" as string]: colorOf(l.role) }}>
                   <span className={s.draftTop}>

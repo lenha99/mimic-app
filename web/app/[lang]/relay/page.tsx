@@ -24,7 +24,7 @@ export default async function RelayPage() {
   return (
     <RelayHub
       live={live.map(publicView)}
-      premiered={done.map((s) => ({ id: s.id, title: s.title, hall: s.hall, genre: s.genre, premiereAt: s.premiere_at, listens: s.listens, director: s.director_name }))}
+      premiered={done.map((s) => ({ id: s.id, title: s.title, hall: s.hall, genre: s.genre, premiereAt: s.premiere_at, listens: s.listens, director: s.director_name, actors: ((s.final as { realActors?: number } | null)?.realActors ?? 0) }))}
       best={best ? { id: best.id, title: best.title, listens: best.listens, logline: best.logline } : null}
     />
   );

@@ -8,6 +8,7 @@ import {
   chosenLine,
   chosenTake,
   prefFromPractice,
+  sceneLength,
   takeUrl,
   ttsUrl,
   type Assignment,
@@ -122,17 +123,18 @@ function itemOfCut(l: CutLine): PlayItem {
   };
 }
 
-/** 개봉작(박제된 정식판) → 재생 목록. twist 를 주면 10번을 반전판으로 */
+/** 개봉작(박제된 정식판) → 재생 목록. twist 를 주면 결말(마지막 줄)을 반전판으로 */
 export function itemsOfFinal(f: FinalCut, twist = false): { items: PlayItem[]; lines: CutLine[] } {
-  const lines = f.lines.map((l) => (twist && l.n === 10 && f.twist ? f.twist : l));
+  const lines = f.lines.map((l) => (twist && f.twist && l.n === f.twist.n ? f.twist : l));
   return { items: lines.map((l) => itemOfCut(l)), lines };
 }
 
 /** 상영 중 장면 — 지금 상태의 정식판 미리 듣기 */
 export function previewLines(s: SceneView): CutLine[] {
   const out: CutLine[] = [];
-  for (let n = 1; n <= 10; n++) {
-    const { line } = chosenLine(n, s.lines, s.takes);
+  const total = sceneLength(s.lines);
+  for (let n = 1; n <= total; n++) {
+    const { line } = chosenLine(n, s.lines, s.takes, total);
     if (!line) continue;
     const take = chosenTake(line, s.takes, s.owners);
     const adlib = take ? s.takes.find((t) => t.lineId === line.id && t.kind === "adlib" && t.owner === take.owner) : undefined;

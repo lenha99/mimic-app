@@ -682,7 +682,7 @@ const sets = (t: T) => {
       title: t("배역 고르기", "Pick a role"),
       body: t(
         <p>
-          비어 있는 배역의 <b>「이 배역 하기」</b>를 누르면 그 배역 첫 대사부터 녹음해요. 빈 줄은 <b>AI 대역</b>이 읽어서 <b>사람이 없어도 장면은 사흘째 밤 9시에 무조건 개봉</b>해요.
+          비어 있는 배역의 <b>「이 배역 하기」</b>를 누르면 그 배역 첫 대사부터 녹음해요. 빈 줄은 <b>AI 대역</b>이 읽어서 <b>사람이 없어도 장면은 3일 뒤 무조건 개봉</b>해요.
         </p>,
         <p>
           Roles nobody has are <b>open</b>. TTS reads empty lines, so <b>every scene premieres on night 3 at 9 pm</b> no matter what.
@@ -699,10 +699,10 @@ const sets = (t: T) => {
       title: t("한 줄 녹음", "Record a line"),
       body: t(
         <p>
-          6번·10번은 <b>갈림길</b>이에요. 작가(LV5)들이 쓴 대사 중 <b>가장 많이 녹음된 대사</b>가 정식판에 들어가요 — 녹음이 곧 투표!
+          🔀 표시된 전개 줄과 결말 줄은 <b>갈림길</b>이에요. 작가(LV5)들이 쓴 대사 중 <b>가장 많이 녹음된 대사</b>가 정식판에 들어가요 — 녹음이 곧 투표!
         </p>,
         <p>
-          Lines 6 and 10 are <b>branches</b>. Of the writers&apos; lines, <b>the most-recorded one</b> makes the cut — recording is voting!
+          The 🔀 twist and ending lines are <b>branches</b>. Of the writers&apos; lines, <b>the most-recorded one</b> makes the cut — recording is voting!
         </p>,
       ),
     },

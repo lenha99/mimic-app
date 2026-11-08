@@ -1,9 +1,10 @@
 """릴레이 더빙 비축 장면 → TTS 파일 + 웹 데이터.
 
 content/relay_scenes.json 을 읽어
-  - web/public/relay/tts/<key>/<n>.mp3  줄마다 배역 목소리로 읽은 TTS (edge-tts, 무료)
+  - web/public/relay/tts/<key>/<hash>.mp3  줄마다 배역 목소리로 읽은 TTS (edge-tts, 무료)
+                                          (옛 <n>.mp3 는 열린 장면이 쓰고 있어 남겨 둔다)
   - web/lib/relay-stock.ts              웹이 쓰는 장면 데이터 (생성물 — 직접 고치지 말 것)
-를 만든다. 대사가 안 바뀐 줄은 다시 만들지 않는다(파일 옆 .hash 로 비교).
+를 만든다. 대사가 안 바뀐 줄은 다시 만들지 않는다(파일 이름·옛 .hash 로 비교).
 
     python tools/make_relay_tts.py           # 바뀐 줄만
     python tools/make_relay_tts.py --check   # 파일 생성 없이 검사만 (CI 용)
@@ -22,7 +23,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "content" / "relay_scenes.json"
 OUT_AUDIO = ROOT / "web" / "public" / "relay" / "tts"
 OUT_TS = ROOT / "web" / "lib" / "relay-stock.ts"
-LINES = 10
+LINES = (10, 16)  # 옛 장면 10줄 · 새 장면 13줄. 갈림길은 끝에서 다섯째·마지막 (web/lib/relay.ts twistN)
 TYPES = {"anime", "actor", "announcer", "speech", "everyday"}
 HALLS = {"act", "real"}
 # edge-tts 기본 출력(24kHz · 48kbps · 모노 mp3) — 고정 비트레이트라 길이를 크기로 잰다.
@@ -43,7 +44,7 @@ def load() -> dict:
         for r in s["roles"]:
             assert r[2] in TYPES, f"{k}/{r[0]}: 계열 {r[2]}"
             assert r[3] in voices, f"{k}/{r[0]}: 목소리 {r[3]}"
-        assert len(s["lines"]) == LINES, f"{k}: 줄 수 {len(s['lines'])} (10이어야 함)"
+        assert LINES[0] <= len(s["lines"]) <= LINES[1], f"{k}: 줄 수 {len(s['lines'])} (10~16)"
         used = set()
         for i, ln in enumerate(s["lines"], 1):
             assert ln[0] in roles, f"{k} {i}번: 배역 {ln[0]}"
@@ -82,24 +83,27 @@ async def build(check: bool) -> None:
         roles = {r[0]: r for r in s["roles"]}
         d = OUT_AUDIO / s["key"]
         lines_out = []
+        # 옛 이름(<n>.mp3 + <n>.hash)은 이미 연 장면·개봉작이 DB 에 박아 둔 주소라 지우거나 덮어쓰지 않는다.
+        # 대사가 같으면 그 파일을 그대로 쓰고, 새 대사는 내용 이름(<hash>.mp3)으로 만든다 — 줄 번호가 바뀌어도 안전.
+        legacy = {}
+        if d.exists():
+            for st in d.glob("*.hash"):
+                legacy.setdefault(st.read_text().strip(), st.with_suffix(".mp3"))
         for i, ln in enumerate(s["lines"], 1):
             preset = voices[roles[ln[0]][3]]
             h = digest(ln[1], preset)
-            mp3 = d / f"{i}.mp3"
-            stamp = d / f"{i}.hash"
-            fresh = mp3.exists() and stamp.exists() and stamp.read_text().strip() == h
-            if not fresh:
+            mp3 = legacy.get(h) or d / f"{h}.mp3"
+            if not mp3.exists():
                 if check:
                     raise SystemExit(f"TTS 가 낡았다: {s['key']} {i}번 — python tools/make_relay_tts.py")
                 d.mkdir(parents=True, exist_ok=True)
                 await speak(ln[1], preset, mp3)
-                stamp.write_text(h)
                 made += 1
                 print(f"  {s['key']} {i}: {ln[1]}")
             sec = round(mp3.stat().st_size * 8 / (KBPS * 1000), 2)
             lines_out.append({
                 "n": i, "role": ln[0], "text": ln[1], "dir": ln[2], "tip": ln[3],
-                "tts": f"/relay/tts/{s['key']}/{i}.mp3?v={h}", "sec": sec,
+                "tts": f"/relay/tts/{s['key']}/{mp3.name}?v={h}", "sec": sec,
             })
         scenes_out.append({
             "key": s["key"], "hall": s["hall"], "genre": s["genre"], "title": s["title"], "logline": s["logline"],
@@ -117,7 +121,8 @@ async def build(check: bool) -> None:
             raise SystemExit("relay-stock.ts 가 낡았다 — python tools/make_relay_tts.py")
         print(f"ok: 장면 {len(scenes_out)}개")
         return
-    OUT_TS.write_text(ts, encoding="utf-8")
+    with open(OUT_TS, "w", encoding="utf-8", newline="\n") as f:  # 윈도에서도 LF
+        f.write(ts)
     print(f"장면 {len(scenes_out)}개 · 새로 읽은 줄 {made}개 → {OUT_TS.relative_to(ROOT)}")
 
 

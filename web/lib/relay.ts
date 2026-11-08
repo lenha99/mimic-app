@@ -1,11 +1,11 @@
 /**
  * 릴레이 더빙 — 브라우저·서버 공용 규칙.
  *
- * 장면(10줄)을 여러 사람이 한 줄씩 녹음해 완성한다. 동시 접속은 없다.
+ * 장면(10~16줄, 새 비축 장면은 13줄)을 여러 사람이 한 줄씩 녹음해 완성한다. 동시 접속은 없다.
  *   - 아무도 안 한 줄은 TTS 가 읽는다 → 사람이 0명이어도 장면은 완성된다.
- *   - 장면은 열린 뒤 사흘째 21시(KST)에 무조건 개봉한다 → 반드시 끝나고 다음 장면이 열린다.
+ *   - 장면은 열리고 3일 뒤(21시 KST)에 무조건 개봉한다 → 반드시 끝나고 다음 장면이 열린다.
  *   - 한 사람은 장면 하나에 배역 하나 → 목소리가 반드시 섞인다. 개봉 24시간 전 빈 배역만 예외(막판 캐스팅).
- *   - 6번·10번은 갈림길 — 작가(LV5)가 대사를 쓰고, 배우가 그 대사를 녹음하면 1표.
+ *   - 전개 줄(끝에서 다섯째)·결말 줄(마지막)은 갈림길 — 작가(LV5)가 대사를 쓰고, 배우가 그 대사를 녹음하면 1표.
  *
  * 계급은 VOICE PASS 레벨에서 나온다(lib/pass.ts RANKS 와 같은 구간).
  *   ROOKIE 1~2 배우 · RISING 3~4 애드리브 · STAR 5~6 작가 · ICON 7~8 감독 · LEGEND 9~10 명감독
@@ -27,12 +27,24 @@ export type StockScene = {
   lines: StockLine[];
 };
 
-/** 갈림길 자리 — 6번(전개 비틀기) · 10번(결말) */
-export const BRANCH_N = [6, 10] as const;
-export const isBranch = (n: number) => n === 6 || n === 10;
+/**
+ * 장면 길이 — 장면마다 다르다(옛 장면 10줄, 새 비축 장면 13줄). 기본 대사(후보 아닌 줄)의 마지막 번호.
+ * 갈림길 자리는 길이에서 나온다: 전개 비틀기 = 끝에서 다섯째(10→6번, 13→9번) · 결말 = 마지막 줄.
+ */
 export const LINES_PER_SCENE = 10;
+export const MIN_LINES = 10;
+export const MAX_LINES = 16;
+/** 감독 스튜디오 — 10~13줄, 처음엔 13줄 칸 */
+export const MAX_STUDIO_LINES = 13;
+export function sceneLength(lines: { n: number; candidate?: boolean }[]): number {
+  let max = 0;
+  for (const l of lines) if (!l.candidate && l.n > max) max = l.n;
+  return max || LINES_PER_SCENE;
+}
+export const twistN = (total: number) => total - 4;
+export const isBranch = (n: number, total: number = LINES_PER_SCENE) => n === twistN(total) || n === total;
 
-/** 상영 기간 — 열린 날로부터 사흘째 21시(KST) 개봉 */
+/** 상영 기간 — 열린 날로부터 3일 뒤 21시(KST) 개봉. 화면에는 "3일 뒤 개봉"으로만 쓴다 */
 export const RUN_DAYS = 3;
 export const PREMIERE_HOUR_KST = 21;
 /** 배역 우선권 — 첫 줄을 녹음하면 그 배역의 남은 줄은 24시간 동안 나에게 먼저 */
@@ -102,10 +114,10 @@ export const TITLES: {
     ko: "작가",
     en: "Writer",
     icon: "✍️",
-    perkKo: "6번·10번 대사를 내 대사로 바꿔 쓰기 · LV6부터 반전 결말 카드",
-    perkEn: "Rewrite lines 6 & 10 · twist ending card at LV6",
-    whereKo: "장면 화면 ▸ 6번·10번 줄 아래 「갈림길」 칸",
-    whereEn: "Scene page ▸ the “branch” box under lines 6 & 10",
+    perkKo: "전개·결말 대사를 내 대사로 바꿔 쓰기 · LV6부터 반전 결말 카드",
+    perkEn: "Rewrite the twist & ending lines · twist ending card at LV6",
+    whereKo: "장면 화면 ▸ 🔀 표시된 줄 아래 「갈림길」 칸",
+    whereEn: "Scene page ▸ the “branch” box under the 🔀 lines",
   },
   {
     id: "director",
@@ -309,7 +321,7 @@ export type CutLine = {
 
 export type FinalCut = {
   lines: CutLine[];
-  /** 반전판 결말(10번) — 반전 카드가 있으면 */
+  /** 반전판 결말(마지막 줄) — 반전 카드가 있으면 */
   twist: CutLine | null;
   /** B 루트 — 갈림길 2위 */
   alt: CutLine[];
@@ -335,9 +347,9 @@ function rankCandidates(cands: LineView[], takes: TakeView[]): LineView[] {
 }
 
 /** 갈림길 자리의 정식 대사 — 득표 1위(동점이면 먼저 쓴 것), 후보가 없으면 기본 대사 */
-export function chosenLine(n: number, lines: LineView[], takes: TakeView[]): { line: LineView | null; second: LineView | null } {
+export function chosenLine(n: number, lines: LineView[], takes: TakeView[], total = sceneLength(lines)): { line: LineView | null; second: LineView | null } {
   const base = lines.find((l) => l.n === n && !l.candidate) ?? null;
-  if (!isBranch(n)) return { line: base, second: null };
+  if (!isBranch(n, total)) return { line: base, second: null };
   const ranked = rankCandidates(lines.filter((l) => l.n === n && l.candidate && !l.twist), takes);
   if (!ranked.length) return { line: base, second: null };
   return { line: ranked[0], second: ranked[1] ?? base };
@@ -378,13 +390,14 @@ function cutOf(line: LineView, roles: RelayRole[], takes: TakeView[], owners: Ro
 export function computeFinal(s: CutInput): FinalCut {
   const lines: CutLine[] = [];
   const alt: CutLine[] = [];
-  for (let n = 1; n <= LINES_PER_SCENE; n++) {
-    const { line, second } = chosenLine(n, s.lines, s.takes);
+  const total = sceneLength(s.lines);
+  for (let n = 1; n <= total; n++) {
+    const { line, second } = chosenLine(n, s.lines, s.takes, total);
     if (!line) continue;
     lines.push(cutOf(line, s.roles, s.takes, s.owners));
     if (second) alt.push(cutOf(second, s.roles, s.takes, s.owners));
   }
-  const twists = rankCandidates(s.lines.filter((l) => l.n === 10 && l.candidate && l.twist), s.takes);
+  const twists = rankCandidates(s.lines.filter((l) => l.n === total && l.candidate && l.twist), s.takes);
   const twist = twists[0] ? cutOf(twists[0], s.roles, s.takes, s.owners) : null;
 
   const cast = s.roles.map((r) => {
@@ -392,7 +405,7 @@ export function computeFinal(s: CutInput): FinalCut {
     return { role: r.id, roleName: r.name, names };
   });
   const writers: { name: string; n: number; twist?: boolean }[] = lines.filter((l) => l.candidate && l.authorName).map((l) => ({ name: l.authorName!, n: l.n }));
-  if (twist?.authorName) writers.push({ name: twist.authorName, n: 10, twist: true });
+  if (twist?.authorName) writers.push({ name: twist.authorName, n: total, twist: true });
   const adlibNames = [...new Set(lines.filter((l) => l.adlibId).map((l) => l.name!).filter(Boolean))];
   return {
     lines,
@@ -426,17 +439,19 @@ export function timeLeft(iso: string | null, ko: boolean, now = Date.now()): str
   if (ms <= 0) return ko ? "곧 개봉" : "Premiering";
   const h = Math.floor(ms / 3600_000);
   const d = Math.floor(h / 24);
-  if (d >= 1) return ko ? `${d}일 ${h % 24}시간 뒤 개봉` : `Premieres in ${d}d ${h % 24}h`;
+  if (d >= 1) return ko ? `${d}일 뒤 개봉` : `Premieres in ${d}d`;
   if (h >= 1) return ko ? `${h}시간 뒤 개봉` : `Premieres in ${h}h`;
   return ko ? `${Math.max(1, Math.floor(ms / 60_000))}분 뒤 개봉` : `Premieres in ${Math.max(1, Math.floor(ms / 60_000))}m`;
 }
 
-/** 개봉일 표시 — "목 21시" */
-export function premiereLabel(iso: string | null, ko: boolean): string {
+/** 개봉일 표시 — 날짜 차이만: "오늘 개봉" · "내일 개봉" · "3일 뒤 개봉" (시각은 안 쓴다) */
+export function premiereLabel(iso: string | null, ko: boolean, now = Date.now()): string {
   if (!iso) return "";
-  const d = new Date(new Date(iso).getTime() + 9 * 3600_000);
-  const wk = (ko ? ["일", "월", "화", "수", "목", "금", "토"] : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"])[d.getUTCDay()];
-  return ko ? `${wk} ${d.getUTCHours()}시 개봉` : `${wk} ${d.getUTCHours()}:00`;
+  const day = (ms: number) => Math.floor((ms + 9 * 3600_000) / 86_400_000);
+  const d = day(new Date(iso).getTime()) - day(now);
+  if (d <= 0) return ko ? "오늘 개봉" : "Premieres today";
+  if (d === 1) return ko ? "내일 개봉" : "Premieres tomorrow";
+  return ko ? `${d}일 뒤 개봉` : `Premieres in ${d} days`;
 }
 
 

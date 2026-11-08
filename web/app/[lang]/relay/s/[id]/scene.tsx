@@ -18,6 +18,9 @@ import {
   genreLabel,
   HALL_LABEL,
   isBranch,
+  LINES_PER_SCENE,
+  sceneLength,
+  twistN,
   MAX_LINE_CHARS,
   premiereLabel,
   roleColor,
@@ -32,7 +35,7 @@ import s from "@/components/relay/relay.module.css";
 const votesOf = (lineId: string, takes: TakeView[]) => new Set(takes.filter((t) => t.lineId === lineId && t.kind === "line").map((t) => t.owner)).size;
 
 /**
- * 장면 — 대본 10줄(지금 정식판으로 갈 줄이 굵게) · 갈림길 후보와 표 · 미리 듣기.
+ * 장면 — 대본 10~13줄(지금 정식판으로 갈 줄이 굵게) · 갈림길 후보와 표 · 미리 듣기.
  * 작가(LV5)는 갈림길에 대사를 쓰고, 감독은 NG/OK · 캐스팅을 한다.
  */
 export default function RelayScene({ id, initial }: { id: string; initial: SceneView | null }) {
@@ -59,16 +62,19 @@ export default function RelayScene({ id, initial }: { id: string; initial: Scene
     track("relay_open", { meme_id: initial?.stockKey ?? id });
   }, [reload, id, initial?.stockKey]);
 
-  // 작업실·사다리에서 ?write=6 으로 왔으면 — 작가면 쓰기 창을 바로, 아니면 그 갈림길로 스크롤
+  // 작업실·사다리에서 ?write=twist|end 로 왔으면 — 작가면 쓰기 창을 바로, 아니면 그 갈림길로 스크롤.
+  // 옛 링크(?write=6 · ?write=10)는 전개·결말로 읽는다 — 장면 길이마다 번호가 다르다.
   const live0 = scene?.status === "live";
+  const total0 = scene ? sceneLength(scene.lines) : LINES_PER_SCENE;
   useEffect(() => {
     if (!live0) return;
-    const w = Number(new URLSearchParams(window.location.search).get("write"));
-    if (w !== 6 && w !== 10) return;
+    const q = new URLSearchParams(window.location.search).get("write");
+    const w = q === "twist" || q === "6" ? twistN(total0) : q === "end" || q === "10" ? total0 : 0;
+    if (!w) return;
     document.getElementById(`branch-${w}`)?.scrollIntoView({ block: "center" });
     // eslint-disable-next-line react-hooks/set-state-in-effect -- 주소에 적힌 대로 한 번 연다
     if (can.write(level)) setWriteAt(w);
-  }, [live0, level]);
+  }, [live0, level, total0]);
 
   const preview = useMemo(() => (scene ? itemsOfPreview(scene) : null), [scene]);
   const playingLine = preview && pl.index >= 0 ? preview.lines[pl.index]?.lineId : null;
@@ -100,6 +106,7 @@ export default function RelayScene({ id, initial }: { id: string; initial: Scene
   const live = scene.status === "live";
   const dir = Boolean(scene.amDirector) && live;
   const base = scene.lines.filter((l) => !l.candidate).sort((a, b) => a.n - b.n);
+  const total = sceneLength(scene.lines);
   const voiced = base.filter((l) => scene.takes.some((x) => x.lineId === l.id && x.kind === "line")).length;
   const hall = HALL_LABEL[scene.hall];
   const mineRole = scene.owners.find((o) => o.mine);
@@ -164,9 +171,9 @@ export default function RelayScene({ id, initial }: { id: string; initial: Scene
         {live && !mineRole && <span className={s.muted}>{t("하고 싶은 역의 「이 배역 하기」를 누르면 그 배역 첫 대사부터 녹음해요.", "Tap “Play this” to record that role's first line.")}</span>}
         <RoleCards scene={scene} onCast={dir ? (r) => setCastOpen(r.id) : undefined} />
         <span className={s.meter}>
-          <i style={{ width: `${(voiced / 10) * 100}%` }} />
+          <i style={{ width: `${(voiced / total) * 100}%` }} />
         </span>
-        <span className={s.tiny}>{t(`사람 목소리 ${voiced}/10줄 · 빈 줄은 AI 대역이 읽어요`, `${voiced}/10 human lines · an AI stand-in reads the rest`)}</span>
+        <span className={s.tiny}>{t(`사람 목소리 ${voiced}/${total}줄 · 빈 줄은 AI 대역이 읽어요`, `${voiced}/${total} human lines · an AI stand-in reads the rest`)}</span>
       </div>
 
       <div className={s.row} style={{ gap: 8, marginTop: 10 }}>
@@ -193,11 +200,11 @@ export default function RelayScene({ id, initial }: { id: string; initial: Scene
         {dir && <span className={s.tiny}>🎬 {t("감독 모드", "Director mode")}</span>}
       </div>
       <ol className={s.script}>
-        {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => {
+        {Array.from({ length: total }, (_, i) => i + 1).map((n) => {
           const b = base.find((l) => l.n === n);
           if (!b) return null;
           const cands = scene.lines.filter((l) => l.n === n && l.candidate).sort((x, y) => votesOf(y.id, scene.takes) - votesOf(x.id, scene.takes) || x.at.localeCompare(y.at));
-          const chosen = chosenLine(n, scene.lines, scene.takes).line;
+          const chosen = chosenLine(n, scene.lines, scene.takes, total).line;
           return (
             <li key={n}>
               <LineRow
@@ -211,10 +218,10 @@ export default function RelayScene({ id, initial }: { id: string; initial: Scene
                 onStamp={stamp}
                 onPlay={(take) => void pl.play([lineItem(b, take)])}
               />
-              {isBranch(n) && (
+              {isBranch(n, total) && (
                 <div className={s.branch} id={`branch-${n}`}>
                   <span className={s.branchHead}>
-                    <b>🔀 {n === 6 ? t("갈림길 ① — 6번 대사 바꿔 쓰기", "Branch ① — rewrite line 6") : t("갈림길 ② — 결말(10번) 바꿔 쓰기", "Branch ② — rewrite the ending")}</b>
+                    <b>🔀 {n !== total ? t(`갈림길 ① — 전개(${n}번) 대사 바꿔 쓰기`, `Branch ① — rewrite line ${n}`) : t(`갈림길 ② — 결말(${n}번) 바꿔 쓰기`, "Branch ② — rewrite the ending")}</b>
                   </span>
                   <span className={s.branchHow}>
                     {t(
@@ -254,8 +261,8 @@ export default function RelayScene({ id, initial }: { id: string; initial: Scene
                   ))}
                   {live &&
                     (can.write(level) ? (
-                      <button type="button" className={s.writeBtn} onClick={() => setWriteAt(n)} data-tour={n === 6 ? "relay-write" : undefined}>
-                        ✍️ {n === 10 ? t("내 결말 쓰기", "Write my ending") : t("내 6번 대사 쓰기", "Write my line 6")}
+                      <button type="button" className={s.writeBtn} onClick={() => setWriteAt(n)} data-tour={n !== total ? "relay-write" : undefined}>
+                        ✍️ {n === total ? t("내 결말 쓰기", "Write my ending") : t(`내 ${n}번 대사 쓰기`, `Write my line ${n}`)}
                       </button>
                     ) : (
                       <Link href="/relay/guide#ranks" className={s.lock}>
@@ -423,7 +430,7 @@ function WriterSheet({ scene, n, level, onClose, onDone }: { scene: SceneView; n
     <div className={s.sheetBack} role="dialog" aria-modal="true" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className={s.sheet}>
         <span className={s.spread}>
-          <b className={s.sheetTitle}>✍️ {n === 6 ? t("6번 대사 바꿔 쓰기", "Rewrite line 6") : t("결말(10번) 바꿔 쓰기", "Rewrite the ending")}</b>
+          <b className={s.sheetTitle}>✍️ {n !== sceneLength(scene.lines) ? t(`전개(${n}번) 대사 바꿔 쓰기`, `Rewrite line ${n}`) : t(`결말(${n}번) 바꿔 쓰기`, "Rewrite the ending")}</b>
           <button type="button" className={s.sheetX} onClick={onClose} aria-label={t("닫기", "Close")}>
             ✕
           </button>
@@ -478,7 +485,7 @@ function WriterSheet({ scene, n, level, onClose, onDone }: { scene: SceneView; n
           {text.length}/{MAX_LINE_CHARS} · {t("숫자는 한글로 (예: 삼 초)", "Spell out numbers")}
         </span>
 
-        {n === 10 &&
+        {n === sceneLength(scene.lines) &&
           (can.twist(level) ? (
             <label className={s.twistBox}>
               <input type="checkbox" checked={twist} onChange={(e) => setTwist(e.target.checked)} />
