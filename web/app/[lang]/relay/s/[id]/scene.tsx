@@ -59,6 +59,17 @@ export default function RelayScene({ id, initial }: { id: string; initial: Scene
     track("relay_open", { meme_id: initial?.stockKey ?? id });
   }, [reload, id, initial?.stockKey]);
 
+  // 작업실·사다리에서 ?write=6 으로 왔으면 — 작가면 쓰기 창을 바로, 아니면 그 갈림길로 스크롤
+  const live0 = scene?.status === "live";
+  useEffect(() => {
+    if (!live0) return;
+    const w = Number(new URLSearchParams(window.location.search).get("write"));
+    if (w !== 6 && w !== 10) return;
+    document.getElementById(`branch-${w}`)?.scrollIntoView({ block: "center" });
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 주소에 적힌 대로 한 번 연다
+    if (can.write(level)) setWriteAt(w);
+  }, [live0, level]);
+
   const preview = useMemo(() => (scene ? itemsOfPreview(scene) : null), [scene]);
   const playingLine = preview && pl.index >= 0 ? preview.lines[pl.index]?.lineId : null;
 
@@ -201,13 +212,17 @@ export default function RelayScene({ id, initial }: { id: string; initial: Scene
                 onPlay={(take) => void pl.play([lineItem(b, take)])}
               />
               {isBranch(n) && (
-                <div className={s.cands}>
-                  <span className={s.branchTag}>
-                    {n === 6 ? t("갈림길 ① — 목소리로 투표", "Branch ① — vote by voice") : t("갈림길 ② 결말 — 목소리로 투표", "Branch ② ending — vote by voice")}
+                <div className={s.branch} id={`branch-${n}`}>
+                  <span className={s.branchHead}>
+                    <b>🔀 {n === 6 ? t("갈림길 ① — 6번 대사 바꿔 쓰기", "Branch ① — rewrite line 6") : t("갈림길 ② — 결말(10번) 바꿔 쓰기", "Branch ② — rewrite the ending")}</b>
                   </span>
-                  {cands.length === 0 && (
-                    <span className={s.tiny}>{t("아직 작가 대사가 없어요 — 위의 원래 대사로 가요", "No writer lines yet — the original stays")}</span>
-                  )}
+                  <span className={s.branchHow}>
+                    {t(
+                      "작가(LV5+)가 위 대사 대신 새 대사를 올리면, 배우들이 마음에 드는 대사를 녹음해요. 녹음 한 번 = 1표, 제일 많이 녹음된 대사가 개봉판에 들어가요.",
+                      "Writers (LV5+) post alternatives to the line above. Actors record the one they like — each recording is a vote; the top line makes the premiere.",
+                    )}
+                  </span>
+                  {cands.length === 0 && <span className={s.tiny}>{t("아직 올라온 대사가 없어요 — 이대로면 위의 원래 대사로 개봉해요.", "Nothing posted yet — the original line stays.")}</span>}
                   {cands.map((c) => (
                     <div key={c.id} className={`${s.cand} ${chosen?.id === c.id ? s.candLead : ""}`}>
                       <LineRow
@@ -239,12 +254,12 @@ export default function RelayScene({ id, initial }: { id: string; initial: Scene
                   ))}
                   {live &&
                     (can.write(level) ? (
-                      <button type="button" className={s.ctaSmall} onClick={() => setWriteAt(n)} data-tour={n === 6 ? "relay-write" : undefined}>
-                        ✍️ {n === 10 && can.twist(level) ? t("결말 쓰기 · 반전 카드", "Write ending · twist") : t("이 자리에 대사 쓰기", "Write a line here")}
+                      <button type="button" className={s.writeBtn} onClick={() => setWriteAt(n)} data-tour={n === 6 ? "relay-write" : undefined}>
+                        ✍️ {n === 10 ? t("내 결말 쓰기", "Write my ending") : t("내 6번 대사 쓰기", "Write my line 6")}
                       </button>
                     ) : (
                       <Link href="/relay/guide#ranks" className={s.lock}>
-                        🔒 {t("LV5 작가가 되면 이 자리에 대사를 쓸 수 있어요", "Writers (LV5) can write here")}
+                        🔒 {t(`LV5 작가부터 쓸 수 있어요 (지금 LV${level}) · 녹음해서 투표는 누구나`, `Writers from LV5 (you're LV${level}) · anyone can vote by recording`)}
                       </Link>
                     ))}
                 </div>
@@ -387,9 +402,10 @@ function WriterSheet({ scene, n, level, onClose, onDone }: { scene: SceneView; n
   const [err, setErr] = useState<string | null>(null);
   const [needLogin, setNeedLogin] = useState(false);
   const [busy, setBusy] = useState(false);
-  // 막장 모드: 바로 앞 두 줄만 보고 쓴다. 보통: 앞 대사 전부
+  // 막장 모드: 바로 앞 두 줄만 보고 쓴다. 보통: 앞 네 줄
   const before = scene.lines.filter((l) => !l.candidate && l.n < n).sort((a, b) => a.n - b.n);
   const context = scene.mode === "chaos" ? before.slice(-2) : before.slice(-4);
+  const roleName = (id: string) => scene.roles.find((r) => r.id === id)?.name ?? id;
   const send = async () => {
     setBusy(true);
     setErr(null);
@@ -406,48 +422,77 @@ function WriterSheet({ scene, n, level, onClose, onDone }: { scene: SceneView; n
   return (
     <div className={s.sheetBack} role="dialog" aria-modal="true" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className={s.sheet}>
-        <b>✍️ {n === 6 ? t("갈림길 ① 대사 쓰기", "Write branch ①") : t("결말(10번) 쓰기", "Write the ending (line 10)")}</b>
-        <span className={s.muted}>
-          {scene.mode === "chaos"
-            ? t("🌀 막장 모드 — 바로 앞 두 줄만 보여요. 아무 말 대잔치 환영!", "🌀 Chaos mode — you only see the last two lines.")
-            : t("배우들이 녹음하는 수가 곧 표예요. 가장 많이 녹음된 대사가 정식판에 들어가요.", "Each recording is a vote. Most-recorded line makes the cut.")}
+        <span className={s.spread}>
+          <b className={s.sheetTitle}>✍️ {n === 6 ? t("6번 대사 바꿔 쓰기", "Rewrite line 6") : t("결말(10번) 바꿔 쓰기", "Rewrite the ending")}</b>
+          <button type="button" className={s.sheetX} onClick={onClose} aria-label={t("닫기", "Close")}>
+            ✕
+          </button>
         </span>
-        <div className={s.studioLine} style={{ display: "grid", gap: 4 }}>
-          {context.map((l) => (
-            <span key={l.id} className={s.tiny}>
-              {l.n}. <b>{scene.roles.find((r) => r.id === l.role)?.name}</b> {l.text}
-            </span>
-          ))}
-          <span className={s.tiny}>{n}. ✍️ …</span>
+
+        <div className={s.wStep}>
+          <span className={s.wNum}>1</span>
+          <b>{scene.mode === "chaos" ? t("앞 두 줄만 보고 (🌀 막장 모드)", "Only the last two lines (🌀 chaos)") : t("앞 내용", "What came before")}</b>
         </div>
-        <label className={s.field}>
-          <span>{t("누구의 대사?", "Whose line?")}</span>
-          <span className={s.chips}>
-            {scene.roles.map((r) => (
-              <button key={r.id} type="button" className={`${s.chip} ${role === r.id ? s.chipOn : ""}`} onClick={() => setRole(r.id)}>
-                {r.name}
-              </button>
-            ))}
-          </span>
-        </label>
-        <label className={s.field}>
-          <span>{t("대사", "Line")}</span>
-          <textarea className={s.textarea} value={text} maxLength={MAX_LINE_CHARS} rows={2} placeholder={base?.text} onChange={(e) => setText(e.target.value)} />
-          <span className={s.counter}>
-            {text.length}/{MAX_LINE_CHARS} · {t("숫자는 한글로 (예: 삼 초)", "Spell out numbers")}
-          </span>
-        </label>
+        <ol className={s.ctx}>
+          {context.map((l) => (
+            <li key={l.id}>
+              <span className={s.ctxN}>{l.n}</span>
+              <span className={s.ctxBody}>
+                <b style={{ color: roleColor(scene.roles, l.role) }}>{roleName(l.role)}</b>
+                <span>{l.text}</span>
+              </span>
+            </li>
+          ))}
+          {base && (
+            <li className={s.ctxOld}>
+              <span className={s.ctxN}>{n}</span>
+              <span className={s.ctxBody}>
+                <b style={{ color: roleColor(scene.roles, base.role) }}>
+                  {roleName(base.role)} · {t("원래 대사", "original")}
+                </b>
+                <span>{base.text}</span>
+              </span>
+            </li>
+          )}
+        </ol>
+        <span className={s.tiny}>{t("↑ 원래 대사 대신 들어갈, 더 웃기거나 더 극적인 대사를 써 보세요.", "↑ Write something funnier or more dramatic to replace it.")}</span>
+
+        <div className={s.wStep}>
+          <span className={s.wNum}>2</span>
+          <b>{t("누가 말할까요?", "Who says it?")}</b>
+        </div>
+        <span className={s.chips}>
+          {scene.roles.map((r) => (
+            <button key={r.id} type="button" className={`${s.chip} ${role === r.id ? s.chipOn : ""}`} onClick={() => setRole(r.id)}>
+              {r.name}
+            </button>
+          ))}
+        </span>
+
+        <div className={s.wStep}>
+          <span className={s.wNum}>3</span>
+          <b>{t("대사", "Line")}</b>
+        </div>
+        <textarea className={s.textarea} value={text} maxLength={MAX_LINE_CHARS} rows={2} placeholder={t("여기에 새 대사", "Your new line")} onChange={(e) => setText(e.target.value)} />
+        <span className={s.counter}>
+          {text.length}/{MAX_LINE_CHARS} · {t("숫자는 한글로 (예: 삼 초)", "Spell out numbers")}
+        </span>
+
         {n === 10 &&
           (can.twist(level) ? (
-            <label className={s.row} style={{ gap: 8 }}>
+            <label className={s.twistBox}>
               <input type="checkbox" checked={twist} onChange={(e) => setTwist(e.target.checked)} />
               <span>
-                🃏 {t("반전 카드로 쓰기 — 투표 없이 '반전판' 결말로 따로 상영 (장면당 한 장)", "Twist card — plays as the alternate ending (one per scene)")}
+                <b>🃏 {t("반전 카드로 쓰기", "Use as a twist card")}</b>
+                <small>{t("투표 없이 '반전판' 결말로 따로 상영돼요. 장면당 한 장.", "Plays as a separate twist ending, no vote. One per scene.")}</small>
               </span>
             </label>
           ) : (
-            <span className={s.lock}>🔒 {t("LV6이 되면 반전 카드(대체 결말)를 쓸 수 있어요", "Twist cards at LV6")}</span>
+            <span className={s.tiny}>🔒 {t("LV6이 되면 반전 카드(투표 없이 따로 상영되는 결말)를 쓸 수 있어요", "Twist cards at LV6")}</span>
           ))}
+
+        <span className={s.wAfter}>{t("올리면 → 배우들이 이 대사를 녹음할 때마다 1표 → 개봉 때 1등 대사가 장면에 들어가고 크레딧에 작가로 이름이 올라가요.", "After posting → each actor recording it is a vote → the winner goes in the premiere with you credited as writer.")}</span>
+
         {err && (
           <div className={s.error}>
             {err} {needLogin && <Link href={`/login?next=/relay/s/${scene.id}`}>{t("로그인", "Log in")}</Link>}

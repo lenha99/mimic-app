@@ -5,9 +5,9 @@ import { useCallback, useEffect, useState } from "react";
 import { useLang, useT } from "@/components/lang";
 import { Coco } from "@/components/brand/coco";
 import { postJson } from "@/components/relay/client";
-import { Ladder, useLevel } from "@/components/relay/parts";
+import { genreArt, Ladder, useLevel } from "@/components/relay/parts";
 import { clientId } from "@/lib/client-id";
-import { can, GENRES, isBranch, MAX_LINE_CHARS, scenesPerWeek, TYPE_LABEL, VOICE_LABEL, type RoleType } from "@/lib/relay";
+import { can, GENRES, isBranch, MAX_LINE_CHARS, ROLE_COLORS, scenesPerWeek, TYPE_LABEL, VOICE_LABEL, type RoleType } from "@/lib/relay";
 import { track } from "@/lib/track";
 import s from "@/components/relay/relay.module.css";
 
@@ -101,6 +101,33 @@ export default function RelayStudio() {
     void load();
   };
 
+  const checks = [
+    { ok: title.trim().length >= 2, ko: "제목", en: "Title" },
+    { ok: roles.length >= 2 && roles.every((r) => r.name.trim()), ko: "배역 이름 전부", en: "All role names" },
+    { ok: lines.every((l) => l.text.trim().length >= 2), ko: `대사 10줄 (${lines.filter((l) => l.text.trim().length >= 2).length}/10)`, en: `10 lines (${lines.filter((l) => l.text.trim().length >= 2).length}/10)` },
+    { ok: roles.every((_, i) => lines.some((l) => l.role === i)), ko: "배역마다 대사 한 줄 이상", en: "Every role speaks" },
+  ];
+  const colorOf = (i: number) => ROLE_COLORS[i % ROLE_COLORS.length];
+
+  const steps = (
+    <ol className={s.howSteps}>
+      {[
+        { n: 1, icon: "📝", ko: ["장면 쓰기", "배역 2~4명 · 대사 10줄"], en: ["Write", "2–4 roles · 10 lines"] },
+        { n: 2, icon: "🎞️", ko: ["상영", "AI 대역 목소리로 바로 상영, 배우들이 한 줄씩 채워요"], en: ["Goes live", "AI voices first, actors fill in"] },
+        { n: 3, icon: "🎬", ko: ["연출", "장면 화면에서 녹음마다 OK/NG · 배우 지명"], en: ["Direct", "Stamp OK/NG · cast on the scene page"] },
+      ].map((x) => (
+        <li key={x.n} className={s.howStep}>
+          <span className={s.howIcon} aria-hidden="true">
+            {x.icon}
+            <i>{x.n}</i>
+          </span>
+          <b>{ko ? x.ko[0] : x.en[0]}</b>
+          <small>{ko ? x.ko[1] : x.en[1]}</small>
+        </li>
+      ))}
+    </ol>
+  );
+
   return (
     <main className={`shell ${s.page}`}>
       <Link href="/relay" className={s.back}>
@@ -110,47 +137,35 @@ export default function RelayStudio() {
       <h1 className={s.h1}>
         🎬 {t("감독 스튜디오", "Director studio")}
       </h1>
+      <p className={s.sub}>{t("내가 쓴 장면을 상영관에 올리고, 들어온 녹음을 연출하는 곳이에요.", "Write your own scene, put it on screen, and direct the takes.")}</p>
+      {steps}
 
       {!allowed ? (
         <>
-          <div className={s.okBox}>
-            <Coco mood="think" size={80} />
-            <b>{t("LV7 감독부터 장면을 열 수 있어요", "Directors (LV7) open scenes")}</b>
-            <span className={s.muted}>
-              {t(
-                `지금 LV${level}. 감독이 되면 직접 쓴 장면을 상영관에 올리고, 배우를 캐스팅하고, 녹음마다 NG/OK를 찍어요. 한 주에 한 편(LV9는 두 편).`,
-                `You're LV${level}. Directors write scenes, cast actors and stamp NG/OK. One scene a week (two at LV9).`,
-              )}
-            </span>
-            <Link href="/relay/rec" className={s.ctaSmall}>
-              🎙 {t("출연해서 XP 모으기", "Earn XP by appearing")}
+          <div className={s.okBox} style={{ marginTop: 16 }}>
+            <Coco mood="think" size={72} />
+            <b>{t(`LV7부터 열려요 (지금 LV${level})`, `Unlocks at LV7 (you're LV${level})`)}</b>
+            <span className={s.muted}>{t("출연할 때마다 +30XP, 개봉하면 +60XP. 감독이 돼도 배우·작가 일은 그대로 할 수 있어요.", "+30XP per appearance, +60XP per premiere. Directors still act and write.")}</span>
+            <Link href="/relay" className={s.roleBtn}>
+              🎭 {t("배역 골라 출연하기", "Pick a role")}
             </Link>
           </div>
           <div className={s.section}>
-            <h2>{t("제작 계급", "Ranks")}</h2>
+            <h2>🎟 {t("레벨이 오르면 할 수 있는 것", "Unlock as you level up")}</h2>
           </div>
           <Ladder />
-          <div className={s.section}>
-            <h2>{t("감독이 하는 일", "What directors do")}</h2>
-          </div>
-          <ul className={s.guide}>
-            <li>{t("📝 제목·배역(2~4)·대사 10줄로 장면 열기 — 줄마다 배역 목소리 TTS가 자동으로 입혀져요", "📝 Write a 10-line scene — TTS voices every line")}</li>
-            <li>{t("🎬 들어온 녹음에 OK(정식판 우선) / NG + 디렉션(\"더 비열하게\" 등)", "🎬 Stamp takes OK, or NG with a direction")}</li>
-            <li>{t("📣 빈 배역에 배우 지명 — 장면당 둘까지", "📣 Cast actors to empty roles — two per scene")}</li>
-            <li>{t("🌀 막장 모드 — 작가가 앞 두 줄만 보고 쓰는 장면", "🌀 Chaos mode — writers see only the last two lines")}</li>
-          </ul>
         </>
       ) : (
         <>
           {!data?.loggedIn && !data?.admin && (
-            <div className={s.lock}>
-              🔑 {t("장면을 열려면 로그인이 필요해요.", "Log in to open scenes.")} <Link href="/login?next=/relay/studio">{t("로그인", "Log in")}</Link>
+            <div className={s.lock} style={{ marginTop: 12 }}>
+              🔑 {t("장면을 올리려면 로그인이 필요해요.", "Log in to post scenes.")} <Link href="/login?next=/relay/studio">{t("로그인", "Log in")}</Link>
             </div>
           )}
-          <p className={s.sub}>
+          <p className={s.tiny} style={{ marginTop: 10 }}>
             {data?.admin
               ? t("운영자 — 바로 상영 대기열에 올라가요.", "Admin — goes straight to the queue.")
-              : t(`한 주에 ${scenesPerWeek(level)}편. 첫 두 편은 운영자 확인을 거쳐요.`, `${scenesPerWeek(level)} per week. Your first two are reviewed.`)}
+              : t(`한 주에 ${scenesPerWeek(level)}편 올릴 수 있어요. 처음 두 편은 운영자가 한 번 확인해요(보통 하루 안).`, `${scenesPerWeek(level)} per week. Your first two are reviewed (usually within a day).`)}
           </p>
 
           {data && data.pending.length > 0 && (
@@ -181,8 +196,10 @@ export default function RelayStudio() {
             </>
           )}
 
-          <div className={s.section}>
-            <h2>{t("새 장면", "New scene")}</h2>
+          {/* ① 장면 정보 */}
+          <div className={s.stepHead}>
+            <span className={s.wNum}>1</span>
+            <h2>{t("장면 정보", "About the scene")}</h2>
           </div>
           <div className={s.card}>
             <label className={s.field}>
@@ -190,33 +207,12 @@ export default function RelayStudio() {
               <input className={s.input} value={title} maxLength={30} onChange={(e) => setTitle(e.target.value)} placeholder={t("예) 마왕, 편의점 알바 면접을 보다", "e.g. The Demon King's job interview")} />
             </label>
             <label className={s.field}>
-              <span>{t("한 줄 소개", "Logline")}</span>
-              <input className={s.input} value={logline} maxLength={80} onChange={(e) => setLogline(e.target.value)} />
-            </label>
-            <label className={s.field}>
-              <span>{t("장르", "Genre")}</span>
-              <span className={s.chips}>
-                {GENRES.map((g) => (
-                  <button key={g.id} type="button" className={`${s.chip} ${genre === g.id ? s.chipOn : ""}`} onClick={() => setGenre(g.id)}>
-                    {ko ? g.ko : g.en}
-                  </button>
-                ))}
-              </span>
-            </label>
-            <label className={s.field}>
-              <span>{t("모드", "Mode")}</span>
-              <span className={s.chips}>
-                <button type="button" className={`${s.chip} ${mode === "normal" ? s.chipOn : ""}`} onClick={() => setMode("normal")}>
-                  {t("보통", "Normal")}
-                </button>
-                <button type="button" className={`${s.chip} ${mode === "chaos" ? s.chipOn : ""}`} onClick={() => setMode("chaos")}>
-                  🌀 {t("막장 — 작가는 앞 두 줄만 봐요", "Chaos — writers see 2 lines")}
-                </button>
-              </span>
+              <span>{t("한 줄 소개 — 상영관 카드에 나와요", "Logline — shown on the card")}</span>
+              <input className={s.input} value={logline} maxLength={80} onChange={(e) => setLogline(e.target.value)} placeholder={t("예) 이력서 특기란에 '세계 정복'이라고 썼다", "e.g. Special skills: world domination")} />
             </label>
             {data && data.prompts.length > 0 && (
               <label className={s.field}>
-                <span>{t("상황 신청에서 고르기 (원안 크레딧)", "Pick a pitch (idea credit)")}</span>
+                <span>{t("💡 누가 신청한 상황으로 쓰기 (신청자가 '원안' 크레딧)", "💡 Use someone's pitch (they get idea credit)")}</span>
                 <select
                   className={s.select}
                   value={promptId ?? ""}
@@ -235,73 +231,125 @@ export default function RelayStudio() {
                 </select>
               </label>
             )}
+            <div className={s.field}>
+              <span>{t("장르", "Genre")}</span>
+              <span className={s.chips}>
+                {GENRES.map((g) => (
+                  <button key={g.id} type="button" className={`${s.chip} ${genre === g.id ? s.chipOn : ""}`} onClick={() => setGenre(g.id)}>
+                    {genreArt(g.id).art} {ko ? g.ko : g.en}
+                  </button>
+                ))}
+              </span>
+            </div>
+            <div className={s.field}>
+              <span>{t("모드", "Mode")}</span>
+              <span className={s.modeRow}>
+                <button type="button" className={`${s.modeCard} ${mode === "normal" ? s.modeOn : ""}`} onClick={() => setMode("normal")}>
+                  <b>📖 {t("보통", "Normal")}</b>
+                  <small>{t("작가가 앞 내용을 다 보고 갈림길을 써요", "Writers see the story so far")}</small>
+                </button>
+                <button type="button" className={`${s.modeCard} ${mode === "chaos" ? s.modeOn : ""}`} onClick={() => setMode("chaos")}>
+                  <b>🌀 {t("막장", "Chaos")}</b>
+                  <small>{t("작가는 바로 앞 두 줄만 보고 써요 — 아무 말 대잔치", "Writers only see the last two lines")}</small>
+                </button>
+              </span>
+            </div>
           </div>
 
-          <div className={s.section}>
-            <h2>{t("배역", "Roles")} ({roles.length}/4)</h2>
+          {/* ② 배역 */}
+          <div className={s.stepHead}>
+            <span className={s.wNum}>2</span>
+            <h2>
+              {t("배역", "Roles")} <small className={s.tiny}>({roles.length}/4)</small>
+            </h2>
             {roles.length < 4 && (
-              <button type="button" className={s.ctaSmall} onClick={() => setRoles((rs) => [...rs, { name: "", type: "everyday", voice: "m_calm" }])}>
-                + {t("배역", "Role")}
+              <button type="button" className={s.roleBtnGhost} style={{ marginLeft: "auto" }} onClick={() => setRoles((rs) => [...rs, { name: "", type: "everyday", voice: "m_calm" }])}>
+                + {t("배역 추가", "Add role")}
               </button>
             )}
           </div>
-          {roles.map((r, i) => (
-            <div key={i} className={s.card}>
-              <span className={s.spread}>
-                <input className={s.input} value={r.name} maxLength={12} placeholder={t(`배역 ${i + 1} 이름`, `Role ${i + 1}`)} onChange={(e) => setRole(i, { name: e.target.value })} />
-                {roles.length > 2 && (
-                  <button type="button" className={s.chip} onClick={() => removeRole(i)} aria-label={t("배역 빼기", "Remove")}>
-                    ✕
-                  </button>
-                )}
-              </span>
-              <span className={s.chips}>
-                {TYPES.map((x) => (
-                  <button key={x} type="button" className={`${s.chip} ${r.type === x ? s.chipOn : ""}`} onClick={() => setRole(i, { type: x })}>
-                    {ko ? TYPE_LABEL[x].ko : TYPE_LABEL[x].en}
-                  </button>
-                ))}
-              </span>
-              <select className={s.select} value={r.voice} onChange={(e) => setRole(i, { voice: e.target.value })} aria-label={t("TTS 목소리", "TTS voice")}>
-                {Object.entries(VOICE_LABEL).map(([id, label]) => (
-                  <option key={id} value={id}>
-                    🔊 {label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ))}
-
-          <div className={s.section}>
-            <h2>{t("대사 10줄", "10 lines")}</h2>
-            <span className={s.tiny}>{t("6·10번은 작가들이 바꿔 쓸 수 있는 갈림길", "6 & 10 are branches writers can rewrite")}</span>
-          </div>
-          <ol className={s.script}>
-            {lines.map((l, i) => (
-              <li key={i} className={s.studioLine}>
-                <span className={s.spread}>
-                  <b>
-                    {i + 1}
-                    {isBranch(i + 1) ? ` · ${t("갈림길", "branch")}` : ""}
-                  </b>
-                  <span className={s.chips}>
-                    {roles.map((r, j) => (
-                      <button key={j} type="button" className={`${s.chip} ${l.role === j ? s.chipOn : ""}`} onClick={() => setLine(i, { role: j })}>
-                        {r.name || `${t("배역", "Role")} ${j + 1}`}
-                      </button>
-                    ))}
+          <div className={s.roleDrafts}>
+            {roles.map((r, i) => (
+              <div key={i} className={s.roleDraft} style={{ ["--role" as string]: colorOf(i) }}>
+                <span className={s.roleDraftHead}>
+                  <span className={s.roleFace}>
+                    <b>{r.name.trim().slice(0, 1) || i + 1}</b>
                   </span>
+                  <input className={s.input} value={r.name} maxLength={12} placeholder={t(`배역 ${i + 1} 이름 (예: 마왕)`, `Role ${i + 1} name`)} onChange={(e) => setRole(i, { name: e.target.value })} />
+                  {roles.length > 2 && (
+                    <button type="button" className={s.sheetX} onClick={() => removeRole(i)} aria-label={t("배역 빼기", "Remove")}>
+                      ✕
+                    </button>
+                  )}
                 </span>
-                <input className={s.input} value={l.text} maxLength={MAX_LINE_CHARS} placeholder={t("대사 (숫자는 한글로)", "Line")} onChange={(e) => setLine(i, { text: e.target.value })} />
-                <input className={s.input} value={l.dir} maxLength={20} placeholder={t("지문 (선택) — 예: 비웃으며", "Direction (optional)")} onChange={(e) => setLine(i, { dir: e.target.value })} />
-              </li>
+                <span className={s.miniLabel}>{t("어떤 연기?", "Kind of role")}</span>
+                <span className={s.chips}>
+                  {TYPES.map((x) => (
+                    <button key={x} type="button" className={`${s.chip} ${r.type === x ? s.chipOn : ""}`} onClick={() => setRole(i, { type: x })}>
+                      {ko ? TYPE_LABEL[x].ko : TYPE_LABEL[x].en}
+                    </button>
+                  ))}
+                </span>
+                <span className={s.miniLabel}>{t("배우가 오기 전까지 읽어 줄 AI 대역 목소리", "AI stand-in voice until an actor shows up")}</span>
+                <select className={s.select} value={r.voice} onChange={(e) => setRole(i, { voice: e.target.value })} aria-label={t("AI 대역 목소리", "AI voice")}>
+                  {Object.entries(VOICE_LABEL).map(([id, label]) => (
+                    <option key={id} value={id}>
+                      🔊 {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             ))}
+          </div>
+
+          {/* ③ 대본 */}
+          <div className={s.stepHead}>
+            <span className={s.wNum}>3</span>
+            <h2>{t("대본 10줄", "10 lines")}</h2>
+          </div>
+          <p className={s.tiny} style={{ margin: "-4px 0 8px" }}>
+            {t("줄마다 누가 말하는지 고르고 대사를 써요. 숫자는 한글로(속도를 음절로 재요). 🔀 6·10번은 작가들이 바꿔 쓸 수 있는 갈림길이에요.", "Pick who speaks and write the line. 🔀 Lines 6 & 10 are branches writers can rewrite.")}
+          </p>
+          <ol className={s.drafts}>
+            {lines.map((l, i) => {
+              const branch = isBranch(i + 1);
+              return (
+                <li key={i} className={`${s.draft} ${branch ? s.draftBranch : ""}`} style={{ ["--role" as string]: colorOf(l.role) }}>
+                  <span className={s.draftTop}>
+                    <span className={s.draftN}>{i + 1}</span>
+                    {branch && <span className={s.branchTag}>🔀 {t("갈림길", "Branch")}</span>}
+                    <span className={s.chips} style={{ marginLeft: "auto", justifyContent: "flex-end" }}>
+                      {roles.map((r, j) => (
+                        <button
+                          key={j}
+                          type="button"
+                          className={`${s.roleChip} ${l.role === j ? s.roleChipOn : ""}`}
+                          style={{ ["--role" as string]: colorOf(j) }}
+                          onClick={() => setLine(i, { role: j })}
+                        >
+                          {r.name.trim() || `${t("배역", "Role")} ${j + 1}`}
+                        </button>
+                      ))}
+                    </span>
+                  </span>
+                  <input className={s.input} value={l.text} maxLength={MAX_LINE_CHARS} placeholder={t("대사", "Line")} onChange={(e) => setLine(i, { text: e.target.value })} />
+                  <input className={`${s.input} ${s.inputSoft}`} value={l.dir} maxLength={20} placeholder={t("지문 (선택) — 예: 비웃으며", "Direction (optional) — e.g. sneering")} onChange={(e) => setLine(i, { dir: e.target.value })} />
+                </li>
+              );
+            })}
           </ol>
 
+          <ul className={s.checks}>
+            {checks.map((c) => (
+              <li key={c.ko} data-ok={c.ok ? "1" : "0"}>
+                {c.ok ? "✓" : "○"} {ko ? c.ko : c.en}
+              </li>
+            ))}
+          </ul>
           {msg && <div className={msg.ok ? s.okBox : s.error}>{msg.text}</div>}
           <div className={s.bottomBar}>
             <button type="button" className={s.cta} disabled={!ready || busy} onClick={submit}>
-              {busy ? t("목소리 입히는 중… (30초쯤)", "Voicing lines… (~30s)") : t("🎬 장면 올리기", "🎬 Submit scene")}
+              {busy ? t("목소리 입히는 중… (30초쯤)", "Voicing lines… (~30s)") : ready ? t("🎬 장면 올리기", "🎬 Submit scene") : t(`${checks.filter((c) => !c.ok).length}가지 더 채우면 올릴 수 있어요`, `${checks.filter((c) => !c.ok).length} more to fill in`)}
             </button>
           </div>
 
@@ -322,6 +370,11 @@ export default function RelayStudio() {
                           {ko ? STATUS[m.status]?.[0] : STATUS[m.status]?.[1]} · {t(`배우 ${m.real_actors} · 시청 ${m.listens}`, `${m.real_actors} actors · ${m.listens} listens`)}
                         </small>
                       </span>
+                      {m.status === "live" && (
+                        <Link href={`/relay/s/${m.id}`} className={s.roleBtnGhost}>
+                          {t("연출하러", "Direct")} ›
+                        </Link>
+                      )}
                       {(m.status === "pending" || m.status === "queued") && (
                         <button type="button" className={s.chip} onClick={() => act(m.id, "withdraw")}>
                           {t("거두기", "Withdraw")}

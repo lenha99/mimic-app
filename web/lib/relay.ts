@@ -59,12 +59,76 @@ export function premiereAt(opens: number): number {
 // ---- 계급 ----
 
 export type Title = "actor" | "adlib" | "writer" | "director" | "legend";
-export const TITLES: { id: Title; from: number; ko: string; en: string; icon: string; perkKo: string; perkEn: string }[] = [
-  { id: "actor", from: 1, ko: "배우", en: "Actor", icon: "🎙", perkKo: "배역을 맡아 녹음하고 출연해요", perkEn: "Take a role, record, appear" },
-  { id: "adlib", from: 3, ko: "애드리브 배우", en: "Ad-lib actor", icon: "😏", perkKo: "내 줄 뒤에 2초 애드리브를 붙여요", perkEn: "Add a 2s ad-lib after your line" },
-  { id: "writer", from: 5, ko: "작가", en: "Writer", icon: "✍️", perkKo: "갈림길 대사를 써요 · LV6 반전 카드", perkEn: "Write branch lines · twist card at LV6" },
-  { id: "director", from: 7, ko: "감독", en: "Director", icon: "🎬", perkKo: "장면을 열고, 캐스팅하고, NG/OK 를 찍어요", perkEn: "Open scenes, cast, stamp NG/OK" },
-  { id: "legend", from: 9, ko: "명감독", en: "Master director", icon: "👑", perkKo: "한 주에 장면 두 편 · 이주의 명작 추천", perkEn: "Two scenes a week" },
+/**
+ * 계급은 누적이다 — 위 계급은 아래 계급이 하던 일을 전부 하고, 하나씩 더 한다.
+ * where 는 "그걸 어디서 하는지" — 처음 온 사람이 실제로 묻는 말.
+ */
+export const TITLES: {
+  id: Title;
+  from: number;
+  ko: string;
+  en: string;
+  icon: string;
+  perkKo: string;
+  perkEn: string;
+  whereKo: string;
+  whereEn: string;
+}[] = [
+  {
+    id: "actor",
+    from: 1,
+    ko: "배우",
+    en: "Actor",
+    icon: "🎙",
+    perkKo: "배역 하나 골라 대사 녹음",
+    perkEn: "Pick a role and record lines",
+    whereKo: "상영관 카드의 「이 배역 하기」",
+    whereEn: "“Play this” on a scene card",
+  },
+  {
+    id: "adlib",
+    from: 3,
+    ko: "애드리브 배우",
+    en: "Ad-lib actor",
+    icon: "😏",
+    perkKo: "내 대사 뒤에 2초 애드리브 붙이기",
+    perkEn: "Add a 2s ad-lib after your line",
+    whereKo: "대사를 녹음하고 「출연하기」를 누른 바로 다음 화면",
+    whereEn: "Right after you tap “Appear”",
+  },
+  {
+    id: "writer",
+    from: 5,
+    ko: "작가",
+    en: "Writer",
+    icon: "✍️",
+    perkKo: "6번·10번 대사를 내 대사로 바꿔 쓰기 · LV6부터 반전 결말 카드",
+    perkEn: "Rewrite lines 6 & 10 · twist ending card at LV6",
+    whereKo: "장면 화면 ▸ 6번·10번 줄 아래 「갈림길」 칸",
+    whereEn: "Scene page ▸ the “branch” box under lines 6 & 10",
+  },
+  {
+    id: "director",
+    from: 7,
+    ko: "감독",
+    en: "Director",
+    icon: "🎬",
+    perkKo: "내 장면 쓰고 올리기 · 녹음에 OK/NG · 배우 지명",
+    perkEn: "Write your own scene · stamp OK/NG · cast actors",
+    whereKo: "감독 스튜디오에서 장면 쓰기 → 상영되면 그 장면 화면에서 OK/NG·지명",
+    whereEn: "Write in the studio → stamp & cast on that scene's page",
+  },
+  {
+    id: "legend",
+    from: 9,
+    ko: "명감독",
+    en: "Master director",
+    icon: "👑",
+    perkKo: "한 주에 장면 두 편",
+    perkEn: "Two scenes a week",
+    whereKo: "감독 스튜디오",
+    whereEn: "Director studio",
+  },
 ];
 export function titleOf(level: number): (typeof TITLES)[number] {
   let t = TITLES[0];

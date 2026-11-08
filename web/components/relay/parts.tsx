@@ -7,7 +7,7 @@ import { usePass } from "@/components/pass/use-pass";
 import { VoiceAvatar } from "@/components/voice-avatar";
 import { normalizeAvatar } from "@/lib/avatar";
 import { clientId } from "@/lib/client-id";
-import { genreLabel, HALL_LABEL, nextTitle, premiereLabel, roleColor, rolePick, timeLeft, titleOf, TITLES, TYPE_LABEL, type RelayRole, type SceneView } from "@/lib/relay";
+import { genreLabel, HALL_LABEL, nextTitle, premiereLabel, roleColor, rolePick, timeLeft, titleOf, TITLES, TYPE_LABEL, type RelayRole, type SceneView, type Title } from "@/lib/relay";
 import { track } from "@/lib/track";
 import { LEVEL_XP } from "@/lib/pass";
 import { Coco } from "@/components/brand/coco";
@@ -48,7 +48,7 @@ export function RankBar() {
         </b>
         <small>
           {next
-            ? t(`${next.from}레벨 ${next.ko}까지 ${need}XP — ${next.perkKo}`, `${need}XP to ${next.en} — ${next.perkEn}`)
+            ? t(`LV${next.from} ${next.ko}까지 ${need}XP — ${next.perkKo}`, `${need}XP to ${next.en} — ${next.perkEn}`)
             : t("최고 직함이에요. 장면을 열고 배우를 캐스팅하세요", "Top rank — open scenes and cast actors")}
         </small>
       </span>
@@ -57,29 +57,62 @@ export function RankBar() {
   );
 }
 
-/** 계급 사다리 — 지금 위치, 잠긴 건 흐리게 */
-export function Ladder() {
+/**
+ * 계급 사다리 — 계급은 쌓인다(감독은 배우·애드리브·작가 일도 전부 한다).
+ * 칸마다: 새로 생기는 일 · 그걸 어디서 하는지 · 열렸으면 바로 가는 버튼, 잠겼으면 남은 XP.
+ */
+export function Ladder({ writeHref }: { writeHref?: string | null }) {
+  const t = useT();
   const ko = useLang() === "ko";
   const { level } = useLevel();
+  const pass = usePass();
+  const xp = pass?.xp ?? 0;
   const cur = titleOf(level);
+  const go: Partial<Record<Title, { href: string; ko: string; en: string }>> = {
+    writer: writeHref ? { href: writeHref, ko: "갈림길 대사 쓰러 가기", en: "Write a branch line" } : undefined,
+    director: { href: "/relay/studio", ko: "감독 스튜디오 열기", en: "Open the studio" },
+  };
   return (
-    <ol className={s.ladder}>
-      {TITLES.map((x) => {
-        const locked = level < x.from;
-        return (
-          <li key={x.id} className={`${s.rung} ${x.id === cur.id ? s.rungOn : ""} ${locked ? s.rungLocked : ""}`}>
-            <span className={s.rungIcon} aria-hidden="true">
-              {x.icon}
-            </span>
-            <span>
-              <b>{ko ? x.ko : x.en}</b>
-              <small>{ko ? x.perkKo : x.perkEn}</small>
-            </span>
-            <span className={s.tiny}>{locked ? `🔒 LV${x.from}` : `LV${x.from}+`}</span>
-          </li>
-        );
-      })}
-    </ol>
+    <div className={s.ladderBox}>
+      <p className={s.ladderNote}>
+        {t("계급은 쌓여요 — 레벨이 오르면 아래 계급이 하던 건 그대로 하고, 할 수 있는 게 하나씩 늘어요.", "Ranks stack — each level keeps everything below and adds one more power.")}
+      </p>
+      <ol className={s.ladder}>
+        {TITLES.map((x) => {
+          const locked = level < x.from;
+          const need = Math.max(0, (LEVEL_XP[x.from - 1] ?? 0) - xp);
+          const action = go[x.id];
+          return (
+            <li key={x.id} className={`${s.rung} ${x.id === cur.id ? s.rungOn : ""} ${locked ? s.rungLocked : ""}`}>
+              <span className={s.rungIcon} aria-hidden="true">
+                {x.icon}
+              </span>
+              <span className={s.rungBody}>
+                <span className={s.rungHead}>
+                  <b>{ko ? x.ko : x.en}</b>
+                  <span className={s.rungLv}>LV{x.from}</span>
+                  {x.id === cur.id && <span className={s.rungNow}>{t("지금 나", "You")}</span>}
+                </span>
+                <span className={s.rungPerk}>
+                  {x.from > 1 ? "+ " : ""}
+                  {ko ? x.perkKo : x.perkEn}
+                </span>
+                <span className={s.rungWhere}>📍 {ko ? x.whereKo : x.whereEn}</span>
+                {locked ? (
+                  <span className={s.rungLock}>🔒 {pass ? t(`${need}XP 더 모으면 열려요 · 출연 한 번 +30XP`, `${need}XP to go · +30XP per appearance`) : t(`LV${x.from}부터`, `From LV${x.from}`)}</span>
+                ) : (
+                  action && (
+                    <Link href={action.href} className={s.rungGo}>
+                      {ko ? action.ko : action.en} ›
+                    </Link>
+                  )
+                )}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
   );
 }
 
@@ -358,5 +391,53 @@ export function PromptCard() {
         </button>
       </span>
     </div>
+  );
+}
+
+/**
+ * 내 작업실 — 작가(LV5)·감독(LV7)이 "어디 가서 뭘 하지?"를 안 묻게, 할 수 있는 일을 버튼으로.
+ * 작가: 상영 중 장면마다 6번·10번 쓰기 → 장면 화면이 쓰기 창을 바로 연다(?write=6).
+ */
+export function MyDesk({ live }: { live: SceneView[] }) {
+  const t = useT();
+  const { level } = useLevel();
+  if (level < 5) return null;
+  return (
+    <section className={s.desk}>
+      <span className={s.deskHead}>
+        <b>🛠 {t("내 작업실", "My desk")}</b>
+        <span className={s.tiny}>{t(`LV${level} · 배우 일은 그대로 하면서`, `LV${level} · on top of acting`)}</span>
+      </span>
+      <div className={s.deskBlock}>
+        <b>✍️ {t("작가 — 6번·10번 대사 바꿔 쓰기", "Writer — rewrite lines 6 & 10")}</b>
+        <span className={s.muted}>
+          {t("장면마다 6번(전개)·10번(결말)은 작가가 새 대사를 쓸 수 있어요. 배우들이 내 대사를 녹음할 때마다 1표 — 표가 제일 많은 대사가 개봉판에 들어가요.", "Lines 6 (twist) and 10 (ending) are open to writers. Each actor who records your line is a vote — the top line makes the premiere.")}
+        </span>
+        {live.length === 0 ? (
+          <span className={s.tiny}>{t("지금 상영 중인 장면이 없어요.", "No scenes showing right now.")}</span>
+        ) : (
+          live.map((sc) => (
+            <span key={sc.id} className={s.deskRow}>
+              <span className={s.deskTitle}>{sc.title}</span>
+              <Link href={`/relay/s/${sc.id}?write=6`} className={s.roleBtnGhost}>
+                {t("6번 쓰기", "Line 6")}
+              </Link>
+              <Link href={`/relay/s/${sc.id}?write=10`} className={s.roleBtnGhost}>
+                {t("10번 쓰기", "Line 10")}
+              </Link>
+            </span>
+          ))
+        )}
+      </div>
+      {level >= 7 && (
+        <div className={s.deskBlock}>
+          <b>🎬 {t("감독 — 내 장면 올리기", "Director — post your own scene")}</b>
+          <span className={s.muted}>{t("스튜디오에서 배역과 대사 10줄을 쓰면 AI 대역 목소리가 입혀져 상영관에 올라가요. 상영되면 그 장면 화면에서 녹음마다 OK/NG를 찍고 배우를 지명해요.", "Write roles and 10 lines in the studio; it goes on screen with AI voices. Once live, stamp OK/NG and cast actors on its page.")}</span>
+          <Link href="/relay/studio" className={s.roleBtn} style={{ justifySelf: "start" }}>
+            {t("감독 스튜디오 열기", "Open the studio")} ›
+          </Link>
+        </div>
+      )}
+    </section>
   );
 }
