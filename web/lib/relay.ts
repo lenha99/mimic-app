@@ -119,16 +119,17 @@ export const directionLabel = (id: string | null | undefined, ko = true) => {
   return d ? (ko ? d.ko : d.en) : "";
 };
 
-/** 효과음 — 파일 없이 브라우저가 합성한다(components/relay/sfx.ts). 저작권·용량 걱정 없음 */
-export const SFX: { id: string; icon: string; ko: string; en: string }[] = [
-  { id: "boom", icon: "💥", ko: "폭발", en: "Boom" },
-  { id: "heart", icon: "💓", ko: "심장박동", en: "Heartbeat" },
-  { id: "whoosh", icon: "💨", ko: "휙", en: "Whoosh" },
-  { id: "ding", icon: "🔔", ko: "띵", en: "Ding" },
-  { id: "thunder", icon: "⚡", ko: "천둥", en: "Thunder" },
-  { id: "drum", icon: "🥁", ko: "두구두구", en: "Drumroll" },
-  { id: "door", icon: "🚪", ko: "문 쾅", en: "Door slam" },
-  { id: "sparkle", icon: "✨", ko: "반짝", en: "Sparkle" },
+/** 효과음 — 파일 없이 브라우저가 합성한다(components/relay/audio.ts). 저작권·용량 걱정 없음.
+ *  아이콘은 components/relay/sfx-icon.tsx(SVG). say 는 대본 사이에 적히는 의성어 */
+export const SFX: { id: string; ko: string; en: string; say: string; sayEn: string }[] = [
+  { id: "boom", ko: "폭발", en: "Boom", say: "콰광!", sayEn: "KABOOM!" },
+  { id: "heart", ko: "심장박동", en: "Heartbeat", say: "두근… 두근…", sayEn: "Ba-dum… ba-dum…" },
+  { id: "whoosh", ko: "휙", en: "Whoosh", say: "휘익—", sayEn: "Whoosh—" },
+  { id: "ding", ko: "띵", en: "Ding", say: "띵!", sayEn: "Ding!" },
+  { id: "thunder", ko: "천둥", en: "Thunder", say: "우르릉 쾅!", sayEn: "Rumble… CRACK!" },
+  { id: "drum", ko: "두구두구", en: "Drumroll", say: "두구두구두구…", sayEn: "Drrrrrumroll…" },
+  { id: "door", ko: "문 쾅", en: "Door slam", say: "쾅! (문)", sayEn: "SLAM!" },
+  { id: "sparkle", ko: "반짝", en: "Sparkle", say: "반짜악✧", sayEn: "Sparkle✧" },
 ];
 
 export const GENRES: { id: string; ko: string; en: string; hall: Hall }[] = [
@@ -389,3 +390,41 @@ export function premiereLabel(iso: string | null, ko: boolean): string {
   const wk = (ko ? ["일", "월", "화", "수", "목", "금", "토"] : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"])[d.getUTCDay()];
   return ko ? `${wk} ${d.getUTCHours()}시 개봉` : `${wk} ${d.getUTCHours()}:00`;
 }
+
+
+// ---- 배역 고르기 ----
+
+export type RolePick =
+  | { state: "mine"; lineId: string | null; left: number }
+  | { state: "open"; lineId: string }
+  | { state: "taken"; name: string }
+  | { state: "blocked" };
+
+/**
+ * 장면 화면·허브에서 "이 배역 하기" 버튼이 어디로 갈지 — 서버 checkRole 과 같은 규칙.
+ * 열린 배역이면 그 배역의 첫 빈 줄로 바로 녹음하러 간다(/relay/rec?scene=&line=).
+ */
+export function rolePick(s: Pick<SceneView, "lines" | "takes" | "owners" | "premiereAt" | "status">, roleId: string, now = Date.now()): RolePick {
+  const base = s.lines.filter((l) => !l.candidate && l.role === roleId).sort((a, b) => a.n - b.n);
+  const owner = s.owners.find((o) => o.role === roleId);
+  const mineCount = s.owners.filter((o) => o.mine).length;
+  const late = !!s.premiereAt && new Date(s.premiereAt).getTime() - now <= LATE_MS;
+  if (owner?.mine) {
+    const todo = base.filter((l) => !s.takes.some((t) => t.lineId === l.id && t.kind === "line" && t.mine));
+    return { state: "mine", lineId: todo[0]?.id ?? null, left: todo.length };
+  }
+  if (s.status !== "live") return owner ? { state: "taken", name: owner.name } : { state: "blocked" };
+  if (owner) {
+    if (new Date(owner.priorityUntil).getTime() > now) return { state: "taken", name: owner.name };
+    const empty = base.find((l) => !s.takes.some((t) => t.lineId === l.id && t.kind === "line"));
+    if (!empty || (mineCount >= 1 && !late)) return { state: "taken", name: owner.name };
+    return { state: "open", lineId: empty.id };
+  }
+  if (!base.length) return { state: "blocked" };
+  if (mineCount === 0 || (late && mineCount < MAX_LATE_ROLES)) return { state: "open", lineId: base[0].id };
+  return { state: "blocked" };
+}
+
+/** 배역별 색 — 대본에서 누가 말하는지 색으로 구분 */
+export const ROLE_COLORS = ["#ffc93c", "#7cc8f2", "#ff7a45", "#8fd96b", "#b79cff", "#ff5d8f"];
+export const roleColor = (roles: { id: string }[], id: string) => ROLE_COLORS[Math.max(0, roles.findIndex((r) => r.id === id)) % ROLE_COLORS.length];

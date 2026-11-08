@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useLang, useT } from "@/components/lang";
 import { usePass } from "@/components/pass/use-pass";
 import { VoiceAvatar } from "@/components/voice-avatar";
 import { normalizeAvatar } from "@/lib/avatar";
 import { clientId } from "@/lib/client-id";
-import { HALL_LABEL, nextTitle, premiereLabel, timeLeft, titleOf, TITLES, TYPE_LABEL, type SceneView } from "@/lib/relay";
+import { genreLabel, HALL_LABEL, nextTitle, premiereLabel, roleColor, rolePick, timeLeft, titleOf, TITLES, TYPE_LABEL, type RelayRole, type SceneView } from "@/lib/relay";
+import { track } from "@/lib/track";
 import { LEVEL_XP } from "@/lib/pass";
 import { Coco } from "@/components/brand/coco";
 import s from "./relay.module.css";
@@ -82,7 +83,100 @@ export function Ladder() {
   );
 }
 
-/** 상영관 카드 — 배역별 출연 상태 · 진행 막대 · 개봉 시각 */
+/** 장르별 포스터 — 큰 그림 하나 + 배경색. 상영관 카드와 장면 머리에 같이 쓴다 */
+const GENRE_ART: Record<string, { art: string; from: string; to: string }> = {
+  fantasy: { art: "🐉", from: "#5b3aa8", to: "#1f1640" },
+  battle: { art: "🔥", from: "#b2361f", to: "#2a1210" },
+  anime: { art: "🌸", from: "#c4508a", to: "#2b1426" },
+  movie: { art: "🎬", from: "#3c4a6b", to: "#151a26" },
+  horror: { art: "👻", from: "#2f4a3a", to: "#0f1813" },
+  romance: { art: "💘", from: "#c44d6a", to: "#2b1219" },
+  interview: { art: "💼", from: "#2d6a8a", to: "#0f1f2a" },
+  announcer: { art: "🎤", from: "#2a5fa8", to: "#101b30" },
+  news: { art: "📺", from: "#3a5f8f", to: "#121b28" },
+  speech: { art: "🎙️", from: "#7a5a2a", to: "#221a10" },
+  cross: { art: "🌀", from: "#6a3aa8", to: "#1a1430" },
+  chaos: { art: "🤪", from: "#a8702a", to: "#2a1c0e" },
+};
+export const genreArt = (g: string) => GENRE_ART[g] ?? GENRE_ART.movie;
+
+export function Poster({ genre, title, sub, tag, right }: { genre: string; title: string; sub?: string; tag?: ReactNode; right?: ReactNode }) {
+  const g = genreArt(genre);
+  return (
+    <span className={s.poster} style={{ background: `linear-gradient(135deg, ${g.from}, ${g.to})` }}>
+      <span className={s.posterArt} aria-hidden="true">
+        {g.art}
+      </span>
+      <span className={s.posterTop}>
+        {tag}
+        {right}
+      </span>
+      <span className={s.posterTitle}>{title}</span>
+      {sub && <span className={s.posterSub}>{sub}</span>}
+    </span>
+  );
+}
+
+/**
+ * 배역 고르기 — 배역마다 한 칸: 누구인지(설명) · 대사 몇 줄 · 지금 상태 · 버튼.
+ * 비어 있으면 「이 배역 하기」가 그 배역의 첫 줄 녹음으로 바로 데려간다.
+ */
+export function RoleCards({ scene, compact = false, onCast }: { scene: SceneView; compact?: boolean; onCast?: (role: RelayRole) => void }) {
+  const t = useT();
+  const ko = useLang() === "ko";
+  return (
+    <ul className={s.roles}>
+      {scene.roles.map((r) => {
+        const pick = rolePick(scene, r.id);
+        const o = scene.owners.find((x) => x.role === r.id);
+        const take = o ? scene.takes.find((x) => x.owner === o.owner && x.kind === "line") : undefined;
+        const lines = scene.lines.filter((l) => !l.candidate && l.role === r.id).length;
+        const cast = scene.casts.find((c) => c.role === r.id);
+        return (
+          <li key={r.id} className={`${s.role} ${pick.state === "mine" ? s.roleMine : ""}`} style={{ ["--role" as string]: roleColor(scene.roles, r.id) }}>
+            <span className={s.roleFace}>{o ? <AvatarDot avatar={take?.avatar} seed={o.owner} size={34} /> : <b>{r.name.slice(0, 1)}</b>}</span>
+            <span className={s.roleInfo}>
+              <b>
+                {r.name} <small>{ko ? TYPE_LABEL[r.type].ko : TYPE_LABEL[r.type].en}</small>
+              </b>
+              {!compact && <span className={s.roleDesc}>{r.desc}</span>}
+              <span className={s.roleState}>
+                {pick.state === "mine"
+                  ? pick.left > 0
+                    ? t(`내 배역 · ${pick.left}줄 남음`, `My role · ${pick.left} left`)
+                    : t("내 배역 · 다 녹음했어요 ✓", "My role · all done ✓")
+                  : pick.state === "taken"
+                    ? t(`${pick.name || "다른 배우"} 출연 중`, `${pick.name || "Someone"} has it`)
+                    : cast
+                      ? cast.mine
+                        ? t("🎬 감독님이 나를 지명!", "🎬 You were cast!")
+                        : t(`대사 ${lines}줄 · 감독 지명 있음`, `${lines} lines · cast by director`)
+                      : pick.state === "open"
+                        ? t(`대사 ${lines}줄 · 비어 있어요`, `${lines} lines · open`)
+                        : t("한 장면엔 배역 하나만", "One role per scene")}
+              </span>
+            </span>
+            {onCast && !o ? (
+              <button type="button" className={s.roleBtnGhost} onClick={() => onCast(r)}>
+                {cast ? t("지명 변경", "Recast") : t("지명", "Cast")}
+              </button>
+            ) : pick.state === "open" ? (
+              <Link href={`/relay/rec?scene=${scene.id}&line=${pick.lineId}`} className={s.roleBtn} onClick={() => track("relay_cta", { via: `role:${r.type}` })}>
+                {t("이 배역 하기", "Play this")}
+              </Link>
+            ) : pick.state === "mine" && pick.lineId ? (
+              <Link href={`/relay/rec?scene=${scene.id}&line=${pick.lineId}`} className={s.roleBtn}>
+                {t("이어서", "Continue")}
+              </Link>
+            ) : null}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/** 상영관 카드 — 포스터(누르면 대본) + 배역 고르기 + 진행 막대 */
 export function HallCard({ scene, href }: { scene: SceneView; href: string }) {
   const t = useT();
   const ko = useLang() === "ko";
@@ -95,39 +189,65 @@ export function HallCard({ scene, href }: { scene: SceneView; href: string }) {
   const voiced = base.filter((l) => scene.takes.some((x) => x.lineId === l.id && x.kind === "line")).length;
   const hall = HALL_LABEL[scene.hall];
   return (
-    <Link href={href} className={`${s.hall} ${scene.hall === "real" ? s.hallReal : ""}`}>
-      <span className={s.spread}>
-        <span className={s.hallTag}>
-          <i className={s.live} aria-hidden="true" /> {ko ? hall.ko : hall.en} · {t("상영 중", "NOW SHOWING")}
+    <article className={s.hall}>
+      <Link href={href} className={s.posterLink}>
+        <Poster
+          genre={scene.genre}
+          title={scene.title}
+          sub={scene.logline}
+          tag={
+            <span className={s.hallTag}>
+              <i className={s.live} aria-hidden="true" /> {ko ? hall.ko : hall.en} · {genreLabel(scene.genre, ko)}
+            </span>
+          }
+          right={<span className={s.posterWhen}>{timeLeft(scene.premiereAt, ko, now)}</span>}
+        />
+        <span className={s.posterMore}>
+          📜 {t("대본 보고 미리 듣기", "Read the script & preview")} <span aria-hidden="true">›</span>
         </span>
-        <span className={s.tiny}>{premiereLabel(scene.premiereAt, ko)}</span>
+      </Link>
+      <span className={s.pickHead}>
+        <b>🎭 {t("배역 고르기", "Pick a role")}</b>
+        <span className={s.tiny}>{t(`사람 목소리 ${voiced}/10줄`, `${voiced}/10 voiced`)}</span>
       </span>
-      <h3 className={s.hallTitle}>{scene.title}</h3>
-      <p className={s.hallLog}>{scene.logline}</p>
-      <span className={s.castRow}>
-        {scene.roles.map((r) => {
-          const o = scene.owners.find((x) => x.role === r.id);
-          const take = o ? scene.takes.find((x) => x.owner === o.owner && x.kind === "line") : undefined;
-          return o ? (
-            <span key={r.id} className={`${s.castChip} ${o.mine ? s.castMine : ""}`}>
-              <AvatarDot avatar={take?.avatar} seed={o.owner} />
-              {r.name} <em>{o.mine ? t("나", "me") : o.name}</em>
-            </span>
-          ) : (
-            <span key={r.id} className={`${s.castChip} ${s.castOpen}`}>
-              {r.name} <em>· {ko ? TYPE_LABEL[r.type].ko : TYPE_LABEL[r.type].en} {t("모집 중", "open")}</em>
-            </span>
-          );
-        })}
-      </span>
+      <RoleCards scene={scene} compact />
       <span className={s.meter} aria-label={t(`사람 목소리 ${voiced}/10줄`, `${voiced}/10 lines voiced`)}>
         <i style={{ width: `${(voiced / 10) * 100}%` }} />
       </span>
       <span className={s.hallFoot}>
-        <span>{t(`사람 목소리 ${voiced}/10줄 · 나머지는 TTS`, `${voiced}/10 human lines · rest TTS`)}</span>
-        <span className={s.when}>{timeLeft(scene.premiereAt, ko, now)}</span>
+        <span>{t("빈 줄은 AI 대역이 읽어 줘요", "Empty lines are read by an AI stand-in")}</span>
+        <span className={s.when}>{premiereLabel(scene.premiereAt, ko)}</span>
       </span>
-    </Link>
+    </article>
+  );
+}
+
+/** 처음 온 사람용 — 뭘 하는 건지 세 칸 + 가이드 입구 */
+export function HowItWorks() {
+  const t = useT();
+  const steps = [
+    { n: 1, icon: "🎭", title: t("배역 고르기", "Pick a role"), body: t("용사? 마왕? 면접관? 하고 싶은 역 하나", "Hero? Villain? Interviewer?") },
+    { n: 2, icon: "🎙️", title: t("딱 한 줄 녹음", "Record one line"), body: t("앞 사람 대사 듣고 바로 받아치기", "Hear the cue, fire back") },
+    { n: 3, icon: "🍿", title: t("사흘째 밤 개봉", "Premiere night"), body: t("여러 목소리로 이어진 장면 + 내 이름 크레딧", "The full scene, your name in the credits") },
+  ];
+  return (
+    <section className={s.how} aria-label={t("이렇게 해요", "How it works")}>
+      <ol className={s.howSteps}>
+        {steps.map((x) => (
+          <li key={x.n} className={s.howStep}>
+            <span className={s.howIcon} aria-hidden="true">
+              {x.icon}
+              <i>{x.n}</i>
+            </span>
+            <b>{x.title}</b>
+            <small>{x.body}</small>
+          </li>
+        ))}
+      </ol>
+      <Link href="/relay/guide" className={s.howGuide}>
+        📖 {t("처음이라면 — 가이드 1분 읽기", "New here? 1-minute guide")} <span aria-hidden="true">›</span>
+      </Link>
+    </section>
   );
 }
 
@@ -155,8 +275,8 @@ export function RelayIntro() {
       mood: "sing" as const,
       title: t("한 줄만 녹음하면, 장면이 완성돼요", "Record one line, finish a scene"),
       body: t(
-        "앱이 배역과 대사 한 줄을 정해 줘요. 녹음하면 앞뒤 배우들 목소리와 이어져요. 아직 아무도 안 한 줄은 TTS가 읽어 줘요.",
-        "We pick your role and line. Your take joins everyone else's. Empty lines are read by TTS.",
+        "하고 싶은 배역을 골라 대사 한 줄만 녹음하면, 앞뒤 배우들 목소리와 이어져요. 아직 아무도 안 한 줄은 AI 대역이 읽어 줘요.",
+        "Pick a role and record one line. It joins everyone else's. Empty lines are read by an AI stand-in.",
       ),
     },
     {

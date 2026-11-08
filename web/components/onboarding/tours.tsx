@@ -640,14 +640,14 @@ const sets = (t: T) => {
   const RELAY: TourStep[] = [
     {
       target: "relay-cta",
-      title: t("버튼 하나면 출연", "One button to appear"),
+      title: t("고르기 귀찮을 땐 이 버튼", "Too lazy to pick? This one"),
       body: t(
         <p>
-          누르면 앱이 <b>배역과 대사 한 줄</b>을 정해 줘요. 앞 대사가 흘러나오고 끝나자마자 녹음 — 녹음이 끝나면 <b>앞 대사 + 내 목소리</b>가
+          배역은 위 장면 카드에서 직접 골라도 되고, 이 버튼을 누르면 앱이 <b>어울리는 배역과 대사 한 줄</b>을 골라 줘요. 앞 대사가 흘러나오고 끝나자마자 녹음 — 녹음이 끝나면 <b>앞 대사 + 내 목소리</b>가
           바로 이어 나와요. 마음에 들면 <b>출연하기</b>. 한 장면에 배역은 한 사람 하나씩이에요.
         </p>,
         <p>
-          We pick <b>your role and one line</b>. The previous line plays, then you record — and hear <b>it + your voice</b> right away. Like it?
+          Pick a role on a scene card, or tap this and we pick <b>a role and one line</b> for you. The previous line plays, then you record — and hear <b>it + your voice</b> right away. Like it?
           Tap <b>Appear</b>. One role per person per scene.
         </p>,
       ),
@@ -679,10 +679,10 @@ const sets = (t: T) => {
   const RELAY_SCENE: TourStep[] = [
     {
       target: "relay-scene-cast",
-      title: t("배역과 개봉 시각", "Roles & premiere"),
+      title: t("배역 고르기", "Pick a role"),
       body: t(
         <p>
-          맡은 사람이 없는 배역은 <b>모집 중</b>이에요. 빈 줄은 TTS가 읽어서 <b>사람이 없어도 장면은 사흘째 밤 9시에 무조건 개봉</b>해요.
+          비어 있는 배역의 <b>「이 배역 하기」</b>를 누르면 그 배역 첫 대사부터 녹음해요. 빈 줄은 <b>AI 대역</b>이 읽어서 <b>사람이 없어도 장면은 사흘째 밤 9시에 무조건 개봉</b>해요.
         </p>,
         <p>
           Roles nobody has are <b>open</b>. TTS reads empty lines, so <b>every scene premieres on night 3 at 9 pm</b> no matter what.

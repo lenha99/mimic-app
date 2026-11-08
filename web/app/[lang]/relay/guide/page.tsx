@@ -27,7 +27,7 @@ export default async function RelayGuidePage() {
         <h2>{t("① 뭐 하는 거예요?", "① What is it?")}</h2>
         <p>
           {t(
-            "장면 하나는 대사 10줄이에요. 여러 사람이 한 줄씩 녹음해서 이어 붙이면 장면이 완성돼요. 아무도 안 한 줄은 TTS가 읽어 주니까, 혼자 한 줄만 해도 장면은 굴러가요.",
+            "장면 하나는 대사 10줄이에요. 여러 사람이 한 줄씩 녹음해서 이어 붙이면 장면이 완성돼요. 아무도 안 한 줄은 AI 대역(TTS)이 읽어 주니까, 혼자 한 줄만 해도 장면은 굴러가요.",
             "A scene is 10 lines. People record one line each and the takes join into a full scene. TTS reads any empty line, so even one voice keeps it going.",
           )}
         </p>
@@ -40,7 +40,7 @@ export default async function RelayGuidePage() {
 
         <h2>{t("② 내 차례엔 버튼 하나", "② One button on your turn")}</h2>
         <ol>
-          <li>{t("상영관에서 「내 대사 한 줄 녹음하기」를 눌러요. 배역과 줄은 앱이 정해 줘요 (연습실 기록을 보고 어울리는 배역부터).", "Tap “Record my line”. We pick the role and line (matching your practice history).")}</li>
+          <li>{t("상영 중인 장면 카드에서 하고 싶은 배역의 「이 배역 하기」를 눌러요. 고르기 귀찮으면 아래 「아무 배역이나 바로」 — 앱이 연습실 기록을 보고 어울리는 배역을 골라 줘요.", "On a scene card, tap “Play this” next to the role you want. Or tap “Any role, now” and we pick one that fits your practice history.")}</li>
           <li>{t("🎙 를 누르면 앞 사람 대사가 흘러나오고, 끝나자마자 녹음이 시작돼요.", "Tap 🎙 — the previous line plays, then you record.")}</li>
           <li>{t("녹음이 끝나면 「앞 대사 + 내 목소리」가 바로 이어서 나와요. 마음에 들면 ✓ 출연하기, 아니면 다시.", "You instantly hear “previous line + you”. Appear, or retake.")}</li>
           <li>{t("출연하고 5초 안에는 되돌릴 수 있어요. 출연한 녹음은 장면에 공개돼요.", "You can undo within 5 seconds. Takes you appear with are public in the scene.")}</li>
@@ -118,7 +118,7 @@ export default async function RelayGuidePage() {
         <h2>{t("⑦ 사람이 없으면?", "⑦ What if nobody shows up?")}</h2>
         <ul>
           <li>
-            <b>{t("배우가 없으면", "No actors")}</b> → {t("그 줄은 배역 목소리 TTS가 읽어요. 장면은 그대로 개봉.", "TTS reads the line; the scene still premieres.")}
+            <b>{t("배우가 없으면", "No actors")}</b> → {t("그 줄은 AI 대역(TTS)이 배역 목소리로 읽어요. 장면은 그대로 개봉.", "TTS reads the line; the scene still premieres.")}
           </li>
           <li>
             <b>{t("애드리브 배우가 없으면", "No ad-libs")}</b> → {t("애드리브 없이 깔끔하게 이어져요.", "Lines just play clean.")}

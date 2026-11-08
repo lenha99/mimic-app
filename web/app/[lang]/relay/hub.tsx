@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useLang, useT } from "@/components/lang";
 import { TourHelp } from "@/components/onboarding/tour";
 import { ScreenTour } from "@/components/onboarding/tours";
-import { HallCard, Ladder, PromptCard, RankBar, RelayIntro, useLevel } from "@/components/relay/parts";
+import { HallCard, HowItWorks, Ladder, PromptCard, RankBar, RelayIntro, useLevel } from "@/components/relay/parts";
 import { fetchScene } from "@/components/relay/client";
 import { can, genreLabel, HALL_LABEL, type Hall, type SceneView } from "@/lib/relay";
 import { track } from "@/lib/track";
@@ -43,21 +43,24 @@ export default function RelayHub({ live: initial, premiered, best }: { live: Sce
         <Link href="/" className={s.back}>
           ‹ {t("홈", "Home")}
         </Link>
-        <TourHelp id="relay" short />
+        <span className={s.row}>
+          <Link href="/relay/guide" className={s.guideBtn}>
+            📖 {t("가이드", "Guide")}
+          </Link>
+          <TourHelp id="relay" short />
+        </span>
       </div>
       <p className={s.kicker}>RELAY DUBBING</p>
       <h1 className={s.h1}>
-        {t("한 줄씩 이어 만드는", "One line each,")} <em>{t("더빙 극장", "one scene together")}</em>
+        {t("다 같이 만드는", "Dub a scene")} <em>{t("더빙 극장", "together")}</em>
       </h1>
-      <p className={s.sub}>
-        {t(
-          "앱이 정해 주는 배역의 대사 한 줄만 녹음하면, 다른 사람들 목소리와 이어져 장면이 완성돼요. 모험·애니·면접·뉴스·영화 — 연습도 되고 웃기기도 해요.",
-          "Record the one line we hand you. It joins everyone else's into a full scene — adventure, anime, interviews, news, movies.",
-        )}
-      </p>
+      <p className={s.sub}>{t("배역 하나 골라서 대사 딱 한 줄. 나머지는 다른 사람들 목소리로 채워져요.", "Pick a role, record one line — other voices fill in the rest.")}</p>
 
-      <RankBar />
+      <HowItWorks />
 
+      <div className={s.section}>
+        <h2>🎬 {t("지금 상영 중 — 배역을 골라 보세요", "Now showing — pick a role")}</h2>
+      </div>
       <section className={s.halls} aria-label={t("상영 중", "Now showing")}>
         {live.length === 0 && <p className={s.muted}>{t("다음 장면을 준비하고 있어요. 잠시 뒤에 다시 와 주세요!", "Preparing the next scene…")}</p>}
         {live.map((sc) => (
@@ -67,7 +70,7 @@ export default function RelayHub({ live: initial, premiered, best }: { live: Sce
 
       <div className={s.bottomBarNav}>
         <Link href="/relay/rec" className={s.cta} data-tour="relay-cta" onClick={() => track("relay_cta")}>
-          🎙 {t("내 대사 한 줄 녹음하기", "Record my line")}
+          🎲 {t("고르기 귀찮다면 — 아무 배역이나 바로", "Feeling lucky — any role, now")}
         </Link>
       </div>
 
@@ -112,9 +115,10 @@ export default function RelayHub({ live: initial, premiered, best }: { live: Sce
       )}
 
       <div className={s.section}>
-        <h2>🎟 {t("제작 계급", "Ranks")}</h2>
-        <Link href="/relay/guide">{t("가이드 ›", "Guide ›")}</Link>
+        <h2>🎟 {t("레벨이 오르면 할 수 있는 것", "Unlock as you level up")}</h2>
+        <Link href="/relay/guide#ranks">{t("자세히 ›", "Details ›")}</Link>
       </div>
+      <RankBar />
       <Ladder />
       {can.direct(level) ? (
         <Link href="/relay/studio" className={s.ctaGhost} style={{ marginTop: 10 }}>
