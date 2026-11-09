@@ -535,7 +535,8 @@ export default function RelayRoom({ code, targetRole }: { code: string; targetRo
                 </div>
               ),
             )}
-            <div ref={bottom} />
+            {/* 아래 고정 입력창에 가리지 않게 — 맨 아래로 내릴 때 입력창 높이만큼 여유 */}
+            <div ref={bottom} style={{ scrollMarginBottom: 96 }} />
           </div>
           {error && <div className={s.error}>{error}</div>}
           {chatClosed ? (
