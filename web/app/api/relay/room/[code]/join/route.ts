@@ -5,10 +5,8 @@ import { requestT } from "@/lib/i18n";
 import { createServiceClient } from "@/lib/supabase/service";
 import { displayName, ownerOf } from "@/lib/relay-server";
 import { json, requestViewer } from "@/lib/relay-req";
-import { broadcast, findRoom, membersOf, memberOf, postSystem } from "@/lib/room-server";
+import { broadcast, findRoom, MAX_MEMBERS, membersOf, memberOf, postSystem, touch } from "@/lib/room-server";
 import type { Json } from "@/types/database";
-
-const MAX_MEMBERS = 12;
 
 /** 방 들어가기 — 링크가 입장권. 잠긴 방·내보내진 기기는 못 들어온다. */
 export async function POST(req: Request, ctx: { params: Promise<{ code: string }> }) {
@@ -33,6 +31,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ code: string }
   const { error } = await service.from("relay_room_members").insert({ room: room.code, owner, user_id: v.userId, name, avatar: normalizeAvatar(b.avatar, owner) as unknown as Json, seen_at: new Date().toISOString() });
   if (error && error.code !== "23505") return json({ error: t("들어가지 못했어요. 다시 해 주세요.", "Couldn't join.") }, 500);
   await postSystem(room.code, `👋 ${name}님이 들어왔어요`, service);
+  await touch(room.code, service);
   await broadcast(room.code, "room", {});
   return json({ ok: true });
 }

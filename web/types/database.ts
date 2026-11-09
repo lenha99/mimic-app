@@ -682,9 +682,41 @@ export interface Database {
         Relationships: [];
       };
       relay_rooms: {
-        Row: { code: string; scene_id: string; host: string; host_user: string | null; locked: boolean; chat_expires_at: string | null; created_at: string };
-        Insert: { code: string; scene_id: string; host: string; host_user?: string | null; locked?: boolean; chat_expires_at?: string | null; created_at?: string };
-        Update: { locked?: boolean; chat_expires_at?: string | null };
+        Row: {
+          code: string;
+          scene_id: string | null;
+          host: string;
+          host_user: string | null;
+          locked: boolean;
+          chat_expires_at: string | null;
+          created_at: string;
+          title: string;
+          public: boolean;
+          kind: "scene" | "script";
+          script: string | null;
+          last_at: string;
+        };
+        Insert: {
+          code: string;
+          scene_id?: string | null;
+          host: string;
+          host_user?: string | null;
+          locked?: boolean;
+          chat_expires_at?: string | null;
+          created_at?: string;
+          title?: string;
+          public?: boolean;
+          kind?: "scene" | "script";
+          script?: string | null;
+          last_at?: string;
+        };
+        Update: { locked?: boolean; chat_expires_at?: string | null; host?: string; host_user?: string | null; title?: string; public?: boolean; last_at?: string };
+        Relationships: [];
+      };
+      relay_room_takes: {
+        Row: { id: string; room: string; owner: string; user_id: string | null; name: string; part: number | null; audio_path: string; duration_s: number; created_at: string };
+        Insert: { id?: string; room: string; owner: string; user_id?: string | null; name?: string; part?: number | null; audio_path: string; duration_s?: number; created_at?: string };
+        Update: { name?: string; audio_path?: string; duration_s?: number; created_at?: string };
         Relationships: [];
       };
       relay_room_members: {

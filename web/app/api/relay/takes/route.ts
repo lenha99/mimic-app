@@ -8,7 +8,7 @@ import { allow, clientIp, tooMany } from "@/lib/rate-limit";
 import { createServiceClient } from "@/lib/supabase/service";
 import { requestT } from "@/lib/i18n";
 import { can, isOpen, PRIORITY_MS } from "@/lib/relay";
-import { broadcast, findRoom, membersOf, memberOf, notifyOffline, postSystem } from "@/lib/room-server";
+import { broadcast, findRoom, membersOf, memberOf, notifyOffline, postSystem, touch } from "@/lib/room-server";
 import { checkRole, displayName, levelFor, loadScene, ownerOf } from "@/lib/relay-server";
 import { json, requestViewer } from "@/lib/relay-req";
 
@@ -126,6 +126,7 @@ export async function POST(req: Request) {
       await postSystem(room.code, `🎙 ${member?.name || name}님이 ${line.n}번 대사(${roleName})를 녹음했어요 · ${filled}/${base.length}`, service);
       if (base.length && filled === base.length && !existing) await postSystem(room.code, "✨ 모든 대사가 찼어요! 방장이 [완성]을 누르면 다 같이 들을 수 있어요.", service);
       await broadcast(room.code, "scene", {});
+      await touch(room.code, service);
       await notifyOffline(room, `${member?.name || name}님이 ${line.n}번 대사를 녹음했어요`, [owner], service);
     });
   }

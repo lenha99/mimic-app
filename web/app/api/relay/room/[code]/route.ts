@@ -15,8 +15,10 @@ export async function GET(req: Request, ctx: { params: Promise<{ code: string }>
   const room = await findRoom(code, service);
   if (!room) return json({ error: "not found" }, 404);
   // 크론은 하루 한 번이라 — 72시간 지난 방은 누가 열 때 완성한다
-  const { data: st } = await service.from("relay_scenes").select("status, premiere_at").eq("id", room.scene_id).maybeSingle();
-  if (st?.status === "room" && st.premiere_at && new Date(st.premiere_at).getTime() <= Date.now()) await finishRoom(room, service);
+  if (room.scene_id) {
+    const { data: st } = await service.from("relay_scenes").select("status, premiere_at").eq("id", room.scene_id).maybeSingle();
+    if (st?.status === "room" && st.premiere_at && new Date(st.premiere_at).getTime() <= Date.now()) await finishRoom(room, service);
+  }
   const view = await roomView(room, v, service);
   if (!view) return json({ error: "not found" }, 404);
   const me = memberOf(await membersOf(room.code, service), v);

@@ -15,14 +15,23 @@ import { cleanNickname, readNickname } from "@/lib/nickname";
 import { roleColor, TYPE_LABEL, type SceneView } from "@/lib/relay";
 import { createClient } from "@/lib/supabase/client";
 import { track } from "@/lib/track";
+import { saveJoined } from "@/components/relay/save";
+import { MAX_TITLE } from "@/lib/room-script";
 import s from "@/components/relay/relay.module.css";
 import r from "@/components/relay/room.module.css";
+import { ScriptPanel, type ScriptTake } from "./script-panel";
 
 type Msg = { id: number; kind: "chat" | "system"; name: string; text: string; at: string; mine?: boolean; who?: string | null };
 type Member = { who: string; name: string; avatar: Avatar; host: boolean; mine: boolean; roles: string[] };
 type View = {
   code: string;
-  scene: SceneView;
+  kind: "scene" | "script";
+  title: string;
+  public: boolean;
+  scene: SceneView | null;
+  parts: string[];
+  partCount: number;
+  takes: ScriptTake[];
   locked: boolean;
   chatExpiresAt: string | null;
   amHost: boolean;
@@ -67,6 +76,11 @@ export default function RelayRoom({ code, targetRole }: { code: string; targetRo
   const [people, setPeople] = useState<Person[] | null>(null);
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [hiddenMsgs, setHiddenMsgs] = useState<Set<number>>(new Set());
+  const [editing, setEditing] = useState<string | null>(null);
+  const [leaving, setLeaving] = useState(false);
+  const [focus, setFocus] = useState<number | null>(null);
+  const [follow, setFollow] = useState(false);
+  const chRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
   const lastId = useRef(0);
   const bottom = useRef<HTMLDivElement | null>(null);
 
@@ -120,6 +134,10 @@ export default function RelayRoom({ code, targetRole }: { code: string; targetRo
     })
       .on("broadcast", { event: "scene" }, () => void load())
       .on("broadcast", { event: "room" }, () => void load())
+      .on("broadcast", { event: "focus" }, ({ payload }) => {
+        const n = Number((payload as { part?: unknown }).part);
+        if (Number.isInteger(n) && n > 0) setFocus(n);
+      })
       .on("presence", { event: "sync" }, () => setOnline(Object.keys(ch.presenceState()).length))
       .subscribe((status) => {
         if (status === "SUBSCRIBED") {
@@ -127,7 +145,9 @@ export default function RelayRoom({ code, targetRole }: { code: string; targetRo
           void ch.track({ name: myName });
         } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") setLive(false);
       });
+    chRef.current = ch;
     return () => {
+      chRef.current = null;
       setLive(false);
       void supa?.removeChannel(ch);
     };
@@ -205,13 +225,16 @@ export default function RelayRoom({ code, targetRole }: { code: string; targetRo
   const shareLink = async (roleId?: string) => {
     const url = `${window.location.origin}/relay/r/${code}${roleId ? `?role=${roleId}` : ""}`;
     const role = roleId ? scene?.roles.find((x) => x.id === roleId) : null;
+    const name = view?.title || scene?.title || "";
     const msg = role
-      ? t(`「${scene?.title}」 더빙 같이 하자! 너는 「${role.name}」 역 🎙`, `Dub "${scene?.title}" with me — you're ${role.name}!`)
-      : t(`「${scene?.title}」 더빙 방 열었어! 배역 하나 골라 줘 🎬`, `I opened a dubbing room for "${scene?.title}" — pick a role!`);
-    track("room_share", { meme_id: scene?.stockKey ?? undefined, via: roleId ? "role" : "room" });
+      ? t(`「${name}」 더빙 같이 하자! 너는 「${role.name}」 역 🎙`, `Dub "${name}" with me — you're ${role.name}!`)
+      : view?.kind === "script"
+        ? t(`「${name}」 같이 읽자! 대본 넣어 놨어 📄`, `Let's read "${name}" together!`)
+        : t(`「${name}」 더빙 방 열었어! 배역 하나 골라 줘 🎬`, `I opened a dubbing room for "${name}" — pick a role!`);
+    track("room_share", { meme_id: scene?.stockKey ?? "script", via: roleId ? "role" : "room" });
     try {
       if (navigator.share) {
-        await navigator.share({ title: scene?.title, text: msg, url });
+        await navigator.share({ title: name, text: msg, url });
         return;
       }
     } catch {
@@ -267,22 +290,69 @@ export default function RelayRoom({ code, targetRole }: { code: string; targetRo
     void pl.play(play.items);
   };
 
+  const saveCut = async () => {
+    if (!play) return;
+    setToast(t("이어 붙이는 중…", "Joining…"));
+    const res = await saveJoined(
+      play.items.map((i) => i.url),
+      view?.title || scene?.title || "mimic",
+    );
+    setToast(
+      res.ok
+        ? res.skipped
+          ? t(`저장했어요 (AI가 읽는 ${res.skipped}줄은 빠졌어요)`, `Saved (${res.skipped} AI lines skipped)`)
+          : t("내 기기에 저장했어요", "Saved to your device")
+        : t("저장할 녹음이 아직 없어요", "Nothing to save yet"),
+    );
+  };
+
+  const rename = async () => {
+    const next = (editing ?? "").trim();
+    if (!next || next === view?.title) return setEditing(null);
+    const res = await postJson(`/api/relay/room/${code}/host`, { action: "rename", title: next });
+    if (!res.ok) return setToast(res.data.error ?? t("바꾸지 못했어요.", "Couldn't rename."));
+    setEditing(null);
+    await load();
+  };
+
+  const leave = async () => {
+    if (!leaving) {
+      setLeaving(true);
+      return;
+    }
+    pl.stop();
+    const res = await postJson<{ deleted?: boolean }>(`/api/relay/room/${code}/leave`, {});
+    if (!res.ok) {
+      setLeaving(false);
+      return setToast(res.data.error ?? t("나가지 못했어요.", "Couldn't leave."));
+    }
+    try {
+      localStorage.removeItem(SEEN_KEY(code));
+    } catch {}
+    router.push("/relay?tab=rooms");
+  };
+
+  const sendFocus = (part: number) => {
+    setFocus(part);
+    void chRef.current?.send({ type: "broadcast", event: "focus", payload: { part } });
+  };
+
   if (gone) {
     return (
       <main className={`shell ${s.page}`}>
         <div className={s.okBox} style={{ marginTop: 40 }}>
           <Coco mood="think" size={88} />
           <b>{t("없거나 사라진 방이에요", "This room is gone")}</b>
-          <span className={s.muted}>{t("녹음 없이 오래된 방은 정리돼요. 새 방을 열어 보세요!", "Empty old rooms get cleaned up. Open a new one!")}</span>
+          <span className={s.muted}>{t("모두 나가면 방은 사라져요. 새 방을 열어 보세요!", "Rooms disappear when everyone leaves. Open a new one!")}</span>
         </div>
-        <Link href="/relay#rooms" className={s.cta} style={{ marginTop: 16 }}>
+        <Link href="/relay/new" className={s.cta} style={{ marginTop: 16 }}>
           {t("새 방 만들기", "Open a new room")}
         </Link>
       </main>
     );
   }
 
-  if (!view || !scene) {
+  if (!view || (view.kind !== "script" && !scene)) {
     return (
       <main className={`shell ${s.page}`}>
         <div className={s.okBox} style={{ marginTop: 40, background: "transparent", border: 0 }}>
@@ -296,12 +366,14 @@ export default function RelayRoom({ code, targetRole }: { code: string; targetRo
   const chatClosed = !!view.chatExpiresAt && new Date(view.chatExpiresAt).getTime() <= now;
   const hoursLeft = view.chatExpiresAt ? Math.max(0, Math.ceil((new Date(view.chatExpiresAt).getTime() - now) / 3_600_000)) : null;
   const visible = msgs.filter((m) => !hiddenMsgs.has(m.id));
+  const isScript = view.kind === "script";
+  const myTakes = isScript ? view.takes.filter((x) => x.mine).length : (scene?.takes.filter((x) => x.mine).length ?? 0);
 
   return (
     <main className={`shell ${s.page}`}>
       <div className={s.spread}>
-        <Link href="/relay" className={s.back} onClick={() => pl.stop()}>
-          ‹ {t("릴레이 더빙", "Relay Dubbing")}
+        <Link href="/relay?tab=rooms" className={s.back} onClick={() => pl.stop()}>
+          ‹ {t("방 목록", "Rooms")}
         </Link>
         {inRoom && (
           <span className={s.row}>
@@ -318,9 +390,31 @@ export default function RelayRoom({ code, targetRole }: { code: string; targetRo
       </div>
 
       <header className={r.head}>
-        <p className={s.kicker}>{done ? t("완성!", "FINISHED") : t("친구 더빙 방", "DUBBING ROOM")}</p>
-        <h1 className={r.title}>{scene.title}</h1>
-        <span className={s.muted}>{scene.logline}</span>
+        <p className={s.kicker}>{isScript ? t("대본 방", "SCRIPT ROOM") : done ? t("완성!", "FINISHED") : t("더빙 방", "DUBBING ROOM")}</p>
+        {editing !== null ? (
+          <form
+            className={r.composer}
+            style={{ position: "static" }}
+            onSubmit={(e) => {
+              e.preventDefault();
+              void rename();
+            }}
+          >
+            <input value={editing} maxLength={MAX_TITLE} autoFocus onChange={(e) => setEditing(e.target.value)} aria-label={t("방 제목", "Room title")} />
+            <button type="submit">{t("저장", "Save")}</button>
+          </form>
+        ) : (
+          <h1 className={r.title}>
+            {view.title}
+            {view.amHost && (
+              <button type="button" className={r.linkBtn} onClick={() => setEditing(view.title)} aria-label={t("방 제목 바꾸기", "Rename room")}>
+                ✏️
+              </button>
+            )}
+          </h1>
+        )}
+        {scene && <span className={s.muted}>{scene.title !== view.title ? `🎬 ${scene.title} · ` : ""}{scene.logline}</span>}
+        {isScript && <span className={s.muted}>📄 {t(`단락 ${view.partCount}개 · 배역 없이 각자 읽고 싶은 곳을 녹음해요`, `${view.partCount} paragraphs · record whichever you like`)}</span>}
         <span className={r.meta}>
           <span>
             👥 {view.members.length}
@@ -334,6 +428,7 @@ export default function RelayRoom({ code, targetRole }: { code: string; targetRo
             </span>
           )}
           {view.locked && <span>🔒 {t("잠김", "Locked")}</span>}
+          <span>{view.public ? `🌐 ${t("공개", "Public")}` : `🔗 ${t("링크로만", "Link only")}`}</span>
           {done && hoursLeft !== null && !chatClosed && <span>{t(`채팅은 ${hoursLeft}시간 뒤 사라져요`, `Chat clears in ${hoursLeft}h`)}</span>}
         </span>
       </header>
@@ -347,10 +442,14 @@ export default function RelayRoom({ code, targetRole }: { code: string; targetRo
               <b>
                 {target
                   ? t(`「${target.name}」 역으로 초대받았어요 🎙`, `You're invited to play ${target.name} 🎙`)
-                  : t(`${host?.name ?? "친구"}님의 더빙 방이에요`, `${host?.name ?? "A friend"}'s dubbing room`)}
+                  : isScript
+                    ? t(`${host?.name ?? "친구"}님의 대본 방이에요`, `${host?.name ?? "A friend"}'s script room`)
+                    : t(`${host?.name ?? "친구"}님의 더빙 방이에요`, `${host?.name ?? "A friend"}'s dubbing room`)}
               </b>
               <span className={s.muted}>
-                {target
+                {isScript
+                  ? t(`대본 ${view.partCount}단락을 같이 읽고 녹음해요. 들어오면 대본이 보여요.`, `Read and record ${view.partCount} paragraphs together. Join to see the script.`)
+                  : target
                   ? `${target.desc} · ${t(`대사 ${base.filter((l) => l.role === target.id).length}줄`, `${base.filter((l) => l.role === target.id).length} lines`)}`
                   : t("배역을 하나 골라 대사를 녹음하면, 친구들 목소리와 이어져 한 장면이 돼요. 빈 배역은 AI 목소리가 읽어요.", "Pick a role and record — your voice joins your friends' into one scene. Empty roles are read by AI.")}
               </span>
@@ -371,7 +470,7 @@ export default function RelayRoom({ code, targetRole }: { code: string; targetRo
       {inRoom && (
         <nav className={r.tabs} aria-label={t("방 화면", "Room")}>
           <button type="button" className={`${r.tab} ${tab === "cast" ? r.tabOn : ""}`} onClick={() => setTab("cast")}>
-            🎭 {t("배역·듣기", "Cast & listen")}
+            {isScript ? `📄 ${t("대본", "Script")}` : `🎭 ${t("배역·듣기", "Cast & listen")}`}
           </button>
           <button type="button" className={`${r.tab} ${tab === "chat" ? r.tabOn : ""}`} onClick={() => setTab("chat")}>
             💬 {t("채팅", "Chat")}
@@ -380,7 +479,22 @@ export default function RelayRoom({ code, targetRole }: { code: string; targetRo
         </nav>
       )}
 
-      {(tab === "cast" || !inRoom) && (
+      {inRoom && isScript && tab === "cast" && (
+        <ScriptPanel
+          code={code}
+          title={view.title}
+          parts={view.parts}
+          takes={view.takes}
+          onChanged={() => void load()}
+          focus={focus}
+          follow={follow}
+          setFollow={setFollow}
+          sendFocus={sendFocus}
+          toast={setToast}
+        />
+      )}
+
+      {(tab === "cast" || !inRoom) && scene && !isScript && (
         <>
           <div className={s.card}>
             <span className={s.spread}>
@@ -397,6 +511,11 @@ export default function RelayRoom({ code, targetRole }: { code: string; targetRo
               </span>
             )}
             {!done && <span className={s.tiny}>{t("빈 줄은 AI 목소리가 읽어요. 다 차면 방장이 [완성]을 눌러요.", "Empty lines are read by AI. The host taps Finish when it's full.")}</span>}
+            {inRoom && filled > 0 && (
+              <button type="button" className={r.linkBtn} style={{ alignSelf: "flex-start" }} onClick={() => void saveCut()}>
+                💾 {done ? t("완성본 내 기기에 저장", "Save the final cut") : t("지금까지 녹음 내 기기에 저장", "Save takes so far")}
+              </button>
+            )}
             {pl.playing && play && (
               <ol className={r.script}>
                 {play.lines.map((l) => (
@@ -472,7 +591,11 @@ export default function RelayRoom({ code, targetRole }: { code: string; targetRo
               );
             })}
           </ul>
+        </>
+      )}
 
+      {tab === "cast" && (
+        <>
           {inRoom && (
             <>
               <div className={s.section}>
@@ -502,10 +625,37 @@ export default function RelayRoom({ code, targetRole }: { code: string; targetRo
                 )}
               </div>
               {done && (
-                <Link href="/relay#rooms" className={s.ctaGhost} style={{ marginTop: 14 }}>
+                <Link href="/relay/new" className={s.ctaGhost} style={{ marginTop: 14 }}>
                   🎬 {t("다른 장면으로 새 방 열기", "Open a new room")}
                 </Link>
               )}
+
+              <div className={r.danger}>
+                {leaving ? (
+                  <>
+                    <b>{t("정말 나갈까요?", "Leave this room?")}</b>
+                    <span className={s.tiny}>
+                      {myTakes > 0
+                        ? t(`이 방에 올린 내 녹음 ${myTakes}개가 지워져요. 간직하려면 먼저 💾로 저장하세요.`, `Your ${myTakes} take(s) here will be deleted. Save them first with 💾.`)
+                        : t("나가면 이 방 목록에서 빠져요.", "The room will leave your list.")}
+                      {view.members.length <= 1 ? ` ${t("마지막 사람이라 방도 같이 사라져요.", "You're the last one — the room will be deleted.")}` : ""}
+                      {view.amHost && view.members.length > 1 ? ` ${t("방장은 다음 사람에게 넘어가요.", "Host passes to the next member.")}` : ""}
+                    </span>
+                    <div className={s.twoBtn}>
+                      <button type="button" className={s.ctaGhost} onClick={() => setLeaving(false)}>
+                        {t("취소", "Cancel")}
+                      </button>
+                      <button type="button" className={s.cta} onClick={() => void leave()}>
+                        {t("나가기", "Leave")}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <button type="button" className={r.linkBtn} onClick={() => void leave()}>
+                    🚪 {t("방 나가기", "Leave room")}
+                  </button>
+                )}
+              </div>
             </>
           )}
         </>
@@ -605,12 +755,18 @@ export default function RelayRoom({ code, targetRole }: { code: string; targetRo
                 <button type="button" className={s.ctaGhost} onClick={() => void hostDo(view.locked ? "unlock" : "lock")}>
                   {view.locked ? t("🔓 방 열기 (새 사람 들어올 수 있게)", "🔓 Unlock room") : t("🔒 방 잠그기 (새 사람 못 들어오게)", "🔒 Lock room")}
                 </button>
-                {!done && (
+                <button type="button" className={s.ctaGhost} onClick={() => void hostDo(view.public ? "private" : "public")}>
+                  {view.public ? t("🔗 링크로만 들어오게 (목록에서 숨기기)", "🔗 Link only (hide from list)") : t("🌐 방 목록에 공개하기", "🌐 Show in the room list")}
+                </button>
+                <button type="button" className={s.ctaGhost} onClick={() => { setSheet(null); setEditing(view.title); }}>
+                  ✏️ {t("방 제목 바꾸기", "Rename room")}
+                </button>
+                {!done && !isScript && (
                   <button type="button" className={s.ctaGhost} onClick={() => void hostDo("finish")}>
                     🍿 {t(`지금 완성하기 (${filled}/${base.length}줄 · 빈 줄은 AI)`, `Finish now (${filled}/${base.length})`)}
                   </button>
                 )}
-                <span className={s.tiny}>{t("멤버 내보내기 — 그 사람 배역도 비워져요", "Remove a member — their roles open up")}</span>
+                <span className={s.tiny}>{t("멤버 내보내기 — 그 사람 녹음도 지워져요", "Remove a member — their takes are deleted")}</span>
                 {view.members
                   .filter((m) => !m.host)
                   .map((m) => (

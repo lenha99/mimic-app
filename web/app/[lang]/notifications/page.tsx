@@ -114,7 +114,8 @@ type Row = { kind: string; entry_id: string | null; thread_id: string | null; sc
 function hrefOf(n: Row, actor?: string): string {
   if (n.thread_id) return `/messages/${n.thread_id}`;
   if (n.kind === "relay_unlock") return "/relay/guide";
-  if (n.kind.startsWith("relay_room_")) return n.scene_id ? `/relay/r/${n.scene_id}` : "/relay";
+  // 대본 방은 장면이 없어 알림에 방을 못 적는다 — 내 방 목록으로
+  if (n.kind.startsWith("relay_room_")) return n.scene_id ? `/relay/r/${n.scene_id}` : "/relay?tab=rooms";
   if (n.kind === "relay_premiere" && n.scene_id) return `/relay/s/${n.scene_id}/premiere`;
   if (n.kind.startsWith("relay_")) return n.scene_id ? `/relay/s/${n.scene_id}` : "/relay";
   if (n.kind === "reward_follows" || n.kind === "reward_prophet") return "/pass";
