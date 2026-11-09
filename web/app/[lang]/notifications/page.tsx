@@ -28,6 +28,8 @@ const ICON: Record<string, string> = {
   relay_premiere: "🍿",
   relay_role: "🎙",
   relay_unlock: "🎟",
+  relay_room_invite: "🎬",
+  relay_room_chat: "💬",
 };
 
 /** VOICE PASS 알림은 이모지 대신 패스 칩으로 — 앱 안 다른 곳(배지·레벨 알약)과 같은 말투 */
@@ -112,6 +114,7 @@ type Row = { kind: string; entry_id: string | null; thread_id: string | null; sc
 function hrefOf(n: Row, actor?: string): string {
   if (n.thread_id) return `/messages/${n.thread_id}`;
   if (n.kind === "relay_unlock") return "/relay/guide";
+  if (n.kind.startsWith("relay_room_")) return n.scene_id ? `/relay/r/${n.scene_id}` : "/relay";
   if (n.kind === "relay_premiere" && n.scene_id) return `/relay/s/${n.scene_id}/premiere`;
   if (n.kind.startsWith("relay_")) return n.scene_id ? `/relay/s/${n.scene_id}` : "/relay";
   if (n.kind === "reward_follows" || n.kind === "reward_prophet") return "/pass";
@@ -162,6 +165,10 @@ function textOf(kind: string, actor: string, count: number | null, t: T): string
       return t("🍿 출연작이 개봉했어요 — 크레딧에 이름이 올랐어요", "🍿 Your scene premiered — you're in the credits");
     case "relay_role":
       return t("🎙 맡은 배역에 남은 대사가 있어요 — 우선권이 곧 끝나요", "🎙 Your role still has lines — your priority ends soon");
+    case "relay_room_invite":
+      return t(`🎬 ${actor}님이 더빙 방에 불렀어요 — 배역 골라 같이 찍어요`, `🎬 ${actor} invited you to a dubbing room`);
+    case "relay_room_chat":
+      return t("💬 더빙 방에 새 이야기가 있어요", "💬 New messages in your dubbing room");
     case "relay_unlock":
       return t("🎟 릴레이 더빙 새 권한이 열렸어요", "🎟 New Relay Dubbing power unlocked");
     default:

@@ -7,7 +7,7 @@ import { Coco } from "@/components/brand/coco";
 import { useRecorder, usePlaylist, type PlayItem } from "@/components/relay/audio";
 import { addSkip, assignNext, fetchScene, postTake, previewLines, undoTake } from "@/components/relay/client";
 import { AvatarDot, useLevel } from "@/components/relay/parts";
-import { ADLIB_MS, can, HALL_LABEL, isBranch, maxTakeMs, sceneLength, premiereLabel, takeUrl, timeLeft, ttsUrl, type Assignment, type CutLine, type LineView, type SceneView } from "@/lib/relay";
+import { ADLIB_MS, can, HALL_LABEL, isOpen, isBranch, maxTakeMs, sceneLength, premiereLabel, takeUrl, timeLeft, ttsUrl, type Assignment, type CutLine, type LineView, type SceneView } from "@/lib/relay";
 import { track } from "@/lib/track";
 import s from "@/components/relay/relay.module.css";
 
@@ -27,7 +27,7 @@ const REASON: Record<Assignment["reason"], [string, string]> = {
  * 녹음이 끝나면 "앞 대사 + 내 목소리"가 곧바로 이어 재생된다(5초 남짓) — 이게 보상이다.
  * 버튼은 둘뿐: 출연하기 / 다시.
  */
-export default function RelayRecorder({ sceneId, lineId }: { sceneId: string | null; lineId: string | null }) {
+export default function RelayRecorder({ sceneId, lineId, room = null }: { sceneId: string | null; lineId: string | null; room?: string | null }) {
   const t = useT();
   const ko = useLang() === "ko";
   const { level } = useLevel();
@@ -56,13 +56,28 @@ export default function RelayRecorder({ sceneId, lineId }: { sceneId: string | n
       if (exactLine && preferScene) {
         const r = await fetchScene(preferScene);
         const l = r?.scene.lines.find((x) => x.id === exactLine);
-        if (r && l && r.scene.status === "live") {
+        if (r && l && isOpen(r.scene.status)) {
           setScene(r.scene);
           setLine(l);
           setReason(l.candidate ? "vote" : r.scene.owners.some((o) => o.role === l.role && o.mine) ? "mine" : "open");
           setPhase("ready");
           return;
         }
+      }
+      // 친구 방 — 앱이 다른 상영관 줄을 배정하면 안 된다. 내 배역의 다음 빈 줄, 없으면 방으로.
+      if (room && preferScene) {
+        const r = await fetchScene(preferScene);
+        const mineRoles = new Set(r?.scene.owners.filter((o) => o.mine).map((o) => o.role) ?? []);
+        const l = r?.scene.lines
+          .filter((x) => !x.candidate && mineRoles.has(x.role) && !r.scene.takes.some((tk) => tk.lineId === x.id && tk.kind === "line"))
+          .sort((a, b) => a.n - b.n)[0];
+        setScene(r?.scene ?? null);
+        if (r && l && isOpen(r.scene.status)) {
+          setLine(l);
+          setReason("mine");
+          setPhase("ready");
+        } else setPhase("none");
+        return;
       }
       const r = await assignNext(preferScene);
       if (!r?.assignment || !r.scene) {
@@ -189,12 +204,12 @@ export default function RelayRecorder({ sceneId, lineId }: { sceneId: string | n
   return (
     <main className={`shell ${s.page}`}>
       <div className={s.spread}>
-        <Link href={scene ? `/relay/s/${scene.id}` : "/relay"} className={s.back} onClick={() => pl.stop()}>
+        <Link href={room ? `/relay/r/${room}` : scene ? `/relay/s/${scene.id}` : "/relay"} className={s.back} onClick={() => pl.stop()}>
           ‹ {scene ? scene.title : t("릴레이 더빙", "Relay Dubbing")}
         </Link>
         {scene && (
           <span className={s.tiny}>
-            {ko ? HALL_LABEL[scene.hall].ko : HALL_LABEL[scene.hall].en} · {premiereLabel(scene.premiereAt, ko)}
+            {room ? t("친구 방", "Friends' room") : `${ko ? HALL_LABEL[scene.hall].ko : HALL_LABEL[scene.hall].en} · ${premiereLabel(scene.premiereAt, ko)}`}
           </span>
         )}
       </div>
@@ -206,7 +221,20 @@ export default function RelayRecorder({ sceneId, lineId }: { sceneId: string | n
         </div>
       )}
 
-      {phase === "none" && (
+      {phase === "none" && room && (
+        <div className={s.stage}>
+          <div className={s.okBox}>
+            <Coco mood="happy" size={88} />
+            <b>{t("내 배역 대사를 다 녹음했어요!", "You've recorded all your lines!")}</b>
+            <span className={s.muted}>{t("방으로 돌아가 다른 빈 배역을 맡거나, 친구들 녹음을 들어 보세요.", "Head back to the room to take another open role or listen.")}</span>
+          </div>
+          <Link href={`/relay/r/${room}`} className={s.cta}>
+            {t("방으로", "Back to the room")}
+          </Link>
+        </div>
+      )}
+
+      {phase === "none" && !room && (
         <div className={s.stage}>
           <div className={s.okBox}>
             <Coco mood="happy" size={88} />
@@ -226,7 +254,8 @@ export default function RelayRecorder({ sceneId, lineId }: { sceneId: string | n
 
       {scene && line && role && phase !== "loading" && phase !== "none" && (
         <div className={s.stage}>
-          {reason && <p className={s.muted} style={{ margin: 0 }}>{ko ? REASON[reason][0] : REASON[reason][1]}</p>}
+          {reason && !room && <p className={s.muted} style={{ margin: 0 }}>{ko ? REASON[reason][0] : REASON[reason][1]}</p>}
+          {room && <p className={s.muted} style={{ margin: 0 }}>{t("🎬 친구 방 — 내가 고른 배역이에요", "🎬 Friends' room — your role")}</p>}
 
           {prev ? (
             <div className={s.prevLine} style={phase === "cue" ? { borderColor: "var(--volt)" } : undefined}>
@@ -297,7 +326,7 @@ export default function RelayRecorder({ sceneId, lineId }: { sceneId: string | n
                   {prev ? t("누르면 앞 대사가 나오고, 끝나자마자 녹음이 시작돼요", "Tap: the cue plays, then you record") : t("누르면 3·2·1 뒤에 녹음돼요", "Tap to record after 3·2·1")}
                 </p>
               )}
-              {!recording && phase === "ready" && reason !== "mine" && (
+              {!recording && phase === "ready" && reason !== "mine" && !room && (
                 <button type="button" className={s.ctaSmall} style={{ justifySelf: "center" }} onClick={skip}>
                   {t("다른 배역 할래요", "Try another role")}
                 </button>
@@ -327,7 +356,9 @@ export default function RelayRecorder({ sceneId, lineId }: { sceneId: string | n
                   </button>
                 </div>
                 <span className={s.tiny} style={{ textAlign: "center" }}>
-                  {t("출연하면 이 장면에 공개되고 +30 XP (장면당 한 번)", "Appearing makes this take public · +30 XP per scene")}
+                  {room
+                    ? t("이 방 멤버에게만 들려요 · +30 XP (장면당 한 번)", "Only this room hears it · +30 XP per scene")
+                    : t("출연하면 이 장면에 공개되고 +30 XP (장면당 한 번)", "Appearing makes this take public · +30 XP per scene")}
                 </span>
               </div>
             </>
@@ -340,7 +371,11 @@ export default function RelayRecorder({ sceneId, lineId }: { sceneId: string | n
                 <b>{t(`${role.name} 역으로 출연했어요!`, `You're in as ${role.name}!`)}</b>
                 <span className={s.muted}>
                   {posted?.late ? t("막판 캐스팅으로 두 번째 배역이에요. ", "Last-call second role. ") : ""}
-                  {line.candidate
+                  {room
+                    ? roleLeft > 0
+                      ? t(`${role.name}의 대사가 ${roleLeft}줄 더 있어요.`, `${roleLeft} more ${role.name} lines.`)
+                      : t("방 채팅에 녹음했다고 알렸어요. 친구들이 들을 수 있어요!", "The room has been told — your friends can listen now!")
+                    : line.candidate
                     ? t("이 대사에 1표가 들어갔어요. 표가 가장 많은 대사가 정식판에 들어가요.", "Your vote is in — the line with the most takes makes the final cut.")
                     : roleLeft > 0
                       ? t(`${role.name}의 대사가 ${roleLeft}줄 더 있어요. 24시간 동안 당신 차례예요.`, `${roleLeft} more ${role.name} lines are yours for 24h.`)
@@ -371,8 +406,8 @@ export default function RelayRecorder({ sceneId, lineId }: { sceneId: string | n
 
               <div className={s.bottomBar}>
                 <div className={s.twoBtn}>
-                  <Link href={`/relay/s/${scene.id}`} className={s.ctaGhost} onClick={() => pl.stop()}>
-                    {t("장면 보기", "See scene")}
+                  <Link href={room ? `/relay/r/${room}` : `/relay/s/${scene.id}`} className={s.ctaGhost} onClick={() => pl.stop()}>
+                    {room ? t("방으로", "Room") : t("장면 보기", "See scene")}
                   </Link>
                   <button type="button" className={s.cta} onClick={() => { pl.stop(); track("relay_next"); void load(scene.id, null); }}>
                     {t("다음 줄 하기 →", "Next line →")}

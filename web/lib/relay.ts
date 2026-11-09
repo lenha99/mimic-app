@@ -287,7 +287,7 @@ export type SceneView = {
   promptText: string | null;
   promptName: string | null;
   mode: "normal" | "chaos";
-  status: "pending" | "queued" | "live" | "premiered" | "void";
+  status: "pending" | "queued" | "live" | "premiered" | "void" | "room" | "room_done";
   opensAt: string | null;
   premiereAt: string | null;
   listens: number;
@@ -299,7 +299,14 @@ export type SceneView = {
   final: FinalCut | null;
   /** 보는 사람이 이 장면의 감독인가 */
   amDirector?: boolean;
+  /** 친구 방 장면이면 방 코드(멤버에게만 내려 준다) */
+  room?: string | null;
 };
+
+/** 녹음을 받는 상태 — 공개 상영 중(live) 또는 친구 방에서 찍는 중(room) */
+export const isOpen = (status: SceneView["status"]) => status === "live" || status === "room";
+/** 완성된 상태 — 공개 개봉(premiered) 또는 친구 방 완성(room_done) */
+export const isDone = (status: SceneView["status"]) => status === "premiered" || status === "room_done";
 
 export type CutLine = {
   n: number;
@@ -475,6 +482,12 @@ export function rolePick(s: Pick<SceneView, "lines" | "takes" | "owners" | "prem
   if (owner?.mine) {
     const todo = base.filter((l) => !s.takes.some((t) => t.lineId === l.id && t.kind === "line" && t.mine));
     return { state: "mine", lineId: todo[0]?.id ?? null, left: todo.length };
+  }
+  // 친구 방 — 우선권·1인 1배역 없음. 비어 있으면 누구나, 여러 배역도 된다.
+  if (s.status === "room" || s.status === "room_done") {
+    if (owner) return { state: "taken", name: owner.name };
+    if (s.status !== "room" || !base.length) return { state: "blocked" };
+    return { state: "open", lineId: base[0].id };
   }
   if (s.status !== "live") return owner ? { state: "taken", name: owner.name } : { state: "blocked" };
   if (owner) {

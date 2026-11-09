@@ -1,6 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { ownerOf } from "@/lib/relay-server";
 import { json, requestViewer } from "@/lib/relay-req";
+import { broadcast, findRoom } from "@/lib/room-server";
 
 /**
  * 출연 되돌리기 — 내 녹음만. 그 배역에 내 녹음이 하나도 안 남으면 배역도 내려놓는다
@@ -15,7 +16,7 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
   const { data: take } = await service.from("relay_takes").select("id, scene_id, line_id, owner, audio_path, kind").eq("id", id).maybeSingle();
   if (!take || !v.keys.includes(take.owner)) return json({ error: "forbidden" }, 403);
   const { data: scene } = await service.from("relay_scenes").select("status").eq("id", take.scene_id).maybeSingle();
-  if (scene?.status !== "live") return json({ error: "premiered" }, 409);
+  if (scene?.status !== "live" && scene?.status !== "room") return json({ error: "premiered" }, 409);
   // 줄을 지우면 그 줄의 애드리브도 같이
   const { data: gone } = await service
     .from("relay_takes")
@@ -35,6 +36,10 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
       const { count } = await service.from("relay_takes").select("id", { count: "exact", head: true }).in("line_id", ids).eq("owner", take.owner).eq("kind", "line");
       if (!count) await service.from("relay_roles").delete().eq("scene_id", take.scene_id).eq("role", line.role).eq("owner", take.owner);
     }
+  }
+  if (scene?.status === "room") {
+    const room = await findRoom(take.scene_id, service);
+    if (room) await broadcast(room.code, "scene", {});
   }
   return json({ ok: true });
 }

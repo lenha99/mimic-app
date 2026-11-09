@@ -563,7 +563,7 @@ export interface Database {
           director_name: string | null;
           prompt_id: string | null;
           mode: "normal" | "chaos";
-          status: "pending" | "queued" | "live" | "premiered" | "void";
+          status: "pending" | "queued" | "live" | "premiered" | "void" | "room" | "room_done";
           opens_at: string | null;
           premiere_at: string | null;
           final: Json | null;
@@ -585,7 +585,7 @@ export interface Database {
           director_name?: string | null;
           prompt_id?: string | null;
           mode?: "normal" | "chaos";
-          status?: "pending" | "queued" | "live" | "premiered" | "void";
+          status?: "pending" | "queued" | "live" | "premiered" | "void" | "room" | "room_done";
           opens_at?: string | null;
           premiere_at?: string | null;
           final?: Json | null;
@@ -679,6 +679,24 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["relay_takes"]["Insert"]>;
+        Relationships: [];
+      };
+      relay_rooms: {
+        Row: { code: string; scene_id: string; host: string; host_user: string | null; locked: boolean; chat_expires_at: string | null; created_at: string };
+        Insert: { code: string; scene_id: string; host: string; host_user?: string | null; locked?: boolean; chat_expires_at?: string | null; created_at?: string };
+        Update: { locked?: boolean; chat_expires_at?: string | null };
+        Relationships: [];
+      };
+      relay_room_members: {
+        Row: { room: string; owner: string; user_id: string | null; name: string; avatar: Json; kicked: boolean; notified_at: string | null; seen_at: string | null; joined_at: string };
+        Insert: { room: string; owner: string; user_id?: string | null; name?: string; avatar?: Json; kicked?: boolean; notified_at?: string | null; seen_at?: string | null; joined_at?: string };
+        Update: { user_id?: string | null; name?: string; avatar?: Json; kicked?: boolean; notified_at?: string | null; seen_at?: string | null };
+        Relationships: [];
+      };
+      relay_room_msgs: {
+        Row: { id: number; room: string; owner: string | null; name: string; kind: "chat" | "system"; text: string; reported: boolean; created_at: string };
+        Insert: { room: string; owner?: string | null; name?: string; kind?: "chat" | "system"; text: string; reported?: boolean; created_at?: string };
+        Update: { reported?: boolean };
         Relationships: [];
       };
       relay_casts: {
@@ -813,4 +831,6 @@ export type NotificationKind =
   | "relay_voiced"
   | "relay_premiere"
   | "relay_role"
-  | "relay_unlock";
+  | "relay_unlock"
+  | "relay_room_invite"
+  | "relay_room_chat";

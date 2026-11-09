@@ -1,6 +1,7 @@
 import { notify } from "@/lib/notify-server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { ensureSchedule } from "@/lib/relay-server";
+import { sweepRooms } from "@/lib/room-server";
 
 /**
  * 릴레이 더빙 일정 — Vercel Cron 이 매일 21시(KST)에 부른다.
@@ -15,6 +16,8 @@ export async function GET(req: Request) {
   }
   const service = createServiceClient();
   await ensureSchedule(service, true);
+  // 친구 방 — 72시간 지난 방 완성 · 뒤풀이 끝난 채팅 삭제 · 녹음 없이 7일 지난 방 삭제
+  const rooms = await sweepRooms(service).catch(() => null);
 
   const soon = new Date(Date.now() + 12 * 3600_000).toISOString();
   const { data: roles } = await service.from("relay_roles").select("scene_id, role, owner, user_id, priority_until").gt("priority_until", new Date().toISOString()).lt("priority_until", soon);
@@ -34,5 +37,5 @@ export async function GET(req: Request) {
     });
     sent++;
   }
-  return Response.json({ ok: true, reminders: sent });
+  return Response.json({ ok: true, reminders: sent, rooms });
 }

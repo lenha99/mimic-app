@@ -7,7 +7,8 @@ import { notify, kstStamp } from "@/lib/notify-server";
 import { allow, clientIp, tooMany } from "@/lib/rate-limit";
 import { createServiceClient } from "@/lib/supabase/service";
 import { requestT } from "@/lib/i18n";
-import { can, PRIORITY_MS } from "@/lib/relay";
+import { can, isOpen, PRIORITY_MS } from "@/lib/relay";
+import { broadcast, findRoom, membersOf, memberOf, notifyOffline, postSystem } from "@/lib/room-server";
 import { checkRole, displayName, levelFor, loadScene, ownerOf } from "@/lib/relay-server";
 import { json, requestViewer } from "@/lib/relay-req";
 
@@ -41,7 +42,13 @@ export async function POST(req: Request) {
   const scene = await loadScene(row.scene_id, v, service);
   const line = scene?.lines.find((l) => l.id === lineId);
   if (!scene || !line) return json({ error: t("없는 대사예요.", "Unknown line.") }, 404);
-  if (scene.status !== "live") return json({ error: t("이 장면은 이미 개봉했어요.", "Already premiered.") }, 409);
+  if (!isOpen(scene.status)) return json({ error: t("이 장면은 이미 개봉했어요.", "Already premiered.") }, 409);
+  // 친구 방 — 들어온 멤버만 녹음한다. 애드리브 계급 제한은 방에서도 같다.
+  const room = scene.status === "room" ? await findRoom(scene.id, service) : null;
+  const member = room ? memberOf(await membersOf(room.code, service), v) : null;
+  if (scene.status === "room" && (!room || !member || member.kicked)) {
+    return json({ error: t("방에 들어와야 녹음할 수 있어요.", "Join the room to record.") }, 403);
+  }
 
   let claim = false;
   let late = false;
@@ -106,6 +113,20 @@ export async function POST(req: Request) {
     return json({ error: t("출연하지 못했어요. 다시 해 주세요.", "Couldn't appear.") }, 500);
   }
   if (existing) await service.storage.from("recordings").remove([existing.audio_path]);
+
+  // 친구 방 — "○○님이 3번 대사 녹음" + 화면 새로 고침 신호. 다 차면 "완성본 들어 봐요"
+  if (room && kind === "line") {
+    after(async () => {
+      const fresh = await loadScene(scene.id, null, service);
+      const base = fresh?.lines.filter((l) => !l.candidate) ?? [];
+      const filled = base.filter((l) => fresh!.takes.some((x) => x.lineId === l.id && x.kind === "line")).length;
+      const roleName = scene.roles.find((r) => r.id === line.role)?.name ?? line.role;
+      await postSystem(room.code, `🎙 ${member?.name || name}님이 ${line.n}번 대사(${roleName})를 녹음했어요 · ${filled}/${base.length}`, service);
+      if (base.length && filled === base.length && !existing) await postSystem(room.code, "✨ 모든 대사가 찼어요! 방장이 [완성]을 누르면 다 같이 들을 수 있어요.", service);
+      await broadcast(room.code, "scene", {});
+      await notifyOffline(room, `${member?.name || name}님이 ${line.n}번 대사를 녹음했어요`, [owner], service);
+    });
+  }
 
   // 작가에게 — "누군가 당신이 쓴 대사를 연기했어요" (작가당 하루 한 번 푸시)
   if (kind === "line" && line.candidate && !line.mineAuthor) {

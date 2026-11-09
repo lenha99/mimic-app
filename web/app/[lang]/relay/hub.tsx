@@ -7,6 +7,7 @@ import { TourHelp } from "@/components/onboarding/tour";
 import { ScreenTour } from "@/components/onboarding/tours";
 import { HallCard, HowItWorks, Ladder, MyDesk, PromptCard, RankBar, RelayIntro, useLevel } from "@/components/relay/parts";
 import { fetchScene } from "@/components/relay/client";
+import { RoomCard } from "@/components/relay/room-card";
 import { can, genreLabel, HALL_LABEL, type Hall, type SceneView } from "@/lib/relay";
 import { track } from "@/lib/track";
 import s from "@/components/relay/relay.module.css";
@@ -57,6 +58,8 @@ export default function RelayHub({ live: initial, premiered, best }: { live: Sce
       <p className={s.sub}>{t("배역 하나 골라서 대사 딱 한 줄. 나머지는 다른 사람들 목소리로 채워져요.", "Pick a role, record one line — other voices fill in the rest.")}</p>
 
       <HowItWorks />
+
+      <RoomCard />
 
       <div className={s.section}>
         <h2>🎬 {t("지금 상영 중 — 배역을 골라 보세요", "Now showing — pick a role")}</h2>
