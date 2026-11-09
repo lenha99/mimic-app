@@ -64,7 +64,8 @@ export async function POST(req: Request) {
     late = c.late;
   }
 
-  const name = await displayName(v, cleanNickname(form?.get("name")), service);
+  // 방에서는 방 닉네임으로 — 채팅·배역 카드에 같은 이름이 보이게
+  const name = member?.name || (await displayName(v, cleanNickname(form?.get("name")), service));
   let avatar = null;
   try {
     avatar = normalizeAvatar(JSON.parse(String(form?.get("avatar") ?? "null")));
@@ -77,7 +78,8 @@ export async function POST(req: Request) {
       role: line.role,
       owner,
       user_id: v.userId,
-      late,
+      // 방에선 여러 배역을 맡는다 — "한 장면 한 배역" 유일 인덱스는 late=false 에만 걸려 있어 late 로 넣는다
+      late: late || scene.status === "room",
       priority_until: new Date(Date.now() + PRIORITY_MS).toISOString(),
     });
     if (error) {
