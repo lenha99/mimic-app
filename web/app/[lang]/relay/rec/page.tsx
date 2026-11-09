@@ -10,5 +10,5 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function RelayRecPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const q = await searchParams;
   const one = (v: string | string[] | undefined) => (typeof v === "string" ? v : null);
-  return <RelayRecorder sceneId={one(q.scene)} lineId={one(q.line)} />;
+  return <RelayRecorder sceneId={one(q.scene)} lineId={one(q.line)} room={one(q.room)} />;
 }

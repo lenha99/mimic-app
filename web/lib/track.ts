@@ -100,7 +100,15 @@ export type TrackKind =
   | "relay_share"
   | "relay_premiere_view"
   | "relay_listen"
-  | "relay_home";
+  | "relay_home"
+  // 더빙 방 — 만들고(create) → 부르고(share/invite) → 들어오고(join) → 떠들고(msg) → 완성(complete) → 같이 듣기(play)
+  | "room_create"
+  | "room_share"
+  | "room_invite"
+  | "room_join"
+  | "room_msg"
+  | "room_complete"
+  | "room_play";
 
 const URL_ =
   process.env.NEXT_PUBLIC_TRACK_URL ?? "https://lenha99--meme-scoring-track.modal.run";

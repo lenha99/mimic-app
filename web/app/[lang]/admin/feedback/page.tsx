@@ -32,7 +32,7 @@ export default async function AdminFeedbackPage() {
 
   const service = createServiceClient();
   const since = daysAgo(14);
-  const [{ data: rows }, { data: hiddenPosts }, { data: hiddenNotes }] = await Promise.all([
+  const [{ data: rows }, { data: hiddenPosts }, { data: hiddenNotes }, { data: roomReports }] = await Promise.all([
     service
       .from("app_feedback")
       .select("id, page, item_id, rating, message, created_at, user_id")
@@ -41,6 +41,8 @@ export default async function AdminFeedbackPage() {
       .limit(300),
     service.from("practice_posts").select("id, title, reports").eq("hidden", true).limit(50),
     service.from("practice_notes").select("id, post_id, body, reports").eq("hidden", true).limit(50),
+    // 더빙 방 채팅 신고 — 표가 없으면(마이그레이션 38 전) 빈 목록
+    service.from("relay_room_msgs").select("id, room, name, text, created_at").eq("reported", true).order("created_at", { ascending: false }).limit(50),
   ]);
   const all = rows ?? [];
   const up = all.filter((r) => r.rating === 1).length;
@@ -88,6 +90,17 @@ export default async function AdminFeedbackPage() {
         {!hiddenPosts?.length && !hiddenNotes?.length && <li className={styles.row}>없어요.</li>}
       </ul>
       <p className={styles.meta}>되살리기는 Supabase 표 편집기에서 hidden 을 false 로.</p>
+
+      <h2 className={styles.title}>더빙 방 채팅 신고</h2>
+      <ul className={styles.list}>
+        {(roomReports ?? []).map((m) => (
+          <li key={m.id} className={styles.row}>
+            {m.name} · “{m.text}” · {new Date(m.created_at).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })} · <Link href={`/relay/r/${m.room}`}>방 열기</Link>
+          </li>
+        ))}
+        {!roomReports?.length && <li className={styles.row}>없어요.</li>}
+      </ul>
+      <p className={styles.meta}>채팅은 방이 완성되고 24시간 뒤 지워져요. 그 전에 확인해 주세요.</p>
     </main>
   );
 }

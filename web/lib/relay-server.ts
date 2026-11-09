@@ -241,10 +241,17 @@ async function openNext(hall: Hall, service: Service): Promise<void> {
     .select("id")
     .single();
   if (error || !scene) return; // 동시에 다른 요청이 먼저 열었다(유일 인덱스)
-  const row = (l: (typeof pick.lines)[number], n = l.n) => ({ scene_id: scene.id, n, role: l.role, text: l.text, dir: l.dir, tip: l.tip, tts: l.tts, sec: l.sec });
+  if (await insertStockLines(scene.id, pick, service)) return;
+  // 대사 없는 장면이 상영관을 3일 동안 막지 않게 — 지우고 다음 조회 때 다시 연다
+  await service.from("relay_scenes").delete().eq("id", scene.id);
+}
+
+/** 비축 장면의 대사를 장면에 넣는다. 공개 상영관·친구 방이 같이 쓴다. 못 넣으면 false. */
+export async function insertStockLines(sceneId: string, pick: (typeof RELAY_STOCK)[number], service: Service = createServiceClient()): Promise<boolean> {
+  const row = (l: (typeof pick.lines)[number], n = l.n) => ({ scene_id: sceneId, n, role: l.role, text: l.text, dir: l.dir, tip: l.tip, tts: l.tts, sec: l.sec });
   const { error: lineErr } = await service.from("relay_lines").insert(pick.lines.map((l) => row(l)));
-  if (!lineErr) return;
-  console.error("relay openNext lines", lineErr.message);
+  if (!lineErr) return true;
+  console.error("relay lines", lineErr.message);
   // 13줄을 못 넣으면(줄 수 제약 마이그레이션 37 전) 원래 10줄판으로 연다 — 옛 줄은 옛 TTS 파일(<n>.mp3)을 그대로 쓰고 있어 번호까지 안다.
   const legacy = pick.lines
     .map((l) => ({ l, n: Number(/\/(\d+)\.mp3/.exec(l.tts)?.[1] ?? 0) }))
@@ -252,10 +259,9 @@ async function openNext(hall: Hall, service: Service): Promise<void> {
     .map((x) => row(x.l, x.n));
   if (legacy.length === 10) {
     const { error: e2 } = await service.from("relay_lines").insert(legacy);
-    if (!e2) return;
+    if (!e2) return true;
   }
-  // 대사 없는 장면이 상영관을 3일 동안 막지 않게 — 지우고 다음 조회 때 다시 연다
-  await service.from("relay_scenes").delete().eq("id", scene.id);
+  return false;
 }
 
 /** 개봉 — 정식판 박제 · 갈림길 채택 표시 · 출연자 알림. 진짜 배우가 0명이면 무효로 돌려 비축에 남긴다. */
@@ -462,6 +468,13 @@ export type RoleCheck = { ok: true; claim: boolean; late: boolean } | { ok: fals
 
 /** 이 사람이 이 줄을 녹음해도 되나 — 1인 1배역 · 우선권 · 막판 캐스팅 */
 export function checkRole(s: SceneView, line: LineView, v: Viewer, now = Date.now()): RoleCheck {
+  // 친구 방 — 우선권·1인 1배역 없음(방 멤버인지는 라우트가 본다). 남이 잡은 배역만 막는다.
+  if (s.status === "room") {
+    const owner = s.owners.find((o) => o.role === line.role);
+    if (!owner) return { ok: true, claim: true, late: false };
+    if (v.keys.includes(owner.owner)) return { ok: true, claim: false, late: false };
+    return { ok: false, status: 409, ko: `이 배역은 ${owner.name || "다른 멤버"}님이 맡았어요.`, en: "Someone in the room has this role." };
+  }
   if (s.status !== "live") return { ok: false, status: 409, ko: "이 장면은 이미 개봉했어요.", en: "This scene has already premiered." };
   const keys = new Set(v.keys);
   // 갈림길 후보 녹음은 투표 겸 오디션 — 배역 제한 없음
