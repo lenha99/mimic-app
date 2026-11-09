@@ -10,6 +10,7 @@ import { MyVoiceCard } from "@/components/home/my-voice-card";
 import home from "@/components/home/home.module.css";
 import { HomeHero } from "@/components/weekly/home-hero";
 import { RelayHomeCard } from "@/components/relay/home-card";
+import { RoomsHomeCard } from "@/components/relay/rooms-home-card";
 import { getMemes } from "@/lib/memes";
 import { findScript, SCRIPTS } from "@/lib/practice";
 import { galleryEntries, getBoard, liveWeek } from "@/lib/weekly-server";
@@ -86,6 +87,9 @@ export default async function Home() {
       {/* 릴레이 더빙(11/8) — 여러 사람 목소리로 장면 하나. 연습실 바로 아래, 처음 온 사람도 버튼 하나로 출연. */}
       <RelayHomeCard />
 
+      {/* 온라인 방(11/10) — 친구와 원격으로 같이 읽고 녹음·채팅. 있는 줄 모르면 없는 기능이라 홈에 따로. */}
+      <RoomsHomeCard />
+
       {/* 운영자 픽 — 좋은 목소리는 첫 화면에서 바로 들린다. */}
       <HomePick pick={splitPicks(gallery).pick} />
 
@@ -136,7 +140,7 @@ export default async function Home() {
           </span>
           <span className={home.tileText}>
             <b>{t("릴레이 더빙", "Relay Dubbing")}</b>
-            <small>{t("한 줄씩 이어 만드는 장면 · 모험·면접·뉴스", "One line each · adventure, interview, news")}</small>
+            <small>{t("한 줄씩 이어 만드는 장면 · 친구랑 온라인 방도", "One line each · or a room with friends online")}</small>
           </span>
           <i className={home.tileNew}>NEW</i>
         </Link>
