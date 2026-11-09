@@ -4,7 +4,7 @@ import { requestT } from "@/lib/i18n";
 import { createServiceClient } from "@/lib/supabase/service";
 import { badText } from "@/lib/relay-server";
 import { json, requestViewer } from "@/lib/relay-req";
-import { broadcast, findRoom, MAX_MSG, membersOf, memberOf, MSGS_PER_DAY, notifyOffline, toMsg } from "@/lib/room-server";
+import { broadcast, findRoom, MAX_MSG, membersOf, memberOf, MSGS_PER_DAY, notifyOffline, toMsg, touch } from "@/lib/room-server";
 
 /**
  * 채팅 한 줄 — 멤버만. 금칙어 · 300자 · 1초 1개 · 방당 하루 500개.
@@ -36,6 +36,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ code: string }
   if (error || !data) return json({ error: t("보내지 못했어요.", "Couldn't send.") }, 500);
   // 받는 쪽에선 mine 이 아니다 — 보낸 사람 화면은 응답으로 받은 걸 쓴다
   await broadcast(room.code, "msg", { msg: toMsg(data, null) });
+  await touch(room.code, service);
   after(() => notifyOffline(room, `${me.name}: ${text.slice(0, 60)}`, [me.owner], service));
   return json({ msg: toMsg(data, v) });
 }

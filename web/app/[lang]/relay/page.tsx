@@ -15,7 +15,8 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title, description, openGraph: { title, description } };
 }
 
-export default async function RelayPage() {
+export default async function RelayPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const tab = (await searchParams).tab === "rooms" ? "rooms" : "halls";
   const [live, done, best] = await Promise.all([
     liveScenes(null).catch(() => []),
     premieredScenes(12).catch(() => []),
@@ -26,6 +27,7 @@ export default async function RelayPage() {
       live={live.map(publicView)}
       premiered={done.map((s) => ({ id: s.id, title: s.title, hall: s.hall, genre: s.genre, premiereAt: s.premiere_at, listens: s.listens, director: s.director_name, actors: ((s.final as { realActors?: number } | null)?.realActors ?? 0) }))}
       best={best ? { id: best.id, title: best.title, listens: best.listens, logline: best.logline } : null}
+      tab={tab}
     />
   );
 }

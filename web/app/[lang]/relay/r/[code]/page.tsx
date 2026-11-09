@@ -9,9 +9,15 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata({ params }: { params: Promise<{ code: string }> }): Promise<Metadata> {
   const { code } = await params;
   const room = await findRoom(code).catch(() => null);
-  const { data: s } = room ? await createServiceClient().from("relay_scenes").select("title, logline").eq("id", room.scene_id).maybeSingle() : { data: null };
-  const title = s ? `「${s.title}」 같이 더빙해요 — MIMIC` : "더빙 방 — MIMIC";
-  const description = s ? `${s.logline} · 배역 하나 골라 녹음하면 친구들 목소리와 한 장면이 돼요` : "친구들과 배역을 나눠 한 장면을 더빙해요";
+  const { data: s } = room?.scene_id ? await createServiceClient().from("relay_scenes").select("title, logline").eq("id", room.scene_id).maybeSingle() : { data: null };
+  const name = room?.title || s?.title;
+  const title = room?.kind === "script" ? `「${name}」 같이 읽어요 — MIMIC` : name ? `「${name}」 같이 더빙해요 — MIMIC` : "더빙 방 — MIMIC";
+  const description =
+    room?.kind === "script"
+      ? "대본 하나를 같이 읽고 녹음하는 방이에요. 연극·발표·아나운서 연습도 돼요"
+      : s
+        ? `${s.logline} · 배역 하나 골라 녹음하면 친구들 목소리와 한 장면이 돼요`
+        : "친구들과 같이 더빙해요";
   return { title, description, robots: { index: false }, openGraph: { title, description } };
 }
 

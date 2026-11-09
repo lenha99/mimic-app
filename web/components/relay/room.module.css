@@ -345,3 +345,243 @@
   color: var(--ash);
   font-size: 12px;
 }
+
+/* ---- 방 만들기 ---- */
+
+.choice {
+  display: grid;
+  gap: 6px;
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid var(--rule);
+  background: var(--panel);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.choice:first-child {
+  border-color: color-mix(in srgb, var(--volt) 55%, transparent);
+  background: color-mix(in srgb, var(--volt) 10%, var(--panel));
+}
+
+.choice:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.choice b {
+  font-size: 18px;
+}
+
+.choice span:not(.choiceIcon) {
+  color: var(--ash);
+  font-size: 14px;
+  word-break: keep-all;
+}
+
+.choice small {
+  color: var(--volt);
+  font-size: 12px;
+}
+
+.choiceIcon {
+  font-size: 28px;
+}
+
+.scriptBox {
+  width: 100%;
+  min-height: 260px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid var(--rule);
+  background: var(--panel);
+  color: var(--white);
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  margin: 0 calc(var(--gutter) * -1) 12px;
+  padding: 0 var(--gutter) 4px;
+  scrollbar-width: none;
+}
+
+.chip {
+  flex: none;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 18px;
+  border: 1px solid var(--rule);
+  background: var(--panel);
+  color: var(--ash);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.chipOn {
+  background: var(--white);
+  color: var(--stage);
+  border-color: var(--white);
+  font-weight: 700;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.grid .pick {
+  padding: 6px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.field span {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.field input {
+  min-height: 48px;
+  padding: 0 14px;
+  border-radius: 14px;
+  border: 1px solid var(--rule);
+  background: var(--panel);
+  color: var(--white);
+  font: inherit;
+  font-size: 16px;
+}
+
+.toggle {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: start;
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  cursor: pointer;
+}
+
+.toggle input {
+  width: 22px;
+  height: 22px;
+  margin-top: 2px;
+}
+
+.toggle span {
+  display: grid;
+  gap: 4px;
+}
+
+.toggle small {
+  color: var(--ash);
+  font-size: 13px;
+  word-break: keep-all;
+}
+
+/* ---- 대본 방 ---- */
+
+.parts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.part {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  scroll-margin: 90px;
+}
+
+.partFocus {
+  border-color: var(--volt);
+  background: color-mix(in srgb, var(--volt) 12%, var(--panel));
+}
+
+.partPlaying {
+  border-color: var(--lime);
+}
+
+.partText {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.6;
+  word-break: keep-all;
+  white-space: pre-wrap;
+  cursor: pointer;
+}
+
+.partNo {
+  color: var(--ash-dim);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.takeRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.takeChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 16px;
+  border: 1px solid var(--rule);
+  background: var(--stage);
+  color: var(--white);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.takeMine {
+  border-color: color-mix(in srgb, var(--volt) 60%, transparent);
+}
+
+.takeOn {
+  background: var(--volt);
+  color: var(--on-accent);
+}
+
+.recBar {
+  position: sticky;
+  bottom: 0;
+  z-index: 7;
+  display: grid;
+  gap: 10px;
+  margin: 12px calc(var(--gutter) * -1) 0;
+  padding: 14px var(--gutter) calc(14px + env(safe-area-inset-bottom));
+  background: var(--panel);
+  border-top: 1px solid var(--rule);
+  border-radius: 20px 20px 0 0;
+}
+
+.danger {
+  color: #ff9aa3;
+}

@@ -5,6 +5,7 @@ import { createServiceClient } from "@/lib/supabase/service";
  * 릴레이 오디오 — 고정 주소로 받으면 새 서명 URL 로 보낸다.
  *   /api/relay/audio/<녹음 id>      출연 녹음 (숨긴 건 끊긴다)
  *   /api/relay/audio/l_<줄 id>      작가·감독이 쓴 줄의 TTS
+ *   /api/relay/audio/r_<녹음 id>    대본 방 녹음
  */
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
@@ -16,6 +17,10 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
       const { data } = await service.from("relay_lines").select("tts, hidden").eq("id", lineId).maybeSingle();
       if (data && !data.hidden && data.tts && !data.tts.startsWith("/")) path = data.tts;
     }
+  } else if (id.startsWith("r_") && /^[0-9a-f-]{36}$/.test(id.slice(2))) {
+    // 대본 방 녹음 — 방을 나가거나 방이 사라지면 행이 없어져 끊긴다
+    const { data } = await service.from("relay_room_takes").select("audio_path").eq("id", id.slice(2)).maybeSingle();
+    if (data) path = data.audio_path;
   } else if (/^[0-9a-f-]{36}$/.test(id)) {
     const { data } = await service.from("relay_takes").select("audio_path, hidden").eq("id", id).maybeSingle();
     if (data && !data.hidden) path = data.audio_path;

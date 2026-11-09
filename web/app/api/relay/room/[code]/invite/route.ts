@@ -54,7 +54,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ code: string }
   if (room.locked) return json({ error: t("잠긴 방이에요. 방장이 열어야 부를 수 있어요.", "Room is locked.") }, 409);
   const allowed = new Map((await candidates(me, service)).map((p) => [p.key, p]));
   const want = (Array.isArray(b.keys) ? b.keys : []).map(String).filter((k) => allowed.has(k)).slice(0, 10);
-  const { data: sc } = await service.from("relay_scenes").select("title").eq("id", room.scene_id).maybeSingle();
+  const sc = { title: room.title || (room.scene_id ? (await service.from("relay_scenes").select("title").eq("id", room.scene_id).maybeSingle()).data?.title : null) };
   let sent = 0;
   for (const k of want) {
     if (await blocked(me, k, service)) continue;
