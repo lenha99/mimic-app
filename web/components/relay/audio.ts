@@ -358,10 +358,16 @@ export function useRecorder() {
         setState("rec");
         const buf = new Uint8Array(analyser?.fftSize ?? 512);
         let smooth = 0;
+        let lastUi = -1e9;
         const loop = () => {
           if (r.state === "inactive") return;
           const ms = performance.now() - t0;
-          setElapsed(ms);
+          // 화면은 초당 20번만 — 매 프레임 다시 그리면 저사양 폰이 버벅인다
+          const ui = ms - lastUi >= 50;
+          if (ui) {
+            lastUi = ms;
+            setElapsed(ms);
+          }
           if (analyser) {
             analyser.getByteTimeDomainData(buf);
             let s = 0;
@@ -370,7 +376,7 @@ export function useRecorder() {
               s += v * v;
             }
             smooth = smooth * 0.7 + Math.min(1, Math.sqrt(s / buf.length) * 4) * 0.3;
-            setLevel(smooth);
+            if (ui) setLevel(smooth);
           }
           if (ms >= maxMs) r.stop();
           else requestAnimationFrame(loop);

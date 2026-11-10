@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useAppPath } from "@/lib/app-path";
 import { useUnread } from "@/lib/unread-client";
 import { useT } from "@/components/lang";
 import styles from "./bottom-nav.module.css";
@@ -33,7 +33,7 @@ const TABS = [
 const SHOW = [/^\/$/, /^\/weekly$/, /^\/weekly\/hall$/, /^\/challenges$/, /^\/practice$/, /^\/practice\/board$/, /^\/me$/, /^\/profile$/, /^\/rank$/, /^\/notifications$/, /^\/messages$/, /^\/following$/, /^\/relay$/, /^\/relay\/guide$/];
 
 export function BottomNav() {
-  const path = usePathname() ?? "/";
+  const path = useAppPath();
   const t = useT();
   const u = useUnread(path);
   const unread = u.activity + u.dm;

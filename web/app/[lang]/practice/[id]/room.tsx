@@ -445,6 +445,8 @@ export default function Room({ item }: { item: RoomItem }) {
         pausedAt.current = null;
         const buf = new Uint8Array(analyser?.fftSize ?? 1024);
         let smooth = 0;
+        // 화면은 초당 20번만 고친다 — 매 프레임(60번) 고치면 이 큰 화면 전체를 다시 그려 저사양 폰이 버벅였다
+        let lastUi = 0;
         const loop = () => {
           if (rec.state === "inactive") return;
           if (rec.state === "paused") {
@@ -452,7 +454,11 @@ export default function Room({ item }: { item: RoomItem }) {
             return;
           }
           const ms = performance.now() - t0 - pausedTotal.current;
-          setElapsed(ms);
+          const ui = ms - lastUi >= 50;
+          if (ui) {
+            lastUi = ms;
+            setElapsed(ms);
+          }
           if (analyser) {
             analyser.getByteTimeDomainData(buf);
             let s = 0;
@@ -462,7 +468,7 @@ export default function Room({ item }: { item: RoomItem }) {
             }
             const rms = Math.min(1, Math.sqrt(s / buf.length) * 4);
             smooth = smooth * 0.7 + rms * 0.3;
-            setLevel(smooth);
+            if (ui) setLevel(smooth);
           }
           if (ms >= max) rec.stop();
           else requestAnimationFrame(loop);
