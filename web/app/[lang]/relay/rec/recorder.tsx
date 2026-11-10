@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLang, useT } from "@/components/lang";
 import { Coco } from "@/components/brand/coco";
-import { useRecorder, usePlaylist, type PlayItem } from "@/components/relay/audio";
+import { useRecorder, usePlaylist, warmAudio, type PlayItem } from "@/components/relay/audio";
 import { addSkip, assignNext, fetchScene, postTake, previewLines, undoTake } from "@/components/relay/client";
 import { AvatarDot, useLevel } from "@/components/relay/parts";
 import { ADLIB_MS, can, HALL_LABEL, isOpen, isBranch, maxTakeMs, sceneLength, premiereLabel, takeUrl, timeLeft, ttsUrl, type Assignment, type CutLine, type LineView, type SceneView } from "@/lib/relay";
@@ -45,6 +45,23 @@ export default function RelayRecorder({ sceneId, lineId, room = null }: { sceneI
   const [adlibDone, setAdlibDone] = useState(false);
   const myUrl = useRef<string | null>(null);
   const adlibUrl = useRef<string | null>(null);
+  /** 출연하자마자 미리 물어 둔 "다음 줄" — 다음 줄 버튼을 누르면 기다리지 않고 바로 넘어간다 */
+  const nextAssign = useRef<ReturnType<typeof assignNext> | null>(null);
+  /** 이 화면에서 올린 줄 — 방에선 서버를 다시 읽지 않고도 다음 줄을 고른다 */
+  const doneLines = useRef<Set<string>>(new Set());
+
+  const applyAssign = useCallback((r: Awaited<ReturnType<typeof assignNext>>) => {
+    if (!r?.assignment || !r.scene) {
+      setScene(r?.scene ?? null);
+      setPhase("none");
+      return;
+    }
+    const l = r.scene.lines.find((x) => x.id === r.assignment!.lineId) ?? null;
+    setScene(r.scene);
+    setLine(l);
+    setReason(r.assignment.reason);
+    setPhase(l ? "ready" : "none");
+  }, []);
 
   const load = useCallback(
     async (preferScene?: string | null, exactLine?: string | null) => {
@@ -53,6 +70,7 @@ export default function RelayRecorder({ sceneId, lineId, room = null }: { sceneI
       setPosted(null);
       setAdlibDone(false);
       rec.reset();
+      nextAssign.current = null;
       if (exactLine && preferScene) {
         const r = await fetchScene(preferScene);
         const l = r?.scene.lines.find((x) => x.id === exactLine);
@@ -69,7 +87,7 @@ export default function RelayRecorder({ sceneId, lineId, room = null }: { sceneI
         const r = await fetchScene(preferScene);
         const mineRoles = new Set(r?.scene.owners.filter((o) => o.mine).map((o) => o.role) ?? []);
         const l = r?.scene.lines
-          .filter((x) => !x.candidate && mineRoles.has(x.role) && !r.scene.takes.some((tk) => tk.lineId === x.id && tk.kind === "line"))
+          .filter((x) => !x.candidate && mineRoles.has(x.role) && !doneLines.current.has(x.id) && !r.scene.takes.some((tk) => tk.lineId === x.id && tk.kind === "line"))
           .sort((a, b) => a.n - b.n)[0];
         setScene(r?.scene ?? null);
         if (r && l && isOpen(r.scene.status)) {
@@ -79,17 +97,7 @@ export default function RelayRecorder({ sceneId, lineId, room = null }: { sceneI
         } else setPhase("none");
         return;
       }
-      const r = await assignNext(preferScene);
-      if (!r?.assignment || !r.scene) {
-        setScene(r?.scene ?? null);
-        setPhase("none");
-        return;
-      }
-      const l = r.scene.lines.find((x) => x.id === r.assignment!.lineId) ?? null;
-      setScene(r.scene);
-      setLine(l);
-      setReason(r.assignment.reason);
-      setPhase(l ? "ready" : "none");
+      applyAssign(await assignNext(preferScene));
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
@@ -105,6 +113,33 @@ export default function RelayRecorder({ sceneId, lineId, room = null }: { sceneI
   const prev: CutLine | null = line ? (cut.find((c) => c.n === line.n - 1) ?? null) : null;
   const next: CutLine | null = line ? (cut.find((c) => c.n === line.n + 1) ?? null) : null;
   const itemOf = (c: CutLine): PlayItem => ({ key: c.lineId, url: c.takeId ? takeUrl(c.takeId) : ttsUrl({ lineId: c.lineId, tts: c.tts }), text: c.text });
+  // 앞 대사·뒤 대사 소리를 미리 받아 둔다 — 누르자마자 큐가 나오고, 녹음 뒤 다시 듣기도 바로
+  const prevItem = prev ? itemOf(prev) : null;
+  const nextItem = next ? itemOf(next) : null;
+  useEffect(() => {
+    warmAudio([prevItem, nextItem]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prevItem?.url, nextItem?.url]);
+
+  // 올리지 않은 녹음이 있으면 창을 닫거나 새로 고칠 때 한 번 묻는다
+  const unsaved = (phase === "review" || phase === "posting") && !!rec.blob;
+  useEffect(() => {
+    if (!unsaved) return;
+    const onLeave = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onLeave);
+    return () => window.removeEventListener("beforeunload", onLeave);
+  }, [unsaved]);
+  const leaveGuard = (e: React.MouseEvent) => {
+    if (unsaved && !window.confirm(t("녹음한 걸 아직 안 올렸어요. 나가면 사라져요. 나갈까요?", "Your take isn't posted yet and will be lost. Leave?"))) {
+      e.preventDefault();
+      return;
+    }
+    pl.stop();
+  };
+
   const roleLeft = scene && line && !line.candidate ? scene.lines.filter((l) => !l.candidate && l.role === line.role && l.n > line.n && !scene.takes.some((x) => x.lineId === l.id && x.mine)).length : 0;
 
   // 녹음이 끝나면 바로 보상 재생 — 앞 대사 + 내 목소리
@@ -149,12 +184,17 @@ export default function RelayRecorder({ sceneId, lineId, room = null }: { sceneI
     return () => clearTimeout(id);
   }, [undoLeft]);
 
-  const begin = () => {
+  const begin = async () => {
     if (!line) return;
     setError(null);
     pl.stop();
     if (prev) {
       setPhase("cue");
+      // 마이크부터 연다 — 큐가 끝난 순간 기다림 없이 녹음이 시작되게
+      if (!(await rec.prepare())) {
+        setPhase("ready");
+        return;
+      }
       void pl.play([itemOf(prev)], {
         onDone: () => {
           setPhase("ready");
@@ -178,6 +218,9 @@ export default function RelayRecorder({ sceneId, lineId, room = null }: { sceneI
     setPosted(r);
     setUndoLeft(5);
     setPhase("posted");
+    doneLines.current.add(line.id);
+    // 다음 줄을 미리 물어 둔다(방이 아닐 때 — 방은 이 화면에서 바로 고른다)
+    if (!room && scene) nextAssign.current = assignNext(scene.id);
     track("relay_post", { meme_id: scene?.stockKey ?? scene?.id, via: reason ?? undefined });
   };
 
@@ -186,9 +229,42 @@ export default function RelayRecorder({ sceneId, lineId, room = null }: { sceneI
     setUndoLeft(0);
     if (await undoTake(posted.id)) {
       track("relay_undo");
+      nextAssign.current = null;
+      if (line) doneLines.current.delete(line.id);
       setPosted(null);
       setPhase("review");
     }
+  };
+
+  /** 다음 줄 — 로딩 화면 없이. 방이면 지금 장면에서 내 배역의 다음 빈 줄, 아니면 미리 물어 둔 배정 */
+  const goNext = async () => {
+    pl.stop();
+    track("relay_next");
+    if (!scene) return;
+    setError(null);
+    setPosted(null);
+    setUndoLeft(0);
+    setAdlibDone(false);
+    if (room) {
+      const mineRoles = new Set([...scene.owners.filter((o) => o.mine).map((o) => o.role), ...(line ? [line.role] : [])]);
+      const l = scene.lines
+        .filter((x) => !x.candidate && mineRoles.has(x.role) && !doneLines.current.has(x.id) && !scene.takes.some((tk) => tk.lineId === x.id && tk.kind === "line"))
+        .sort((a, b) => a.n - b.n)[0];
+      if (!l) return void load(scene.id, null);
+      rec.reset();
+      setLine(l);
+      setReason("mine");
+      setPhase("ready");
+      // 장면은 뒤에서 새로 읽어 둔다(내 녹음이 앞 대사로 들리게)
+      void fetchScene(scene.id).then((r) => r && setScene(r.scene));
+      return;
+    }
+    const pending = nextAssign.current;
+    nextAssign.current = null;
+    if (!pending) return void load(scene.id, null);
+    rec.reset();
+    setPhase("loading");
+    applyAssign(await pending);
   };
 
   const skip = () => {
@@ -204,7 +280,7 @@ export default function RelayRecorder({ sceneId, lineId, room = null }: { sceneI
   return (
     <main className={`shell ${s.page}`}>
       <div className={s.spread}>
-        <Link href={room ? `/relay/r/${room}` : scene ? `/relay/s/${scene.id}` : "/relay"} className={s.back} onClick={() => pl.stop()}>
+        <Link href={room ? `/relay/r/${room}` : scene ? `/relay/s/${scene.id}` : "/relay"} className={s.back} onClick={leaveGuard}>
           ‹ {scene ? scene.title : t("릴레이 더빙", "Relay Dubbing")}
         </Link>
         {scene && (
@@ -316,7 +392,7 @@ export default function RelayRecorder({ sceneId, lineId, room = null }: { sceneI
                 className={s.recCircle}
                 data-tour="relay-rec"
                 disabled={phase === "cue" || rec.state === "count"}
-                onClick={() => (rec.state === "rec" ? rec.stop() : begin())}
+                onClick={() => (rec.state === "rec" ? rec.stop() : void begin())}
                 aria-label={rec.state === "rec" ? t("녹음 끝내기", "Stop") : t("녹음하기", "Record")}
               >
                 {rec.state === "rec" ? t("끝", "Stop") : "🎙"}
@@ -409,7 +485,7 @@ export default function RelayRecorder({ sceneId, lineId, room = null }: { sceneI
                   <Link href={room ? `/relay/r/${room}` : `/relay/s/${scene.id}`} className={s.ctaGhost} onClick={() => pl.stop()}>
                     {room ? t("방으로", "Room") : t("장면 보기", "See scene")}
                   </Link>
-                  <button type="button" className={s.cta} onClick={() => { pl.stop(); track("relay_next"); void load(scene.id, null); }}>
+                  <button type="button" className={s.cta} onClick={() => void goNext()}>
                     {t("다음 줄 하기 →", "Next line →")}
                   </button>
                 </div>
