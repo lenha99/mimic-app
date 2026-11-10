@@ -102,6 +102,19 @@ export function FirstMission({ voices, scriptId, line }: { voices: MissionVoice[
 
   const voice = voices[idx];
 
+  // 지금 목소리를 미리 받아 둔다 — ▶ 를 누른 뒤 서버를 거쳐 받기 시작하면 첫 소리가 1초 넘게 늦었다
+  useEffect(() => {
+    if (!open || !voice || step !== "listen") return;
+    audio.current ??= new Audio();
+    const a = audio.current;
+    const src = `/api/weekly/audio/${voice.id}`;
+    if (!a.src.endsWith(src) && a.paused) {
+      a.preload = "auto";
+      a.src = src;
+      a.load();
+    }
+  }, [open, voice, step]);
+
   const play = () => {
     if (!voice) return;
     if (playing) return stopAudio();

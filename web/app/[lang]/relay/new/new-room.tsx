@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLang, useT } from "@/components/lang";
 import { postJson } from "@/components/relay/client";
 import { Poster } from "@/components/relay/parts";
@@ -19,10 +19,21 @@ type Pick = { key: string; title: string; logline: string; genre: string; roles:
 type Step = "choose" | "script" | "scene" | "settings";
 
 const DRAFT = "mimic.roomDraft";
+const DRAFT_STATE = "mimic.roomDraftState";
+const STEPS: Step[] = ["choose", "script", "scene", "settings"];
+type DraftState = { kind: "script" | "scene"; pick: Pick | null; title: string; pub: boolean; titleFor: string };
+
+function readStep(): Step {
+  const v = new URLSearchParams(window.location.search).get("step") as Step | null;
+  return v && STEPS.includes(v) ? v : "choose";
+}
 
 /**
  * 방 만들기 — 1) 무엇으로(우리 대본 / 준비된 장면) 2) 대본 붙여넣기 또는 장면 고르기 3) 제목·공개 → 방 열기.
  * 아래로 길게 펼치지 않고 한 단계씩. 붙여 넣던 대본은 이 기기에 잠깐 남겨 둔다(실수로 뒤로 가도 안 날아가게).
+ *
+ * 단계는 주소(?step=)에 남긴다 — 폰의 뒤로 가기·「이전」이 한 단계 앞으로 돌아가고, 고른 장면·제목·공개 설정도
+ * 그대로 남는다. 예전엔 뒤로 가기 한 번에 화면을 통째로 떠나 고른 게 다 사라졌다.
  */
 export default function NewRoom() {
   const t = useT();
@@ -46,6 +57,46 @@ export default function NewRoom() {
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(true);
   const [v2, setV2] = useState(true);
+  const [titleFor, setTitleFor] = useState("");
+  const pushed = useRef(0);
+  const restored = useRef(false);
+
+  // 처음 열 때 — 주소의 단계와 이 기기에 남겨 둔 선택을 되살린다. 뒤로/앞으로 가기는 주소를 따라간다.
+  /* eslint-disable react-hooks/set-state-in-effect -- 기기에 남겨 둔 선택 되살리기(서버 렌더엔 없는 값) */
+  useEffect(() => {
+    try {
+      const d = JSON.parse(sessionStorage.getItem(DRAFT_STATE) ?? "null") as DraftState | null;
+      if (d) {
+        setKind(d.kind);
+        setPick(d.pick);
+        setTitle(d.title);
+        setPub(d.pub);
+        setTitleFor(d.titleFor);
+      }
+      const st = readStep();
+      // 고른 장면 없이 설정 단계로 들어오면 처음부터
+      setStep(st === "settings" && d?.kind === "scene" && !d.pick ? "scene" : st === "settings" && !d ? "choose" : st);
+    } catch {}
+    restored.current = true;
+    const onPop = () => setStep(readStep());
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  useEffect(() => {
+    if (!restored.current) return;
+    try {
+      sessionStorage.setItem(DRAFT_STATE, JSON.stringify({ kind, pick, title, pub, titleFor } satisfies DraftState));
+    } catch {}
+  }, [kind, pick, title, pub, titleFor]);
+
+  const go = (next: Step) => {
+    window.history.pushState(null, "", next === "choose" ? window.location.pathname : `${window.location.pathname}?step=${next}`);
+    pushed.current++;
+    setStep(next);
+    window.scrollTo(0, 0);
+  };
 
   useEffect(() => {
     let alive = true;
@@ -76,9 +127,14 @@ export default function NewRoom() {
   const toSettings = (k: "script" | "scene", p?: Pick) => {
     setKind(k);
     setPick(p ?? null);
-    setTitle(k === "script" ? titleFromScript(script) : (p?.title ?? ""));
+    // 같은 걸 다시 골랐으면 고쳐 둔 제목을 그대로 둔다
+    const key = k === "script" ? "script" : `scene:${p?.key ?? ""}`;
+    if (key !== titleFor || !title.trim()) {
+      setTitle(k === "script" ? titleFromScript(script) : (p?.title ?? ""));
+      setTitleFor(key);
+    }
     setError(null);
-    setStep("settings");
+    go("settings");
   };
 
   const create = async () => {
@@ -100,11 +156,22 @@ export default function NewRoom() {
     track("room_create", { meme_id: pick?.key ?? "script", via: `${kind}${pub ? ":public" : ":private"}` });
     try {
       sessionStorage.removeItem(DRAFT);
+      sessionStorage.removeItem(DRAFT_STATE);
     } catch {}
-    router.push(`/relay/r/${res.data.code}`);
+    router.replace(`/relay/r/${res.data.code}`);
   };
 
-  const back = () => setStep(step === "settings" ? kind : "choose");
+  const back = () => {
+    // 이 화면에서 앞으로 온 기록이 있으면 브라우저 뒤로 가기와 똑같이, 없으면(새로 고침 뒤) 한 단계 앞으로 바꿔 끼운다
+    if (pushed.current > 0) {
+      pushed.current--;
+      window.history.back();
+      return;
+    }
+    const prev: Step = step === "settings" ? kind : "choose";
+    window.history.replaceState(null, "", prev === "choose" ? window.location.pathname : `${window.location.pathname}?step=${prev}`);
+    setStep(prev);
+  };
 
   return (
     <main className={`shell ${s.page}`}>
@@ -127,13 +194,13 @@ export default function NewRoom() {
           <p className={s.kicker}>NEW ROOM</p>
           <h1 className={s.h1}>{t("무엇으로 할까요?", "What will you read?")}</h1>
           <div style={{ display: "grid", gap: 12, marginTop: 8 }}>
-            <button type="button" className={r.choice} disabled={!v2} onClick={() => setStep("script")}>
+            <button type="button" className={r.choice} disabled={!v2} onClick={() => go("script")}>
               <span className={r.choiceIcon}>📄</span>
               <b>{t("우리 대본으로", "Our own script")}</b>
               <span>{t("연극 대본·발표 원고·아나운서 원고·아무 글. 붙여 넣으면 다 같이 읽고 녹음해요.", "A play, a speech, a news script — paste it and read together.")}</span>
               {!v2 && <small>{t("곧 열려요", "Coming soon")}</small>}
             </button>
-            <button type="button" className={r.choice} onClick={() => setStep("scene")}>
+            <button type="button" className={r.choice} onClick={() => go("scene")}>
               <span className={r.choiceIcon}>🎬</span>
               <b>{t("준비된 장면으로", "A ready-made scene")}</b>
               <span>{t("애니·면접·뉴스·영화 장면. 배역을 나눠 맡고 빈 줄은 AI가 읽어요.", "Anime, interviews, news, movies — split the roles, AI reads the rest.")}</span>

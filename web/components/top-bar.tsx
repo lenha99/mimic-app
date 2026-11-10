@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useAppPath } from "@/lib/app-path";
 import type { ReactNode } from "react";
 import { Coco } from "@/components/brand/coco";
 import { setLang, useLang, useT } from "@/components/lang";
@@ -26,7 +26,7 @@ export function TopBar({
 }) {
   const t = useT();
   const lang = useLang();
-  const path = usePathname() ?? "/";
+  const path = useAppPath();
   const u = useUnread(path);
 
   return (

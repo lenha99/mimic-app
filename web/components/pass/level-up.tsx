@@ -6,7 +6,7 @@ import { useT } from "@/components/lang";
 import { useViewer } from "@/components/viewer";
 import { VoiceAvatar } from "@/components/voice-avatar";
 import { DEFAULT_AVATAR } from "@/lib/avatar";
-import { clientId } from "@/lib/client-id";
+import { fetchPass } from "./use-pass";
 import { readNickname } from "@/lib/nickname";
 import { rankLabel, UNLOCKS, type Look } from "@/lib/pass";
 import { track } from "@/lib/track";
@@ -31,9 +31,8 @@ export function LevelUpWatcher() {
     } catch {
       return;
     }
-    void fetch(`/api/pass?client=${encodeURIComponent(clientId())}`, { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d: { look: Look } | null) => {
+    void fetchPass()
+      .then((d) => {
         if (!alive || !d) return;
         let before: number | null = null;
         try {

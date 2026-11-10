@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useAppPath } from "@/lib/app-path";
 import { useEffect, useState } from "react";
 import { useT } from "@/components/lang";
 import { clientId } from "@/lib/client-id";
@@ -20,7 +20,7 @@ type State = { loggedIn: boolean; self: boolean; following: boolean; followers: 
  */
 export function CreatorBar({ entryId, nickname, listened = false }: { entryId: string; nickname: string; listened?: boolean }) {
   const t = useT();
-  const path = usePathname() ?? "/";
+  const path = useAppPath();
   const [s, setS] = useState<State | null>(null);
   const [justFollowed, setJustFollowed] = useState(false);
 
