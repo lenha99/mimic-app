@@ -85,7 +85,31 @@ export async function listTakes(itemId: string): Promise<Take[]> {
   return rows.sort((a, b) => b.at - a.at);
 }
 
+/**
+ * 한 번이라도 녹음해 봤는지 — 기기에 적어 둔다(11/27).
+ * 라운지(오픈채팅) 입구를 녹음해 본 사람에게만 홈에 보이려고 쓴다. 다른 방 방장이
+ * 홈만 훑어볼 땐 안 보이고, 앱을 실제로 써 본 사람에겐 보인다.
+ */
+const RECORDED_KEY = "mimic.recorded";
+
+export function hasRecorded(): boolean {
+  try {
+    return Boolean(localStorage.getItem(RECORDED_KEY));
+  } catch {
+    return false;
+  }
+}
+
+function markRecorded(): void {
+  try {
+    if (!localStorage.getItem(RECORDED_KEY)) localStorage.setItem(RECORDED_KEY, String(Date.now()));
+  } catch {
+    // 저장이 막힌 브라우저 — 홈 라운지가 안 보일 뿐이다.
+  }
+}
+
 export async function saveTake(take: Take): Promise<void> {
+  markRecorded();
   const db = await open();
   if (db) {
     try {

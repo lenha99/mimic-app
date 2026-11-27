@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useT } from "@/components/lang";
+import { hasRecorded } from "@/lib/take-store";
 import { KAKAO_OPENCHAT_URL } from "@/lib/community";
 import { track } from "@/lib/track";
 import styles from "./lounge.module.css";
@@ -13,7 +15,7 @@ import styles from "./lounge.module.css";
  * 내 정보(나·프로필)에 늘 있는 입구 하나 + 들려준 직후 한 줄로 권한다.
  * 카톡 노랑·말풍선 대신 MIMIC 색이라, 앱 메뉴로 보인다.
  */
-export function LoungeCard({ via }: { via: "me" | "profile" }) {
+export function LoungeCard({ via }: { via: "me" | "profile" | "home" }) {
   const t = useT();
   if (!KAKAO_OPENCHAT_URL) return null;
   return (
@@ -36,8 +38,22 @@ export function LoungeCard({ via }: { via: "me" | "profile" }) {
   );
 }
 
-/** 들려준 직후 — 반응을 더 듣고 싶은 순간에 한 줄. */
-export function LoungeLine({ className }: { className?: string }) {
+/**
+ * 홈 — 한 번이라도 녹음해 본 사람에게만(11/27, 규민). 다른 방 방장이 홈만 훑어볼 땐
+ * 안 보이고, 연습실에서 한 번 읽어 본 사람은 홈에서 바로 들어갈 수 있다.
+ * 홈은 정적 페이지라 녹음 여부는 브라우저에서 확인한 뒤 그린다.
+ */
+export function HomeLounge() {
+  const [show, setShow] = useState(false);
+  useEffect(() => setShow(hasRecorded()), []);
+  return show ? <LoungeCard via="home" /> : null;
+}
+
+/**
+ * 한 줄 입구. posted = 들려준 직후(반응을 더 듣고 싶은 순간),
+ * recorded = 연습실에서 녹음 직후(같이 연습할 사람을 찾는 순간).
+ */
+export function LoungeLine({ className, via = "posted" }: { className?: string; via?: "posted" | "recorded" }) {
   const t = useT();
   if (!KAKAO_OPENCHAT_URL) return null;
   return (
@@ -46,9 +62,11 @@ export function LoungeLine({ className }: { className?: string }) {
       target="_blank"
       rel="noopener noreferrer"
       className={`${styles.line} ${className ?? ""}`}
-      onClick={() => track("kakao_open", { via: "posted" })}
+      onClick={() => track("kakao_open", { via })}
     >
-      {t("🎙️ 반응 더 듣고 싶다면 · 라운지에 자랑하기 →", "🎙️ Want more reactions? Show it off in the Lounge →")}
+      {via === "recorded"
+        ? t("🎙️ 같이 연습할 사람 찾기 · MIMIC 라운지 →", "🎙️ Find people to practice with · MIMIC Lounge →")
+        : t("🎙️ 반응 더 듣고 싶다면 · 라운지에 자랑하기 →", "🎙️ Want more reactions? Show it off in the Lounge →")}
     </a>
   );
 }
