@@ -25,6 +25,7 @@ import { tr } from "@/lib/i18n";
 import { memeText } from "@/lib/meme-i18n";
 import { LangSwitch } from "@/components/lang";
 import { SupportCard } from "@/components/support-card";
+import { LoungeCard } from "@/components/lounge";
 import styles from "./profile.module.css";
 
 /**
@@ -104,6 +105,7 @@ export default async function ProfilePage() {
         <div className={styles.stack}>
           {admin && <AdminLinks pending={admin.pending} feedback={admin.feedback} reported={admin.reported} />}
           <PassCard />
+          <LoungeCard via="profile" />
           <MySocial
             nickname={profile.nickname}
             followers={social.followers}

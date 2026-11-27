@@ -10,6 +10,7 @@ import { GuestNickname } from "./guest-nickname";
 import { getT } from "@/lib/i18n-server";
 import { LangSwitch } from "@/components/lang";
 import { SupportCard } from "@/components/support-card";
+import { LoungeCard } from "@/components/lounge";
 import styles from "./me.module.css";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -45,7 +46,7 @@ export default async function MePage() {
 
       <GuestNickname />
       <PassCard />
-
+      <LoungeCard via="me" />
 
       <Link href="/login" className={styles.login} data-tour="me-login">
         {t("로그인 · 가입", "Log in / sign up")}
