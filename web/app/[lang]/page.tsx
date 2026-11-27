@@ -149,7 +149,7 @@ export default async function Home() {
 
       <HomeBeacon />
 
-      {/* 카톡 오픈채팅방(11/27) — 하단 탭 위 작은 팝업. 밖에서 서로 불러 앱으로 다시 오게. */}
+      {/* 카톡 오픈채팅방(11/27) — 오른쪽 아래 작은 앱 아이콘, 늘 떠 있다. 밖에서 서로 불러 앱으로 다시 오게. */}
       <KakaoChatPopup />
 
       {missionLine && <FirstMission voices={missionVoices} scriptId={weekly.week.scriptId} line={missionLine} />}

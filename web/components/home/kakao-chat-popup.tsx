@@ -1,80 +1,36 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useT } from "@/components/lang";
 import { KAKAO_OPENCHAT_URL } from "@/lib/community";
 import { track } from "@/lib/track";
 import styles from "./kakao-chat-popup.module.css";
 
-const HIDE_KEY = "mimic:kakao-hide-until";
-const HIDE_CLOSED = 3 * 86_400_000; // × 로 닫으면 3일
-const HIDE_JOINED = 30 * 86_400_000; // 들어갔으면 한 달
-
 /**
- * 홈 작은 팝업 — 카카오톡 오픈채팅방(11/27). 화면을 막지 않게 하단 탭 위 오른쪽에 작게.
- * 첫 미션 시트처럼 화면을 덮는 게 떠 있는 동안(body 스크롤 잠금)엔 기다렸다가 띄운다.
+ * 홈 오른쪽 아래 작은 앱 아이콘 — 카카오톡 오픈채팅방(11/27).
+ * 언제든 들어가고 싶을 때 들어가야 해서 닫기 없이 늘 같은 자리에 떠 있다(규민).
+ * 처음엔 닫히는 팝업이었다가 → 사라지면 안 된다 → 크지 않게, 정사각형 아이콘으로.
  */
 export function KakaoChatPopup() {
   const t = useT();
-  const [show, setShow] = useState(false);
-
-  useEffect(() => {
-    if (!KAKAO_OPENCHAT_URL || hiddenNow()) return;
-    let timer = 0;
-    const tryShow = () => {
-      if (document.body.style.overflow === "hidden") {
-        timer = window.setTimeout(tryShow, 2000);
-        return;
-      }
-      setShow(true);
-    };
-    timer = window.setTimeout(tryShow, 2500);
-    return () => window.clearTimeout(timer);
-  }, []);
-
-  if (!show) return null;
-
-  const hide = (ms: number) => {
-    try {
-      localStorage.setItem(HIDE_KEY, String(Date.now() + ms));
-    } catch {
-      // 저장이 막힌 브라우저면 이번 화면에서만 닫는다.
-    }
-    setShow(false);
-  };
-
+  if (!KAKAO_OPENCHAT_URL) return null;
   return (
-    <div className={styles.pop} role="dialog" aria-label={t("MIMIC 오픈채팅방", "MIMIC open chat")}>
-      <a
-        href={KAKAO_OPENCHAT_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={styles.main}
-        onClick={() => {
-          track("kakao_open", { via: "home" });
-          hide(HIDE_JOINED);
-        }}
-      >
-        <span className={styles.icon} aria-hidden="true">
-          💬
-        </span>
-        <span className={styles.text}>
-          <b>{t("MIMIC 오픈채팅방", "MIMIC open chat")}</b>
-          <small>{t("목소리 들려주고 같이 더빙해요", "Share voices, dub together")}</small>
-        </span>
-        <span className={styles.go}>{t("입장", "Join")}</span>
-      </a>
-      <button type="button" className={styles.close} onClick={() => hide(HIDE_CLOSED)} aria-label={t("닫기", "Close")}>
-        ×
-      </button>
-    </div>
+    <a
+      href={KAKAO_OPENCHAT_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={styles.fab}
+      aria-label={t("MIMIC 카카오톡 오픈채팅방", "MIMIC KakaoTalk open chat")}
+      onClick={() => track("kakao_open", { via: "home" })}
+    >
+      <span className={styles.icon} aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="30" height="30">
+          <path
+            fill="#3a1d1d"
+            d="M12 3.6c-5 0-9 3.15-9 7.04 0 2.52 1.68 4.73 4.2 5.97l-.86 3.13c-.08.29.25.52.5.35l3.73-2.47c.47.05.94.07 1.43.07 5 0 9-3.15 9-7.05S17 3.6 12 3.6Z"
+          />
+        </svg>
+      </span>
+      <span className={styles.label}>{t("오픈채팅", "Chat")}</span>
+    </a>
   );
-}
-
-function hiddenNow(): boolean {
-  try {
-    return Number(localStorage.getItem(HIDE_KEY) ?? 0) > Date.now();
-  } catch {
-    return false;
-  }
 }
