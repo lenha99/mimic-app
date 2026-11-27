@@ -29,7 +29,7 @@ export function LoungeCard({ via }: { via: "me" | "profile" }) {
       </span>
       <span className={styles.text}>
         <b>{t("MIMIC 라운지", "MIMIC Lounge")}</b>
-        <small>{t("같이 연습하고, 들려주고, 더빙할 사람 찾는 방", "Practice, share and find dubbing partners")}</small>
+        <small>{t("같이 연습하고 더빙할 사람 찾는 방", "Practice, share and find dubbing partners")}</small>
       </span>
       <span className={styles.go}>{t("입장", "Join")}</span>
     </a>
