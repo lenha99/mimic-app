@@ -100,9 +100,17 @@ export function hasRecorded(): boolean {
   }
 }
 
+/** 처음 녹음하는 순간을 듣는다 — 홈 첫 미션으로 녹음하면 같은 화면의 라운지가 바로 뜨게. */
+export function onRecorded(cb: () => void): () => void {
+  window.addEventListener(RECORDED_KEY, cb);
+  return () => window.removeEventListener(RECORDED_KEY, cb);
+}
+
 function markRecorded(): void {
   try {
-    if (!localStorage.getItem(RECORDED_KEY)) localStorage.setItem(RECORDED_KEY, String(Date.now()));
+    if (localStorage.getItem(RECORDED_KEY)) return;
+    localStorage.setItem(RECORDED_KEY, String(Date.now()));
+    window.dispatchEvent(new Event(RECORDED_KEY));
   } catch {
     // 저장이 막힌 브라우저 — 홈 라운지가 안 보일 뿐이다.
   }
