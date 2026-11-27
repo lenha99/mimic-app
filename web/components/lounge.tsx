@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { useT } from "@/components/lang";
 import { hasRecorded } from "@/lib/take-store";
 import { KAKAO_OPENCHAT_URL } from "@/lib/community";
@@ -43,9 +43,10 @@ export function LoungeCard({ via }: { via: "me" | "profile" | "home" }) {
  * 안 보이고, 연습실에서 한 번 읽어 본 사람은 홈에서 바로 들어갈 수 있다.
  * 홈은 정적 페이지라 녹음 여부는 브라우저에서 확인한 뒤 그린다.
  */
+const noop = () => () => {};
+
 export function HomeLounge() {
-  const [show, setShow] = useState(false);
-  useEffect(() => setShow(hasRecorded()), []);
+  const show = useSyncExternalStore(noop, hasRecorded, () => false);
   return show ? <LoungeCard via="home" /> : null;
 }
 
