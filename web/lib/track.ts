@@ -108,7 +108,9 @@ export type TrackKind =
   | "room_join"
   | "room_msg"
   | "room_complete"
-  | "room_play";
+  | "room_play"
+  // 카톡 오픈채팅방 입장 버튼 (via=home)
+  | "kakao_open";
 
 const URL_ =
   process.env.NEXT_PUBLIC_TRACK_URL ?? "https://lenha99--meme-scoring-track.modal.run";

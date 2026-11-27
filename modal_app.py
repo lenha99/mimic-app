@@ -503,7 +503,9 @@ WEEKLY = ("weekly_view", "weekly_play", "weekly_like", "enter_open", "weekly_ent
           "relay_view", "relay_cta", "relay_rec", "relay_post", "relay_next", "relay_undo", "relay_skip", "relay_adlib", "relay_open", "relay_preview", "relay_write",
           "relay_cast", "relay_stamp", "relay_share", "relay_premiere_view", "relay_listen", "relay_home",
           # 더빙 방 (web/lib/track.ts 와 같은 목록)
-          "room_create", "room_share", "room_invite", "room_join", "room_msg", "room_complete", "room_play")
+          "room_create", "room_share", "room_invite", "room_join", "room_msg", "room_complete", "room_play",
+          # 카톡 오픈채팅방 입장 버튼
+          "kakao_open")
 
 
 @app.function(image=slim_image, volumes={REF_DIR: volume})
