@@ -7,6 +7,7 @@ import { TopBar } from "@/components/top-bar";
 import { VoiceStories } from "@/components/home/voice-stories";
 import { StreakChip } from "@/components/home/streak-chip";
 import { MyVoiceCard } from "@/components/home/my-voice-card";
+import { HomeLounge } from "@/components/lounge";
 import home from "@/components/home/home.module.css";
 import { HomeHero } from "@/components/weekly/home-hero";
 import { RelayHomeCard } from "@/components/relay/home-card";
@@ -100,6 +101,9 @@ export default async function Home() {
 
       {/* 내 목소리 페이지 — 있는지도 모르면 없는 기능이다. */}
       <MyVoiceCard />
+
+      {/* MIMIC 라운지(오픈채팅) — 한 번이라도 녹음해 본 사람에게만. 처음 온 사람·다른 방 방장 눈엔 안 보인다. */}
+      <HomeLounge />
 
       {/* 그 밖의 입구 — 연습실로 이어지지 않는 놀거리라 아래에 작게. */}
       <div className={home.sectionHead}>

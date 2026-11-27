@@ -19,6 +19,7 @@ import { track } from "@/lib/track";
 import { Scorecard } from "@/components/practice/scorecard";
 import { analyze, analyzeBlob, decodeMono, type Analysis } from "@/lib/voice-analysis";
 import { WeeklyBanner, WeeklyEnter } from "./weekly-enter";
+import { LoungeLine } from "@/components/lounge";
 import { reportTake, SoloToast, type SoloResult } from "@/components/practice/solo-progress";
 import { voiceTypeOf } from "@/lib/scorecard";
 import { Tip } from "@/components/onboarding/tip";
@@ -806,6 +807,8 @@ export default function Room({ item }: { item: RoomItem }) {
           // 다른 사람 피드백은 갤러리에 올릴 때 "피드백도 받기"로 받는다(11/6, 게시판을 합쳤다).
           <QuickFeedback page="practice" item={itemId} />
         )}
+        {/* 녹음해 봤다면 라운지 입구 — 들려주기 전이라도(11/27). */}
+        {phase !== "analyzing" && open && <LoungeLine via="recorded" />}
         {phase !== "analyzing" && !open && (
           <div className={styles.empty} data-tour="room-privacy">
             <p className={styles.emptyTitle}>{L("첫 테이크를 남겨 보세요 🎙️", "Record your first take 🎙️")}</p>
