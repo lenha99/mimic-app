@@ -10,6 +10,7 @@ import type { Look } from "@/lib/pass";
 import { normalizeAvatar } from "@/lib/avatar";
 import { clientId } from "@/lib/client-id";
 import { markSeen, seen } from "@/lib/onboarding";
+import { LoungeLine } from "@/components/lounge";
 import { syllables } from "@/lib/practice";
 import { voiceTypeOf, type VoiceType } from "@/lib/scorecard";
 import { newTakeId, saveTake } from "@/lib/take-store";
@@ -378,6 +379,7 @@ export function FirstMission({ voices, scriptId, line }: { voices: MissionVoice[
               <p className={styles.note}>{t("홈 맨 위 동그라미에 내 목소리가 떴어요. 누가 끝까지 들으면 알려 드릴게요", "Your voice is up top on Home. We'll tell you when someone listens all the way")}</p>
             </div>
             <PostGoal className={styles.note} />
+            <LoungeLine />
             <Link href={`/weekly/e/${posted.id}`} className={styles.rec} onClick={() => finish("post")}>
               {t("내 목소리 보기 →", "See my voice →")}
             </Link>

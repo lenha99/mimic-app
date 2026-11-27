@@ -7,7 +7,6 @@ import { TopBar } from "@/components/top-bar";
 import { VoiceStories } from "@/components/home/voice-stories";
 import { StreakChip } from "@/components/home/streak-chip";
 import { MyVoiceCard } from "@/components/home/my-voice-card";
-import { KakaoChatPopup } from "@/components/home/kakao-chat-popup";
 import home from "@/components/home/home.module.css";
 import { HomeHero } from "@/components/weekly/home-hero";
 import { RelayHomeCard } from "@/components/relay/home-card";
@@ -148,9 +147,6 @@ export default async function Home() {
       </nav>
 
       <HomeBeacon />
-
-      {/* 카톡 오픈채팅방(11/27) — 오른쪽 아래 작은 앱 아이콘, 늘 떠 있다. 밖에서 서로 불러 앱으로 다시 오게. */}
-      <KakaoChatPopup />
 
       {missionLine && <FirstMission voices={missionVoices} scriptId={weekly.week.scriptId} line={missionLine} />}
 

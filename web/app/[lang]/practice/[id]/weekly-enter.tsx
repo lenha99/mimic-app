@@ -14,6 +14,7 @@ import { PostGoal, UndoButton } from "@/components/practice/post-goal";
 import { PushButton } from "@/components/social/push-button";
 import { voiceTypeOf } from "@/lib/scorecard";
 import { postTake, undoPost } from "@/lib/post-take";
+import { LoungeLine } from "@/components/lounge";
 import styles from "./weekly-enter.module.css";
 import { useLang, useT } from "@/components/lang";
 import type { T } from "@/lib/i18n";
@@ -283,6 +284,7 @@ function Enter({ week, take, live }: { week: Week; take: Take; live: boolean }) 
             <VoiceTypeCard type={vtype} />
             {/* 올린 사람의 진짜 동기는 "누가 들었다"는 소식이다 — 알림을 이 순간에 켜게 한다. */}
             <PushButton kind="mine" compact />
+            <LoungeLine />
             {!me.loggedIn && (
               <Link href={`/login?next=${encodeURIComponent(`/weekly/e/${done.id}`)}`} className={styles.cardRankLink}>
                 {t("로그인하면 구독자와 메시지를 받을 수 있어요 →", "Log in to get subscribers and messages →")}
