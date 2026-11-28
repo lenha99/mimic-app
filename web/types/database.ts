@@ -434,6 +434,12 @@ export interface Database {
         Update: { owner?: string; takes?: number };
         Relationships: [];
       };
+      rank_ups: {
+        Row: { id: number; owner: string; level: number; passed: boolean; seed: boolean; day: string; created_at: string };
+        Insert: { owner: string; level: number; passed: boolean; seed?: boolean; day: string };
+        Update: { owner?: string };
+        Relationships: [];
+      };
       voice_dex: {
         Row: { owner: string; type_id: string; first_at: string };
         Insert: { owner: string; type_id: string; first_at?: string };

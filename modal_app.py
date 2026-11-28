@@ -505,7 +505,9 @@ WEEKLY = ("weekly_view", "weekly_play", "weekly_like", "enter_open", "weekly_ent
           # 더빙 방 (web/lib/track.ts 와 같은 목록)
           "room_create", "room_share", "room_invite", "room_join", "room_msg", "room_complete", "room_play",
           # 카톡 오픈채팅방 입장 버튼
-          "kakao_open")
+          "kakao_open",
+          # 승급전 (web/lib/track.ts 와 같은 목록)
+          "exam_start", "exam_pass", "exam_fail")
 
 
 @app.function(image=slim_image, volumes={REF_DIR: volume})

@@ -146,6 +146,8 @@ export async function claimGuest(userId: string, client: string, service: Servic
       await service.from("voice_dex").upsert(dex.map((d) => ({ owner: u, type_id: d.type_id, first_at: d.first_at })), { onConflict: "owner,type_id", ignoreDuplicates: true });
       await service.from("voice_dex").delete().eq("owner", g);
     }
+    // 승급전 기록(11/28)
+    await service.from("rank_ups").update({ owner: u }).eq("owner", g);
   } catch {
     // 표가 아직 없거나 실패해도 로그인은 막지 않는다.
   }

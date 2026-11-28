@@ -1,6 +1,6 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { notify, once, ownerTarget } from "@/lib/notify-server";
-import { EMPTY_STATS, FOLLOW_STEPS, LIKE_STEPS, RELAY_XP, SOLO_XP, type PassStats } from "@/lib/pass";
+import { EMPTY_STATS, FOLLOW_STEPS, LIKE_STEPS, RELAY_XP, SOLO_XP, xpLevelOf, xpOf, type PassStats } from "@/lib/pass";
 
 /** 한국 날짜 'YYYY-MM-DD' — 연속 기록은 KST 자정에 넘어간다. */
 export function kstDay(at: number = Date.now(), offsetDays = 0): string {
@@ -43,7 +43,7 @@ export async function statsBatch(people: string[][], service: Service = createSe
   const keys = [...keyOf.keys()];
   const users = keys.filter((k) => k.startsWith("u:")).map((k) => k.slice(2));
   try {
-    const [entries, fans, given, picks, solo, dex, fb] = await Promise.all([
+    const [entries, fans, given, picks, solo, dex, fb, ranks] = await Promise.all([
       service.from("weekly_entries").select("owner, user_id, like_count, featured_at").eq("hidden", false).limit(5000),
       service.from("follows").select("creator").in("creator", keys).limit(5000),
       service.from("weekly_likes").select("voter").in("voter", keys).limit(20000),
@@ -55,6 +55,8 @@ export async function statsBatch(people: string[][], service: Service = createSe
       users.length
         ? service.from("entry_notes").select("user_id, entry_id, helpful").eq("kind", "feedback").is("parent_id", null).eq("hidden", false).in("user_id", users).limit(20000)
         : Promise.resolve({ data: [] as { user_id: string; entry_id: string; helpful: boolean }[] }),
+      // 승급전 통과 기록(11/28). 표가 아직 없으면 error — 그땐 XP 만으로 레벨을 매긴다.
+      service.from("rank_ups").select("owner, level").eq("passed", true).in("owner", keys).limit(20000),
     ]);
     const get = (k: string) => {
       const id = keyOf.get(k);
@@ -128,11 +130,43 @@ export async function statsBatch(people: string[][], service: Service = createSe
         }
       }
     }
+    if (!ranks.error) await applyRanks(service, groups, ranks.data ?? [], keyOf, get);
   } catch {
     // 숫자를 못 세면 다들 LV.1 로 보일 뿐이다.
   }
   for (const g of groups) if (!out.has(g[0])) out.set(g[0], { ...EMPTY_STATS });
   return out;
+}
+
+/**
+ * 승급전 — 사람마다 통과한 가장 높은 레벨(cleared). 기록이 하나도 없는 사람은 지금 XP 레벨을
+ * 그대로 인정하는 seed 줄을 한 번 남긴다(표가 생기기 전에 오른 레벨을 빼앗지 않으려고).
+ * 표가 생긴 뒤 처음 온 사람은 대개 LV.1 이라 seed 도 1 이다.
+ */
+async function applyRanks(
+  service: Service,
+  groups: string[][],
+  rows: { owner: string; level: number }[],
+  keyOf: Map<string, string>,
+  get: (k: string) => PassStats | null,
+): Promise<void> {
+  const best = new Map<string, number>();
+  for (const r of rows) {
+    const id = keyOf.get(r.owner);
+    if (id) best.set(id, Math.max(best.get(id) ?? 0, r.level));
+  }
+  const seeds: { owner: string; level: number; passed: boolean; seed: boolean; day: string }[] = [];
+  for (const g of groups) {
+    const s = get(g[0]);
+    if (!s) continue;
+    const have = best.get(g[0]);
+    if (have !== undefined) s.cleared = have;
+    else {
+      s.cleared = xpLevelOf(xpOf(s));
+      seeds.push({ owner: g[0], level: s.cleared, passed: true, seed: true, day: kstDay() });
+    }
+  }
+  if (seeds.length) await service.from("rank_ups").insert(seeds);
 }
 
 export async function statsFor(keys: string[], service: Service = createServiceClient()): Promise<PassStats> {

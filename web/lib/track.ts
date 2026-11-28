@@ -110,7 +110,11 @@ export type TrackKind =
   | "room_complete"
   | "room_play"
   // 카톡 오픈채팅방 입장 버튼 (via=home)
-  | "kakao_open";
+  | "kakao_open"
+  // 승급전 — 시작 · 통과 · 탈락 (via=레벨)
+  | "exam_start"
+  | "exam_pass"
+  | "exam_fail";
 
 const URL_ =
   process.env.NEXT_PUBLIC_TRACK_URL ?? "https://lenha99--meme-scoring-track.modal.run";

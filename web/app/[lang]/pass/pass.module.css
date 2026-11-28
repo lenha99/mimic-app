@@ -483,3 +483,39 @@
   color: var(--ash-dim);
   letter-spacing: 0.2em;
 }
+
+/* 승급전 입구(11/28) */
+.exam {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, var(--volt), var(--pink));
+  color: #1a1206;
+  text-align: left;
+  text-decoration: none;
+  font-size: 22px;
+  box-shadow: 0 8px 24px rgba(255, 122, 69, 0.35);
+  animation: examPulse 2s ease-in-out infinite;
+}
+
+.exam b {
+  display: block;
+  font-size: 16px;
+}
+
+.exam small {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.8;
+}
+
+@keyframes examPulse {
+  50% {
+    transform: scale(1.02);
+  }
+}

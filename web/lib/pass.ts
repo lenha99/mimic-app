@@ -35,6 +35,8 @@ export type PassStats = {
   relayPremieres?: number;
   relayPrompts?: number;
   relayBest?: number;
+  /** 승급전(11/28)으로 통과한 가장 높은 레벨. 표(rank_ups)가 아직 없으면 undefined — 그땐 XP 만으로 오른다 */
+  cleared?: number;
 };
 
 export const EMPTY_STATS: PassStats = {
@@ -123,19 +125,37 @@ export function xpOf(s: PassStats): number {
 export const LEVEL_XP = [0, 30, 80, 150, 250, 400, 600, 850, 1200, 1700] as const;
 export const MAX_LEVEL = LEVEL_XP.length;
 
-export function levelOf(xp: number): number {
+/** XP 만 보면 몇 레벨인가 — 승급전 자격(이만큼 XP 를 모았다) */
+export function xpLevelOf(xp: number): number {
   let lv = 1;
   for (let i = 0; i < LEVEL_XP.length; i++) if (xp >= LEVEL_XP[i]) lv = i + 1;
   return lv;
 }
 
-/** 지금 레벨 안에서 얼마나 왔나 — 0..1, 다음 레벨까지 남은 XP */
-export function progressOf(xp: number): { level: number; into: number; need: number; ratio: number } {
-  const level = levelOf(xp);
-  if (level >= MAX_LEVEL) return { level, into: 0, need: 0, ratio: 1 };
+/**
+ * 실제 레벨 — XP 를 채워도 승급전을 통과해야 오른다(11/28, 규민: "레벨이 너무 쉽게 오른다").
+ * cleared 가 없으면(표가 아직 없음) 예전처럼 XP 만으로.
+ */
+export function levelOf(xp: number, cleared?: number): number {
+  const lv = xpLevelOf(xp);
+  return cleared === undefined ? lv : Math.min(lv, Math.max(1, cleared));
+}
+
+export function levelOfStats(s: PassStats): number {
+  return levelOf(xpOf(s), s.cleared);
+}
+
+/**
+ * 지금 레벨 안에서 얼마나 왔나 — 0..1, 다음 레벨까지 남은 XP.
+ * exam: XP 는 다 찼는데 승급전을 아직 안 깬 레벨(그 레벨로 올라가는 시험). 없으면 null.
+ */
+export function progressOf(xp: number, cleared?: number): { level: number; into: number; need: number; ratio: number; exam: number | null } {
+  const level = levelOf(xp, cleared);
+  if (level >= MAX_LEVEL) return { level, into: 0, need: 0, ratio: 1, exam: null };
   const lo = LEVEL_XP[level - 1];
   const hi = LEVEL_XP[level];
-  return { level, into: xp - lo, need: hi - xp, ratio: (xp - lo) / (hi - lo) };
+  if (xp >= hi) return { level, into: hi - lo, need: 0, ratio: 1, exam: level + 1 };
+  return { level, into: xp - lo, need: hi - xp, ratio: (xp - lo) / (hi - lo), exam: null };
 }
 
 export type Rank = "rookie" | "rising" | "star" | "icon" | "legend";
@@ -188,7 +208,7 @@ export const BADGES: Record<BadgeId, { label: string; ko: string; en: string }> 
 export type Look = { level: number; rank: Rank; frame: FrameId; name: NameFxId; badges: BadgeId[] };
 
 export function lookOf(s: PassStats): Look {
-  const level = levelOf(xpOf(s));
+  const level = levelOfStats(s);
   let frame: FrameId = "none";
   let name: NameFxId = "none";
   for (const u of UNLOCKS) {

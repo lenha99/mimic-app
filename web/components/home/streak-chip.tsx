@@ -13,8 +13,23 @@ import styles from "./home.module.css";
 export function StreakChip() {
   const t = useT();
   const v = usePass();
-  if (!v || v.stats.activeDays === 0) return null;
+  if (!v || (v.stats.activeDays === 0 && !v.progress.exam)) return null;
   const n = v.stats.streak;
+  // 승급전이 열렸으면 그게 먼저 — 레벨업이 코앞이라는 걸 첫 화면에서(11/28).
+  if (v.progress.exam) {
+    return (
+      <Link href="/pass/exam" className={`${styles.streakChip} ${styles.examChip}`}>
+        <span className={styles.streakFire} aria-hidden="true">
+          ⚔️
+        </span>
+        <span className={styles.streakText}>
+          <b>{t(`LV.${v.progress.exam} 승급전이 열렸어요!`, `LV.${v.progress.exam} rank-up exam unlocked!`)}</b>
+          <small>{t("코코 심사위원의 미션을 깨면 레벨업", "Beat Judge Coco's missions to level up")}</small>
+        </span>
+        <LevelPill level={v.progress.level} rank={v.look.rank} compact />
+      </Link>
+    );
+  }
   return (
     <Link href="/practice" className={styles.streakChip}>
       <span className={styles.streakFire} aria-hidden="true">
