@@ -547,7 +547,7 @@
   height: 14px;
   border-radius: 2px;
   background: var(--volt);
-  animation: fall calc(1.8s + var(--i) * 0.06s) ease-in calc(var(--i) * 0.05s) forwards;
+  animation: fall calc(1.8s + var(--d) * 1s) ease-in calc(var(--d) * 1s) both;
 }
 
 .confetti i:nth-child(3n) {

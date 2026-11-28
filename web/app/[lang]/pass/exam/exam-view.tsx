@@ -223,7 +223,7 @@ export default function ExamView() {
               🎯 {t(`미션 ${plan.rounds}라운드 — 라운드마다 한 줄 읽기`, `${plan.rounds} rounds — read one line each`)}
             </li>
             <li>
-              {"❤".repeat(plan.hearts)} {t("실수는 한 번까지. 하트가 다 떨어지면 탈락", "One mistake allowed. Lose all hearts and you're out")}
+              {"❤️".repeat(plan.hearts)} {t("실수는 한 번까지. 하트가 다 떨어지면 탈락", "One mistake allowed. Lose all hearts and you're out")}
             </li>
             <li>🔇 {t("소리가 안 잡힌 건 하트를 안 깎아요", "Takes we can't hear don't cost a heart")}</li>
           </ul>
@@ -283,7 +283,7 @@ export default function ExamView() {
       <main className={`shell ${s.page}`}>
         <div className={s.confetti} aria-hidden="true">
           {Array.from({ length: 24 }, (_, i) => (
-            <i key={i} style={{ "--i": i } as React.CSSProperties} />
+            <i key={i} style={{ "--i": i, "--d": ((i * 37) % 24) * 0.06 } as React.CSSProperties} />
           ))}
         </div>
         <div className={s.center}>
