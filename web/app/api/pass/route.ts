@@ -11,7 +11,7 @@ const ID = /^[0-9a-f-]{36}$/i;
 
 function view(stats: PassStats, self: boolean) {
   const xp = xpOf(stats);
-  const p = progressOf(xp);
+  const p = progressOf(xp, stats.cleared);
   return { stats, xp, look: lookOf(stats), progress: p, next: nextUnlock(p.level), self };
 }
 

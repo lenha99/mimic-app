@@ -1,7 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { notify } from "@/lib/notify-server";
 import { keysOf, statsFor } from "@/lib/pass-server";
-import { levelOf, xpOf } from "@/lib/pass";
+import { levelOfStats } from "@/lib/pass";
 import { guestName } from "@/lib/weekly";
 import { RELAY_STOCK } from "@/lib/relay-stock";
 import {
@@ -42,7 +42,7 @@ export const ownerOf = (v: Viewer) => (v.userId ? `u:${v.userId}` : v.client ? `
 
 export async function levelFor(v: Viewer, service: Service = createServiceClient()): Promise<number> {
   if (!v.keys.length) return 1;
-  return levelOf(xpOf(await statsFor(v.keys, service)));
+  return levelOfStats(await statsFor(v.keys, service));
 }
 
 export async function displayName(v: Viewer, formName: string | null, service: Service = createServiceClient()): Promise<string> {

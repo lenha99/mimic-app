@@ -326,3 +326,18 @@
   font-size: 12px;
   color: var(--ash);
 }
+
+/* 승급전 열림 — 연속 기록 줄 자리를 잠깐 빌린다(11/28) */
+.examChip {
+  border-color: rgba(255, 201, 60, 0.55);
+  background:
+    radial-gradient(120% 160% at 0% 0%, rgba(255, 201, 60, 0.22), transparent 60%),
+    var(--panel);
+  animation: examGlow 2.2s ease-in-out infinite;
+}
+
+@keyframes examGlow {
+  50% {
+    box-shadow: 0 0 18px rgba(255, 201, 60, 0.35);
+  }
+}

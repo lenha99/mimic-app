@@ -92,6 +92,17 @@ export default function PassView() {
           ) : null}
         </p>
 
+        {v?.progress.exam && (
+          <Link href="/pass/exam" className={s.exam}>
+            <span aria-hidden="true">⚔️</span>
+            <span>
+              <b>{t(`LV.${v.progress.exam} 승급전 도전`, `Take the LV.${v.progress.exam} exam`)}</b>
+              <small>{t("XP 를 다 모았어요! 코코 심사위원의 미션을 깨면 레벨업", "XP full! Beat Judge Coco's missions to level up")}</small>
+            </span>
+            <span aria-hidden="true">›</span>
+          </Link>
+        )}
+
         {v?.next ? (
           <div className={s.next}>
             <span className={s.nextThumb} aria-hidden="true">
@@ -113,8 +124,14 @@ export default function PassView() {
               </span>
             </span>
             <span className={s.nextLeft}>
-              <b>{toNext}</b>
-              <small>XP</small>
+              {v.progress.exam ? (
+                <b>⚔️</b>
+              ) : (
+                <>
+                  <b>{Math.max(0, toNext)}</b>
+                  <small>XP</small>
+                </>
+              )}
             </span>
           </div>
         ) : (

@@ -48,7 +48,9 @@ export function RankBar() {
         </b>
         <small>
           {next
-            ? t(`LV${next.from} ${next.ko}까지 ${need}XP — ${next.perkKo}`, `${need}XP to ${next.en} — ${next.perkEn}`)
+            ? need === 0 && loaded
+              ? t(`LV${next.from} ${next.ko} — 승급전을 통과하면 열려요`, `${next.en} — pass the rank-up exam to unlock`)
+              : t(`LV${next.from} ${next.ko}까지 ${need}XP — ${next.perkKo}`, `${need}XP to ${next.en} — ${next.perkEn}`)
             : t("최고 직함이에요. 장면을 열고 배우를 캐스팅하세요", "Top rank — open scenes and cast actors")}
         </small>
       </span>
@@ -99,7 +101,7 @@ export function Ladder({ writeHref }: { writeHref?: string | null }) {
                 </span>
                 <span className={s.rungWhere}>📍 {ko ? x.whereKo : x.whereEn}</span>
                 {locked ? (
-                  <span className={s.rungLock}>🔒 {pass ? t(`${need}XP 더 모으면 열려요 · 출연 한 번 +30XP`, `${need}XP to go · +30XP per appearance`) : t(`LV${x.from}부터`, `From LV${x.from}`)}</span>
+                  <span className={s.rungLock}>🔒 {pass ? (need === 0 ? t("XP 는 충분해요 · 승급전을 통과하면 열려요", "Enough XP · pass the rank-up exam") : t(`${need}XP 더 모으면 열려요 · 출연 한 번 +30XP`, `${need}XP to go · +30XP per appearance`)) : t(`LV${x.from}부터`, `From LV${x.from}`)}</span>
                 ) : (
                   action && (
                     <Link href={action.href} className={s.rungGo}>

@@ -8,7 +8,7 @@ export type PassView = {
   stats: PassStats;
   xp: number;
   look: Look;
-  progress: { level: number; into: number; need: number; ratio: number };
+  progress: { level: number; into: number; need: number; ratio: number; exam?: number | null };
   next: Unlock | null;
   self: boolean;
   /** 내 것일 때만 — 도감에 모은 목소리 타입 id */
