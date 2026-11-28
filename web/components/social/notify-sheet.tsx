@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useT } from "@/components/lang";
-import { disablePush, enablePush, readPrefs, savePrefs, type PushPrefs, type PushState } from "@/lib/push-client";
+import { disablePush, enablePush, readPrefs, savePrefs, testPush, type PushPrefs, type PushState } from "@/lib/push-client";
 import styles from "./notify-sheet.module.css";
 
 /**
@@ -28,6 +28,7 @@ export function NotifySheet({
   const [prefs, setPrefs] = useState<PushPrefs>(readPrefs);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [test, setTest] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -90,6 +91,30 @@ export function NotifySheet({
     }
   };
 
+  // 테스트 알림 — "알림이 안 와요"를 그 자리에서 가린다(11/28).
+  const sendTest = async () => {
+    setBusy(true);
+    setTest(t("보내는 중…", "Sending…"));
+    try {
+      const { result, status } = await testPush();
+      const msg: Record<string, string> = {
+        sent: t(
+          "보냈어요! 몇 초 안에 폰 알림 창에 떠야 해요. 안 뜨면 폰 설정 → 알림에서 이 브라우저(또는 MIMIC 앱) 알림이 켜져 있는지, 방해 금지 모드인지 봐 주세요.",
+          "Sent! It should pop up in a few seconds. If not, check your phone's notification settings for this browser/app and Do Not Disturb.",
+        ),
+        off: t("이 기기는 알림이 꺼져 있어요. 아래에서 다시 켜 주세요.", "Alerts are off on this device. Turn them on below."),
+        "not-saved": t("이 기기 연결이 서버에 저장이 안 돼 있었어요. 다시 켜 보세요.", "This device wasn't registered. Turn alerts on again."),
+        expired: t("이 기기 연결이 만료됐어요. 알림을 끄고 다시 켜 주세요.", "This device's link expired. Turn alerts off and on again."),
+        "no-keys": t("서버 알림 키가 설정돼 있지 않아요 (운영자 확인 필요).", "Server push keys are missing (admin needed)."),
+        rejected: t(`푸시 서버가 거절했어요 (${status ?? "?"}). 운영자에게 알려 주세요.`, `The push service refused (${status ?? "?"}). Please tell us.`),
+        error: t("보내지 못했어요. 잠시 뒤 다시 눌러 주세요.", "Couldn't send. Try again in a moment."),
+      };
+      setTest(msg[result] ?? msg.error);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const none = !prefs.newEntries && !prefs.mine && !prefs.dm;
 
   return createPortal(
@@ -127,6 +152,10 @@ export function NotifySheet({
 
         {on ? (
           <>
+            {test && <p className={styles.quiet}>{test}</p>}
+            <button type="button" className={styles.ghost} onClick={() => void sendTest()} disabled={busy}>
+              {t("🔔 테스트 알림 보내기", "🔔 Send a test alert")}
+            </button>
             <button type="button" className={styles.primary} onClick={onClose}>
               {t("완료", "Done")}
             </button>

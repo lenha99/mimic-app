@@ -164,3 +164,32 @@ export async function syncPush(): Promise<void> {
     if (res.ok) localStorage.setItem("mimic.push.sync", day);
   } catch {}
 }
+
+/**
+ * 테스트 알림 — 서버가 이 기기로 바로 한 통 보낸다. 구독이 서버에 없거나 만료됐으면
+ * 한 번 다시 구독하고 다시 보낸다(권한은 이미 있으니 묻지 않는다).
+ */
+export type TestResult = "sent" | "off" | "not-saved" | "expired" | "no-keys" | "rejected" | "error";
+export async function testPush(retry = true): Promise<{ result: TestResult; status?: number | null }> {
+  try {
+    if (!supported() || Notification.permission !== "granted") return { result: "off" };
+    const reg = await within(navigator.serviceWorker.getRegistration("/"), 3000);
+    const sub = reg ? await within(reg.pushManager.getSubscription(), 3000) : null;
+    if (!sub) return { result: "off" };
+    const res = await fetch("/api/push/test", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ endpoint: sub.endpoint }),
+    });
+    const j = (await res.json().catch(() => ({}))) as { reason?: TestResult; status?: number | null };
+    const result = j.reason ?? "error";
+    if (retry && (result === "not-saved" || result === "expired")) {
+      if (result === "expired") await within(sub.unsubscribe(), 3000).catch(() => {});
+      stateOnce = null;
+      if ((await enablePush()) === "on") return testPush(false);
+    }
+    return { result, status: j.status };
+  } catch {
+    return { result: "error" };
+  }
+}

@@ -64,9 +64,32 @@ export async function pushTo(subs: Sub[], payload: PushPayload, service: Service
       } catch (e) {
         const code = (e as { statusCode?: number }).statusCode;
         if (code === 404 || code === 410) await service.from("push_subs").delete().eq("endpoint", s.endpoint);
+        // 예전엔 여기서 조용히 버려서, 키가 어긋나도(403) 아무도 몰랐다(11/28). 로그엔 남긴다.
+        else console.error("[push] failed", code ?? "?", new URL(s.endpoint).host, String((e as { body?: string }).body ?? e).slice(0, 200));
       }
     }),
   );
+}
+
+/**
+ * 테스트 푸시 한 통 — 조용한 시간·빈도 제한 없이 바로. 결과(상태 코드)를 그대로 돌려줘서
+ * 폰에서 "왜 안 오지"를 바로 가린다(/api/push/test).
+ */
+export async function pushTest(s: Sub): Promise<{ ok: boolean; status: number | null; detail?: string; noKeys?: boolean }> {
+  if (!ready()) return { ok: false, status: null, noKeys: true };
+  try {
+    const r = await webpush.sendNotification(
+      { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
+      JSON.stringify({ title: "🔔 MIMIC 알림 테스트", body: "이게 보이면 알림이 잘 와요!", url: "/notifications", tag: "test" }),
+      { TTL: 600, urgency: "high" },
+    );
+    return { ok: true, status: r.statusCode };
+  } catch (e) {
+    const status = (e as { statusCode?: number }).statusCode ?? null;
+    const detail = String((e as { body?: string }).body ?? e).slice(0, 200);
+    console.error("[push] test failed", status ?? "?", new URL(s.endpoint).host, detail);
+    return { ok: false, status, detail };
+  }
 }
 
 /** 알림 종류 → 기기가 켜 둔 항목(push_subs 열). 새 출전작은 announceNewEntry 가 따로 고른다. */
